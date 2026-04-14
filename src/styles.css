@@ -1,0 +1,22 @@
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  background:
+    radial-gradient(circle at top left, rgba(15, 118, 110, 0.22), transparent 28%),
+    radial-gradient(circle at 80% 20%, rgba(245, 158, 11, 0.18), transparent 24%),
+    linear-gradient(180deg, #07111f 0%, #0d1728 50%, #10192a 100%);
+  color: #e5eef7;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+a {
+  color: inherit;
+}

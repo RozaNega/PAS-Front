@@ -1,0 +1,135 @@
+<section class="auth-page">
+  <div class="auth-page__glow auth-page__glow--primary"></div>
+  <div class="auth-page__glow auth-page__glow--secondary"></div>
+
+  <aside class="auth-panel auth-panel--story">
+    <p class="eyebrow">Create access</p>
+    <h1>Register a local account</h1>
+    <p class="lead">
+      Build a reusable profile for the demo auth flow, then sign in with it immediately.
+    </p>
+
+    <div class="info-stack">
+      <div class="info-card">
+        <strong>Reusable credentials</strong>
+        <span>Your account is saved in local storage for the current browser profile.</span>
+      </div>
+      <div class="info-card">
+        <strong>Password rules</strong>
+        <span>Use at least 8 characters and confirm the password before you submit.</span>
+      </div>
+      <div class="info-card">
+        <strong>Same demo service</strong>
+        <span>The login, reset, and profile pages all read from the same local auth service.</span>
+      </div>
+    </div>
+  </aside>
+
+  <article class="auth-panel auth-panel--form">
+    <header class="panel-header">
+      <p class="eyebrow">Get started</p>
+      <h2>Create account</h2>
+      <p>Use this form to add a new local profile for testing.</p>
+    </header>
+
+    @if (statusMessage()) {
+      <div
+        class="status"
+        [class.status--success]="statusTone() === 'success'"
+        [class.status--error]="statusTone() === 'error'"
+      >
+        {{ statusMessage() }}
+      </div>
+    }
+
+    <form [formGroup]="registerForm" (ngSubmit)="submit()" novalidate>
+      <label class="field">
+        <span>Display name</span>
+        <input type="text" formControlName="displayName" autocomplete="name" />
+      </label>
+      @if (
+        showControlError('displayName') && registerForm.controls.displayName.hasError('required')
+      ) {
+        <p class="field-error">Display name is required.</p>
+      }
+      @if (
+        showControlError('displayName') && registerForm.controls.displayName.hasError('minlength')
+      ) {
+        <p class="field-error">Use at least 2 characters.</p>
+      }
+
+      <label class="field">
+        <span>Email</span>
+        <input type="email" formControlName="email" autocomplete="email" />
+      </label>
+      @if (showControlError('email') && registerForm.controls.email.hasError('required')) {
+        <p class="field-error">Email is required.</p>
+      }
+      @if (showControlError('email') && registerForm.controls.email.hasError('email')) {
+        <p class="field-error">Enter a valid email address.</p>
+      }
+
+      <label class="field">
+        <span>Password</span>
+        <div class="field__control-row">
+          <input
+            [type]="showPassword() ? 'text' : 'password'"
+            formControlName="password"
+            autocomplete="new-password"
+          />
+          <button type="button" class="ghost-button" (click)="togglePasswordVisibility()">
+            {{ showPassword() ? 'Hide' : 'Show' }}
+          </button>
+        </div>
+      </label>
+      @if (showControlError('password') && registerForm.controls.password.hasError('required')) {
+        <p class="field-error">Password is required.</p>
+      }
+      @if (showControlError('password') && registerForm.controls.password.hasError('minlength')) {
+        <p class="field-error">Use at least 8 characters.</p>
+      }
+
+      <label class="field">
+        <span>Confirm password</span>
+        <div class="field__control-row">
+          <input
+            [type]="showConfirmPassword() ? 'text' : 'password'"
+            formControlName="confirmPassword"
+            autocomplete="new-password"
+          />
+          <button type="button" class="ghost-button" (click)="toggleConfirmPasswordVisibility()">
+            {{ showConfirmPassword() ? 'Hide' : 'Show' }}
+          </button>
+        </div>
+      </label>
+      @if (
+        showControlError('confirmPassword') &&
+        registerForm.controls.confirmPassword.hasError('required')
+      ) {
+        <p class="field-error">Confirm the password to continue.</p>
+      }
+      @if (hasPasswordMismatch()) {
+        <p class="field-error">Passwords do not match.</p>
+      }
+
+      <div class="field field--inline">
+        <label class="checkbox">
+          <input type="checkbox" formControlName="acceptedTerms" />
+          <span>I agree to use this account for the PAS demo workspace.</span>
+        </label>
+      </div>
+      @if (showControlError('acceptedTerms')) {
+        <p class="field-error">You must accept the terms before registering.</p>
+      }
+
+      <button type="submit" class="primary-button" [disabled]="loading()">
+        {{ loading() ? 'Creating account...' : 'Create account' }}
+      </button>
+    </form>
+
+    <footer class="panel-footer">
+      <a routerLink="/auth/login">Back to login</a>
+      <a routerLink="/auth/forgot-password">Need a reset link?</a>
+    </footer>
+  </article>
+</section>

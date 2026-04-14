@@ -1,0 +1,17 @@
+<section class="dashboard-shell">
+  <header>
+    <h1>Operations Dashboard</h1>
+    <p>Track storage activity and jump directly into each working area.</p>
+  </header>
+
+  <div class="kpi-grid">
+    @for (kpi of kpis(); track kpi.label) {
+      <a class="kpi-card" [routerLink]="kpi.route">
+        <h2>{{ kpi.label }}</h2>
+        <p class="kpi-value">{{ kpi.value }}</p>
+      </a>
+    }
+  </div>
+
+  <a class="service-link" routerLink="/dashboard/services">View service documentation</a>
+</section>

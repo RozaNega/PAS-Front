@@ -1,0 +1,34 @@
+<section class="category-list-container">
+  <h2>Category list</h2>
+
+  @if (!hasCategories()) {
+    <p>No categories found. Create one from the create tab.</p>
+  } @else {
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Description</th>
+          <th>Parent</th>
+          <th>Subcategories</th>
+          <th>Items</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (category of categories(); track category.id) {
+          <tr>
+            <td>{{ category.name }}</td>
+            <td>{{ category.description }}</td>
+            <td>{{ category.parentCategoryName || '-' }}</td>
+            <td>{{ category.subCategoriesCount }}</td>
+            <td>{{ category.itemsCount }}</td>
+            <td>
+              <button type="button" (click)="removeCategory(category)">Delete</button>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+</section>

@@ -1,0 +1,69 @@
+<section class="panel">
+  <h2>Edit item</h2>
+  <p>{{ status() }}</p>
+
+  @if (items().length === 0) {
+    <p>Create an item first.</p>
+  } @else {
+    <label>
+      <span>Select item</span>
+      <select [value]="selectedItemId()" (change)="updateSelection($any($event.target).value)">
+        @for (item of items(); track item.id) {
+          <option [value]="item.id">{{ item.sku }} - {{ item.name }}</option>
+        }
+      </select>
+    </label>
+
+    <form [formGroup]="editForm" (ngSubmit)="saveItem()" novalidate>
+      <label>
+        <span>SKU</span>
+        <input type="text" formControlName="sku" />
+      </label>
+
+      <label>
+        <span>Name</span>
+        <input type="text" formControlName="name" />
+      </label>
+
+      <div class="grid-two">
+        <label>
+          <span>Category ID</span>
+          <input type="text" formControlName="categoryId" />
+        </label>
+
+        <label>
+          <span>Category name</span>
+          <input type="text" formControlName="categoryName" />
+        </label>
+      </div>
+
+      <div class="grid-three">
+        <label>
+          <span>UoM</span>
+          <input type="text" formControlName="unitOfMeasure" />
+        </label>
+
+        <label>
+          <span>Price</span>
+          <input type="number" formControlName="price" />
+        </label>
+
+        <label>
+          <span>Stock</span>
+          <input type="number" formControlName="stockOnHand" />
+        </label>
+      </div>
+
+      <label>
+        <span>Status</span>
+        <select formControlName="status">
+          <option value="active">Active</option>
+          <option value="draft">Draft</option>
+          <option value="archived">Archived</option>
+        </select>
+      </label>
+
+      <button type="submit">Save changes</button>
+    </form>
+  }
+</section>

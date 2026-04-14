@@ -1,0 +1,52 @@
+<section class="support-page">
+  <header class="support-hero">
+    <p class="eyebrow">Auth services</p>
+    <h1>What the local auth service does</h1>
+    <p>
+      This screen documents the behavior of the demo service and exposes the current session state.
+    </p>
+  </header>
+
+  <section class="card-grid">
+    @for (step of serviceSteps; track step.title) {
+      <article class="support-card">
+        <span class="support-card__label">{{ step.title }}</span>
+        <p>{{ step.description }}</p>
+      </article>
+    }
+  </section>
+
+  <section class="status-grid">
+    <article class="support-card support-card--metric">
+      <span class="support-card__label">Accounts</span>
+      <strong>{{ authApi.accountCount() }}</strong>
+      <p>Stored profiles in the browser.</p>
+    </article>
+    <article class="support-card support-card--metric">
+      <span class="support-card__label">Reset tokens</span>
+      <strong>{{ authApi.pendingResetCount() }}</strong>
+      <p>Tokens waiting to be consumed.</p>
+    </article>
+    <article class="support-card support-card--metric">
+      <span class="support-card__label">Session</span>
+      <strong>{{ authApi.isAuthenticated() ? 'Active' : 'Signed out' }}</strong>
+      <p>Current browser session state.</p>
+    </article>
+  </section>
+
+  @if (currentSession()) {
+    <section class="support-card support-card--highlight">
+      <span class="support-card__label">Active session</span>
+      <h2>{{ currentSession()?.user?.displayName }}</h2>
+      <p>{{ currentSession()?.user?.email }}</p>
+      <p>Expires {{ currentSession()?.expiresAt }}</p>
+      <button type="button" class="secondary-button" (click)="signOut()">Sign out</button>
+    </section>
+  }
+
+  <footer class="support-links">
+    <a routerLink="/auth/login">Login</a>
+    <a routerLink="/auth/models">Models</a>
+    <a routerLink="/auth/register">Register</a>
+  </footer>
+</section>

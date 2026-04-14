@@ -1,0 +1,26 @@
+<section class="panel">
+  <h2>Category detail</h2>
+
+  @if (categories().length === 0) {
+    <p>No categories available.</p>
+  } @else {
+    <label>
+      <span>Select category</span>
+      <select [value]="selectedId()" (change)="selectCategory($any($event.target).value)">
+        @for (category of categories(); track category.id) {
+          <option [value]="category.id">{{ category.name }}</option>
+        }
+      </select>
+    </label>
+
+    @if (detail()) {
+      <article class="detail-card">
+        <h3>{{ detail()?.name }}</h3>
+        <p>{{ detail()?.description }}</p>
+        <p><strong>Parent:</strong> {{ detail()?.parentCategoryName || 'None' }}</p>
+        <p><strong>Subcategories:</strong> {{ detail()?.subCategories?.length ?? 0 }}</p>
+        <p><strong>Mapped items:</strong> {{ detail()?.items?.length ?? 0 }}</p>
+      </article>
+    }
+  }
+</section>

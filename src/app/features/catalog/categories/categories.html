@@ -1,0 +1,51 @@
+<section class="catalog-shell">
+  <header class="catalog-header">
+    <p class="eyebrow">Catalog</p>
+    <h1>Category workspace</h1>
+    <p>Manage category structure, create new nodes, and inspect details for planning inventory.</p>
+  </header>
+
+  <section class="stats-grid" aria-label="Category statistics">
+    <article>
+      <span>Total categories</span>
+      <strong>{{ totalCategories() }}</strong>
+    </article>
+    <article>
+      <span>Root categories</span>
+      <strong>{{ rootCategoryCount() }}</strong>
+    </article>
+    <article>
+      <span>Mapped items</span>
+      <strong>{{ totalItems() }}</strong>
+    </article>
+  </section>
+
+  <nav class="view-nav" aria-label="Category views">
+    <button type="button" (click)="setView('list')">List</button>
+    <button type="button" (click)="setView('tree')">Tree</button>
+    <button type="button" (click)="setView('create')">Create</button>
+    <button type="button" (click)="setView('edit')">Edit</button>
+    <button type="button" (click)="setView('detail')">Detail</button>
+    <a routerLink="/catalog/items">Go to item master</a>
+  </nav>
+
+  <section class="view-panel">
+    @switch (currentView()) {
+      @case ('list') {
+        <app-category-list></app-category-list>
+      }
+      @case ('tree') {
+        <app-category-tree></app-category-tree>
+      }
+      @case ('create') {
+        <app-category-create></app-category-create>
+      }
+      @case ('edit') {
+        <app-category-edit></app-category-edit>
+      }
+      @case ('detail') {
+        <app-category-detail></app-category-detail>
+      }
+    }
+  </section>
+</section>

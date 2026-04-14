@@ -1,0 +1,32 @@
+.panel {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.panel h2,
+.panel h3,
+.panel h4,
+.panel p {
+  margin: 0;
+  color: #dbe8f5;
+}
+
+.tree-root,
+.children {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.node {
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 12px;
+  padding: 0.75rem;
+  background: rgba(15, 23, 42, 0.45);
+  display: grid;
+  gap: 0.25rem;
+}
+
+.node--child {
+  margin-left: 0.75rem;
+  background: rgba(15, 23, 42, 0.65);
+}
