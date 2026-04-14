@@ -1,0 +1,11 @@
+.info-page {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.info-page h2,
+.info-page p,
+.info-page a {
+  margin: 0;
+  color: #dbe8f5;
+}

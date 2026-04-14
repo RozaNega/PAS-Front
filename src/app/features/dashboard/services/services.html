@@ -1,0 +1,9 @@
+<section class="feature-card">
+  <h2>Service Overview</h2>
+  <div class="service-list">
+    @for (doc of docs; track doc) {
+      <p>{{ doc }}</p>
+    }
+  </div>
+  <a routerLink="/dashboard">Back to dashboard</a>
+</section>

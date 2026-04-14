@@ -1,0 +1,38 @@
+<section class="item-list-container">
+  <h2>Item list</h2>
+
+  @if (!hasItems()) {
+    <p>No items found. Create one from the create tab.</p>
+  } @else {
+    <table>
+      <thead>
+        <tr>
+          <th>SKU</th>
+          <th>Name</th>
+          <th>Category</th>
+          <th>UoM</th>
+          <th>Price</th>
+          <th>Stock</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (item of items(); track item.id) {
+          <tr>
+            <td>{{ item.sku }}</td>
+            <td>{{ item.name }}</td>
+            <td>{{ item.categoryName }}</td>
+            <td>{{ item.unitOfMeasure }}</td>
+            <td>{{ item.price }}</td>
+            <td>{{ item.stockOnHand }}</td>
+            <td>{{ item.status }}</td>
+            <td>
+              <button type="button" (click)="removeItem(item)">Delete</button>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+</section>

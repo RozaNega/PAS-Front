@@ -1,0 +1,28 @@
+<section class="panel">
+  <h2>Create category</h2>
+  <p>{{ status() }}</p>
+
+  <form [formGroup]="categoryForm" (ngSubmit)="createCategory()" novalidate>
+    <label>
+      <span>Name</span>
+      <input type="text" formControlName="name" />
+    </label>
+
+    <label>
+      <span>Description</span>
+      <textarea rows="3" formControlName="description"></textarea>
+    </label>
+
+    <label>
+      <span>Parent category</span>
+      <select formControlName="parentCategoryId">
+        <option value="">None</option>
+        @for (category of parentOptions(); track category.id) {
+          <option [value]="category.id">{{ category.name }}</option>
+        }
+      </select>
+    </label>
+
+    <button type="submit">Create</button>
+  </form>
+</section>

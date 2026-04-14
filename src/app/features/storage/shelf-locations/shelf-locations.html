@@ -1,0 +1,10 @@
+<section class="feature-card">
+  <h2>Shelf Location Management</h2>
+  <p>Locations: {{ totals().count }} | Active: {{ totals().activeCount }}</p>
+  <p>Max storable units: {{ totals().totalCapacity }}</p>
+  <p>
+    <a href="/storage/shelf-locations/list">View list</a>
+    |
+    <a href="/storage/shelf-locations/create">Create location</a>
+  </p>
+</section>

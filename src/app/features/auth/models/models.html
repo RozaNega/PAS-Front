@@ -1,0 +1,51 @@
+<section class="support-page">
+  <header class="support-hero">
+    <p class="eyebrow">Auth models</p>
+    <h1>Model definitions used by the auth workflow</h1>
+    <p>
+      These interfaces keep the login, registration, and reset flows aligned around the same data
+      shape.
+    </p>
+  </header>
+
+  <section class="card-grid">
+    @for (card of modelCards; track card.name) {
+      <article class="support-card">
+        <span class="support-card__label">{{ card.name }}</span>
+        <p>{{ card.summary }}</p>
+        <div class="field-chip-list">
+          @for (field of card.fields; track field) {
+            <span>{{ field }}</span>
+          }
+        </div>
+      </article>
+    }
+  </section>
+
+  <section class="card-grid card-grid--compact">
+    @for (card of seedCards; track card.name) {
+      <article class="support-card support-card--compact">
+        <span class="support-card__label">{{ card.name }}</span>
+        <p>{{ card.summary }}</p>
+        <div class="field-chip-list">
+          @for (field of card.fields; track field) {
+            <span>{{ field }}</span>
+          }
+        </div>
+      </article>
+    }
+  </section>
+
+  @if (currentUser()) {
+    <section class="support-card support-card--highlight">
+      <span class="support-card__label">Active user</span>
+      <h2>{{ currentUser()?.displayName }}</h2>
+      <p>{{ currentUser()?.email }}</p>
+    </section>
+  }
+
+  <footer class="support-links">
+    <a routerLink="/auth/login">Login</a>
+    <a routerLink="/auth/services">Service flow</a>
+  </footer>
+</section>

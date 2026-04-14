@@ -7,56 +7,43 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "serve:ssr:pas-frontend": "node dist/pas-frontend/server/server.mjs"
+    "serve:ssr:PAS-Frontend": "node dist/PAS-Frontend/server/server.mjs"
+  },
+  "prettier": {
+    "printWidth": 100,
+    "singleQuote": true,
+    "overrides": [
+      {
+        "files": "*.html",
+        "options": {
+          "parser": "angular"
+        }
+      }
+    ]
   },
   "private": true,
-  "type": "module",
+  "packageManager": "npm@11.8.0",
   "dependencies": {
-    "@angular/animations": "^17.3.0",
-    "@angular/common": "^17.3.0",
-    "@angular/compiler": "^17.3.0",
-    "@angular/core": "^17.3.0",
-    "@angular/forms": "^17.3.0",
-    "@angular/platform-browser": "^17.3.0",
-    "@angular/platform-browser-dynamic": "^17.3.0",
-    "@angular/platform-server": "^17.3.0",
-    "@angular/router": "^17.3.0",
-    "@angular/ssr": "^17.3.17",
-    "@microsoft/signalr": "^8.0.0",
-    "@ng-bootstrap/ng-bootstrap": "^16.0.0",
-    "bootstrap": "^5.3.0",
-    "chart.js": "^4.4.0",
-    "express": "^4.18.2",
-    "font-awesome": "^4.7.0",
-    "jwt-decode": "^4.0.0",
-    "ngx-toastr": "^18.0.0",
-    "rxjs": "^7.8.0",
-    "tslib": "^2.3.0",
-    "zone.js": "~0.14.3"
+    "@angular/common": "^21.1.0",
+    "@angular/compiler": "^21.1.0",
+    "@angular/core": "^21.1.0",
+    "@angular/forms": "^21.1.0",
+    "@angular/platform-browser": "^21.1.0",
+    "@angular/platform-server": "^21.1.0",
+    "@angular/router": "^21.1.0",
+    "@angular/ssr": "^21.1.4",
+    "express": "^5.1.0",
+    "rxjs": "~7.8.0",
+    "tslib": "^2.3.0"
   },
   "devDependencies": {
-    "@angular-devkit/build-angular": "^17.3.17",
-    "@angular-eslint/builder": "^17.0.0",
-    "@angular-eslint/eslint-plugin": "^17.0.0",
-    "@angular-eslint/eslint-plugin-template": "^17.0.0",
-    "@angular-eslint/schematics": "^17.0.0",
-    "@angular-eslint/template-parser": "^17.0.0",
-    "@angular/cli": "^17.3.17",
-    "@angular/compiler-cli": "^17.3.0",
-    "@types/express": "^4.17.17",
-    "@types/jasmine": "^5.1.0",
-    "@types/node": "^20.0.0",
-    "@typescript-eslint/eslint-plugin": "^6.0.0",
-    "@typescript-eslint/parser": "^6.0.0",
-    "eslint": "^8.56.0",
-    "jasmine-core": "~5.1.0",
-    "karma": "~6.4.0",
-    "karma-chrome-launcher": "~3.2.0",
-    "karma-coverage": "~2.2.0",
-    "karma-jasmine": "~5.1.0",
-    "karma-jasmine-html-reporter": "~2.1.0",
-    "prettier": "^3.1.0",
-    "typescript": "~5.4.2"
+    "@angular/build": "^21.1.4",
+    "@angular/cli": "^21.1.4",
+    "@angular/compiler-cli": "^21.1.0",
+    "@types/express": "^5.0.1",
+    "@types/node": "^20.17.19",
+    "jsdom": "^27.1.0",
+    "typescript": "~5.9.2",
+    "vitest": "^4.0.8"
   }
 }
-

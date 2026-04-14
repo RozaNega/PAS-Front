@@ -1,0 +1,56 @@
+<section class="panel">
+  <h2>Create item</h2>
+  <p>{{ status() }}</p>
+
+  <form [formGroup]="itemForm" (ngSubmit)="createItem()" novalidate>
+    <label>
+      <span>SKU</span>
+      <input type="text" formControlName="sku" />
+    </label>
+
+    <label>
+      <span>Name</span>
+      <input type="text" formControlName="name" />
+    </label>
+
+    <div class="grid-two">
+      <label>
+        <span>Category ID</span>
+        <input type="text" formControlName="categoryId" />
+      </label>
+
+      <label>
+        <span>Category name</span>
+        <input type="text" formControlName="categoryName" />
+      </label>
+    </div>
+
+    <div class="grid-three">
+      <label>
+        <span>UoM</span>
+        <input type="text" formControlName="unitOfMeasure" />
+      </label>
+
+      <label>
+        <span>Price</span>
+        <input type="number" formControlName="price" />
+      </label>
+
+      <label>
+        <span>Stock</span>
+        <input type="number" formControlName="stockOnHand" />
+      </label>
+    </div>
+
+    <label>
+      <span>Status</span>
+      <select formControlName="status">
+        <option value="active">Active</option>
+        <option value="draft">Draft</option>
+        <option value="archived">Archived</option>
+      </select>
+    </label>
+
+    <button type="submit">Create</button>
+  </form>
+</section>

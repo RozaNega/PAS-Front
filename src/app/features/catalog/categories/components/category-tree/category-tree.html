@@ -1,0 +1,27 @@
+<section class="panel">
+  <h2>Category tree</h2>
+
+  @if (tree().length === 0) {
+    <p>No hierarchy available yet.</p>
+  } @else {
+    <div class="tree-root">
+      @for (node of tree(); track node.id) {
+        <article class="node">
+          <h3>{{ node.name }}</h3>
+          <p>{{ node.description }}</p>
+
+          @if (node.children.length > 0) {
+            <div class="children">
+              @for (child of node.children; track child.id) {
+                <section class="node node--child">
+                  <h4>{{ child.name }}</h4>
+                  <p>{{ child.description }}</p>
+                </section>
+              }
+            </div>
+          }
+        </article>
+      }
+    </div>
+  }
+</section>

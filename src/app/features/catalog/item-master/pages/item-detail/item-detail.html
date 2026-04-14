@@ -1,0 +1,28 @@
+<section class="panel">
+  <h2>Item detail</h2>
+
+  @if (items().length === 0) {
+    <p>No item records available.</p>
+  } @else {
+    <label>
+      <span>Select item</span>
+      <select [value]="selectedId()" (change)="selectItem($any($event.target).value)">
+        @for (item of items(); track item.id) {
+          <option [value]="item.id">{{ item.sku }} - {{ item.name }}</option>
+        }
+      </select>
+    </label>
+
+    @if (detail()) {
+      <article class="detail-card">
+        <h3>{{ detail()?.name }}</h3>
+        <p><strong>SKU:</strong> {{ detail()?.sku }}</p>
+        <p><strong>Category:</strong> {{ detail()?.categoryName }}</p>
+        <p><strong>UoM:</strong> {{ detail()?.unitOfMeasure }}</p>
+        <p><strong>Price:</strong> {{ detail()?.price }}</p>
+        <p><strong>Stock:</strong> {{ detail()?.stockOnHand }}</p>
+        <p><strong>Status:</strong> {{ detail()?.status }}</p>
+      </article>
+    }
+  }
+</section>

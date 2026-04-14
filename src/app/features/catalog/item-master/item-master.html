@@ -1,0 +1,47 @@
+<section class="catalog-shell">
+  <header class="catalog-header">
+    <p class="eyebrow">Catalog</p>
+    <h1>Item master workspace</h1>
+    <p>Maintain SKU records, pricing, stock values, and status for each sellable item.</p>
+  </header>
+
+  <section class="stats-grid" aria-label="Item master statistics">
+    <article>
+      <span>Total items</span>
+      <strong>{{ totalItems().length }}</strong>
+    </article>
+    <article>
+      <span>Active items</span>
+      <strong>{{ activeItemCount() }}</strong>
+    </article>
+    <article>
+      <span>Total stock</span>
+      <strong>{{ totalStock() }}</strong>
+    </article>
+  </section>
+
+  <nav class="view-nav" aria-label="Item views">
+    <button type="button" (click)="setView('list')">List</button>
+    <button type="button" (click)="setView('create')">Create</button>
+    <button type="button" (click)="setView('edit')">Edit</button>
+    <button type="button" (click)="setView('detail')">Detail</button>
+    <a href="/catalog/categories">Go to categories</a>
+  </nav>
+
+  <section class="view-panel">
+    @switch (currentView()) {
+      @case ('list') {
+        <p>Open [item-list] for the detailed grid implementation.</p>
+      }
+      @case ('create') {
+        <p>Open [item-create] to create new item records.</p>
+      }
+      @case ('edit') {
+        <p>Open [item-edit] to update existing items.</p>
+      }
+      @case ('detail') {
+        <p>Open [item-detail] to inspect full item information.</p>
+      }
+    }
+  </section>
+</section>

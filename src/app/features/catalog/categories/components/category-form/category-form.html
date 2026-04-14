@@ -1,0 +1,22 @@
+<section class="panel">
+  <h3>{{ title() }}</h3>
+
+  <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+    <label>
+      <span>Name</span>
+      <input type="text" formControlName="name" />
+    </label>
+
+    <label>
+      <span>Description</span>
+      <textarea rows="3" formControlName="description"></textarea>
+    </label>
+
+    <label>
+      <span>Parent category ID (optional)</span>
+      <input type="text" formControlName="parentCategoryId" />
+    </label>
+
+    <button type="submit">{{ submitLabel() }}</button>
+  </form>
+</section>

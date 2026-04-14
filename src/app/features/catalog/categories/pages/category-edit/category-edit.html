@@ -1,0 +1,43 @@
+<section class="panel">
+  <h2>Edit category</h2>
+  <p>{{ status() }}</p>
+
+  @if (categories().length === 0) {
+    <p>Create a category first.</p>
+  } @else {
+    <label>
+      <span>Select category</span>
+      <select [value]="selectedCategoryId()" (change)="updateSelection($any($event.target).value)">
+        @for (category of categories(); track category.id) {
+          <option [value]="category.id">{{ category.name }}</option>
+        }
+      </select>
+    </label>
+
+    <form [formGroup]="editForm" (ngSubmit)="saveCategory()" novalidate>
+      <label>
+        <span>Name</span>
+        <input type="text" formControlName="name" />
+      </label>
+
+      <label>
+        <span>Description</span>
+        <textarea rows="3" formControlName="description"></textarea>
+      </label>
+
+      <label>
+        <span>Parent category</span>
+        <select formControlName="parentCategoryId">
+          <option value="">None</option>
+          @for (category of categories(); track category.id) {
+            @if (category.id !== selectedCategoryId()) {
+              <option [value]="category.id">{{ category.name }}</option>
+            }
+          }
+        </select>
+      </label>
+
+      <button type="submit">Save changes</button>
+    </form>
+  }
+</section>
