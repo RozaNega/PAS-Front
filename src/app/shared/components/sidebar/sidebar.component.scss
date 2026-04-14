@@ -1,0 +1,23 @@
+﻿.sidebar {
+  width: 240px;
+  min-height: 100vh;
+  border-right: 1px solid #e5e7eb;
+  background: #f8fafc;
+}
+.sidebar.collapsed { width: 72px; }
+.sidebar-brand {
+  height: 56px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 1rem;
+  font-weight: 700;
+}
+.sidebar-nav { display: flex; flex-direction: column; }
+.nav-link {
+  padding: 0.75rem 1rem;
+  text-decoration: none;
+  color: #1f2937;
+}
+.nav-link.active { background: #e2e8f0; }
+
