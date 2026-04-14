@@ -1,0 +1,18 @@
+﻿.app-header {
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1rem;
+  border-bottom: 1px solid #e5e7eb;
+  background: #fff;
+}
+.menu-toggle,
+.logout-btn {
+  border: 1px solid #d1d5db;
+  background: #f9fafb;
+  border-radius: 6px;
+  padding: 0.4rem 0.75rem;
+}
+.header-title { font-weight: 600; }
+

@@ -1,0 +1,14 @@
+﻿.main-layout {
+  display: block;
+}
+
+.main-layout__body {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  min-height: calc(100vh - 96px);
+}
+
+.main-layout__content {
+  padding: 1rem;
+}
+
