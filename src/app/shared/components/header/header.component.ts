@@ -7,9 +7,9 @@ import { filter } from 'rxjs';
 
 @Component({
   selector: 'app-header',
-  standalone: false,
+  standalone: true,
   templateUrl: './header.component.html',
-  styleUrls: ['./header.component.scss']
+  styleUrls: ['./header.component.scss'],
 })
 export class HeaderComponent {
   @Output() toggleSidebar = new EventEmitter<void>();
@@ -21,7 +21,7 @@ export class HeaderComponent {
     public authService: AuthService,
     public signalRService: SignalRService,
     private router: Router,
-    private location: Location
+    private location: Location,
   ) {
     this.updateBackButtonState(this.router.url);
     this.router.events

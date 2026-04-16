@@ -20,6 +20,3 @@ export class ClickOutsideDirective {
     }
   }
 }
-
-
-

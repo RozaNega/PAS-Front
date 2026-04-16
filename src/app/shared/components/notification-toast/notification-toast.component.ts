@@ -4,7 +4,7 @@ import { Component, Input } from '@angular/core';
   selector: 'app-notification-toast',
   standalone: false,
   templateUrl: './notification-toast.component.html',
-  styleUrls: ['./notification-toast.component.scss']
+  styleUrls: ['./notification-toast.component.scss'],
 })
 export class NotificationToastComponent {
   @Input() title = '';

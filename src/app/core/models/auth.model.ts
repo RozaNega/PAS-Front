@@ -32,5 +32,3 @@ export interface AuthResponse {
   user: AuthUser;
   errors: string[];
 }
-
-

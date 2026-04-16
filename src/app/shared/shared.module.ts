@@ -2,11 +2,6 @@
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { NgxPaginationModule } from 'ngx-pagination';
-
-import { HeaderComponent } from './components/header/header.component';
-import { SidebarComponent } from './components/sidebar/sidebar.component';
-import { FooterComponent } from './components/footer/footer.component';
 import { LoadingSpinnerComponent } from './components/loading-spinner/loading-spinner.component';
 import { ConfirmationModalComponent } from './components/confirmation-modal/confirmation-modal.component';
 import { DataTableComponent } from './components/data-table/data-table.component';
@@ -22,9 +17,6 @@ import { TruncatePipe } from './pipes/truncate.pipe';
 
 @NgModule({
   declarations: [
-    HeaderComponent,
-    SidebarComponent,
-    FooterComponent,
     LoadingSpinnerComponent,
     ConfirmationModalComponent,
     DataTableComponent,
@@ -34,24 +26,14 @@ import { TruncatePipe } from './pipes/truncate.pipe';
     ClickOutsideDirective,
     DateFormatPipe,
     CurrencyFormatPipe,
-    TruncatePipe
+    TruncatePipe,
   ],
-  imports: [
-    CommonModule,
-    FormsModule,
-    ReactiveFormsModule,
-    RouterModule,
-    NgxPaginationModule
-  ],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule],
   exports: [
     CommonModule,
     FormsModule,
     ReactiveFormsModule,
     RouterModule,
-    NgxPaginationModule,
-    HeaderComponent,
-    SidebarComponent,
-    FooterComponent,
     LoadingSpinnerComponent,
     ConfirmationModalComponent,
     DataTableComponent,
@@ -61,9 +43,7 @@ import { TruncatePipe } from './pipes/truncate.pipe';
     ClickOutsideDirective,
     DateFormatPipe,
     CurrencyFormatPipe,
-    TruncatePipe
-  ]
+    TruncatePipe,
+  ],
 })
 export class SharedModule {}
-
-

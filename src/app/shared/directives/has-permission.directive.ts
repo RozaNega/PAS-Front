@@ -3,7 +3,7 @@ import { AuthService } from '../../core/services/auth.service';
 
 @Directive({
   selector: '[appHasPermission]',
-  standalone: false
+  standalone: false,
 })
 export class HasPermissionDirective {
   private hasView = false;
@@ -11,7 +11,7 @@ export class HasPermissionDirective {
   constructor(
     private templateRef: TemplateRef<any>,
     private viewContainer: ViewContainerRef,
-    private authService: AuthService
+    private authService: AuthService,
   ) {}
 
   @Input() set appHasPermission(permission: string) {
@@ -24,5 +24,3 @@ export class HasPermissionDirective {
     }
   }
 }
-
-

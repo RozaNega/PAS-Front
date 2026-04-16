@@ -3,7 +3,7 @@ import { Pipe, PipeTransform } from '@angular/core';
 
 @Pipe({
   name: 'dateFormat',
-  standalone: false
+  standalone: false,
 })
 export class DateFormatPipe implements PipeTransform {
   private datePipe = new DatePipe('en-US');
@@ -17,7 +17,7 @@ export class DateFormatPipe implements PipeTransform {
 }
 
 @Pipe({
-  name: 'dateTimeFormat'
+  name: 'dateTimeFormat',
 })
 export class DateTimeFormatPipe implements PipeTransform {
   private datePipe = new DatePipe('en-US');
@@ -31,7 +31,7 @@ export class DateTimeFormatPipe implements PipeTransform {
 }
 
 @Pipe({
-  name: 'timeAgo'
+  name: 'timeAgo',
 })
 export class TimeAgoPipe implements PipeTransform {
   transform(value: string | Date): string {
