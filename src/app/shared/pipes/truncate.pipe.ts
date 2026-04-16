@@ -11,6 +11,3 @@ export class TruncatePipe implements PipeTransform {
     return value.length > limit ? `${value.slice(0, limit)}...` : value;
   }
 }
-
-
-

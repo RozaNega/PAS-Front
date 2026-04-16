@@ -5,7 +5,7 @@ import { menuConfig } from '../../../config/menu.config';
 @Component({
   selector: 'app-sidebar',
   templateUrl: './sidebar.component.html',
-  styleUrls: ['./sidebar.component.scss']
+  styleUrls: ['./sidebar.component.scss'],
 })
 export class SidebarComponent {
   @Input() collapsed = false;
@@ -21,5 +21,3 @@ export class SidebarComponent {
     return this.authService.hasRole(role);
   }
 }
-
-

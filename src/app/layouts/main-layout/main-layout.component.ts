@@ -5,7 +5,7 @@ import { SignalRService } from '../../core/services/signalr.service';
 @Component({
   selector: 'app-main-layout',
   templateUrl: './main-layout.component.html',
-  styleUrls: ['./main-layout.component.scss']
+  styleUrls: ['./main-layout.component.scss'],
 })
 export class MainLayoutComponent implements OnInit {
   isSidebarCollapsed = false;
@@ -13,7 +13,7 @@ export class MainLayoutComponent implements OnInit {
 
   constructor(
     private authService: AuthService,
-    private signalRService: SignalRService
+    private signalRService: SignalRService,
   ) {}
 
   ngOnInit(): void {
@@ -29,5 +29,3 @@ export class MainLayoutComponent implements OnInit {
     this.authService.logout();
   }
 }
-
-

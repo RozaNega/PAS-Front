@@ -5,6 +5,3 @@
   template: '<footer>Footer</footer>',
 })
 export class FooterComponent {}
-
-
-

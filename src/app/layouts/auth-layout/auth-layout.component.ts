@@ -6,6 +6,3 @@
   styleUrls: ['./auth-layout.component.scss'],
 })
 export class AuthLayoutComponent {}
-
-
-

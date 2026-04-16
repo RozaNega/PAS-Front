@@ -1,4 +1,4 @@
-﻿import { User } from './user.model';
+﻿import { UserModel } from './user.model';
 
 export interface LoginRequest {
   username: string;
@@ -19,8 +19,6 @@ export interface AuthResponse {
   token: string;
   refreshToken: string;
   expiresAt: string;
-  user: User;
+  user: UserModel;
   errors: string[];
 }
-
-

@@ -2,7 +2,7 @@
 
 @Component({
   selector: 'app-confirmation-modal',
-  templateUrl: './confirmation-modal.component.html'
+  templateUrl: './confirmation-modal.component.html',
 })
 export class ConfirmationModalComponent {
   @Input() title = 'Confirm Action';
@@ -21,5 +21,3 @@ export class ConfirmationModalComponent {
     this.cancelled.emit();
   }
 }
-
-

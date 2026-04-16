@@ -2,7 +2,7 @@
 import { AuthService } from '../../core/services/auth.service';
 
 @Directive({
-  selector: '[appHasRole]'
+  selector: '[appHasRole]',
 })
 export class HasRoleDirective {
   private hasView = false;
@@ -10,7 +10,7 @@ export class HasRoleDirective {
   constructor(
     private templateRef: TemplateRef<any>,
     private viewContainer: ViewContainerRef,
-    private authService: AuthService
+    private authService: AuthService,
   ) {}
 
   @Input() set appHasRole(role: string) {
@@ -23,5 +23,3 @@ export class HasRoleDirective {
     }
   }
 }
-
-

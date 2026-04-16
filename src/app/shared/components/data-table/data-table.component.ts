@@ -5,6 +5,3 @@
   template: '<p>data-table works</p>',
 })
 export class DataTableComponent {}
-
-
-

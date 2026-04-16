@@ -5,7 +5,7 @@ import { SignalRService } from '../../../core/services/signalr.service';
 @Component({
   selector: 'app-header',
   templateUrl: './header.component.html',
-  styleUrls: ['./header.component.scss']
+  styleUrls: ['./header.component.scss'],
 })
 export class HeaderComponent {
   @Output() toggleSidebar = new EventEmitter<void>();
@@ -13,7 +13,7 @@ export class HeaderComponent {
 
   constructor(
     public authService: AuthService,
-    public signalRService: SignalRService
+    public signalRService: SignalRService,
   ) {}
 
   onToggleSidebar(): void {
@@ -24,5 +24,3 @@ export class HeaderComponent {
     this.authService.logout();
   }
 }
-
-

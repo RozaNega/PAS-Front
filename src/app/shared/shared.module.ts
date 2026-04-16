@@ -20,7 +20,11 @@ import { CurrencyFormatPipe } from './pipes/currency-format.pipe';
 import { TruncatePipe } from './pipes/truncate.pipe';
 
 @NgModule({
-  declarations: [
+  imports: [
+    CommonModule,
+    FormsModule,
+    ReactiveFormsModule,
+    RouterModule,
     HeaderComponent,
     SidebarComponent,
     FooterComponent,
@@ -33,13 +37,7 @@ import { TruncatePipe } from './pipes/truncate.pipe';
     ClickOutsideDirective,
     DateFormatPipe,
     CurrencyFormatPipe,
-    TruncatePipe
-  ],
-  imports: [
-    CommonModule,
-    FormsModule,
-    ReactiveFormsModule,
-    RouterModule
+    TruncatePipe,
   ],
   exports: [
     CommonModule,
@@ -58,9 +56,7 @@ import { TruncatePipe } from './pipes/truncate.pipe';
     ClickOutsideDirective,
     DateFormatPipe,
     CurrencyFormatPipe,
-    TruncatePipe
-  ]
+    TruncatePipe,
+  ],
 })
 export class SharedModule {}
-
-

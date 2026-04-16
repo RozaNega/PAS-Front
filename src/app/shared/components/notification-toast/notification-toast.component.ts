@@ -5,6 +5,3 @@
   template: '<p>notification-toast works</p>',
 })
 export class NotificationToastComponent {}
-
-
-
