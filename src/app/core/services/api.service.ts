@@ -9,7 +9,7 @@ export class ApiService {
 
   constructor(private http: HttpClient) {}
 
-  get<T>(endpoint: string, params?: any): Observable<T> {
+  get<T>(endpoint: string, params?: any, options?: any): Observable<T> {
     let httpParams = new HttpParams();
     if (params) {
       Object.keys(params).forEach(key => {
@@ -18,7 +18,10 @@ export class ApiService {
         }
       });
     }
-    return this.http.get<T>(`${this.baseUrl}/${endpoint}`, { params: httpParams });
+    return this.http.get<T>(`${this.baseUrl}/${endpoint}`, {
+      params: httpParams,
+      ...(options || {}),
+    }) as unknown as Observable<T>;
   }
 
   post<T>(endpoint: string, data: any): Observable<T> {

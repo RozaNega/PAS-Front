@@ -1,47 +1,284 @@
-<section class="catalog-shell">
-  <header class="catalog-header">
-    <p class="eyebrow">Catalog</p>
-    <h1>Item master workspace</h1>
-    <p>Maintain SKU records, pricing, stock values, and status for each sellable item.</p>
-  </header>
+<section class="item-master-page">
+  <div class="sheet-shell">
+    <header class="sheet-topbar">
+      <div class="brand-block">
+        <div class="brand-mark" aria-hidden="true">
+          <i class="bi bi-box-seam"></i>
+        </div>
+        <div>
+          <p class="eyebrow">Ethiopia Commodity Exchange (ECX)</p>
+          <h1>Item Master</h1>
+        </div>
+      </div>
 
-  <section class="stats-grid" aria-label="Item master statistics">
-    <article>
-      <span>Total items</span>
-      <strong>{{ totalItems().length }}</strong>
-    </article>
-    <article>
-      <span>Active items</span>
-      <strong>{{ activeItemCount() }}</strong>
-    </article>
-    <article>
-      <span>Total stock</span>
-      <strong>{{ totalStock() }}</strong>
-    </article>
-  </section>
+      <div class="top-actions">
+        <button type="button" class="ghost-pill">PACE</button>
+        <button type="button" class="primary-pill" (click)="openCreatePanel()">
+          <i class="bi bi-plus-lg"></i>
+          Create Item
+        </button>
+      </div>
+    </header>
 
-  <nav class="view-nav" aria-label="Item views">
-    <button type="button" (click)="setView('list')">List</button>
-    <button type="button" (click)="setView('create')">Create</button>
-    <button type="button" (click)="setView('edit')">Edit</button>
-    <button type="button" (click)="setView('detail')">Detail</button>
-    <a href="/catalog/categories">Go to categories</a>
-  </nav>
+    <section class="search-row" aria-label="Item search and filters">
+      <label class="search-field">
+        <i class="bi bi-search"></i>
+        <input
+          type="search"
+          [value]="searchTerm()"
+          (input)="setSearchTerm($any($event.target).value)"
+          placeholder="Search items"
+          aria-label="Search items"
+        />
+      </label>
 
-  <section class="view-panel">
-    @switch (currentView()) {
-      @case ('list') {
-        <p>Open [item-list] for the detailed grid implementation.</p>
-      }
-      @case ('create') {
-        <p>Open [item-create] to create new item records.</p>
-      }
-      @case ('edit') {
-        <p>Open [item-edit] to update existing items.</p>
-      }
-      @case ('detail') {
-        <p>Open [item-detail] to inspect full item information.</p>
-      }
+      <button type="button" class="filter-chip">
+        <i class="bi bi-funnel-fill"></i>
+        Priority
+      </button>
+      <button type="button" class="filter-chip active">
+        <i class="bi bi-tag-fill"></i>
+        Economy
+      </button>
+      <button type="button" class="filter-chip">
+        <i class="bi bi-bag-fill"></i>
+        Bookings
+      </button>
+
+      <div class="compact-selectors">
+        <span class="meta-chip">For</span>
+        <select [value]="selectedSort()" (change)="setSort($any($event.target).value)">
+          <option value="name">Sort by name</option>
+          <option value="stock">Sort by stock</option>
+          <option value="price">Sort by price</option>
+        </select>
+      </div>
+    </section>
+
+    @if (showCreatePanel()) {
+      <section class="create-panel" aria-label="Create item panel">
+        <div class="create-panel__header">
+          <div>
+            <p class="section-label">New item record</p>
+            <h2>Create item</h2>
+          </div>
+
+          <button type="button" class="row-action" (click)="closeCreatePanel()">✕</button>
+        </div>
+
+        @if (createMessage()) {
+          <div class="status-line" [class.status-line--success]="createTone() === 'success'" [class.status-line--error]="createTone() === 'error'">
+            {{ createMessage() }}
+          </div>
+        }
+
+        <form class="create-form" [formGroup]="createForm" (ngSubmit)="submitCreate()" novalidate>
+          <label>
+            <span>SKU</span>
+            <input type="text" formControlName="sku" placeholder="FD-1002" />
+          </label>
+
+          <label>
+            <span>Item Name</span>
+            <input type="text" formControlName="name" placeholder="Instant Coffee 250g" />
+          </label>
+
+          <label>
+            <span>Category</span>
+            <input type="text" formControlName="categoryName" placeholder="Beverages" />
+          </label>
+
+          <label>
+            <span>Unit of Measure</span>
+            <input type="text" formControlName="unitOfMeasure" placeholder="Pack" />
+          </label>
+
+          <label>
+            <span>Price</span>
+            <input type="number" formControlName="price" min="0" step="0.01" />
+          </label>
+
+          <label>
+            <span>Stock On Hand</span>
+            <input type="number" formControlName="stockOnHand" min="0" step="1" />
+          </label>
+
+          <label>
+            <span>Status</span>
+            <select formControlName="status">
+              <option value="active">Active</option>
+              <option value="draft">Draft</option>
+              <option value="archived">Archived</option>
+            </select>
+          </label>
+
+          <div class="create-actions">
+            <button type="button" class="secondary-pill" (click)="closeCreatePanel()">Cancel</button>
+            <button type="submit" class="primary-pill">Save Item</button>
+          </div>
+        </form>
+      </section>
     }
-  </section>
+
+    <section class="summary-grid" aria-label="Item master metrics">
+      @for (card of summaryCards(); track card.label) {
+        <article
+          class="summary-card"
+          [class.summary-card--violet]="card.accent === 'violet'"
+          [class.summary-card--blue]="card.accent === 'blue'"
+          [class.summary-card--pink]="card.accent === 'pink'"
+          [class.summary-card--emerald]="card.accent === 'emerald'"
+          [class.summary-card--amber]="card.accent === 'amber'"
+        >
+          <div class="summary-card__header">
+            <span>{{ card.label }}</span>
+            <strong>{{ card.value }}</strong>
+            <small>{{ card.subtext }}</small>
+          </div>
+
+          <div class="sparkline" aria-hidden="true">
+            @for (segment of card.spark; track segment) {
+              <span [style.height.%]="segment"></span>
+            }
+          </div>
+        </article>
+      }
+    </section>
+
+    <section class="board-chips" aria-label="Quick category and status filters">
+      <button
+        type="button"
+        class="board-chip"
+        [class.active]="categoryFilter() === 'all'"
+        (click)="setCategoryFilter('all')"
+      >
+        All Categories
+      </button>
+
+      @for (category of categories(); track category) {
+        @if (category !== 'all') {
+          <button
+            type="button"
+            class="board-chip"
+            [class.active]="categoryFilter() === category"
+            (click)="setCategoryFilter(category)"
+          >
+            {{ category }}
+          </button>
+        }
+      }
+
+      <span class="board-chip-divider"></span>
+
+      @for (badge of statusBadges; track badge.value) {
+        <button
+          type="button"
+          class="board-chip"
+          [class.active]="statusFilter() === badge.value"
+          (click)="setStatusFilter(badge.value)"
+        >
+          {{ badge.label }}
+        </button>
+      }
+
+      <button type="button" class="reset-link" (click)="clearFilters()">Reset</button>
+    </section>
+
+    <section class="table-shell">
+      <div class="table-toolbar">
+        <div>
+          <p class="section-label">Total items across catalogue</p>
+          <h2>Item master records</h2>
+        </div>
+
+        <button type="button" class="secondary-pill">
+          <i class="bi bi-printer"></i>
+          Print
+        </button>
+      </div>
+
+      <div class="list-strip" aria-label="Quick item indicators">
+        @for (highlight of topHighlights(); track highlight.label) {
+          <article>
+            <span>{{ highlight.label }}</span>
+            <strong>{{ highlight.value }}</strong>
+          </article>
+        }
+      </div>
+
+      <div class="table-card">
+        <table>
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th>SKU</th>
+              <th>Category</th>
+              <th>Unit</th>
+              <th>Price</th>
+              <th>Stock</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of filteredItems(); track trackByItemId($index, item)) {
+              <tr>
+                <td>
+                  <div class="item-cell">
+                    <span class="item-avatar">{{ item.name.charAt(0) }}</span>
+                    <div>
+                      <strong>{{ item.name }}</strong>
+                      <small>Updated {{ item.updatedAt ?? item.createdAt | date : 'MMM d, y' }}</small>
+                    </div>
+                  </div>
+                </td>
+                <td>{{ item.sku }}</td>
+                <td>{{ item.categoryName }}</td>
+                <td>{{ item.unitOfMeasure }}</td>
+                <td>ETB {{ item.price.toFixed(2) }}</td>
+                <td>
+                  <div class="stock-cell">
+                    <span>{{ item.stockOnHand }}</span>
+                    <div class="stock-bar">
+                      <i [style.width]="stockBarWidth(item.stockOnHand)"></i>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <span
+                    class="status-pill"
+                    [class.status-pill--active]="item.status === 'active'"
+                    [class.status-pill--draft]="item.status === 'draft'"
+                    [class.status-pill--archived]="item.status === 'archived'"
+                  >
+                    {{ itemStatusLabel(item.status) }}
+                  </span>
+                </td>
+                <td>
+                  <button type="button" class="row-action">•••</button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="footer-cards" aria-label="Item master quick stats">
+      @for (card of quickStats(); track card.label) {
+        <article class="footer-card">
+          <span>{{ card.label }}</span>
+          <strong>{{ card.value }}</strong>
+        </article>
+      }
+    </section>
+
+    <footer class="page-footer">
+      <a routerLink="/catalog/categories">
+        <i class="bi bi-arrow-left"></i>
+        Go to categories
+      </a>
+      <span>Ethiopia Commodity Exchange (ECX) · Item master list</span>
+    </footer>
+  </div>
 </section>

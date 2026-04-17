@@ -7,23 +7,28 @@ import { DashboardComponent } from './pages/dashboard/dashboard.component';
 import { LoginComponent } from './pages/login/login.component';
 
 const routes: Routes = [
+  // 🔐 AUTH (DEFAULT PAGE)
   {
     path: '',
+    component: AuthLayoutComponent,
+    children: [
+      { path: 'login', component: LoginComponent },
+      { path: '', redirectTo: 'login', pathMatch: 'full' }
+    ]
+  },
+
+  // 🏠 MAIN APP (PROTECTED)
+  {
+    path: 'app',
     component: MainLayoutComponent,
     canActivate: [AuthGuard],
     children: [
       { path: '', component: DashboardComponent }
     ]
   },
-  {
-    path: 'auth',
-    component: AuthLayoutComponent,
-    children: [
-      { path: 'login', component: LoginComponent },
-      { path: '', pathMatch: 'full', redirectTo: 'login' }
-    ]
-  },
-  { path: '**', redirectTo: 'auth/login' }
+
+  // fallback
+  { path: '**', redirectTo: 'login' }
 ];
 
 @NgModule({

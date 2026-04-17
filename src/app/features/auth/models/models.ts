@@ -41,7 +41,7 @@ export class Models {
     {
       name: 'Demo account',
       summary: 'The service seeds a working account if no storage is present.',
-      fields: ['demo@pas.local', 'Password123!'],
+      fields: ['demo@ecx.local', 'Password123!'],
     },
     {
       name: 'Local persistence',

@@ -3,6 +3,7 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
+    "rootDir": "./src",
     "outDir": "./out-tsc/app",
     "types": [
       "node"
@@ -12,6 +13,13 @@
     "src/**/*.ts"
   ],
   "exclude": [
-    "src/**/*.spec.ts"
+    "src/**/*.spec.ts",
+    "src/app/app.component.ts",
+    "src/app/app-routing.module.ts",
+    "src/app/app.module.ts",
+    "src/app/app.module.server.ts",
+    "src/app/core/core.module.ts",
+    "src/app/shared/shared.module.ts"
   ]
+
 }

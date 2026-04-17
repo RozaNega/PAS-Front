@@ -1,0 +1,30 @@
+<section class="notifications-page ecx-list-surface" aria-label="Notifications page">
+  <header class="page-head">
+    <div>
+      <h1>Notifications</h1>
+      <p>Track approvals, alerts, and operational updates in one place.</p>
+    </div>
+
+    <button type="button" class="mark-btn" (click)="markAllAsRead()" [disabled]="unreadCount() === 0">
+      Mark all as read
+    </button>
+  </header>
+
+  <p class="summary">Unread: <strong>{{ unreadCount() }}</strong></p>
+
+  <div class="notification-list">
+    @for (item of notifications(); track item.id) {
+      <article class="notification-item" [class.is-read]="item.read">
+        <div class="notification-meta">
+          <span class="tag" [class.info]="item.type === 'Info'" [class.success]="item.type === 'Success'" [class.warning]="item.type === 'Warning'">
+            {{ item.type }}
+          </span>
+          <time>{{ item.createdAt }}</time>
+        </div>
+
+        <h2>{{ item.title }}</h2>
+        <p>{{ item.message }}</p>
+      </article>
+    }
+  </div>
+</section>

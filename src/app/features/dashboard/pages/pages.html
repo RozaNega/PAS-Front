@@ -1,17 +1,75 @@
 <section class="dashboard-shell">
-  <header>
-    <h1>Operations Dashboard</h1>
-    <p>Track storage activity and jump directly into each working area.</p>
+  <header class="dashboard-header">
+    <div>
+      <h1>Operations Overview</h1>
+      <p>Live inventory and requisition activity across your storage network.</p>
+    </div>
+
+    <div class="period-filter" role="group" aria-label="Dashboard period">
+      @for (period of periods; track period) {
+        <button type="button" [class.active]="selectedPeriod() === period" (click)="setPeriod(period)">
+          {{ period }}
+        </button>
+      }
+    </div>
   </header>
 
-  <div class="kpi-grid">
-    @for (kpi of kpis(); track kpi.label) {
-      <a class="kpi-card" [routerLink]="kpi.route">
-        <h2>{{ kpi.label }}</h2>
-        <p class="kpi-value">{{ kpi.value }}</p>
-      </a>
-    }
-  </div>
+  <section class="dashboard-main">
+      <div class="stats-grid">
+        @for (card of summaryCards(); track card.title; let i = $index) {
+          <article class="stat-card">
+            <h2>
+              <i [class]="card.icon"></i>
+              <span>{{ card.title }}</span>
+            </h2>
+            <p class="stat-value">{{ card.value | number }}</p>
+            <p class="stat-caption">{{ card.caption }}</p>
+            <span class="trend" [class.down]="trends[i].direction === 'down'">
+              <i class="bi" [class.bi-arrow-up-right]="trends[i].direction === 'up'" [class.bi-arrow-down-right]="trends[i].direction === 'down'"></i>
+              {{ trends[i].value }}
+            </span>
+          </article>
+        }
+      </div>
 
-  <a class="service-link" routerLink="/dashboard/services">View service documentation</a>
+      <div class="charts-grid">
+        <article class="chart-card">
+          <div class="chart-title">Warehouse Distribution</div>
+          <div class="bar-chart">
+            <div class="bar-lines">
+              @for (tick of [120, 100, 80, 60, 40, 20, 0]; track tick) {
+                <div class="line" [style.bottom.%]="(tick / 120) * 100">
+                  <span>{{ tick }}</span>
+                </div>
+              }
+            </div>
+
+            <div class="bar-columns">
+              @for (item of barSeries(); track item.label) {
+                <div class="bar-column">
+                  <div class="bar" [style.height.%]="(item.value / maxBarValue()) * 100"></div>
+                  <label>{{ item.label }}</label>
+                </div>
+              }
+            </div>
+          </div>
+        </article>
+
+        <article class="chart-card donut-card">
+          <div class="chart-title">Requisition Status</div>
+          <div class="donut-legend">
+            @for (item of donutSeries(); track item.label) {
+              <span>
+                <i [style.background]="item.color"></i>
+                {{ item.label }}
+              </span>
+            }
+          </div>
+
+          <div class="donut-wrap">
+            <div class="donut" [style.background]="donutGradient()"></div>
+          </div>
+        </article>
+      </div>
+  </section>
 </section>

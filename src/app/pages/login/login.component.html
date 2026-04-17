@@ -1,4 +1,25 @@
-<section class="login-content">
-  <h3>Sign in</h3>
-  <p>Your authentication page is now connected and rendering correctly.</p>
-</section>
+<main class="auth-shell" aria-labelledby="login-title">
+  <section class="auth-panel">
+    <header class="brand-block">
+      <img class="brand-logo" src="/assets/images/ecx-logo.jpg" alt="Ethiopian Commodity Exchange" />
+      <p class="brand-tagline">Secure inventory and procurement operations for your organization.</p>
+    </header>
+
+    <section class="intro-copy">
+      <h1 id="login-title">Sign in to PAS</h1>
+      <p>Access your dashboard, requisitions, catalog, and approvals in one place.</p>
+      <a class="login-link" routerLink="/auth/login">Open full authentication page</a>
+    </section>
+  </section>
+
+  <aside class="media-panel" aria-label="Platform preview">
+    <video autoplay muted loop playsinline preload="metadata" class="auth-video" poster="/assets/images/ecx-logo.jpg">
+      <source src="/assets/videos/auth-bg.mp4" type="video/mp4" />
+    </video>
+    <div class="media-overlay"></div>
+    <div class="media-content">
+      <h2>Manage Workflows Faster</h2>
+      <p>Track requests, stock movement, and approvals with confidence and speed.</p>
+    </div>
+  </aside>
+</main>
