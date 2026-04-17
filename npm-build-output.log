@@ -1,0 +1,60 @@
+
+> pas-frontend@0.0.0 build
+> ng build
+
+[33m❯[39m Building...
+[32m✔[39m Building...
+[35mBrowser bundles[39m     
+[1mInitial chunk files[22m [2m | [22m[1mNames[22m           [2m | [22m [1mRaw size[22m[2m | [22m[1mEstimated transfer size[22m
+[32mchunk-BTTQ2W7A.js[39m   [2m | [22m[2m-[22m               [2m | [22m[36m294.63 kB[39m[2m | [22m               [36m81.36 kB[39m
+[32mmain-AXGUN6SY.js[39m    [2m | [22m[2mmain[22m            [2m | [22m[36m901 bytes[39m[2m | [22m              [36m901 bytes[39m
+[32mstyles-O3Y7IGD5.css[39m [2m | [22m[2mstyles[22m          [2m | [22m[36m162 bytes[39m[2m | [22m              [36m162 bytes[39m
+
+[1m [22m                   [2m | [22m[1mInitial total[22m   [2m | [22m[1m295.69 kB[22m[2m | [22m               [1m82.42 kB[22m
+
+[1mLazy chunk files[22m    [2m | [22m[1mNames[22m           [2m | [22m [1mRaw size[22m[2m | [22m[1mEstimated transfer size[22m
+[32mchunk-VTG6RGE4.js[39m   [2m | [22m[2mauth-module[22m     [2m | [22m [36m67.94 kB[39m[2m | [22m               [36m11.82 kB[39m
+[32mchunk-WS4W73BF.js[39m   [2m | [22m[2m-[22m               [2m | [22m [36m40.72 kB[39m[2m | [22m                [36m8.50 kB[39m
+[32mchunk-Z3LZF5PX.js[39m   [2m | [22m[2mcategories[22m      [2m | [22m [36m35.45 kB[39m[2m | [22m                [36m7.73 kB[39m
+[32mchunk-CM5ZZSXA.js[39m   [2m | [22m[2mitem-master[22m     [2m | [22m [36m26.64 kB[39m[2m | [22m                [36m6.66 kB[39m
+[32mchunk-23X7NVIE.js[39m   [2m | [22m[2mdashboard-module[22m[2m | [22m [36m26.59 kB[39m[2m | [22m                [36m6.73 kB[39m
+[32mchunk-SIJTPLKQ.js[39m   [2m | [22m[2mstorage-module[22m  [2m | [22m [36m15.72 kB[39m[2m | [22m                [36m1.55 kB[39m
+[32mchunk-U67CC4DV.js[39m   [2m | [22m[2m-[22m               [2m | [22m  [36m3.52 kB[39m[2m | [22m              [36m949 bytes[39m
+[32mchunk-WNVI6HS3.js[39m   [2m | [22m[2mcatalog-module[22m  [2m | [22m[36m640 bytes[39m[2m | [22m              [36m640 bytes[39m
+
+
+[35mServer bundles[39m      
+[1mInitial chunk files[22m [2m | [22m[1mNames[22m           [2m | [22m [1mRaw size[22m
+[32mserver.mjs[39m          [2m | [22m[2mserver[22m          [2m | [22m[36m811.98 kB[39m[2m | [22m                       
+[32mmain.server.mjs[39m     [2m | [22m[2mmain.server[22m     [2m | [22m[36m439.64 kB[39m[2m | [22m                       
+[32mchunk-UCE2F7IF.mjs[39m  [2m | [22m[2m-[22m               [2m | [22m[36m293.26 kB[39m[2m | [22m                       
+[32mpolyfills.server.mjs[39m[2m | [22m[2mpolyfills.server[22m[2m | [22m[36m233.73 kB[39m[2m | [22m                       
+[32mchunk-BBJ2OP3G.mjs[39m  [2m | [22m[2m-[22m               [2m | [22m  [36m1.34 kB[39m[2m | [22m                       
+[32mchunk-T55IDOPT.mjs[39m  [2m | [22m[2m-[22m               [2m | [22m[36m976 bytes[39m[2m | [22m                       
+
+[1mLazy chunk files[22m    [2m | [22m[1mNames[22m           [2m | [22m [1mRaw size[22m
+[32mchunk-ZUXWXGD7.mjs[39m  [2m | [22m[2mauth-module[22m     [2m | [22m [36m68.02 kB[39m[2m | [22m                       
+[32mchunk-4KQFMOUQ.mjs[39m  [2m | [22m[2m-[22m               [2m | [22m [36m40.78 kB[39m[2m | [22m                       
+[32mchunk-DYNMNPM7.mjs[39m  [2m | [22m[2mcategories[22m      [2m | [22m [36m35.53 kB[39m[2m | [22m                       
+[32mchunk-T3ZVZPKS.mjs[39m  [2m | [22m[2mitem-master[22m     [2m | [22m [36m26.73 kB[39m[2m | [22m                       
+[32mchunk-DALI772H.mjs[39m  [2m | [22m[2mdashboard-module[22m[2m | [22m [36m26.66 kB[39m[2m | [22m                       
+[32mchunk-3T4F5VAB.mjs[39m  [2m | [22m[2mstorage-module[22m  [2m | [22m [36m15.79 kB[39m[2m | [22m                       
+[32mchunk-BP7AI3FB.mjs[39m  [2m | [22m[2mxhr2[22m            [2m | [22m [36m12.17 kB[39m[2m | [22m                       
+[32mchunk-N3SI5I4Q.mjs[39m  [2m | [22m[2mxhr2[22m            [2m | [22m [36m12.07 kB[39m[2m | [22m                       
+[32mchunk-RJLKMPUD.mjs[39m  [2m | [22m[2m-[22m               [2m | [22m  [36m3.58 kB[39m[2m | [22m                       
+[32mchunk-LFKRPFJV.mjs[39m  [2m | [22m[2mcatalog-module[22m  [2m | [22m[36m844 bytes[39m[2m | [22m                       
+
+[35mPrerendered 0 static routes.[39m
+Application bundle generation complete. [9.753 seconds] - 2026-04-16T21:30:23.888Z
+
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1msrc/app/features/auth/pages/login/login.css exceeded maximum budget. Budget 5.00 kB was not met by 2.04 kB with a total of 7.04 kB.[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1msrc/app/features/catalog/categories/categories.css exceeded maximum budget. Budget 5.00 kB was not met by 2.17 kB with a total of 7.17 kB.[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1msrc/app/features/catalog/item-master/item-master.css exceeded maximum budget. Budget 5.00 kB was not met by 2.91 kB with a total of 7.91 kB.[0m
+
+[39m[22m
+Output location: C:\Users\kidist\pas-frontend\dist\PAS-Frontend
+

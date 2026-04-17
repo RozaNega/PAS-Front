@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { Location } from '@angular/common';
 
 @Component({
   selector: 'app-stock-ledger-list',
@@ -10,4 +11,10 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
 export class StockLedgerList {
   readonly title = 'Stock Ledger List';
   readonly description = 'Functional implementation scaffold for Stock Ledger List.';
+
+  constructor(private location: Location) {}
+
+  goBack(): void {
+    this.location.back();
+  }
 }

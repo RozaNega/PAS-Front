@@ -2,6 +2,7 @@
 
 @Directive({
   selector: '[appClickOutside]',
+  standalone: false,
 })
 export class ClickOutsideDirective {
   @Output() appClickOutside = new EventEmitter<void>();
@@ -9,7 +10,11 @@ export class ClickOutsideDirective {
   constructor(private elementRef: ElementRef) {}
 
   @HostListener('document:click', ['$event.target'])
-  onClick(target: HTMLElement): void {
+  onClick(target: EventTarget | null): void {
+    if (!(target instanceof Node)) {
+      return;
+    }
+
     if (!this.elementRef.nativeElement.contains(target)) {
       this.appClickOutside.emit();
     }

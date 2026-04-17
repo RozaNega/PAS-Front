@@ -19,10 +19,10 @@ interface PasswordResetToken {
   expiresAt: string;
 }
 
-const USERS_STORAGE_KEY = 'pas-auth-users';
-const SESSION_STORAGE_KEY = 'pas-auth-session';
-const RESET_TOKENS_STORAGE_KEY = 'pas-auth-reset-tokens';
-const DEMO_EMAIL = 'demo@pas.local';
+const USERS_STORAGE_KEY = 'ecx-auth-users';
+const SESSION_STORAGE_KEY = 'ecx-auth-session';
+const RESET_TOKENS_STORAGE_KEY = 'ecx-auth-reset-tokens';
+const DEMO_EMAIL = 'demo@ecx.local';
 const DEMO_PASSWORD = 'Password123!';
 const DEMO_DISPLAY_NAME = 'Demo Admin';
 

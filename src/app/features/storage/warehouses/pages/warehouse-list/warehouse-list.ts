@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { Location } from '@angular/common';
 
 @Component({
   selector: 'app-warehouse-list',
@@ -10,4 +11,10 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
 export class WarehouseList {
   readonly title = 'Warehouse List';
   readonly description = 'Functional implementation scaffold for Warehouse List.';
+
+  constructor(private location: Location) {}
+
+  goBack(): void {
+    this.location.back();
+  }
 }

@@ -1,8 +1,16 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-login',
+  standalone: false,
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.scss']
 })
-export class LoginComponent {}
+export class LoginComponent implements OnInit {
+  private readonly router = inject(Router);
+
+  ngOnInit(): void {
+    void this.router.navigateByUrl('/auth/login');
+  }
+}

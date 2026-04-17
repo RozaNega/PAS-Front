@@ -1,7 +1,8 @@
-﻿import { Pipe, PipeTransform } from '@angular/core';
+import { Pipe, PipeTransform } from '@angular/core';
 
 @Pipe({
   name: 'truncate',
+  standalone: false
 })
 export class TruncatePipe implements PipeTransform {
   transform(value: string, limit = 30): string {
@@ -11,6 +12,3 @@ export class TruncatePipe implements PipeTransform {
     return value.length > limit ? `${value.slice(0, limit)}...` : value;
   }
 }
-
-
-

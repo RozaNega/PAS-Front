@@ -5,6 +5,21 @@
   padding: 1rem;
 }
 
+.ecx-list-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0 0 0.75rem;
+  border: 1px solid #d6deea;
+  background: #f8fafd;
+  color: #334155;
+  border-radius: 8px;
+  padding: 0.28rem 0.62rem;
+  font-size: 0.86rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
 h2 {
   margin: 0 0 0.5rem;
   font-size: 1.1rem;

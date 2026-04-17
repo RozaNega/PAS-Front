@@ -11,6 +11,8 @@ export function app(): express.Express {
   const serverDistFolder = dirname(fileURLToPath(import.meta.url));
   const browserDistFolder = resolve(serverDistFolder, '../browser');
   const indexHtml = join(serverDistFolder, 'index.server.html');
+  const workspaceAssetsFolder = resolve(process.cwd(), 'src', 'assets');
+  const publicAssetsFolder = resolve(process.cwd(), 'public');
 
   const commonEngine = new CommonEngine();
 
@@ -19,6 +21,24 @@ export function app(): express.Express {
 
   // Example Express Rest API endpoints
   // server.get('/api/**', (req, res) => { });
+  server.use(
+    '/assets',
+    express.static(workspaceAssetsFolder, {
+      maxAge: '1y',
+      index: false,
+      redirect: false,
+    }),
+  );
+
+  server.use(
+    '/assets',
+    express.static(publicAssetsFolder, {
+      maxAge: '1y',
+      index: false,
+      redirect: false,
+    }),
+  );
+
   // Serve static files from /browser
   server.get('*.*', express.static(browserDistFolder, {
     maxAge: '1y'
