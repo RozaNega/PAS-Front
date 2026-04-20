@@ -3,7 +3,7 @@ import { AuthService } from '../../core/services/auth.service';
 
 @Directive({
   selector: '[appHasRole]',
-  standalone: false
+  standalone: false,
 })
 export class HasRoleDirective {
   private hasView = false;

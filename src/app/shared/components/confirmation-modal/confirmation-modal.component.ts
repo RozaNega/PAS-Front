@@ -3,7 +3,7 @@
 @Component({
   selector: 'app-confirmation-modal',
   standalone: false,
-  templateUrl: './confirmation-modal.component.html'
+  templateUrl: './confirmation-modal.component.html',
 })
 export class ConfirmationModalComponent {
   @Input() title = 'Confirm Action';

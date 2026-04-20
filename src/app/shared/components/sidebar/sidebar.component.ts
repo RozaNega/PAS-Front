@@ -1,10 +1,12 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { menuConfig } from '../../../config/menu.config';
 
 @Component({
   selector: 'app-sidebar',
-  standalone: false,
+  standalone: true,
+  imports: [RouterLink, RouterLinkActive],
   template: `
     <div class="sidebar" [class.closed]="!isOpen">
       <div class="sidebar-brand">
@@ -31,7 +33,7 @@ import { menuConfig } from '../../../config/menu.config';
       </nav>
     </div>
   `,
-  styleUrls: ['./sidebar.component.scss']
+  styleUrls: ['./sidebar.component.scss'],
 })
 export class SidebarComponent {
   @Input() searchTerm = '';
@@ -40,7 +42,10 @@ export class SidebarComponent {
 
   menuItems = menuConfig.some((item) => item.label === 'User Profile')
     ? menuConfig
-    : [...menuConfig, { label: 'User Profile', route: '/dashboard/profile', icon: 'bi bi-person-circle' }];
+    : [
+        ...menuConfig,
+        { label: 'User Profile', route: '/dashboard/profile', icon: 'bi bi-person-circle' },
+      ];
 
   get filteredMenuItems() {
     const term = this.searchTerm.trim().toLowerCase();

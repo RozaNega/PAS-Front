@@ -1,15 +1,17 @@
 ﻿import { Component, OnInit } from '@angular/core';
 import { Location } from '@angular/common';
-import { NavigationEnd, Router, RouterModule } from '@angular/router';
+import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { SignalRService } from '../../core/services/signalr.service';
-import { SharedModule } from '../../shared/shared.module';
+import { FooterComponent } from '../../shared/components/footer/footer.component';
+import { HeaderComponent } from '../../shared/components/header/header.component';
+import { SidebarComponent } from '../../shared/components/sidebar/sidebar.component';
 import { filter } from 'rxjs';
 
 @Component({
   selector: 'app-main-layout',
   standalone: true,
-  imports: [RouterModule, SharedModule],
+  imports: [RouterOutlet, HeaderComponent, SidebarComponent, FooterComponent],
   templateUrl: './main-layout.component.html',
   styleUrls: ['./main-layout.component.scss'],
 })
@@ -23,7 +25,7 @@ export class MainLayoutComponent implements OnInit {
     private authService: AuthService,
     private signalRService: SignalRService,
     private router: Router,
-    private location: Location
+    private location: Location,
   ) {}
 
   ngOnInit(): void {
