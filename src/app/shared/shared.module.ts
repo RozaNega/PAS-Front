@@ -16,7 +16,18 @@ import { CurrencyFormatPipe } from './pipes/currency-format.pipe';
 import { TruncatePipe } from './pipes/truncate.pipe';
 
 @NgModule({
+ feature/full-frontend-update
+  imports: [
+    CommonModule,
+    FormsModule,
+    ReactiveFormsModule,
+    RouterModule,
+    HeaderComponent,
+    SidebarComponent,
+    FooterComponent,
+
   declarations: [
+ main
     LoadingSpinnerComponent,
     ConfirmationModalComponent,
     DataTableComponent,
