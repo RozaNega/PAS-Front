@@ -2,9 +2,7 @@
 
 @Directive({
   selector: '[appClickOutside]',
-  host: {
-    '(document:click)': 'onDocumentClick($event)',
-  },
+  standalone: false,
 })
 export class ClickOutsideDirective {
   @Output() appClickOutside = new EventEmitter<void>();
@@ -13,6 +11,12 @@ export class ClickOutsideDirective {
 
   onDocumentClick(event: Event): void {
     const target = event.target;
+    if (!(target instanceof Node)) {
+      return;
+    }
+
+  @HostListener('document:click', ['$event.target'])
+  onClick(target: EventTarget | null): void {
     if (!(target instanceof Node)) {
       return;
     }

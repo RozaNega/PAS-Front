@@ -1,4 +1,41 @@
 <section class="dashboard-content">
-  <h2>Dashboard</h2>
-  <p>The main layout is rendering. You can now add your feature modules here.</p>
+  <div class="stats-grid">
+    <article class="stat-card" *ngFor="let card of cards">
+      <h3>{{ card.title }}</h3>
+      <strong>{{ card.value }}</strong>
+      <p>{{ card.subtitle }}</p>
+    </article>
+  </div>
+
+  <div class="charts-grid">
+    <article class="chart-card">
+      <div class="bar-legend">undefined</div>
+
+      <div class="bar-grid">
+        <div class="grid-line" *ngFor="let tick of [120,100,80,60,40,20,0]" [style.bottom.%]="(tick / 120) * 100">
+          <span>{{ tick }}</span>
+        </div>
+
+        <div class="bar-columns">
+          <div class="bar-column" *ngFor="let item of barSeries">
+            <div class="bar" [style.height.%]="(item.value / maxBarValue) * 100"></div>
+            <label>{{ item.label }}</label>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <article class="chart-card donut-card">
+      <div class="donut-legend">
+        <span *ngFor="let item of donutSeries">
+          <i [style.background]="item.color"></i>
+          {{ item.label }}
+        </span>
+      </div>
+
+      <div class="donut-wrap">
+        <div class="donut" [style.background]="donutGradient"></div>
+      </div>
+    </article>
+  </div>
 </section>

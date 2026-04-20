@@ -1,4 +1,14 @@
-﻿import { UserModel } from './user.model';
+﻿export interface AuthUser {
+  id: string;
+  username: string;
+  fullName: string;
+  email: string;
+  employeeCode: string;
+  department: string;
+  roles: string[];
+  permissions: string[];
+  isActive: boolean;
+}
 
 export interface LoginRequest {
   username: string;
@@ -19,6 +29,6 @@ export interface AuthResponse {
   token: string;
   refreshToken: string;
   expiresAt: string;
-  user: UserModel;
+  user: AuthUser;
   errors: string[];
 }

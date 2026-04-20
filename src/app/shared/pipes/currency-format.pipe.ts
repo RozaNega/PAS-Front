@@ -2,10 +2,13 @@ import { Pipe, PipeTransform } from '@angular/core';
 
 @Pipe({
   name: 'currencyFormat',
+  standalone: false
 })
 export class CurrencyFormatPipe implements PipeTransform {
   transform(value: number, currencyCode: string = 'USD'): string {
-    if (value === null || value === undefined) return '';
+    if (value === null || value === undefined) {
+      return '';
+    }
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: currencyCode,
@@ -19,8 +22,10 @@ export class CurrencyFormatPipe implements PipeTransform {
   name: 'numberFormat',
 })
 export class NumberFormatPipe implements PipeTransform {
-  transform(value: number, digits: number = 0): string {
-    if (value === null || value === undefined) return '';
+  transform(value: number, digits = 0): string {
+    if (value === null || value === undefined) {
+      return '';
+    }
     return new Intl.NumberFormat('en-US', {
       minimumFractionDigits: digits,
       maximumFractionDigits: digits,
@@ -32,8 +37,10 @@ export class NumberFormatPipe implements PipeTransform {
   name: 'percentageFormat',
 })
 export class PercentageFormatPipe implements PipeTransform {
-  transform(value: number, digits: number = 2): string {
-    if (value === null || value === undefined) return '';
+  transform(value: number, digits = 2): string {
+    if (value === null || value === undefined) {
+      return '';
+    }
     return `${value.toFixed(digits)}%`;
   }
 }

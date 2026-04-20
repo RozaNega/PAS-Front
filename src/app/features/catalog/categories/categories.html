@@ -1,51 +1,228 @@
-<section class="catalog-shell">
-  <header class="catalog-header">
-    <p class="eyebrow">Catalog</p>
-    <h1>Category workspace</h1>
-    <p>Manage category structure, create new nodes, and inspect details for planning inventory.</p>
-  </header>
+<section class="category-page">
+  <div class="sheet-shell">
+    <header class="sheet-topbar">
+      <div class="brand-block">
+        <div class="brand-mark" aria-hidden="true">
+          <i class="bi bi-diagram-3"></i>
+        </div>
+        <div>
+          <p class="eyebrow">Ethiopia Commodity Exchange (ECX)</p>
+          <h1>Catalog Category</h1>
+        </div>
+      </div>
 
-  <section class="stats-grid" aria-label="Category statistics">
-    <article>
-      <span>Total categories</span>
-      <strong>{{ totalCategories() }}</strong>
-    </article>
-    <article>
-      <span>Root categories</span>
-      <strong>{{ rootCategoryCount() }}</strong>
-    </article>
-    <article>
-      <span>Mapped items</span>
-      <strong>{{ totalItems() }}</strong>
-    </article>
-  </section>
+      <div class="top-actions">
+        <button type="button" class="ghost-pill">PACE</button>
+        <button type="button" class="primary-pill" (click)="openCreatePanel()">
+          <i class="bi bi-plus-lg"></i>
+          Create Category
+        </button>
+      </div>
+    </header>
 
-  <nav class="view-nav" aria-label="Category views">
-    <button type="button" (click)="setView('list')">List</button>
-    <button type="button" (click)="setView('tree')">Tree</button>
-    <button type="button" (click)="setView('create')">Create</button>
-    <button type="button" (click)="setView('edit')">Edit</button>
-    <button type="button" (click)="setView('detail')">Detail</button>
-    <a routerLink="/catalog/items">Go to item master</a>
-  </nav>
+    <section class="search-row" aria-label="Category search and filters">
+      <label class="search-field">
+        <i class="bi bi-search"></i>
+        <input
+          type="search"
+          [value]="searchTerm()"
+          (input)="setSearchTerm($any($event.target).value)"
+          placeholder="Search categories"
+          aria-label="Search categories"
+        />
+      </label>
 
-  <section class="view-panel">
-    @switch (currentView()) {
-      @case ('list') {
-        <app-category-list></app-category-list>
+      <div class="compact-selectors">
+        <span class="meta-chip">Parent</span>
+        <select [value]="selectedParentFilter()" (change)="setParentFilter($any($event.target).value)">
+          @for (filter of parentFilters(); track filter.value) {
+            <option [value]="filter.value">{{ filter.label }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="compact-selectors">
+        <span class="meta-chip">Sort</span>
+        <select [value]="selectedSort()" (change)="setSort($any($event.target).value)">
+          <option value="name">By name</option>
+          <option value="items">By item count</option>
+          <option value="children">By child count</option>
+        </select>
+      </div>
+
+      <button type="button" class="filter-chip" [class.active]="activePreset() === 'priority'" (click)="activatePreset('priority')">
+        <i class="bi bi-funnel-fill"></i>
+        Priority
+      </button>
+      <button type="button" class="filter-chip" [class.active]="activePreset() === 'structure'" (click)="activatePreset('structure')">
+        <i class="bi bi-diagram-3-fill"></i>
+        Structure
+      </button>
+      <button type="button" class="filter-chip" [class.active]="activePreset() === 'inventory'" (click)="activatePreset('inventory')">
+        <i class="bi bi-tags-fill"></i>
+        Inventory
+      </button>
+    </section>
+
+    <section class="summary-grid" aria-label="Category metrics">
+      @for (card of quickStats(); track card.label) {
+        <article class="summary-card">
+          <div class="summary-card__header">
+            <span>{{ card.label }}</span>
+            <strong>{{ card.value }}</strong>
+            <small>Live catalog data</small>
+          </div>
+          <div class="sparkline" aria-hidden="true">
+            <span style="height: 42%"></span>
+            <span style="height: 66%"></span>
+            <span style="height: 58%"></span>
+            <span style="height: 78%"></span>
+            <span style="height: 61%"></span>
+          </div>
+        </article>
       }
-      @case ('tree') {
-        <app-category-tree></app-category-tree>
-      }
-      @case ('create') {
-        <app-category-create></app-category-create>
-      }
-      @case ('edit') {
-        <app-category-edit></app-category-edit>
-      }
-      @case ('detail') {
-        <app-category-detail></app-category-detail>
-      }
+    </section>
+
+    @if (showCreatePanel()) {
+      <section class="create-panel" aria-label="Create category panel">
+        <div class="create-panel__header">
+          <div>
+            <p class="section-label">New category</p>
+            <h2>Create category</h2>
+          </div>
+
+          <button type="button" class="row-action" (click)="closeCreatePanel()">✕</button>
+        </div>
+
+        <div class="status-line" [class.status-line--success]="createTone() === 'success'" [class.status-line--error]="createTone() === 'error'">
+          {{ createMessage() }}
+        </div>
+
+        <form class="create-form" [formGroup]="categoryForm" (ngSubmit)="saveCategory()" novalidate>
+          <label>
+            <span>Name</span>
+            <input type="text" formControlName="name" placeholder="Beverages" />
+          </label>
+
+          <label>
+            <span>Description</span>
+            <input type="text" formControlName="description" placeholder="Water, juice and packaged drinks" />
+          </label>
+
+          <label>
+            <span>Parent category</span>
+            <select formControlName="parentCategoryId">
+              <option value="">Root category</option>
+              @for (category of categories(); track category.id) {
+                <option [value]="category.id">{{ category.name }}</option>
+              }
+            </select>
+          </label>
+
+          <div class="create-actions">
+            <button type="button" class="secondary-pill" (click)="closeCreatePanel()">Cancel</button>
+            <button type="submit" class="primary-pill">Save Category</button>
+          </div>
+        </form>
+      </section>
     }
-  </section>
+
+    <section class="board-chips" aria-label="Quick category filters">
+      <button type="button" class="board-chip" [class.active]="selectedParentFilter() === 'all'" (click)="setParentFilter('all')">All Parents</button>
+      <button type="button" class="board-chip" [class.active]="selectedParentFilter() === 'root'" (click)="setParentFilter('root')">Root Categories</button>
+      <span class="board-chip-divider"></span>
+      <button type="button" class="reset-link" (click)="clearFilters()">Reset</button>
+      <button type="button" class="secondary-pill" (click)="setView('list')">List</button>
+      <button type="button" class="secondary-pill" (click)="setView('tree')">Tree</button>
+      <button type="button" class="secondary-pill" (click)="setView('detail')">Detail</button>
+    </section>
+
+    <section class="table-shell">
+      <div class="table-toolbar">
+        <div>
+          <p class="section-label">Category records</p>
+          <h2>Catalog category workspace</h2>
+        </div>
+
+        <a class="secondary-pill secondary-pill--link" routerLink="/catalog/items">
+          <i class="bi bi-box-seam"></i>
+          Go to item master
+        </a>
+      </div>
+
+      <div class="list-strip" aria-label="Category quick indicators">
+        <article>
+          <span>Total categories</span>
+          <strong>{{ totalCategories() }}</strong>
+        </article>
+        <article>
+          <span>Root categories</span>
+          <strong>{{ rootCategoryCount() }}</strong>
+        </article>
+        <article>
+          <span>Mapped items</span>
+          <strong>{{ totalItems() }}</strong>
+        </article>
+      </div>
+
+      <div class="table-card">
+        @switch (currentView()) {
+          @case ('list') {
+            <table>
+              <thead>
+                <tr>
+                  <th>Category</th>
+                  <th>Description</th>
+                  <th>Parent</th>
+                  <th>Children</th>
+                  <th>Items</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (category of categories(); track trackByCategory($index, category)) {
+                  <tr>
+                    <td>
+                      <div class="item-cell">
+                        <span class="item-avatar">{{ category.name.charAt(0) }}</span>
+                        <div>
+                          <strong>{{ category.name }}</strong>
+                          <small>Updated {{ category.updatedAt ?? category.createdAt | date : 'MMM d, y' }}</small>
+                        </div>
+                      </div>
+                    </td>
+                    <td>{{ category.description }}</td>
+                    <td>{{ category.parentCategoryName || 'Root' }}</td>
+                    <td>{{ category.subCategoriesCount }}</td>
+                    <td>{{ category.itemsCount }}</td>
+                    <td><button type="button" class="row-action" (click)="setView('detail')">•••</button></td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+          @case ('tree') {
+            <app-category-tree></app-category-tree>
+          }
+          @case ('create') {
+            <app-category-create></app-category-create>
+          }
+          @case ('edit') {
+            <app-category-edit></app-category-edit>
+          }
+          @case ('detail') {
+            <app-category-detail></app-category-detail>
+          }
+        }
+      </div>
+    </section>
+
+    <footer class="page-footer">
+      <span>Ethiopia Commodity Exchange (ECX) · Category workspace</span>
+      <button type="button" class="ghost-pill" (click)="openCreatePanel()">
+        <i class="bi bi-plus-lg"></i>
+        Add category
+      </button>
+    </footer>
+  </div>
 </section>

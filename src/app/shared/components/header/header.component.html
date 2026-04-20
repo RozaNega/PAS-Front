@@ -1,6 +1,31 @@
 ﻿<header class="app-header">
-  <button type="button" class="menu-toggle" (click)="onToggleSidebar()">Menu</button>
-  <div class="header-title">Property Automation System</div>
-  <button type="button" class="logout-btn" (click)="logout()">Logout</button>
+  <button type="button" class="menu-toggle" (click)="onToggleSidebar()" aria-label="Toggle sidebar">
+    <i class="bi bi-list"></i>
+  </button>
+
+  @if (canGoBack) {
+    <button type="button" class="back-btn" (click)="goBack()" aria-label="Go back">
+      <i class="bi bi-arrow-left"></i>
+      <span>Back</span>
+    </button>
+  }
+
+  <div class="header-title">Dashboard</div>
+
+  <div class="header-actions">
+    <button type="button" class="header-icon-btn" aria-label="Notifications">
+      <i class="bi bi-bell"></i>
+      <span class="header-icon-dot" aria-hidden="true"></span>
+    </button>
+
+    <div class="header-user">
+      <i class="bi bi-person-circle"></i>
+      <span>{{ displayName }}</span>
+    </div>
+
+    <button type="button" class="logout-btn" (click)="logout()">
+      <span>Logout</span>
+    </button>
+  </div>
 </header>
 

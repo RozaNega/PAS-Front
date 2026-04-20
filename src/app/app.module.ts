@@ -6,8 +6,15 @@ import { HttpClientModule, provideHttpClient, withFetch } from '@angular/common/
 import { AppRoutingModule } from './app-routing.module';
 import { CoreModule } from './core/core.module';
 import { SharedModule } from './shared/shared.module';
+import { DashboardComponent } from './pages/dashboard/dashboard.component';
+import { LoginComponent } from './pages/login/login.component';
 
 @NgModule({
+  declarations: [
+    AppComponent,
+    DashboardComponent,
+    LoginComponent
+  ],
   imports: [
     BrowserModule,
     BrowserAnimationsModule,
