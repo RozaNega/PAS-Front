@@ -1,7 +1,10 @@
 ﻿.auth-layout {
   min-height: 100vh;
-  display: grid;
-  place-items: center;
-  padding: 1rem;
+}
+
+.auth-layout__stage {
+  position: relative;
+  isolation: isolate;
+  min-height: 100vh;
 }
 

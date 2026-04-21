@@ -1,43 +1,42 @@
-<section class="auth-page" aria-labelledby="login-title">
-  <video autoplay muted loop playsinline preload="metadata" class="auth-video" poster="/assets/images/ecx-logo.jpg" aria-hidden="true">
-    <source src="/assets/videos/auth-bg.mp4" type="video/mp4" />
-  </video>
-  <div class="video-overlay"></div>
-
-  <header class="auth-shell-header" aria-label="Auth page header">
-    <div class="shell-brand">
-      <img class="shell-brand-logo" ngSrc="/assets/images/ecx-logo.jpg" width="44" height="36" alt="ECX" />
-      <div class="shell-brand-text">
-        <p class="shell-brand-name">Ethiopia Commodity Exchange</p>
-        <p class="shell-brand-sub">Property Automation System</p>
-      </div>
-    </div>
-    <a class="shell-header-link" routerLink="/auth/register">Create account</a>
+<section class="auth-page auth-sakai" aria-labelledby="login-title">
+  <header class="auth-toolbar" aria-label="Theme controls">
+    <button type="button" class="icon-btn" (click)="toggleDarkMode()" [attr.aria-pressed]="theme.darkMode()" [attr.aria-label]="theme.darkMode() ? 'Switch to light mode' : 'Switch to dark mode'">
+      <i class="bi" [class.bi-sun-fill]="theme.darkMode()" [class.bi-moon-stars-fill]="!theme.darkMode()"></i>
+    </button>
+    <button type="button" class="icon-btn icon-btn--primary" (click)="toggleThemePanel()" [attr.aria-expanded]="themePanelOpen()" aria-controls="auth-theme-panel" aria-label="Open primary palette">
+      <i class="bi bi-palette2"></i>
+    </button>
+    @if (themePanelOpen()) {
+      <div class="theme-backdrop" (click)="closeThemePanel()" aria-hidden="true"></div>
+      <section id="auth-theme-panel" class="theme-panel" aria-label="Primary colors">
+        <h3>Primary</h3>
+        <div class="primary-swatches">
+          @for (option of theme.primaryOptions; track option.id) {
+            <button type="button" class="swatch" [class.active]="theme.selectedPrimary() === option.id" [style.background]="option.value" [attr.aria-label]="'Set primary color ' + option.label" (click)="setPrimary(option.id)"></button>
+          }
+        </div>
+      </section>
+    }
   </header>
 
-  <article class="auth-card">
-    <header class="brand-header">
-      <div class="brand-row">
-        <img class="brand-logo" ngSrc="/assets/images/ecx-logo.jpg" width="180" height="148" alt="ECX logo" priority />
-        <p class="brand-title">Ethiopia Commodity Exchange</p>
-      </div>
-      <div class="brand-divider" aria-hidden="true"></div>
-      <p class="subtitle">Property Automation System</p>
-      <h1 id="login-title">Sign In</h1>
-    </header>
+  <article class="auth-card auth-card--wide">
+    <img class="auth-logo auth-logo--wordmark" ngSrc="/assets/images/africom-logo.svg" width="520" height="156" alt="AFRICOM Technologies" priority />
+    <h1 id="login-title">Welcome to AFRICOM!</h1>
+    <p class="auth-subtitle">Sign in to continue</p>
 
     <form class="auth-form" [formGroup]="loginForm" (ngSubmit)="submit()" novalidate>
-      <label class="input-field">
-        <span class="input-icon" aria-hidden="true"><i class="bi bi-person-fill"></i></span>
-        <input type="text" formControlName="username" placeholder="Username" autocomplete="username" />
-      </label>
+      <label class="auth-label" for="login-username">Email</label>
+      <div class="input-shell">
+        <input id="login-username" type="text" formControlName="username" placeholder="Email address" autocomplete="username" />
+      </div>
       @if (hasRequiredError('username')) {
-        <p class="field-error">Username is required.</p>
+        <p class="field-error">Email is required.</p>
       }
 
-      <label class="input-field">
-        <span class="input-icon" aria-hidden="true"><i class="bi bi-lock-fill"></i></span>
+      <label class="auth-label" for="login-password">Password</label>
+      <div class="input-shell input-shell--with-action">
         <input
+          id="login-password"
           [type]="showPassword() ? 'text' : 'password'"
           formControlName="password"
           placeholder="Password"
@@ -45,13 +44,13 @@
         />
         <button
           type="button"
-          class="icon-toggle"
+          class="input-action"
           (click)="togglePasswordVisibility()"
           [attr.aria-label]="showPassword() ? 'Hide password' : 'Show password'"
         >
-          <i [class]="showPassword() ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
+          <i class="bi" [class.bi-eye-slash]="showPassword()" [class.bi-eye]="!showPassword()"></i>
         </button>
-      </label>
+      </div>
       @if (showFieldError('password') && loginForm.controls.password.hasError('required')) {
         <p class="field-error">Password is required.</p>
       }
@@ -59,19 +58,17 @@
         <p class="field-error">Password must be at least 8 characters.</p>
       }
 
-      <div class="auth-row">
-        <label class="remember-check">
+      <div class="auth-meta-row">
+        <label class="remember-row">
           <input type="checkbox" formControlName="rememberMe" />
           <span>Remember me</span>
         </label>
-        <a routerLink="/auth/forgot-password" class="link-inline">Forgot Password?</a>
+        <a class="link-inline" routerLink="/auth/forgot-password">Forgot password?</a>
       </div>
 
       <button type="submit" class="btn-primary" [disabled]="loading()">
-        {{ loading() ? 'Signing in...' : 'Login' }}
+        {{ loading() ? 'Signing in...' : 'Sign In' }}
       </button>
-
-      <button type="button" class="btn-secondary" (click)="fillDemo()">Use Demo Account</button>
 
       @if (statusMessage()) {
         <p
@@ -83,36 +80,11 @@
         </p>
       }
     </form>
+
+    <p class="auth-switch-row">
+      Don’t have an account?
+      <a routerLink="/auth/register">Create one</a>
+    </p>
   </article>
-
-  <footer class="auth-shell-footer" aria-label="Auth page footer">
-    <div class="footer-branding">
-      <p class="footer-kicker">Property Automation System</p>
-      <p class="footer-description">Central access for ECX operations, approvals, and user workflows.</p>
-    </div>
-
-    <div class="footer-links-group">
-      <p class="footer-heading">Platform</p>
-      <a routerLink="/auth/login">Login</a>
-      <a routerLink="/auth/register">Register</a>
-      <a href="#" (click)="$event.preventDefault()">Forgot password</a>
-    </div>
-
-    <div class="footer-links-group">
-      <p class="footer-heading">Support</p>
-      <a href="#" (click)="$event.preventDefault()">Help desk</a>
-      <a href="#" (click)="$event.preventDefault()">User guide</a>
-      <a href="#" (click)="$event.preventDefault()">System status</a>
-    </div>
-
-    <div class="footer-contact">
-      <p class="footer-heading">Contact</p>
-      <a href="mailto:support@ecx.local">support@ecx.local</a>
-      <span>+251 11 000 0000</span>
-      <div class="footer-meta">
-        <span>ECX</span>
-        <span>Secure portal</span>
-      </div>
-    </div>
-  </footer>
 </section>
+

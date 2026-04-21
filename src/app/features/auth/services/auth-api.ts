@@ -22,13 +22,14 @@ interface PasswordResetToken {
 const USERS_STORAGE_KEY = 'ecx-auth-users';
 const SESSION_STORAGE_KEY = 'ecx-auth-session';
 const RESET_TOKENS_STORAGE_KEY = 'ecx-auth-reset-tokens';
-const DEMO_EMAIL = 'demo@ecx.local';
+const DEMO_EMAIL = 'demo@africom.local';
 const DEMO_PASSWORD = 'Password123!';
 const DEMO_DISPLAY_NAME = 'Demo Admin';
 
 const demoUser: StoredUser = {
   id: 'user-demo',
   displayName: DEMO_DISPLAY_NAME,
+  phoneNumber: '+251 911 000 000',
   email: DEMO_EMAIL,
   password: DEMO_PASSWORD,
 };
@@ -94,6 +95,7 @@ export class AuthApi {
     const newUser: StoredUser = {
       id: this.createId('user'),
       displayName: request.displayName.trim(),
+      phoneNumber: request.phoneNumber?.trim() ?? '',
       email,
       password: request.password,
     };
@@ -211,6 +213,7 @@ export class AuthApi {
     return {
       id: user.id,
       displayName: user.displayName,
+      phoneNumber: user.phoneNumber,
       email: user.email,
     };
   }
@@ -359,3 +362,4 @@ export class AuthApi {
     return localStorage;
   }
 }
+
