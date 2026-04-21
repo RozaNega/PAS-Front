@@ -1,2 +1,382 @@
 ﻿/* You can add global styles to this file, and also import other style files */
 
+@import 'bootstrap-icons/font/bootstrap-icons.css';
+@import './styles/auth-shared';
+@import './styles/catalog-shared';
+
+:root {
+	--surface-ground: #f3f6fb;
+	--surface-card: #ffffff;
+	--surface-border: #e2e8f0;
+	--surface-section: #f8fafc;
+	--text-color: #334155;
+	--text-color-muted: #64748b;
+	--primary-color: #6366f1;
+	--primary-color-soft: #eef2ff;
+	--success-color: #10b981;
+	--danger-color: #ef4444;
+	--shadow-soft: 0 10px 30px rgba(15, 23, 42, 0.06);
+	--shell-radius: 14px;
+	--shell-gap: 0.9rem;
+}
+
+* {
+	box-sizing: border-box;
+}
+
+html,
+body {
+	margin: 0;
+	padding: 0;
+	min-height: 100%;
+	background: var(--surface-ground);
+	color: var(--text-color);
+	font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+	line-height: 1.45;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+	color: #0f172a;
+}
+
+.page-card,
+.content-card {
+	border-radius: 14px;
+	border: 1px solid var(--surface-border);
+	background: var(--surface-card);
+	box-shadow: var(--shadow-soft);
+}
+
+.sakai-content-surface {
+	color: var(--text-color);
+}
+
+.sakai-content-surface h1,
+.sakai-content-surface h2,
+.sakai-content-surface h3 {
+	margin-top: 0;
+	font-weight: 700;
+	letter-spacing: -0.01em;
+}
+
+.sakai-content-surface .feature-card,
+.sakai-content-surface .profile-card,
+.sakai-content-surface .notifications-page,
+.sakai-content-surface .page,
+.sakai-content-surface .table-card,
+.sakai-content-surface .sheet-shell,
+.sakai-content-surface .chart-card,
+.sakai-content-surface .stat-card {
+	border-radius: 14px;
+	border: 1px solid var(--surface-border);
+	background: var(--surface-card);
+	box-shadow: var(--shadow-soft);
+}
+
+.sakai-content-surface .feature-card,
+.sakai-content-surface .profile-card,
+.sakai-content-surface .notifications-page,
+.sakai-content-surface .page {
+	padding: 1.15rem;
+}
+
+.sakai-content-surface .ecx-list-back-btn,
+.sakai-content-surface .mark-btn,
+.sakai-content-surface .primary-pill,
+.sakai-content-surface .btn-primary,
+.sakai-content-surface .secondary-pill,
+.sakai-content-surface .ghost-pill,
+.sakai-content-surface .filter-chip,
+.sakai-content-surface .board-chip,
+.sakai-content-surface .reset-link,
+.sakai-content-surface button[type='submit'] {
+	min-height: 2.25rem;
+	border-radius: 10px;
+	border: 1px solid #cbd5e1;
+	padding: 0.46rem 0.8rem;
+	font-weight: 600;
+	font-size: 0.87rem;
+	cursor: pointer;
+	transition: transform 160ms ease, box-shadow 180ms ease, border-color 180ms ease;
+}
+
+.sakai-content-surface .primary-pill,
+.sakai-content-surface .btn-primary,
+.sakai-content-surface button[type='submit'] {
+	border-color: #6366f1;
+	background: linear-gradient(180deg, #818cf8 0%, #6366f1 100%);
+	color: #ffffff;
+	box-shadow: 0 8px 20px rgba(99, 102, 241, 0.28);
+}
+
+.sakai-content-surface .secondary-pill,
+.sakai-content-surface .ghost-pill,
+.sakai-content-surface .ecx-list-back-btn,
+.sakai-content-surface .mark-btn,
+.sakai-content-surface .filter-chip,
+.sakai-content-surface .board-chip {
+	background: var(--surface-section);
+	color: #334155;
+}
+
+.sakai-content-surface .board-chip.active,
+.sakai-content-surface .filter-chip.active,
+.sakai-content-surface .period-filter button.active,
+.sakai-content-surface .sakai-nav-link--active {
+	background: var(--primary-color-soft);
+	border-color: #c7d2fe;
+	color: #4338ca;
+}
+
+.sakai-content-surface button:hover,
+.sakai-content-surface .primary-pill:hover,
+.sakai-content-surface .secondary-pill:hover,
+.sakai-content-surface .ghost-pill:hover,
+.sakai-content-surface .btn-primary:hover,
+.sakai-content-surface .mark-btn:hover,
+.sakai-content-surface .board-chip:hover,
+.sakai-content-surface .filter-chip:hover,
+.sakai-content-surface .ecx-list-back-btn:hover {
+	transform: translateY(-1px);
+}
+
+.sakai-content-surface input,
+.sakai-content-surface select,
+.sakai-content-surface textarea {
+	width: 100%;
+	border: 1px solid #cbd5e1;
+	background: #ffffff;
+	color: #0f172a;
+	border-radius: 10px;
+	padding: 0.6rem 0.75rem;
+	font: inherit;
+	outline: none;
+	transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.sakai-content-surface input:focus,
+.sakai-content-surface select:focus,
+.sakai-content-surface textarea:focus {
+	border-color: #6366f1;
+	box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18);
+}
+
+.sakai-content-surface table {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: 0.9rem;
+	overflow: hidden;
+	border-radius: 12px;
+}
+
+.sakai-content-surface thead th {
+	text-align: left;
+	font-size: 0.77rem;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+	color: #64748b;
+	background: #f8fafc;
+	padding: 0.78rem 0.8rem;
+	border-bottom: 1px solid #e2e8f0;
+}
+
+.sakai-content-surface tbody td {
+	padding: 0.72rem 0.8rem;
+	border-bottom: 1px solid #eef2f7;
+	vertical-align: middle;
+	color: #334155;
+}
+
+.sakai-content-surface tbody tr:hover {
+	background: #f8fafc;
+}
+
+.sakai-content-surface .status-pill,
+.sakai-content-surface .tag,
+.sakai-content-surface .trend {
+	border-radius: 999px;
+	padding: 0.2rem 0.55rem;
+	font-size: 0.74rem;
+	font-weight: 700;
+	display: inline-flex;
+	align-items: center;
+	gap: 0.25rem;
+}
+
+.sakai-content-surface .status-pill,
+.sakai-content-surface .tag.info,
+.sakai-content-surface .trend {
+	background: #e0e7ff;
+	color: #4338ca;
+	border: 1px solid #c7d2fe;
+}
+
+.sakai-content-surface .status-pill--active,
+.sakai-content-surface .tag.success {
+	background: #d1fae5;
+	color: #047857;
+	border-color: #a7f3d0;
+}
+
+.sakai-content-surface .status-pill--archived,
+.sakai-content-surface .status-pill--draft,
+.sakai-content-surface .tag.warning,
+.sakai-content-surface .trend.down {
+	background: #fee2e2;
+	color: #b91c1c;
+	border-color: #fecaca;
+}
+
+.sakai-content-surface .summary-grid,
+.sakai-content-surface .stats-grid,
+.sakai-content-surface .charts-grid,
+.sakai-content-surface .list-strip,
+.sakai-content-surface .footer-cards {
+	gap: 0.9rem;
+}
+
+.sakai-content-surface .summary-card,
+.sakai-content-surface .footer-card,
+.sakai-content-surface .notification-item {
+	border: 1px solid #e2e8f0;
+	border-radius: 12px;
+	background: #ffffff;
+	box-shadow: var(--shadow-soft);
+}
+
+.sakai-content-surface .page {
+	display: grid;
+	gap: 0.65rem;
+}
+
+.sakai-content-surface .page h1 {
+	font-size: 1.45rem;
+}
+
+.sakai-content-surface .report-hub {
+	gap: 0.9rem;
+}
+
+.sakai-content-surface .report-hub__header p {
+	margin: 0.25rem 0 0;
+	color: var(--text-color-muted);
+}
+
+.sakai-content-surface .report-hub__nav {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+}
+
+.sakai-content-surface .report-hub__nav a {
+	text-decoration: none;
+	color: #475569;
+	border: 1px solid #cbd5e1;
+	border-radius: 999px;
+	padding: 0.32rem 0.7rem;
+	font-size: 0.82rem;
+	font-weight: 700;
+	background: #f8fafc;
+}
+
+.sakai-content-surface .report-hub__nav a.active {
+	color: #4338ca;
+	background: #eef2ff;
+	border-color: #c7d2fe;
+}
+
+.sakai-content-surface .report-hub__cards {
+	display: grid;
+	gap: 0.8rem;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.sakai-content-surface .report-hub__cards article {
+	border: 1px solid #e2e8f0;
+	border-radius: 12px;
+	background: linear-gradient(180deg, #ffffff, #f8fafc);
+	padding: 0.8rem 0.9rem;
+	display: grid;
+	gap: 0.22rem;
+	box-shadow: var(--shadow-soft);
+}
+
+.sakai-content-surface .report-hub__cards span {
+	font-size: 0.78rem;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: #64748b;
+}
+
+.sakai-content-surface .report-hub__cards strong {
+	font-size: 1.2rem;
+	color: #0f172a;
+}
+
+.sakai-content-surface .report-hub__cards small {
+	color: #64748b;
+}
+
+@media (max-width: 920px) {
+	.sakai-content-surface .report-hub__cards {
+		grid-template-columns: 1fr;
+	}
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+	animation-duration: 360ms;
+	animation-timing-function: cubic-bezier(0.2, 0, 0, 1);
+}
+
+::view-transition-old(root) {
+	animation-name: fade-slide-out;
+}
+
+::view-transition-new(root) {
+	animation-name: fade-slide-in;
+}
+
+@keyframes fade-slide-in {
+	from {
+		opacity: 0;
+		transform: translateY(18px) scale(0.99);
+		filter: blur(4px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0) scale(1);
+		filter: blur(0);
+	}
+}
+
+@keyframes fade-slide-out {
+	from {
+		opacity: 1;
+		transform: translateY(0) scale(1);
+		filter: blur(0);
+	}
+	to {
+		opacity: 0;
+		transform: translateY(-12px) scale(0.992);
+		filter: blur(3px);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	::view-transition-old(root),
+	::view-transition-new(root) {
+		animation: none;
+	}
+}
+

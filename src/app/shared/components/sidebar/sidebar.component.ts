@@ -10,8 +10,8 @@ import { menuConfig } from '../../../config/menu.config';
   template: `
     <div class="sidebar" [class.closed]="!isOpen">
       <div class="sidebar-brand">
-        <img src="/assets/images/ecx-logo.jpg" alt="ECX logo" />
-        <span>EXC</span>
+        <img src="/assets/images/africom-logo.svg" alt="AFRICOM logo" />
+        <span>AFRICOM</span>
       </div>
 
       <nav class="sidebar-nav">

@@ -1,0 +1,209 @@
+<section class="landing-shell" id="top">
+  <header class="topbar" [class.nav-open]="menuOpen()">
+    <div class="container">
+      <a class="brand" href="#top" (click)="closeMenu()" aria-label="AFRICOM home">
+        <span class="brand-mark" aria-hidden="true">AF</span>
+        <span class="brand-text">
+          <strong>AFRICOM</strong>
+          <small>Asset Management Platform</small>
+        </span>
+      </a>
+
+      <button
+        class="menu-toggle"
+        type="button"
+        (click)="toggleMenu()"
+        [attr.aria-expanded]="menuOpen()"
+        aria-controls="landing-nav"
+        aria-label="Toggle navigation"
+      >
+        <i class="bi" [class.bi-list]="!menuOpen()" [class.bi-x-lg]="menuOpen()" aria-hidden="true"></i>
+      </button>
+
+      <nav id="landing-nav" class="top-nav" [class.open]="menuOpen()" aria-label="Main navigation">
+        <a href="#features" (click)="closeMenu()">Features</a>
+        <a href="#modules" (click)="closeMenu()">Modules</a>
+        <a href="#impact" (click)="closeMenu()">Impact</a>
+        <a href="#contact" (click)="closeMenu()">Contact</a>
+      </nav>
+
+      <div class="top-actions" [class.open]="menuOpen()">
+        <button class="theme-toggle" type="button" (click)="toggleDarkMode()" [attr.aria-pressed]="darkMode()">
+          <i class="bi" [class.bi-sun-fill]="darkMode()" [class.bi-moon-stars-fill]="!darkMode()" aria-hidden="true"></i>
+          <span>{{ darkMode() ? 'Light' : 'Dark' }}</span>
+        </button>
+
+        <div class="theme-panel-wrap">
+          <button
+            class="theme-icon-btn"
+            type="button"
+            (click)="toggleThemePanel()"
+            [attr.aria-expanded]="themePanelOpen()"
+            aria-controls="landing-theme-panel"
+            aria-label="Open theme palette"
+          >
+            <i class="bi bi-palette-fill" aria-hidden="true"></i>
+          </button>
+
+          @if (themePanelOpen()) {
+            <div class="theme-overlay" (click)="closeThemePanel()" aria-hidden="true"></div>
+            <section id="landing-theme-panel" class="theme-panel" aria-label="Theme settings">
+              <h3>Primary</h3>
+              <div class="primary-swatches" aria-label="Primary colors">
+                @for (option of primaryOptions; track option.id) {
+                  <button
+                    type="button"
+                    class="swatch"
+                    [class.active]="selectedPrimary() === option.id"
+                    [style.background]="option.value"
+                    [attr.aria-label]="'Set primary color ' + option.label"
+                    (click)="setPrimary(option.id)"
+                  ></button>
+                }
+              </div>
+            </section>
+          }
+        </div>
+
+        <a class="btn ghost" routerLink="/auth/register" (click)="closeMenu()">Request Access</a>
+        <a class="btn solid" routerLink="/auth/login" (click)="closeMenu()">Login</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="container hero-grid">
+        <div class="hero-copy">
+          <p class="eyebrow">Enterprise Operations Suite</p>
+          <h1>Run AFRICOM Assets With Speed, Control, And Clarity.</h1>
+          <p>
+            Build a single source of truth for property, inventory, and requisitions with operational
+            dashboards and secure approval workflows.
+          </p>
+
+          <div class="hero-actions">
+            <a class="btn solid" routerLink="/auth/login">Go to Dashboard</a>
+            <a class="btn ghost" routerLink="/auth/register">Start Onboarding</a>
+          </div>
+
+          <div class="stat-row" aria-label="Platform highlights">
+            @for (item of stats; track item.label) {
+              <article class="stat-card">
+                <p class="stat-value">{{ item.value }}</p>
+                <p class="stat-label">{{ item.label }}</p>
+              </article>
+            }
+          </div>
+        </div>
+
+        <aside class="hero-panel" aria-label="Operational status">
+          <h2>Live Operations Snapshot</h2>
+          <ul>
+            <li><span>Receiving Queue</span><strong>18 Pending</strong></li>
+            <li><span>Requisition SLA</span><strong>97% On-Time</strong></li>
+            <li><span>Inventory Health</span><strong>High Confidence</strong></li>
+          </ul>
+          <a routerLink="/reports/inventory">Open Inventory Report</a>
+        </aside>
+      </div>
+    </section>
+
+    <section id="features" class="section features">
+      <div class="container">
+        <div class="logo-strip" aria-label="AFRICOM trusted units">
+          <div class="logo-track">
+            @for (logo of logoItems; track logo) {
+              <span class="logo-chip">{{ logo }}</span>
+            }
+            @for (logo of logoItems; track logo + '-copy') {
+              <span class="logo-chip">{{ logo }}</span>
+            }
+          </div>
+        </div>
+
+        <p class="eyebrow">Core Capabilities</p>
+        <h2>Everything Needed For Reliable Asset Operations</h2>
+        <div class="feature-grid">
+          @for (feature of features; track feature.title) {
+            <article class="feature-card">
+              <i class="{{ feature.icon }}" aria-hidden="true"></i>
+              <h3>{{ feature.title }}</h3>
+              <p>{{ feature.description }}</p>
+            </article>
+          }
+        </div>
+      </div>
+    </section>
+
+    <section id="modules" class="section modules">
+      <div class="container">
+        <p class="eyebrow">Integrated Modules</p>
+        <h2>Built Around How AFRICOM Teams Actually Work</h2>
+
+        <div class="module-tabs" role="tablist" aria-label="Module tabs">
+          @for (module of modules; track module.id) {
+            <button
+              type="button"
+              role="tab"
+              class="tab-btn"
+              [class.active]="activeModule() === module.id"
+              [attr.aria-selected]="activeModule() === module.id"
+              (click)="selectModule(module.id)"
+            >
+              {{ module.title }}
+            </button>
+          }
+        </div>
+
+        @for (module of modules; track module.id) {
+          @if (activeModule() === module.id) {
+            <article class="module-panel" role="tabpanel" [attr.aria-label]="module.title">
+              <h3>{{ module.title }}</h3>
+              <p>{{ module.description }}</p>
+              <ul>
+                @for (point of module.points; track point) {
+                  <li>{{ point }}</li>
+                }
+              </ul>
+            </article>
+          }
+        }
+      </div>
+    </section>
+
+    <section id="impact" class="section impact">
+      <div class="container impact-grid">
+        <article>
+          <h2>Measure What Matters</h2>
+          <p>
+            From store-level stock confidence to executive-level compliance reporting, AFRICOM teams stay
+            aligned on one operational baseline.
+          </p>
+        </article>
+        <article>
+          <h3>Typical Improvements</h3>
+          <ul>
+            <li>40% faster requisition turnaround</li>
+            <li>75% less manual reconciliation</li>
+            <li>Near-zero undocumented asset movement</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <footer id="contact" class="footer">
+    <div class="container">
+      <div>
+        <h2>Ready To Launch AFRICOM Across Your Organization?</h2>
+        <p>Secure onboarding, role mapping, and operational setup can start immediately.</p>
+      </div>
+      <div class="footer-actions">
+        <a class="btn ghost" routerLink="/auth/register">Book Onboarding</a>
+        <a class="btn solid" routerLink="/auth/login">Sign In</a>
+      </div>
+      <p class="copyright">© {{ year() }} AFRICOM. All rights reserved.</p>
+    </div>
+  </footer>
+</section>

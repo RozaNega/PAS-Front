@@ -41,7 +41,7 @@ export class Models {
     {
       name: 'Demo account',
       summary: 'The service seeds a working account if no storage is present.',
-      fields: ['demo@ecx.local', 'Password123!'],
+      fields: ['demo@africom.local', 'Password123!'],
     },
     {
       name: 'Local persistence',
@@ -52,3 +52,4 @@ export class Models {
 
   protected readonly currentUser = this.authApi.activeUser;
 }
+

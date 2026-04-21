@@ -1,3 +1,34 @@
-﻿<section class="page">
-  <h1>Disposal Report</h1>
+﻿<section class="report-hub page">
+  <header class="report-hub__header">
+    <div>
+      <h1>Disposal Report</h1>
+      <p>Follow asset retirements, disposal approvals, and residual value trends.</p>
+    </div>
+  </header>
+
+  <nav class="report-hub__nav" aria-label="Reports navigation">
+    <a routerLink="/reports/inventory" routerLinkActive="active">Inventory</a>
+    <a routerLink="/reports/property" routerLinkActive="active">Property</a>
+    <a routerLink="/reports/stock-movement" routerLinkActive="active">Stock Movement</a>
+    <a routerLink="/reports/requisition" routerLinkActive="active">Requisition</a>
+    <a routerLink="/reports/disposal" routerLinkActive="active">Disposal</a>
+  </nav>
+
+  <div class="report-hub__cards">
+    <article>
+      <span>Disposed Assets</span>
+      <strong>92</strong>
+      <small>Within current fiscal period</small>
+    </article>
+    <article>
+      <span>Pending Disposal Cases</span>
+      <strong>14</strong>
+      <small>Awaiting final approval</small>
+    </article>
+    <article>
+      <span>Recovered Value</span>
+      <strong>ETB 418K</strong>
+      <small>From disposals and salvage</small>
+    </article>
+  </div>
 </section>

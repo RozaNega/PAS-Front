@@ -1,41 +1,85 @@
-<section class="dashboard-content">
-  <div class="stats-grid">
-    <article class="stat-card" *ngFor="let card of cards">
-      <h3>{{ card.title }}</h3>
-      <strong>{{ card.value }}</strong>
-      <p>{{ card.subtitle }}</p>
-    </article>
-  </div>
-
-  <div class="charts-grid">
-    <article class="chart-card">
-      <div class="bar-legend">undefined</div>
-
-      <div class="bar-grid">
-        <div class="grid-line" *ngFor="let tick of [120,100,80,60,40,20,0]" [style.bottom.%]="(tick / 120) * 100">
-          <span>{{ tick }}</span>
+<section class="sakai-dashboard-grid">
+  <!-- Sidebar is handled by main layout -->
+  <div class="sakai-dashboard-main">
+    <div class="sakai-dashboard-row">
+      <div class="sakai-dashboard-card">
+        <h3>Recent Sales</h3>
+        <table class="sakai-dashboard-table">
+          <thead>
+            <tr><th>Image</th><th>Name</th><th>Price</th><th>View</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><img src="/assets/images/bamboo-watch.jpg" alt="Bamboo Watch" class="sakai-dashboard-thumb"></td>
+              <td>Bamboo Watch</td>
+              <td>$65.00</td>
+              <td><i class="bi bi-search"></i></td>
+            </tr>
+            <tr>
+              <td><img src="/assets/images/black-watch.jpg" alt="Black Watch" class="sakai-dashboard-thumb"></td>
+              <td>Black Watch</td>
+              <td>$72.00</td>
+              <td><i class="bi bi-search"></i></td>
+            </tr>
+            <tr>
+              <td><img src="/assets/images/blue-band.jpg" alt="Blue Band" class="sakai-dashboard-thumb"></td>
+              <td>Blue Band</td>
+              <td>$79.00</td>
+              <td><i class="bi bi-search"></i></td>
+            </tr>
+            <tr>
+              <td><img src="/assets/images/blue-tshirt.jpg" alt="Blue T-Shirt" class="sakai-dashboard-thumb"></td>
+              <td>Blue T-Shirt</td>
+              <td>$29.00</td>
+              <td><i class="bi bi-search"></i></td>
+            </tr>
+            <tr>
+              <td><img src="/assets/images/bracelet.jpg" alt="Bracelet" class="sakai-dashboard-thumb"></td>
+              <td>Bracelet</td>
+              <td>$15.00</td>
+              <td><i class="bi bi-search"></i></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="sakai-dashboard-card">
+        <h3>Revenue Stream</h3>
+        <div class="sakai-dashboard-bar-chart">
+          <!-- Placeholder for bar chart -->
+          <div class="sakai-dashboard-bar" style="height: 60%"></div>
+          <div class="sakai-dashboard-bar" style="height: 90%"></div>
+          <div class="sakai-dashboard-bar" style="height: 80%"></div>
         </div>
-
-        <div class="bar-columns">
-          <div class="bar-column" *ngFor="let item of barSeries">
-            <div class="bar" [style.height.%]="(item.value / maxBarValue) * 100"></div>
-            <label>{{ item.label }}</label>
-          </div>
+        <div class="sakai-dashboard-bar-legend">
+          <span class="legend-sub">Subscriptions</span>
+          <span class="legend-adv">Advertising</span>
+          <span class="legend-aff">Affiliate</span>
         </div>
       </div>
-    </article>
-
-    <article class="chart-card donut-card">
-      <div class="donut-legend">
-        <span *ngFor="let item of donutSeries">
-          <i [style.background]="item.color"></i>
-          {{ item.label }}
-        </span>
+    </div>
+    <div class="sakai-dashboard-row">
+      <div class="sakai-dashboard-card">
+        <h3>Best Selling Products</h3>
+        <ul class="sakai-dashboard-list">
+          <li><span>Space T-Shirt</span><span class="bar bar-orange" style="width:50%"></span></li>
+          <li><span>Portal Sticker</span><span class="bar bar-cyan" style="width:16%"></span></li>
+          <li><span>Supernova Sticker</span><span class="bar bar-pink" style="width:67%"></span></li>
+          <li><span>Wonders Notebook</span><span class="bar bar-green" style="width:35%"></span></li>
+          <li><span>Mat Black Case</span><span class="bar bar-purple" style="width:75%"></span></li>
+          <li><span>Robots T-Shirt</span><span class="bar bar-blue" style="width:40%"></span></li>
+        </ul>
       </div>
-
-      <div class="donut-wrap">
-        <div class="donut" [style.background]="donutGradient"></div>
+      <div class="sakai-dashboard-card">
+        <h3>Notifications</h3>
+        <ul class="sakai-dashboard-notifications">
+          <li><span class="notif-icon notif-blue">$</span> Richard Jones has purchased a blue t-shirt for <span class="notif-green">$79.00</span></li>
+          <li><span class="notif-icon notif-orange">&#x21E9;</span> Your request for withdrawal of <span class="notif-green">$2500.00</span> has been initiated.</li>
+          <li><span class="notif-icon notif-blue">$</span> Keyser Wick has purchased a black jacket for <span class="notif-green">$59.00</span></li>
+          <li><span class="notif-icon notif-pink">?</span> Jane Davis has posted a new question about your product.</li>
+          <li><span class="notif-icon notif-green">&#x2191;</span> Your revenue has increased by <span class="notif-green">%25</span>.</li>
+          <li><span class="notif-icon notif-purple">&#x2665;</span> 12 users have added your products to their wishlist.</li>
+        </ul>
       </div>
-    </article>
+    </div>
   </div>
 </section>

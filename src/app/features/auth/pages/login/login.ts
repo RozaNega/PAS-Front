@@ -4,6 +4,7 @@ import { NgOptimizedImage } from '@angular/common';
 import { RouterLink } from '@angular/router';
 
 import { AuthApi } from '../../services/auth-api';
+import { AuthThemeService } from '../../services/auth-theme.service';
 
 @Component({
   selector: 'app-login',
@@ -15,31 +16,20 @@ import { AuthApi } from '../../services/auth-api';
 export class Login {
   private readonly formBuilder = inject(FormBuilder);
   private readonly authApi = inject(AuthApi);
+  protected readonly theme = inject(AuthThemeService);
 
   protected readonly submitted = signal(false);
   protected readonly loading = signal(false);
-  protected readonly statusMessage = signal('Sign in with your PAS account.');
+  protected readonly statusMessage = signal('Sign in to your PAS account.');
   protected readonly statusTone = signal<'neutral' | 'success' | 'error'>('neutral');
   protected readonly showPassword = signal(false);
+  protected readonly themePanelOpen = signal(false);
 
-  protected readonly demoUsername = 'demo@ecx.local';
-  protected readonly demoPassword = 'Password123!';
   protected readonly loginForm = this.formBuilder.nonNullable.group({
-    username: [this.demoUsername, [Validators.required]],
-    password: [this.demoPassword, [Validators.required, Validators.minLength(8)]],
+    username: ['', [Validators.required]],
+    password: ['', [Validators.required, Validators.minLength(8)]],
     rememberMe: [true],
   });
-
-  protected fillDemo(): void {
-    this.loginForm.patchValue({
-      username: this.demoUsername,
-      password: this.demoPassword,
-      rememberMe: true,
-    });
-
-    this.statusTone.set('neutral');
-    this.statusMessage.set('Demo credentials filled. Click Login.');
-  }
 
   protected submit(): void {
     this.submitted.set(true);
@@ -71,6 +61,23 @@ export class Login {
 
   protected togglePasswordVisibility(): void {
     this.showPassword.update((value) => !value);
+  }
+
+  protected toggleDarkMode(): void {
+    this.theme.toggleDarkMode();
+  }
+
+  protected toggleThemePanel(): void {
+    this.themePanelOpen.update((value) => !value);
+  }
+
+  protected closeThemePanel(): void {
+    this.themePanelOpen.set(false);
+  }
+
+  protected setPrimary(optionId: string): void {
+    this.theme.setPrimary(optionId);
+    this.themePanelOpen.set(false);
   }
 
   protected showFieldError(controlName: 'username' | 'password'): boolean {

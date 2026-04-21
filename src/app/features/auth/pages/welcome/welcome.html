@@ -1,0 +1,31 @@
+<section class="welcome-page" aria-labelledby="welcome-title">
+  <video
+    autoplay
+    muted
+    loop
+    playsinline
+    preload="metadata"
+    class="welcome-video"
+    poster="/assets/images/africom-logo.svg"
+    aria-hidden="true"
+  >
+    <source src="/assets/videos/auth-bg.mp4" type="video/mp4" />
+  </video>
+  <div class="welcome-overlay" aria-hidden="true"></div>
+
+  <header class="welcome-top-bar" aria-label="Welcome header">
+    <p>Asset Management Platform</p>
+  </header>
+
+  <main class="welcome-content">
+    <p class="welcome-kicker">Asset Management Platform</p>
+    <h1 id="welcome-title">Welcome To AFRICOM</h1>
+    <p class="welcome-subtitle">Asset Management Platform</p>
+
+    <nav class="welcome-actions" aria-label="Welcome actions">
+      <a class="action-primary" routerLink="/auth/login">Sign In</a>
+      <a class="action-secondary" routerLink="/auth/register">Create Account</a>
+    </nav>
+  </main>
+</section>
+

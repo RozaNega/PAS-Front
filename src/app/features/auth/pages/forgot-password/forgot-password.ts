@@ -4,6 +4,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
 import { AuthApi } from '../../services/auth-api';
+import { AuthThemeService } from '../../services/auth-theme.service';
 
 @Component({
   selector: 'app-forgot-password',
@@ -15,14 +16,14 @@ import { AuthApi } from '../../services/auth-api';
 export class ForgotPassword {
   private readonly formBuilder = inject(FormBuilder);
   private readonly authApi = inject(AuthApi);
+  protected readonly theme = inject(AuthThemeService);
 
   protected readonly submitted = signal(false);
   protected readonly loading = signal(false);
-  protected readonly statusMessage = signal(
-    'Enter the email address you used to create an account.',
-  );
+  protected readonly statusMessage = signal('');
   protected readonly statusTone = signal<'neutral' | 'success' | 'error'>('neutral');
   protected readonly generatedToken = signal('');
+  protected readonly themePanelOpen = signal(false);
   protected readonly forgotForm = this.formBuilder.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],
   });
@@ -64,5 +65,22 @@ export class ForgotPassword {
       token,
       email: this.forgotForm.controls.email.value,
     };
+  }
+
+  protected toggleDarkMode(): void {
+    this.theme.toggleDarkMode();
+  }
+
+  protected toggleThemePanel(): void {
+    this.themePanelOpen.update((value) => !value);
+  }
+
+  protected closeThemePanel(): void {
+    this.themePanelOpen.set(false);
+  }
+
+  protected setPrimary(optionId: string): void {
+    this.theme.setPrimary(optionId);
+    this.themePanelOpen.set(false);
   }
 }

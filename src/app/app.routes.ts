@@ -5,7 +5,11 @@ export const routes: Routes = [
   {
     path: '',
     pathMatch: 'full',
-    redirectTo: 'dashboard',
+    redirectTo: 'landing',
+  },
+  {
+    path: 'landing',
+    loadComponent: () => import('./pages/landing/landing').then((m) => m.Landing),
   },
   {
     path: 'auth',
@@ -13,7 +17,13 @@ export const routes: Routes = [
   },
   {
     path: 'catalog',
-    loadChildren: () => import('./features/catalog/catalog-module').then((m) => m.CatalogModule),
+    component: MainLayoutComponent,
+    children: [
+      {
+        path: '',
+        loadChildren: () => import('./features/catalog/catalog-module').then((m) => m.CatalogModule),
+      },
+    ],
   },
   {
     path: 'dashboard',
@@ -22,7 +32,13 @@ export const routes: Routes = [
   },
   {
     path: 'storage',
-    loadChildren: () => import('./features/storage/storage-module').then((m) => m.StorageModule),
+    component: MainLayoutComponent,
+    children: [
+      {
+        path: '',
+        loadChildren: () => import('./features/storage/storage-module').then((m) => m.StorageModule),
+      },
+    ],
   },
   {
     path: 'notifications',
@@ -47,6 +63,6 @@ export const routes: Routes = [
   },
   {
     path: '**',
-    redirectTo: 'dashboard',
+    redirectTo: 'landing',
   },
 ];
