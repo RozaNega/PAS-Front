@@ -1,3 +1,42 @@
-﻿<section class="page">
-  <h1>Inventory Report</h1>
+﻿<section class="report-hub page">
+  <header class="report-hub__header">
+    <div>
+      <h1>Inventory Report</h1>
+      <p>Monitor stock health, coverage, and movement trends across warehouses.</p>
+    </div>
+  </header>
+
+  <nav class="report-hub__nav" aria-label="Reports navigation">
+    <a routerLink="/reports/inventory" routerLinkActive="active">Inventory</a>
+    <a routerLink="/reports/property" routerLinkActive="active">Property</a>
+    <a routerLink="/reports/stock-movement" routerLinkActive="active">Stock Movement</a>
+    <a routerLink="/reports/requisition" routerLinkActive="active">Requisition</a>
+    <a routerLink="/reports/disposal" routerLinkActive="active">Disposal</a>
+  </nav>
+
+  @if (loading) {
+    <p class="report-status report-status--loading" role="status" aria-live="polite">Loading latest inventory metrics...</p>
+  }
+
+  @if (!loading && loadErrorMessage) {
+    <p class="report-status report-status--fallback" role="status" aria-live="polite">{{ loadErrorMessage }}</p>
+  }
+
+  <div class="report-hub__cards">
+    <article>
+      <span>Total Stock Value</span>
+      <strong>{{ totalStockValue }}</strong>
+      <small>{{ hasLiveData ? 'Live inventory valuation' : 'Fallback summary value' }}</small>
+    </article>
+    <article>
+      <span>Low Stock Items</span>
+      <strong>{{ lowStockItems }}</strong>
+      <small>Require replenishment</small>
+    </article>
+    <article>
+      <span>Average Turnover</span>
+      <strong>{{ averageTurnover }}</strong>
+      <small>Rolling monthly average</small>
+    </article>
+  </div>
 </section>

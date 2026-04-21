@@ -1,3 +1,34 @@
-﻿<section class="page">
-  <h1>Requisition Report</h1>
+﻿<section class="report-hub page">
+  <header class="report-hub__header">
+    <div>
+      <h1>Requisition Report</h1>
+      <p>Review request volume, approval rates, and operational lead times.</p>
+    </div>
+  </header>
+
+  <nav class="report-hub__nav" aria-label="Reports navigation">
+    <a routerLink="/reports/inventory" routerLinkActive="active">Inventory</a>
+    <a routerLink="/reports/property" routerLinkActive="active">Property</a>
+    <a routerLink="/reports/stock-movement" routerLinkActive="active">Stock Movement</a>
+    <a routerLink="/reports/requisition" routerLinkActive="active">Requisition</a>
+    <a routerLink="/reports/disposal" routerLinkActive="active">Disposal</a>
+  </nav>
+
+  <div class="report-hub__cards">
+    <article>
+      <span>Total Requests</span>
+      <strong>184</strong>
+      <small>Submitted in current month</small>
+    </article>
+    <article>
+      <span>Approval Rate</span>
+      <strong>87%</strong>
+      <small>Approved vs submitted</small>
+    </article>
+    <article>
+      <span>Avg. Processing Time</span>
+      <strong>2.8 days</strong>
+      <small>From submit to decision</small>
+    </article>
+  </div>
 </section>

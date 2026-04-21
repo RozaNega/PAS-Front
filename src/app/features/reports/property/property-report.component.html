@@ -1,3 +1,34 @@
-﻿<section class="page">
-  <h1>Property Report</h1>
+﻿<section class="report-hub page">
+  <header class="report-hub__header">
+    <div>
+      <h1>Property Report</h1>
+      <p>Track asset allocation, ownership, and lifecycle performance.</p>
+    </div>
+  </header>
+
+  <nav class="report-hub__nav" aria-label="Reports navigation">
+    <a routerLink="/reports/inventory" routerLinkActive="active">Inventory</a>
+    <a routerLink="/reports/property" routerLinkActive="active">Property</a>
+    <a routerLink="/reports/stock-movement" routerLinkActive="active">Stock Movement</a>
+    <a routerLink="/reports/requisition" routerLinkActive="active">Requisition</a>
+    <a routerLink="/reports/disposal" routerLinkActive="active">Disposal</a>
+  </nav>
+
+  <div class="report-hub__cards">
+    <article>
+      <span>Total Registered Assets</span>
+      <strong>1,245</strong>
+      <small>All asset classes</small>
+    </article>
+    <article>
+      <span>Assigned Assets</span>
+      <strong>1,109</strong>
+      <small>Assigned to locations/users</small>
+    </article>
+    <article>
+      <span>Pending Verification</span>
+      <strong>36</strong>
+      <small>Awaiting review</small>
+    </article>
+  </div>
 </section>

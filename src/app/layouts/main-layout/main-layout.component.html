@@ -1,27 +1,123 @@
-﻿<div
-  class="main-layout"
-  [class.main-layout--sidebar-collapsed]="!layoutShellService.isSidebarOpen()"
->
-  <app-header (searchChange)="updateSearchTerm($event)"></app-header>
-  <div class="main-layout__body">
-    <app-sidebar
-      [isOpen]="layoutShellService.isSidebarOpen()"
-      [searchTerm]="sidebarSearchTerm"
-      (menuItemClick)="onSidebarItemClick()"
-    ></app-sidebar>
-    <main class="main-layout__content">
-      <div class="main-layout__content-shell">
-        <router-outlet></router-outlet>
-        <app-footer></app-footer>
+<div class="sakai-shell" [class.sakai-shell--overlay]="menuMode === 'overlay'">
+  <header class="sakai-topbar">
+    <div class="topbar-left">
+      <button
+        type="button"
+        class="topbar-menu-btn"
+        aria-label="Toggle menu"
+        (click)="toggleSidebar()"
+      >
+        <i class="bi bi-list"></i>
+      </button>
+      <a class="topbar-brand" routerLink="/dashboard">
+        <span class="brand-mark">AFRICOM</span>
+        <span class="brand-text">Asset Management Platform</span>
+      </a>
+    </div>
+
+    <div class="topbar-right">
+      <button type="button" class="topbar-action-btn" aria-label="Toggle dark mode" (click)="toggleDarkMode()">
+        <i class="bi" [class.bi-moon-stars-fill]="!darkTheme" [class.bi-sun-fill]="darkTheme"></i>
+      </button>
+      <a class="topbar-action-btn" routerLink="/notifications" aria-label="Open notifications">
+        <i class="bi bi-bell"></i>
+      </a>
+      <a class="topbar-action-btn" routerLink="/dashboard/profile" aria-label="Open profile">
+        <i class="bi bi-person"></i>
+      </a>
+      <button type="button" class="topbar-action-btn topbar-action-btn--primary" aria-label="Open appearance config" (click)="toggleConfig()">
+        <i class="bi bi-palette2"></i>
+      </button>
+      <div class="user-chip" aria-label="Current user">
+        <span class="user-chip-avatar">{{ initials() }}</span>
+        <div class="user-chip-text">
+          <span class="user-chip-name">{{ user?.fullName || 'AFRICOM User' }}</span>
+          <span class="user-chip-role">{{ user?.roles?.[0] || 'Operator' }}</span>
+        </div>
       </div>
+      <button type="button" class="logout-btn" (click)="logout()">
+        <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
+        Sign out
+      </button>
+    </div>
+  </header>
+
+  <aside class="theme-config" [class.theme-config--open]="configOpen" aria-label="Theme configurator">
+    <p class="theme-config__title">Appearance</p>
+
+    <p class="theme-config__label">Primary</p>
+    <div class="theme-swatches">
+      @for (option of primaryOptions; track option.id) {
+        <button
+          type="button"
+          class="swatch-btn"
+          [style.background]="option.value"
+          [class.swatch-btn--active]="selectedPrimary === option.id"
+          [attr.aria-label]="option.label"
+          (click)="setPrimary(option.id)"
+        ></button>
+      }
+    </div>
+
+    <p class="theme-config__label">Surface</p>
+    <div class="theme-swatches">
+      @for (option of surfaceOptions; track option.id) {
+        <button
+          type="button"
+          class="swatch-btn"
+          [style.background]="option.value"
+          [class.swatch-btn--active]="selectedSurface === option.id"
+          [attr.aria-label]="option.label"
+          (click)="setSurface(option.id)"
+        ></button>
+      }
+    </div>
+
+    <p class="theme-config__label">Menu Mode</p>
+    <div class="mode-buttons">
+      <button type="button" [class.active]="menuMode === 'static'" (click)="setMenuMode('static')">Static</button>
+      <button type="button" [class.active]="menuMode === 'overlay'" (click)="setMenuMode('overlay')">Overlay</button>
+    </div>
+  </aside>
+
+  <div class="sakai-body">
+    <aside class="sakai-sidebar" [class.sakai-sidebar--open]="sidebarOpen">
+      <nav class="sakai-nav" aria-label="Main navigation">
+        @for (item of menuItems; track item.label) {
+          @if (item.route) {
+            <a
+              class="sakai-nav-link"
+              [routerLink]="item.route"
+              routerLinkActive="sakai-nav-link--active"
+              [routerLinkActiveOptions]="{ exact: false }"
+              (click)="onSidebarItemClick()"
+            >
+              <i [class]="item.icon"></i>
+              <span>{{ item.label }}</span>
+            </a>
+          }
+        }
+      </nav>
+    </aside>
+
+    <button
+      type="button"
+      class="sakai-overlay"
+      [class.sakai-overlay--visible]="sidebarOpen"
+      aria-label="Close sidebar"
+      (click)="closeSidebar()"
+    ></button>
+
+    <main class="sakai-content">
+      <section class="sakai-content-surface">
+        <router-outlet></router-outlet>
+      </section>
+      <footer class="sakai-content-footer">
+        <span>AFRICOM Asset Management Platform</span>
+        <span>{{ currentYear() }}</span>
+      </footer>
     </main>
   </div>
-
-  <button
-    type="button"
-    class="main-layout__mask"
-    [class.main-layout__mask--visible]="layoutShellService.isSidebarActive()"
-    (click)="closeSidebar()"
-    aria-label="Close sidebar"
-  ></button>
 </div>
+
+

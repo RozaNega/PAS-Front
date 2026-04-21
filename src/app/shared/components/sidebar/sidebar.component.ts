@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { menuConfig } from '../../../config/menu.config';
@@ -8,19 +8,14 @@ import { menuConfig } from '../../../config/menu.config';
   standalone: true,
   imports: [RouterLink, RouterLinkActive],
   template: `
-    <div class="sidebar" [class.closed]="!isOpen()">
+    <div class="sidebar" [class.closed]="!isOpen">
       <div class="sidebar-brand">
-        <img src="/assets/images/ecx-logo.jpg" alt="ECX logo" />
-        <div>
-          <strong>PAS</strong>
-          <small>ECX Operations</small>
-        </div>
+        <img src="/assets/images/africom-logo.svg" alt="AFRICOM logo" />
+        <span>AFRICOM</span>
       </div>
 
-      <p class="sidebar-section-label">Main Navigation</p>
-
       <nav class="sidebar-nav">
-        @for (item of filteredMenuItems(); track item.label) {
+        @for (item of filteredMenuItems; track item.label) {
           <a
             [routerLink]="item.route"
             routerLinkActive="active"
@@ -32,42 +27,45 @@ import { menuConfig } from '../../../config/menu.config';
           </a>
         }
 
-        @if (filteredMenuItems().length === 0) {
+        @if (filteredMenuItems.length === 0) {
           <p class="empty-state">No menu match</p>
         }
       </nav>
     </div>
   `,
   styleUrls: ['./sidebar.component.scss'],
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SidebarComponent {
-  private readonly authService = inject(AuthService);
+  @Input() searchTerm = '';
+  @Input() isOpen = true;
+  @Output() menuItemClick = new EventEmitter<void>();
 
-  readonly searchTerm = input('');
-  readonly isOpen = input(true);
-  readonly menuItemClick = output<void>();
-
-  private readonly menuItems = menuConfig.some((item) => item.label === 'User Profile')
+  menuItems = menuConfig.some((item) => item.label === 'User Profile')
     ? menuConfig
     : [
         ...menuConfig,
         { label: 'User Profile', route: '/dashboard/profile', icon: 'bi bi-person-circle' },
       ];
 
-  protected readonly filteredMenuItems = computed(() => {
-    const term = this.searchTerm().trim().toLowerCase();
+  get filteredMenuItems() {
+    const term = this.searchTerm.trim().toLowerCase();
 
     return this.menuItems
       .filter((item) => !item.permission || this.hasPermission(item.permission))
       .filter((item) => !term || item.label.toLowerCase().includes(term));
-  });
+  }
 
-  protected onMenuItemClick(): void {
+  constructor(public authService: AuthService) {}
+
+  onMenuItemClick(): void {
     this.menuItemClick.emit();
   }
 
-  private hasPermission(permission: string): boolean {
+  hasPermission(permission: string): boolean {
     return this.authService.hasPermission(permission);
+  }
+
+  hasRole(role: string): boolean {
+    return this.authService.hasRole(role);
   }
 }

@@ -1,13 +1,10 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { NgOptimizedImage } from '@angular/common';
-import {
-  FormBuilder,
-  ReactiveFormsModule,
-  Validators,
-} from '@angular/forms';
+import { AbstractControl, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
 import { AuthApi } from '../../services/auth-api';
+import { AuthThemeService } from '../../services/auth-theme.service';
 
 @Component({
   selector: 'app-register',
@@ -19,20 +16,30 @@ import { AuthApi } from '../../services/auth-api';
 export class Register {
   private readonly formBuilder = inject(FormBuilder);
   private readonly authApi = inject(AuthApi);
+  protected readonly theme = inject(AuthThemeService);
 
   protected readonly submitted = signal(false);
   protected readonly loading = signal(false);
-  protected readonly statusMessage = signal('Register your PAS account.');
+  protected readonly statusMessage = signal('');
   protected readonly statusTone = signal<'neutral' | 'success' | 'error'>('neutral');
   protected readonly showPassword = signal(false);
+  protected readonly showConfirmPassword = signal(false);
+  protected readonly themePanelOpen = signal(false);
 
-  protected readonly registerForm = this.formBuilder.nonNullable.group({
-    fullName: ['', [Validators.required, Validators.minLength(2)]],
-    username: ['', [Validators.required, Validators.minLength(3)]],
-    email: ['', [Validators.required, Validators.email]],
-    password: ['', [Validators.required, Validators.minLength(8)]],
-    acceptedTerms: [true, [Validators.requiredTrue]],
-  });
+  protected readonly registerForm = this.formBuilder.nonNullable.group(
+    {
+      fullName: ['', [Validators.required, Validators.minLength(2)]],
+      username: ['', [Validators.required, Validators.minLength(3)]],
+      phoneNumber: ['', [Validators.required, Validators.pattern(/^\+?[0-9\s()-]{7,20}$/)]],
+      email: ['', [Validators.required, Validators.email]],
+      password: ['', [Validators.required, Validators.minLength(8)]],
+      confirmPassword: ['', [Validators.required]],
+      acceptedTerms: [true, [Validators.requiredTrue]],
+    },
+    {
+      validators: [(control) => this.matchPasswordsValidator(control)],
+    },
+  );
 
   protected submit(): void {
     this.submitted.set(true);
@@ -49,6 +56,7 @@ export class Register {
     this.loading.set(true);
     const result = this.authApi.register({
       displayName: raw.fullName,
+      phoneNumber: raw.phoneNumber,
       email: raw.email,
       password: raw.password,
       acceptedTerms: raw.acceptedTerms,
@@ -62,8 +70,10 @@ export class Register {
       this.registerForm.reset({
         fullName: '',
         username: '',
+        phoneNumber: '',
         email: '',
         password: '',
+        confirmPassword: '',
         acceptedTerms: true,
       });
       this.submitted.set(false);
@@ -74,10 +84,56 @@ export class Register {
     this.showPassword.update((value) => !value);
   }
 
+  protected toggleConfirmPasswordVisibility(): void {
+    this.showConfirmPassword.update((value) => !value);
+  }
+
+  protected toggleDarkMode(): void {
+    this.theme.toggleDarkMode();
+  }
+
+  protected toggleThemePanel(): void {
+    this.themePanelOpen.update((value) => !value);
+  }
+
+  protected closeThemePanel(): void {
+    this.themePanelOpen.set(false);
+  }
+
+  protected setPrimary(optionId: string): void {
+    this.theme.setPrimary(optionId);
+    this.themePanelOpen.set(false);
+  }
+
+  protected passwordMismatch(): boolean {
+    return (
+      this.registerForm.hasError('passwordMismatch') &&
+      (this.registerForm.controls.confirmPassword.touched || this.submitted())
+    );
+  }
+
   protected showControlError(
-    controlName: 'fullName' | 'username' | 'email' | 'password' | 'acceptedTerms',
+    controlName:
+      | 'fullName'
+      | 'username'
+      | 'phoneNumber'
+      | 'email'
+      | 'password'
+      | 'confirmPassword'
+      | 'acceptedTerms',
   ): boolean {
     const control = this.registerForm.controls[controlName];
     return control.invalid && (control.touched || this.submitted());
+  }
+
+  private matchPasswordsValidator(control: AbstractControl) {
+    const password = control.get('password')?.value;
+    const confirmPassword = control.get('confirmPassword')?.value;
+
+    if (!password || !confirmPassword) {
+      return null;
+    }
+
+    return password === confirmPassword ? null : { passwordMismatch: true };
   }
 }

@@ -6,6 +6,7 @@ export interface LoginRequest {
 
 export interface RegisterRequest {
   displayName: string;
+  phoneNumber?: string;
   email: string;
   password: string;
   acceptedTerms: boolean;
