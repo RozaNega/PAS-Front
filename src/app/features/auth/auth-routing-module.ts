@@ -7,6 +7,7 @@ import { Models } from './models/models';
 import { Register } from './pages/register/register';
 import { ResetPassword } from './pages/reset-password/reset-password';
 import { Services } from './services/services';
+import { Welcome } from './pages/Welcome/Welcome';
 
 const routes: Routes = [
   {
@@ -17,6 +18,10 @@ const routes: Routes = [
   {
     path: 'login',
     component: Login,
+  },
+  {
+    path: 'welcome',
+    component: Welcome,
   },
   {
     path: 'register',

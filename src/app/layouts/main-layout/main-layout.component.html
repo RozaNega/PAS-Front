@@ -1,11 +1,27 @@
-﻿<div class="main-layout">
-  <app-header></app-header>
+﻿<div
+  class="main-layout"
+  [class.main-layout--sidebar-collapsed]="!layoutShellService.isSidebarOpen()"
+>
+  <app-header (searchChange)="updateSearchTerm($event)"></app-header>
   <div class="main-layout__body">
-    <app-sidebar></app-sidebar>
+    <app-sidebar
+      [isOpen]="layoutShellService.isSidebarOpen()"
+      [searchTerm]="sidebarSearchTerm"
+      (menuItemClick)="onSidebarItemClick()"
+    ></app-sidebar>
     <main class="main-layout__content">
-      <router-outlet></router-outlet>
+      <div class="main-layout__content-shell">
+        <router-outlet></router-outlet>
+        <app-footer></app-footer>
+      </div>
     </main>
   </div>
-  <app-footer></app-footer>
-</div>
 
+  <button
+    type="button"
+    class="main-layout__mask"
+    [class.main-layout__mask--visible]="layoutShellService.isSidebarActive()"
+    (click)="closeSidebar()"
+    aria-label="Close sidebar"
+  ></button>
+</div>

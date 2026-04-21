@@ -1,36 +1,50 @@
 <section class="dashboard-content">
+  <header class="dashboard-head">
+    <h2>Overview</h2>
+    <p>Live operational metrics across properties, locations, and workflows.</p>
+  </header>
+
   <div class="stats-grid">
-    <article class="stat-card" *ngFor="let card of cards">
-      <h3>{{ card.title }}</h3>
-      <strong>{{ card.value }}</strong>
-      <p>{{ card.subtitle }}</p>
-    </article>
+    @for (card of cards; track card.title) {
+      <article class="stat-card">
+        <p class="stat-title">{{ card.title }}</p>
+        <strong>{{ card.value }}</strong>
+        <p class="stat-subtitle">{{ card.subtitle }}</p>
+      </article>
+    }
   </div>
 
   <div class="charts-grid">
     <article class="chart-card">
-      <div class="bar-legend">undefined</div>
+      <h3>Property Distribution</h3>
 
       <div class="bar-grid">
-        <div class="grid-line" *ngFor="let tick of [120,100,80,60,40,20,0]" [style.bottom.%]="(tick / 120) * 100">
-          <span>{{ tick }}</span>
-        </div>
+        @for (tick of yTicks; track tick) {
+          <div class="grid-line" [style.bottom.%]="(tick / maxBarValue) * 100">
+            <span>{{ tick }}</span>
+          </div>
+        }
 
         <div class="bar-columns">
-          <div class="bar-column" *ngFor="let item of barSeries">
-            <div class="bar" [style.height.%]="(item.value / maxBarValue) * 100"></div>
-            <label>{{ item.label }}</label>
-          </div>
+          @for (item of barSeries; track item.label) {
+            <div class="bar-column">
+              <div class="bar" [style.height.%]="(item.value / maxBarValue) * 100"></div>
+              <label>{{ item.label }}</label>
+            </div>
+          }
         </div>
       </div>
     </article>
 
     <article class="chart-card donut-card">
+      <h3>Requisition Status</h3>
       <div class="donut-legend">
-        <span *ngFor="let item of donutSeries">
-          <i [style.background]="item.color"></i>
-          {{ item.label }}
-        </span>
+        @for (item of donutSeries; track item.label) {
+          <span>
+            <i [style.background]="item.color"></i>
+            {{ item.label }}
+          </span>
+        }
       </div>
 
       <div class="donut-wrap">

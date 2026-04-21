@@ -33,7 +33,7 @@ type InventoryValuationReport = {
   selector: 'app-inventory-report',
   standalone: false,
   templateUrl: './inventory-report.component.html',
-  styleUrls: ['./inventory-report.component.scss']
+  styleUrls: ['./inventory-report.component.scss'],
 })
 export class InventoryReportComponent implements OnInit {
   reportData: InventoryValuationReport | null = null;
@@ -45,12 +45,12 @@ export class InventoryReportComponent implements OnInit {
   constructor(
     private readonly reportService: ReportService,
     private readonly notificationService: NotificationService,
-    private readonly fb: FormBuilder
+    private readonly fb: FormBuilder,
   ) {
     this.filterForm = this.fb.group({
       asOfDate: [new Date().toISOString().split('T')[0]],
       minValue: [''],
-      maxValue: ['']
+      maxValue: [''],
     });
   }
 
@@ -63,7 +63,7 @@ export class InventoryReportComponent implements OnInit {
     this.reportData = null;
 
     this.reportService.getInventoryValuation(this.filterForm.value).subscribe({
-      next: (response) => {
+      next: (response: unknown) => {
         const data = this.extractReportData(response);
         if (data) {
           this.reportData = data;
@@ -75,7 +75,7 @@ export class InventoryReportComponent implements OnInit {
         this.hasLoaded = true;
         this.loading = false;
         this.notificationService.error('Failed to load inventory report');
-      }
+      },
     });
   }
 
@@ -87,7 +87,7 @@ export class InventoryReportComponent implements OnInit {
     this.filterForm.reset({
       asOfDate: new Date().toISOString().split('T')[0],
       minValue: '',
-      maxValue: ''
+      maxValue: '',
     });
     this.loadReport();
   }
@@ -102,8 +102,8 @@ export class InventoryReportComponent implements OnInit {
     if ('data' in record) {
       const success = record['success'];
       const succeeded = record['succeeded'];
-      const isSuccess = (typeof success === 'boolean' && success)
-        || (typeof succeeded === 'boolean' && succeeded);
+      const isSuccess =
+        (typeof success === 'boolean' && success) || (typeof succeeded === 'boolean' && succeeded);
 
       if (!isSuccess) {
         return null;

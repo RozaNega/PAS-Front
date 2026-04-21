@@ -1,12 +1,10 @@
-﻿import { Component, OnInit } from '@angular/core';
-import { Location } from '@angular/common';
-import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
-import { AuthService } from '../../core/services/auth.service';
+﻿import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
+import { RouterOutlet } from '@angular/router';
 import { SignalRService } from '../../core/services/signalr.service';
 import { FooterComponent } from '../../shared/components/footer/footer.component';
 import { HeaderComponent } from '../../shared/components/header/header.component';
 import { SidebarComponent } from '../../shared/components/sidebar/sidebar.component';
-import { filter } from 'rxjs';
+import { LayoutShellService } from '../layout-shell.service';
 
 @Component({
   selector: 'app-main-layout',
@@ -14,61 +12,28 @@ import { filter } from 'rxjs';
   imports: [RouterOutlet, HeaderComponent, SidebarComponent, FooterComponent],
   templateUrl: './main-layout.component.html',
   styleUrls: ['./main-layout.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MainLayoutComponent implements OnInit {
-  isSidebarCollapsed = false;
-  sidebarSearchTerm = '';
-  user: any;
-  showListBackButton = false;
+  private readonly signalRService = inject(SignalRService);
+  protected readonly layoutShellService = inject(LayoutShellService);
 
-  constructor(
-    private authService: AuthService,
-    private signalRService: SignalRService,
-    private router: Router,
-    private location: Location,
-  ) {}
+  protected sidebarSearchTerm = '';
 
   ngOnInit(): void {
-    this.user = this.authService.getCurrentUser();
     this.signalRService.startConnection();
-    this.isSidebarCollapsed = false;
-    this.updateListBackButton(this.router.url);
-    this.router.events
-      .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
-      .subscribe((event) => this.updateListBackButton(event.urlAfterRedirects));
+    this.layoutShellService.initialize();
   }
 
-  goBackFromList(): void {
-    if (window.history.length > 1) {
-      this.location.back();
-      return;
-    }
-
-    this.router.navigateByUrl('/dashboard');
-  }
-
-  toggleSidebar(): void {
-    this.isSidebarCollapsed = false;
-  }
-
-  updateSearchTerm(term: string): void {
+  protected updateSearchTerm(term: string): void {
     this.sidebarSearchTerm = term;
   }
 
-  onSidebarItemClick(): void {
-    this.isSidebarCollapsed = false;
+  protected onSidebarItemClick(): void {
+    this.layoutShellService.closeMenu();
   }
 
-  closeSidebar(): void {
-    this.isSidebarCollapsed = false;
-  }
-
-  logout(): void {
-    this.authService.logout();
-  }
-
-  private updateListBackButton(url: string): void {
-    const cleanUrl = url.split('?')[0].split('#')[0].toLowerCase();
-    this.showListBackButton = cleanUrl.includes('/list');
+  protected closeSidebar(): void {
+    this.layoutShellService.closeMenu();
   }
 }

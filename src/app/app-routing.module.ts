@@ -5,9 +5,24 @@ import { MainLayoutComponent } from './layouts/main-layout/main-layout.component
 import { AuthLayoutComponent } from './layouts/auth-layout/auth-layout.component';
 import { DashboardComponent } from './pages/dashboard/dashboard.component';
 import { LoginComponent } from './pages/login/login.component';
+import { WelcomeComponent } from './pages/welcome/welcome';
 
 const routes: Routes = [
+  {
+    path: 'welcome',
+    component: WelcomeComponent,
+  },
+  {
+    path: 'auth',
+    loadChildren: () => import('./features/auth/auth-module').then((m) => m.AuthModule),
+  },
   // 🔐 AUTH (DEFAULT PAGE)
+  {
+    path: '',
+    redirectTo: 'welcome',
+    pathMatch: 'full',
+  },
+
   {
     path: '',
     component: AuthLayoutComponent,
@@ -28,7 +43,7 @@ const routes: Routes = [
   },
 
   // fallback
-  { path: '**', redirectTo: 'login' }
+  { path: '**', redirectTo: 'welcome' }
 ];
 
 @NgModule({
