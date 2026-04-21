@@ -1,7 +1,9 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { NgOptimizedImage } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
+import { map } from 'rxjs';
 
 import { AuthApi } from '../../services/auth-api';
 import { AuthThemeService } from '../../services/auth-theme.service';
@@ -16,14 +18,31 @@ import { AuthThemeService } from '../../services/auth-theme.service';
 export class Login {
   private readonly formBuilder = inject(FormBuilder);
   private readonly authApi = inject(AuthApi);
+  private readonly route = inject(ActivatedRoute);
   protected readonly theme = inject(AuthThemeService);
 
   protected readonly submitted = signal(false);
   protected readonly loading = signal(false);
-  protected readonly statusMessage = signal('Sign in to your PAS account.');
+  protected readonly statusMessage = signal('');
   protected readonly statusTone = signal<'neutral' | 'success' | 'error'>('neutral');
   protected readonly showPassword = signal(false);
   protected readonly themePanelOpen = signal(false);
+  protected readonly quickRoles = [
+    { label: 'Admin', slug: 'admin' },
+    { label: 'Storekeeper', slug: 'storekeeper' },
+    { label: 'Employee', slug: 'employee' },
+    { label: 'Manager', slug: 'manager' },
+    { label: 'Compliance Officer', slug: 'compliance-officer' },
+  ] as const;
+  private readonly roleFromUrl = toSignal(
+    this.route.paramMap.pipe(map((params) => (params.get('role') ?? '').toLowerCase())),
+    { initialValue: '' },
+  );
+  protected readonly activeRoleLabel = computed(() => {
+    const slug = this.roleFromUrl();
+    const match = this.quickRoles.find((role) => role.slug === slug);
+    return match?.label ?? null;
+  });
 
   protected readonly loginForm = this.formBuilder.nonNullable.group({
     username: ['', [Validators.required]],

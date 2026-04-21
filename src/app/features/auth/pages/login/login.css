@@ -1,11 +1,11 @@
- :host {
+:host {
   display: block;
   min-height: 100%;
   --auth-primary: #10b981;
   --auth-primary-soft: #ecfdf5;
-/* End of file - removed stray closing brace */
- }
- .auth-sakai {
+}
+
+.auth-sakai {
   align-items: center;
   background: #f1f4f9;
   display: grid;
@@ -23,23 +23,22 @@
 }
 
 .icon-btn {
-    display: block;
-    min-height: 100%;
-    --auth-primary: #10b981;
-    --auth-primary-soft: #ecfdf5;
-    --auth-card-bg: #fff;
+  align-items: center;
+  background: #e9edf2;
+  border: 0;
+  border-radius: 999px;
   color: #5f6b7a;
   cursor: pointer;
   display: inline-flex;
-    background: var(--auth-primary);
-    color: #fff;
-    border: 2px solid var(--auth-primary);
-    box-shadow: 0 2px 8px var(--auth-primary-soft);
+  font-size: 1rem;
+  height: 2.2rem;
   justify-content: center;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
   width: 2.2rem;
-    background: var(--auth-card-bg, #1e293b);
-    color: #e2e8f0;
+}
+
 .icon-btn--primary {
   background: var(--auth-primary);
   color: #fff;
@@ -95,56 +94,34 @@
   transform: translateY(-1px);
 }
 
- .auth-card {
+.auth-card {
   background: #ffffff;
   border-radius: 2rem;
   border-top: 4px solid var(--auth-primary);
   box-shadow: 0 24px 50px rgba(15, 23, 42, 0.08);
   margin: 0 auto;
-  max-width: 34rem;
+  max-width: 50rem;
   padding: 2.2rem 2rem;
   width: 100%;
 }
 
-.auth-card--sakai {
-  max-width: 34rem;
-  padding: 0;
-  border-radius: 2rem;
-  box-shadow: 0 24px 50px rgba(15, 23, 42, 0.08);
-  background: #fff;
-  position: relative;
+.auth-card--wide {
+  max-width: 50rem;
 }
 
-.auth-card-top-border {
-  height: 0.5rem;
-  border-radius: 2rem 2rem 0 0;
-  background: var(--auth-primary);
-  width: 100%;
-}
-
-.auth-card-content {
-  padding: 2.2rem 2rem 2.2rem 2rem;
-}
-}
-
- .auth-logo {
+.auth-logo {
   display: block;
   height: auto;
   margin: 0 auto 1.25rem;
-  max-width: 18rem;
+  max-width: 30rem;
   width: 100%;
 }
 
-.sakai-logo {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 1.2rem;
-  margin-top: 0.2rem;
+.auth-logo--wordmark {
+  margin-bottom: 0.9rem;
 }
 
-
- .auth-card h1 {
+.auth-card h1 {
   color: #0f172a;
   font-size: clamp(1.6rem, 2.4vw, 2rem);
   font-weight: 600;
@@ -152,26 +129,26 @@
   text-align: center;
 }
 
- .auth-subtitle {
+.auth-subtitle {
   color: #64748b;
   font-size: 1rem;
   margin: 0.4rem 0 1.35rem;
   text-align: center;
 }
 
- .auth-form {
+.auth-form {
   display: grid;
   gap: 0.5rem;
 }
 
- .auth-label {
+.auth-label {
   color: #0f172a;
   font-size: 0.96rem;
   font-weight: 500;
   margin-top: 0.15rem;
 }
 
- .input-shell {
+.input-shell {
   align-items: center;
   background: #ffffff;
   border: 1px solid #d5dde8;
@@ -218,7 +195,14 @@
   margin: 0.4rem 0 0.35rem;
 }
 
- .remember-row {
+.link-inline {
+  color: var(--auth-primary);
+  font-size: 0.96rem;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.remember-row {
   align-items: center;
   color: #334155;
   cursor: pointer;
@@ -228,19 +212,7 @@
   margin-top: 0.4rem;
 }
 
-.link-inline {
-  color: var(--auth-primary);
-  font-size: 0.96rem;
-  font-weight: 500;
-  text-decoration: none;
-}
-
-.link-inline:hover,
-.auth-switch-row a:hover {
-  text-decoration: underline;
-}
-
- .btn-primary {
+.btn-primary {
   background: var(--auth-primary);
   border: 0;
   border-radius: 0.5rem;
@@ -291,6 +263,34 @@
   text-align: center;
 }
 
+.sign-as-row {
+  align-items: center;
+  color: #64748b;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.6rem;
+  justify-content: center;
+  margin: 1rem 0 0;
+  text-align: center;
+}
+
+.sign-as-row span {
+  color: #374151;
+  font-weight: 500;
+}
+
+.sign-as-link {
+  background: transparent;
+  border: 0;
+  color: var(--auth-primary);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 .auth-switch-row a {
   color: var(--auth-primary);
   font-weight: 600;
@@ -318,9 +318,24 @@
 :host-context(body.auth-dark) .auth-subtitle,
 :host-context(body.auth-dark) .auth-switch-row,
 :host-context(body.auth-dark) .field-error,
-:host-context(body.auth-dark) .input-action,
-:host-context(body.auth-dark) .link-inline {
+:host-context(body.auth-dark) .input-action {
   color: #94a3b8;
+}
+
+:host-context(body.auth-dark) .sign-as-row {
+  color: #94a3b8;
+}
+
+:host-context(body.auth-dark) .sign-as-row span {
+  color: #cbd5e1;
+}
+
+:host-context(body.auth-dark) .link-inline {
+  color: #93c5fd;
+}
+
+:host-context(body.auth-dark) .sign-as-link {
+  color: #93c5fd;
 }
 
 :host-context(body.auth-dark) .input-shell,
@@ -351,14 +366,18 @@
   border-top-color: var(--auth-primary);
 }
 
+.link-inline:hover,
+.auth-switch-row a:hover {
+  text-decoration: underline;
+}
+
 @media (max-width: 640px) {
   .auth-toolbar {
     right: 1rem;
     top: 1rem;
   }
 
-  .auth-card,
-  .auth-card--sakai {
+  .auth-card {
     border-radius: 1.25rem;
     padding: 1.4rem 1.05rem;
   }
@@ -367,12 +386,4 @@
     left: 0;
     right: auto;
   }
-
-  .auth-meta-row {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
 }
-
-

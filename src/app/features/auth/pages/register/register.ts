@@ -1,11 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { NgOptimizedImage } from '@angular/common';
-import {
-  AbstractControl,
-  FormBuilder,
-  ReactiveFormsModule,
-  Validators,
-} from '@angular/forms';
+import { AbstractControl, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
 import { AuthApi } from '../../services/auth-api';
@@ -25,7 +20,7 @@ export class Register {
 
   protected readonly submitted = signal(false);
   protected readonly loading = signal(false);
-  protected readonly statusMessage = signal('Register your PAS account.');
+  protected readonly statusMessage = signal('');
   protected readonly statusTone = signal<'neutral' | 'success' | 'error'>('neutral');
   protected readonly showPassword = signal(false);
   protected readonly showConfirmPassword = signal(false);
@@ -111,12 +106,21 @@ export class Register {
   }
 
   protected passwordMismatch(): boolean {
-    return this.registerForm.hasError('passwordMismatch') &&
-      (this.registerForm.controls.confirmPassword.touched || this.submitted());
+    return (
+      this.registerForm.hasError('passwordMismatch') &&
+      (this.registerForm.controls.confirmPassword.touched || this.submitted())
+    );
   }
 
   protected showControlError(
-    controlName: 'fullName' | 'username' | 'phoneNumber' | 'email' | 'password' | 'confirmPassword' | 'acceptedTerms',
+    controlName:
+      | 'fullName'
+      | 'username'
+      | 'phoneNumber'
+      | 'email'
+      | 'password'
+      | 'confirmPassword'
+      | 'acceptedTerms',
   ): boolean {
     const control = this.registerForm.controls[controlName];
     return control.invalid && (control.touched || this.submitted());

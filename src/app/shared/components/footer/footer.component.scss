@@ -1,1 +1,26 @@
-﻿
+﻿.app-footer {
+  margin-top: 1rem;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1rem;
+  border-top: 1px solid var(--app-border);
+  background: var(--app-surface-card);
+  color: var(--app-text-muted);
+  font-size: 0.75rem;
+  border-radius: var(--app-radius);
+  box-shadow: var(--app-shadow-sm);
+}
+
+.app-footer p {
+  margin: 0;
+}
+
+@media (max-width: 640px) {
+  .app-footer {
+    margin-top: 0.75rem;
+    padding: 0 0.75rem;
+    font-size: 0.7rem;
+  }
+}

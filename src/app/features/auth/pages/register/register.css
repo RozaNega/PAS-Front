@@ -33,7 +33,9 @@
   font-size: 1rem;
   height: 2.2rem;
   justify-content: center;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
   width: 2.2rem;
 }
 
@@ -104,19 +106,19 @@
 }
 
 .auth-card--wide {
-  max-width: 37rem;
+  max-width: 50rem;
 }
 
 .auth-logo {
   display: block;
   height: auto;
   margin: 0 auto 1.25rem;
-  max-width: 18rem;
+  max-width: 30rem;
   width: 100%;
 }
 
 .auth-logo--wordmark {
-  margin-bottom: 1rem;
+  margin-bottom: 0.9rem;
 }
 
 .auth-card h1 {

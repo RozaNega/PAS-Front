@@ -1,49 +1,59 @@
-import { Component, EventEmitter, Output } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  EventEmitter,
+  Output,
+  inject,
+  signal,
+} from '@angular/core';
 import { Location } from '@angular/common';
 import { NavigationEnd, Router } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
-import { SignalRService } from '../../../core/services/signalr.service';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { filter } from 'rxjs';
+import { LayoutShellService } from '../../../layouts/layout-shell.service';
 
 @Component({
   selector: 'app-header',
   standalone: true,
   templateUrl: './header.component.html',
   styleUrls: ['./header.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class HeaderComponent {
-  @Output() toggleSidebar = new EventEmitter<void>();
-  @Output() searchChange = new EventEmitter<string>();
-  showUserMenu = false;
-  canGoBack = false;
+  private readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
+  private readonly location = inject(Location);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly layoutShellService = inject(LayoutShellService);
 
-  constructor(
-    public authService: AuthService,
-    public signalRService: SignalRService,
-    private router: Router,
-    private location: Location,
-  ) {
+  @Output() searchChange = new EventEmitter<string>();
+  protected readonly canGoBack = signal(false);
+
+  constructor() {
     this.updateBackButtonState(this.router.url);
     this.router.events
       .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((event) => this.updateBackButtonState(event.urlAfterRedirects));
   }
 
-  onToggleSidebar(): void {
-    this.toggleSidebar.emit();
+  protected onToggleSidebar(): void {
+    this.layoutShellService.onMenuToggle();
   }
 
-  onSearchInput(event: Event): void {
+  protected onSearchInput(event: Event): void {
     const target = event.target as HTMLInputElement;
     this.searchChange.emit(target.value);
   }
 
-  get displayName(): string {
+  protected get displayName(): string {
     const user = this.authService.getCurrentUser();
     return user?.fullName || user?.username || 'User';
   }
 
-  goBack(): void {
+  protected goBack(): void {
     if (window.history.length > 1) {
       this.location.back();
       return;
@@ -53,7 +63,7 @@ export class HeaderComponent {
   }
 
   private updateBackButtonState(url: string): void {
-    this.canGoBack = this.shouldShowBackButton(url);
+    this.canGoBack.set(this.shouldShowBackButton(url));
   }
 
   private shouldShowBackButton(url: string): boolean {
@@ -70,7 +80,7 @@ export class HeaderComponent {
     return true;
   }
 
-  logout(): void {
+  protected logout(): void {
     this.authService.logout();
   }
 }
