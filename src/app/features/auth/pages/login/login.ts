@@ -2,11 +2,11 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { NgOptimizedImage } from '@angular/common';
-import { ActivatedRoute, RouterLink } from '@angular/router';
-import { map } from 'rxjs';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { finalize, map } from 'rxjs';
 
-import { AuthApi } from '../../services/auth-api';
 import { AuthThemeService } from '../../services/auth-theme.service';
+import { AuthService } from '../../../../core/services/auth.service';
 
 @Component({
   selector: 'app-login',
@@ -17,8 +17,9 @@ import { AuthThemeService } from '../../services/auth-theme.service';
 })
 export class Login {
   private readonly formBuilder = inject(FormBuilder);
-  private readonly authApi = inject(AuthApi);
+  private readonly authService = inject(AuthService);
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   protected readonly theme = inject(AuthThemeService);
 
   protected readonly submitted = signal(false);
@@ -62,20 +63,31 @@ export class Login {
 
     this.loading.set(true);
     const raw = this.loginForm.getRawValue();
-    const result = this.authApi.login({
-      email: raw.username,
-      password: raw.password,
-      rememberMe: raw.rememberMe,
-    });
+    this.authService
+      .login({
+        username: raw.username.trim(),
+        password: raw.password,
+      })
+      .pipe(finalize(() => this.loading.set(false)))
+      .subscribe({
+        next: (result) => {
+          if (!result.succeeded) {
+            this.statusTone.set('error');
+            this.statusMessage.set(result.errors?.join(' ') || 'Invalid username or password.');
+            return;
+          }
 
-    this.loading.set(false);
-    this.statusTone.set(result.success ? 'success' : 'error');
-    this.statusMessage.set(result.message);
-
-    if (result.success) {
-      this.loginForm.controls.password.setValue('');
-      this.loginForm.controls.rememberMe.setValue(raw.rememberMe);
-    }
+          this.statusTone.set('success');
+          this.statusMessage.set('Sign-in successful. Redirecting to your dashboard...');
+          this.loginForm.controls.password.setValue('');
+          this.loginForm.controls.rememberMe.setValue(raw.rememberMe);
+          void this.router.navigateByUrl(this.authService.getDashboardRouteForUser(result.user));
+        },
+        error: () => {
+          this.statusTone.set('error');
+          this.statusMessage.set('Unable to sign in. Verify your credentials and try again.');
+        },
+      });
   }
 
   protected togglePasswordVisibility(): void {

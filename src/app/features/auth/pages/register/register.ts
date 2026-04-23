@@ -18,6 +18,14 @@ export class Register {
   private readonly authApi = inject(AuthApi);
   protected readonly theme = inject(AuthThemeService);
 
+  protected readonly roleOptions = [
+    { label: 'Admin', value: 'Admin' },
+    { label: 'Storekeeper', value: 'Storekeeper' },
+    { label: 'Employee', value: 'Employee' },
+    { label: 'Manager', value: 'Manager' },
+    { label: 'Compliance Officer', value: 'Compliance Officer' },
+  ] as const;
+
   protected readonly submitted = signal(false);
   protected readonly loading = signal(false);
   protected readonly statusMessage = signal('');
@@ -32,6 +40,7 @@ export class Register {
       username: ['', [Validators.required, Validators.minLength(3)]],
       phoneNumber: ['', [Validators.required, Validators.pattern(/^\+?[0-9\s()-]{7,20}$/)]],
       email: ['', [Validators.required, Validators.email]],
+      roleName: ['Employee', [Validators.required]],
       password: ['', [Validators.required, Validators.minLength(8)]],
       confirmPassword: ['', [Validators.required]],
       acceptedTerms: [true, [Validators.requiredTrue]],
@@ -58,6 +67,7 @@ export class Register {
       displayName: raw.fullName,
       phoneNumber: raw.phoneNumber,
       email: raw.email,
+      roleName: raw.roleName,
       password: raw.password,
       acceptedTerms: raw.acceptedTerms,
     });
@@ -72,6 +82,7 @@ export class Register {
         username: '',
         phoneNumber: '',
         email: '',
+        roleName: 'Employee',
         password: '',
         confirmPassword: '',
         acceptedTerms: true,
@@ -118,6 +129,7 @@ export class Register {
       | 'username'
       | 'phoneNumber'
       | 'email'
+      | 'roleName'
       | 'password'
       | 'confirmPassword'
       | 'acceptedTerms',

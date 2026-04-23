@@ -51,7 +51,7 @@
               <h3>Primary</h3>
               <div class="primary-swatches" aria-label="Primary colors">
                 @for (option of primaryOptions; track option.id) {
-                  <button
+                  <button>
                     type="button"
                     class="swatch"
                     [class.active]="selectedPrimary() === option.id"
