@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, ElementRef, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
+import { NgOptimizedImage } from '@angular/common';
 import { RouterLink } from '@angular/router';
 
 type ModuleId = 'property' | 'storage' | 'workflow';
@@ -29,7 +37,7 @@ interface ModuleItem {
 
 @Component({
   selector: 'app-landing',
-  imports: [RouterLink],
+  imports: [RouterLink, NgOptimizedImage],
   templateUrl: './landing.html',
   styleUrl: './landing.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -95,12 +103,14 @@ export class Landing {
     {
       icon: 'bi bi-qr-code-scan',
       title: 'Scan-First Inventory',
-      description: 'Use QR workflows for rapid receiving, issue, transfer, and verification cycles.',
+      description:
+        'Use QR workflows for rapid receiving, issue, transfer, and verification cycles.',
     },
     {
       icon: 'bi bi-shield-check',
       title: 'Audit-Ready Controls',
-      description: 'Track every movement with role-aware approvals, signatures, and traceable logs.',
+      description:
+        'Track every movement with role-aware approvals, signatures, and traceable logs.',
     },
   ];
 
@@ -118,7 +128,8 @@ export class Landing {
     {
       id: 'storage',
       title: 'Storage and Inventory',
-      description: 'Coordinate multi-store stock operations with threshold alerts and movement logs.',
+      description:
+        'Coordinate multi-store stock operations with threshold alerts and movement logs.',
       points: [
         'Warehouse and shelf structure',
         'Low-stock and reorder signals',

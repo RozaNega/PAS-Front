@@ -1,9 +1,8 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { NgOptimizedImage } from '@angular/common';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { finalize, map } from 'rxjs';
+import { Router, RouterLink } from '@angular/router';
+import { finalize } from 'rxjs';
 
 import { AuthThemeService } from '../../services/auth-theme.service';
 import { AuthService } from '../../../../core/services/auth.service';
@@ -18,7 +17,6 @@ import { AuthService } from '../../../../core/services/auth.service';
 export class Login {
   private readonly formBuilder = inject(FormBuilder);
   private readonly authService = inject(AuthService);
-  private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   protected readonly theme = inject(AuthThemeService);
 
@@ -28,22 +26,6 @@ export class Login {
   protected readonly statusTone = signal<'neutral' | 'success' | 'error'>('neutral');
   protected readonly showPassword = signal(false);
   protected readonly themePanelOpen = signal(false);
-  protected readonly quickRoles = [
-    { label: 'Admin', slug: 'admin' },
-    { label: 'Storekeeper', slug: 'storekeeper' },
-    { label: 'Employee', slug: 'employee' },
-    { label: 'Manager', slug: 'manager' },
-    { label: 'Compliance Officer', slug: 'compliance-officer' },
-  ] as const;
-  private readonly roleFromUrl = toSignal(
-    this.route.paramMap.pipe(map((params) => (params.get('role') ?? '').toLowerCase())),
-    { initialValue: '' },
-  );
-  protected readonly activeRoleLabel = computed(() => {
-    const slug = this.roleFromUrl();
-    const match = this.quickRoles.find((role) => role.slug === slug);
-    return match?.label ?? null;
-  });
 
   protected readonly loginForm = this.formBuilder.nonNullable.group({
     username: ['', [Validators.required]],

@@ -17,7 +17,12 @@
         aria-controls="landing-nav"
         aria-label="Toggle navigation"
       >
-        <i class="bi" [class.bi-list]="!menuOpen()" [class.bi-x-lg]="menuOpen()" aria-hidden="true"></i>
+        <i
+          class="bi"
+          [class.bi-list]="!menuOpen()"
+          [class.bi-x-lg]="menuOpen()"
+          aria-hidden="true"
+        ></i>
       </button>
 
       <nav id="landing-nav" class="top-nav" [class.open]="menuOpen()" aria-label="Main navigation">
@@ -28,8 +33,18 @@
       </nav>
 
       <div class="top-actions" [class.open]="menuOpen()">
-        <button class="theme-toggle" type="button" (click)="toggleDarkMode()" [attr.aria-pressed]="darkMode()">
-          <i class="bi" [class.bi-sun-fill]="darkMode()" [class.bi-moon-stars-fill]="!darkMode()" aria-hidden="true"></i>
+        <button
+          class="theme-toggle"
+          type="button"
+          (click)="toggleDarkMode()"
+          [attr.aria-pressed]="darkMode()"
+        >
+          <i
+            class="bi"
+            [class.bi-sun-fill]="darkMode()"
+            [class.bi-moon-stars-fill]="!darkMode()"
+            aria-hidden="true"
+          ></i>
           <span>{{ darkMode() ? 'Light' : 'Dark' }}</span>
         </button>
 
@@ -51,11 +66,13 @@
               <h3>Primary</h3>
               <div class="primary-swatches" aria-label="Primary colors">
                 @for (option of primaryOptions; track option.id) {
-                  <button>
+                  <button
                     type="button"
                     class="swatch"
+                    title="Set primary color"
                     [class.active]="selectedPrimary() === option.id"
                     [style.background]="option.value"
+                    [attr.title]="'Set primary color ' + option.label"
                     [attr.aria-label]="'Set primary color ' + option.label"
                     (click)="setPrimary(option.id)"
                   ></button>
@@ -75,16 +92,24 @@
     <section class="hero">
       <div class="container hero-grid">
         <div class="hero-copy">
-          <p class="eyebrow">Enterprise Operations Suite</p>
-          <h1>Run AFRICOM Assets With Speed, Control, And Clarity.</h1>
+          <p class="promo-pill"><span aria-hidden="true">●</span> Operations Platform 2026</p>
+
+
+          <h1>
+            <span class="headline-line">AFRICOM'S </span>
+            <span class="headline-line2">-SINCE 2004-</span>
+
+            <span class="headline-line headline-gradient">Technologies</span>
+          </h1>
           <p>
-            Build a single source of truth for property, inventory, and requisitions with operational
-            dashboards and secure approval workflows.
+            Coordinate assets, inventory, and requisitions from one command layer with policy-driven
+            workflows and real-time visibility for every department.
           </p>
 
           <div class="hero-actions">
-            <a class="btn solid" routerLink="/auth/login">Go to Dashboard</a>
-            <a class="btn ghost" routerLink="/auth/register">Start Onboarding</a>
+            <a class="btn solid" routerLink="/auth/login">Open Dashboard</a>
+            <a class="btn ghost" routerLink="/auth/register">Request Access</a>
+            <a class="btn ghost subtle" href="#features">Explore Platform</a>
           </div>
 
           <div class="stat-row" aria-label="Platform highlights">
@@ -97,14 +122,16 @@
           </div>
         </div>
 
-        <aside class="hero-panel" aria-label="Operational status">
-          <h2>Live Operations Snapshot</h2>
-          <ul>
-            <li><span>Receiving Queue</span><strong>18 Pending</strong></li>
-            <li><span>Requisition SLA</span><strong>97% On-Time</strong></li>
-            <li><span>Inventory Health</span><strong>High Confidence</strong></li>
+        <aside class="hero-panel" aria-label="Live operational attendance">
+          <p class="panel-kicker">Live attendees</p>
+          <p class="live-total">14,666</p>
+          <ul class="countdown-grid" aria-label="Countdown to deployment week">
+            <li><strong>20</strong><span>Days</span></li>
+            <li><strong>14</strong><span>Hours</span></li>
+            <li><strong>06</strong><span>Minutes</span></li>
+            <li><strong>37</strong><span>Seconds</span></li>
           </ul>
-          <a routerLink="/reports/inventory">Open Inventory Report</a>
+          <p class="countdown-note">Until May 14th, 2026</p>
         </aside>
       </div>
     </section>
@@ -161,11 +188,11 @@
             <article class="module-panel" role="tabpanel" [attr.aria-label]="module.title">
               <h3>{{ module.title }}</h3>
               <p>{{ module.description }}</p>
-              <ul>
+              <div class="module-list" role="list" aria-label="Module capabilities">
                 @for (point of module.points; track point) {
-                  <li>{{ point }}</li>
+                  <p role="listitem">{{ point }}</p>
                 }
-              </ul>
+              </div>
             </article>
           }
         }
@@ -177,8 +204,8 @@
         <article>
           <h2>Measure What Matters</h2>
           <p>
-            From store-level stock confidence to executive-level compliance reporting, AFRICOM teams stay
-            aligned on one operational baseline.
+            From unit-level stock confidence to command-level compliance reporting, AFRICOM teams
+            stay aligned on one transparent operational baseline.
           </p>
         </article>
         <article>

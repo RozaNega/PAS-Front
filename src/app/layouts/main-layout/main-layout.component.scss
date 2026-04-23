@@ -22,7 +22,6 @@
   padding: 0 1.15rem;
   border-bottom: 1px solid #e2e8f0;
   background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(10px);
 }
 
 .topbar-left,
@@ -30,6 +29,10 @@
   display: flex;
   align-items: center;
   gap: 0.9rem;
+}
+
+.topbar-popover-wrap {
+  position: relative;
 }
 
 .topbar-menu-btn {
@@ -57,6 +60,112 @@
   border-color: var(--primary-color);
   background: var(--primary-color);
   color: #ffffff;
+}
+
+.topbar-popover {
+  position: absolute;
+  top: calc(100% + 0.55rem);
+  right: 0;
+  width: min(21rem, 90vw);
+  border: 1px solid var(--surface-border);
+  border-radius: 12px;
+  background: var(--surface-card);
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.18);
+  z-index: 55;
+}
+
+.notifications-popover {
+  padding: 0.7rem;
+}
+
+.popover-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.45rem;
+}
+
+.popover-header h2 {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.popover-close {
+  border: 0;
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #64748b;
+  cursor: pointer;
+}
+
+.popover-list {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.popover-item {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 0.55rem 0.62rem;
+}
+
+.popover-item-title {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.popover-item-text {
+  margin: 0.2rem 0;
+  font-size: 0.76rem;
+  color: #64748b;
+}
+
+.popover-item-time {
+  font-size: 0.72rem;
+  color: #94a3b8;
+}
+
+.popover-link {
+  display: inline-flex;
+  margin-top: 0.55rem;
+  color: var(--primary-color);
+  font-size: 0.8rem;
+  font-weight: 650;
+  text-decoration: none;
+}
+
+.profile-popover {
+  width: 12rem;
+  padding: 0.35rem;
+  display: grid;
+  gap: 0.2rem;
+}
+
+.profile-popover a,
+.profile-popover button {
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: #334155;
+  text-decoration: none;
+  font-size: 0.84rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.52rem 0.55rem;
+  cursor: pointer;
+}
+
+.profile-popover a:hover,
+.profile-popover button:hover {
+  background: #f8fafc;
 }
 
 .topbar-brand {
@@ -190,7 +299,9 @@
 }
 
 .swatch-btn--active {
-  box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px var(--primary-color);
+  box-shadow:
+    0 0 0 2px #ffffff,
+    0 0 0 4px var(--primary-color);
 }
 
 .mode-buttons {
@@ -363,4 +474,3 @@
     pointer-events: auto;
   }
 }
-

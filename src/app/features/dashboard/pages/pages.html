@@ -1,40 +1,20 @@
 <section class="dashboard-shell">
   <header class="dashboard-header">
     <div>
-      <h1>{{ roleConfig().heading }}</h1>
-      <p>{{ roleConfig().subtitle }}</p>
+      <h1>Operations Overview</h1>
+      <p>Live inventory and requisition activity across your storage network.</p>
     </div>
 
-    <div class="dashboard-controls">
-      <div class="role-filter" role="group" aria-label="Dashboard role">
-        @if (isRoleLocked()) {
-          <button type="button" class="active" aria-current="true" disabled>
-            {{ roleConfig().label }}
-          </button>
-        } @else {
-          @for (role of roleOptions; track role.slug) {
-            <button
-              type="button"
-              [class.active]="selectedRole() === role.slug"
-              (click)="setRole(role.slug)"
-            >
-              {{ role.label }}
-            </button>
-          }
-        }
-      </div>
-
-      <div class="period-filter" role="group" aria-label="Dashboard period">
-        @for (period of periods; track period) {
-          <button
-            type="button"
-            [class.active]="selectedPeriod() === period"
-            (click)="setPeriod(period)"
-          >
-            {{ period }}
-          </button>
-        }
-      </div>
+    <div class="period-filter" role="group" aria-label="Dashboard period">
+      @for (period of periods; track period) {
+        <button
+          type="button"
+          [class.active]="selectedPeriod() === period"
+          (click)="setPeriod(period)"
+        >
+          {{ period }}
+        </button>
+      }
     </div>
   </header>
 
@@ -60,29 +40,9 @@
       }
     </div>
 
-    <div class="insights-grid">
-      <article class="insight-card">
-        <h2>Role Responsibilities</h2>
-        <ul>
-          @for (item of roleConfig().responsibilities; track item) {
-            <li>{{ item }}</li>
-          }
-        </ul>
-      </article>
-
-      <article class="insight-card">
-        <h2>Workflow Focus</h2>
-        <ol>
-          @for (step of roleConfig().flowFocus; track step) {
-            <li>{{ step }}</li>
-          }
-        </ol>
-      </article>
-    </div>
-
     <div class="charts-grid">
       <article class="chart-card">
-        <div class="chart-title">{{ roleConfig().barTitle }}</div>
+        <div class="chart-title">Warehouse Distribution</div>
         <div class="bar-chart">
           <div class="bar-lines">
             @for (tick of [120, 100, 80, 60, 40, 20, 0]; track tick) {
@@ -104,7 +64,7 @@
       </article>
 
       <article class="chart-card donut-card">
-        <div class="chart-title">{{ roleConfig().donutTitle }}</div>
+        <div class="chart-title">Requisition Status</div>
         <div class="donut-legend">
           @for (item of donutSeries(); track item.label) {
             <span>

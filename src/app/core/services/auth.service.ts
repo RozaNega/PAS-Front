@@ -165,7 +165,7 @@ export class AuthService {
   }
 
   getDashboardRouteForUser(user: User | null): string {
-    return `/dashboard/${this.mapUserToDashboardRole(user)}`;
+    return '/dashboard';
   }
 
   isDashboardRole(value: string): value is DashboardRole {
