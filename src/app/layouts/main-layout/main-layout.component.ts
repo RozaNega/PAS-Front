@@ -106,6 +106,10 @@ export class MainLayoutComponent implements OnInit {
     this.sidebarOpen = false;
   }
 
+  protected dashboardHomeRoute(): string {
+    return this.authService.getDashboardRouteForUser(this.user);
+  }
+
   protected logout(): void {
     this.authService.logout();
   }
@@ -134,8 +138,10 @@ export class MainLayoutComponent implements OnInit {
 
     const root = document.documentElement;
     const body = document.body;
-    const primary = this.primaryOptions.find((item) => item.id === this.selectedPrimary)?.value ?? '#8b5cf6';
-    const surface = this.surfaceOptions.find((item) => item.id === this.selectedSurface)?.value ?? '#f3f6fb';
+    const primary =
+      this.primaryOptions.find((item) => item.id === this.selectedPrimary)?.value ?? '#8b5cf6';
+    const surface =
+      this.surfaceOptions.find((item) => item.id === this.selectedSurface)?.value ?? '#f3f6fb';
 
     root.style.setProperty('--primary-color', primary);
     root.style.setProperty('--primary-color-soft', this.hexToSoft(primary));

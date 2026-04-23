@@ -1,75 +1,123 @@
 <section class="dashboard-shell">
   <header class="dashboard-header">
     <div>
-      <h1>Operations Overview</h1>
-      <p>Live inventory and requisition activity across your storage network.</p>
+      <h1>{{ roleConfig().heading }}</h1>
+      <p>{{ roleConfig().subtitle }}</p>
     </div>
 
-    <div class="period-filter" role="group" aria-label="Dashboard period">
-      @for (period of periods; track period) {
-        <button type="button" [class.active]="selectedPeriod() === period" (click)="setPeriod(period)">
-          {{ period }}
-        </button>
-      }
+    <div class="dashboard-controls">
+      <div class="role-filter" role="group" aria-label="Dashboard role">
+        @if (isRoleLocked()) {
+          <button type="button" class="active" aria-current="true" disabled>
+            {{ roleConfig().label }}
+          </button>
+        } @else {
+          @for (role of roleOptions; track role.slug) {
+            <button
+              type="button"
+              [class.active]="selectedRole() === role.slug"
+              (click)="setRole(role.slug)"
+            >
+              {{ role.label }}
+            </button>
+          }
+        }
+      </div>
+
+      <div class="period-filter" role="group" aria-label="Dashboard period">
+        @for (period of periods; track period) {
+          <button
+            type="button"
+            [class.active]="selectedPeriod() === period"
+            (click)="setPeriod(period)"
+          >
+            {{ period }}
+          </button>
+        }
+      </div>
     </div>
   </header>
 
   <section class="dashboard-main">
-      <div class="stats-grid">
-        @for (card of summaryCards(); track card.title; let i = $index) {
-          <article class="stat-card">
-            <h2>
-              <i [class]="card.icon"></i>
-              <span>{{ card.title }}</span>
-            </h2>
-            <p class="stat-value">{{ card.value | number }}</p>
-            <p class="stat-caption">{{ card.caption }}</p>
-            <span class="trend" [class.down]="trends[i].direction === 'down'">
-              <i class="bi" [class.bi-arrow-up-right]="trends[i].direction === 'up'" [class.bi-arrow-down-right]="trends[i].direction === 'down'"></i>
-              {{ trends[i].value }}
-            </span>
-          </article>
-        }
-      </div>
-
-      <div class="charts-grid">
-        <article class="chart-card">
-          <div class="chart-title">Warehouse Distribution</div>
-          <div class="bar-chart">
-            <div class="bar-lines">
-              @for (tick of [120, 100, 80, 60, 40, 20, 0]; track tick) {
-                <div class="line" [style.bottom.%]="(tick / 120) * 100">
-                  <span>{{ tick }}</span>
-                </div>
-              }
-            </div>
-
-            <div class="bar-columns">
-              @for (item of barSeries(); track item.label) {
-                <div class="bar-column">
-                  <div class="bar" [style.height.%]="(item.value / maxBarValue()) * 100"></div>
-                  <label>{{ item.label }}</label>
-                </div>
-              }
-            </div>
-          </div>
+    <div class="stats-grid">
+      @for (card of summaryCards(); track card.title; let i = $index) {
+        <article class="stat-card">
+          <h2>
+            <i [class]="card.icon"></i>
+            <span>{{ card.title }}</span>
+          </h2>
+          <p class="stat-value">{{ card.value | number }}</p>
+          <p class="stat-caption">{{ card.caption }}</p>
+          <span class="trend" [class.down]="trends[i].direction === 'down'">
+            <i
+              class="bi"
+              [class.bi-arrow-up-right]="trends[i].direction === 'up'"
+              [class.bi-arrow-down-right]="trends[i].direction === 'down'"
+            ></i>
+            {{ trends[i].value }}
+          </span>
         </article>
+      }
+    </div>
 
-        <article class="chart-card donut-card">
-          <div class="chart-title">Requisition Status</div>
-          <div class="donut-legend">
-            @for (item of donutSeries(); track item.label) {
-              <span>
-                <i [style.background]="item.color"></i>
-                {{ item.label }}
-              </span>
+    <div class="insights-grid">
+      <article class="insight-card">
+        <h2>Role Responsibilities</h2>
+        <ul>
+          @for (item of roleConfig().responsibilities; track item) {
+            <li>{{ item }}</li>
+          }
+        </ul>
+      </article>
+
+      <article class="insight-card">
+        <h2>Workflow Focus</h2>
+        <ol>
+          @for (step of roleConfig().flowFocus; track step) {
+            <li>{{ step }}</li>
+          }
+        </ol>
+      </article>
+    </div>
+
+    <div class="charts-grid">
+      <article class="chart-card">
+        <div class="chart-title">{{ roleConfig().barTitle }}</div>
+        <div class="bar-chart">
+          <div class="bar-lines">
+            @for (tick of [120, 100, 80, 60, 40, 20, 0]; track tick) {
+              <div class="line" [style.bottom.%]="(tick / 120) * 100">
+                <span>{{ tick }}</span>
+              </div>
             }
           </div>
 
-          <div class="donut-wrap">
-            <div class="donut" [style.background]="donutGradient()"></div>
+          <div class="bar-columns">
+            @for (item of barSeries(); track item.label) {
+              <div class="bar-column">
+                <div class="bar" [style.height.%]="(item.value / maxBarValue()) * 100"></div>
+                <label>{{ item.label }}</label>
+              </div>
+            }
           </div>
-        </article>
-      </div>
+        </div>
+      </article>
+
+      <article class="chart-card donut-card">
+        <div class="chart-title">{{ roleConfig().donutTitle }}</div>
+        <div class="donut-legend">
+          @for (item of donutSeries(); track item.label) {
+            <span>
+              <i [style.background]="item.color"></i>
+              {{ item.label }}
+            </span>
+          }
+        </div>
+
+        <div class="donut-wrap">
+          <div class="donut" [style.background]="donutGradient()"></div>
+        </div>
+      </article>
+    </div>
   </section>
 </section>

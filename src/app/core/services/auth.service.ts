@@ -1,8 +1,18 @@
 ﻿import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
-import { BehaviorSubject, Observable, tap } from 'rxjs';
+import { BehaviorSubject, Observable, map, tap } from 'rxjs';
 import { ApiService } from './api.service';
 import { TokenService } from './token.service';
+import { ApiResponseModel } from '../models/api-response.model';
+
+export type DashboardRole = 'admin' | 'storekeeper' | 'employee' | 'manager' | 'compliance-officer';
+export const DASHBOARD_ROLES: DashboardRole[] = [
+  'admin',
+  'storekeeper',
+  'employee',
+  'manager',
+  'compliance-officer',
+];
 
 export interface User {
   id: string;
@@ -35,7 +45,7 @@ export class AuthService {
   constructor(
     private apiService: ApiService,
     private tokenService: TokenService,
-    private router: Router
+    private router: Router,
   ) {
     this.loadStoredUser();
   }
@@ -48,16 +58,19 @@ export class AuthService {
   }
 
   login(request: LoginRequest): Observable<AuthResponse> {
-    return this.apiService.post<AuthResponse>('Auth/login', request).pipe(
-      tap(response => {
-        if (response.succeeded) {
-          this.tokenService.setToken(response.token);
-          this.tokenService.setRefreshToken(response.refreshToken);
-          this.tokenService.setUser(response.user);
-          this.currentUserSubject.next(response.user);
-        }
-      })
-    );
+    return this.apiService
+      .post<ApiResponseModel<AuthResponse> | AuthResponse>('Auth/login', request)
+      .pipe(
+        map((response) => this.extractAuthResponse(response)),
+        tap((response) => {
+          if (response.succeeded) {
+            this.tokenService.setToken(response.token);
+            this.tokenService.setRefreshToken(response.refreshToken);
+            this.tokenService.setUser(response.user);
+            this.currentUserSubject.next(response.user);
+          }
+        }),
+      );
   }
 
   logout(): void {
@@ -87,14 +100,119 @@ export class AuthService {
   hasAnyRole(roles: string[]): boolean {
     const user = this.getCurrentUser();
     if (!user?.roles) return false;
-    return roles.some(role => user.roles.includes(role));
+    return roles.some((role) => user.roles.includes(role));
   }
 
   hasAnyPermission(permissions: string[]): boolean {
     const user = this.getCurrentUser();
     if (!user?.permissions) return false;
-    return permissions.some(perm => user.permissions.includes(perm));
+    return permissions.some((perm) => user.permissions.includes(perm));
+  }
+
+  mapUserToDashboardRole(user: User | null): DashboardRole {
+    const normalizedRoles = (user?.roles ?? []).map((role) => this.normalizeRoleName(role));
+
+    if (
+      this.hasRoleMatch(normalizedRoles, [
+        'superadmin',
+        'admin',
+        'propertymanager',
+        'propertyofficer',
+      ])
+    ) {
+      return 'admin';
+    }
+
+    if (
+      this.hasRoleMatch(normalizedRoles, [
+        'storekeeper',
+        'storeman',
+        'storeofficer',
+        'storemanager',
+      ])
+    ) {
+      return 'storekeeper';
+    }
+
+    if (this.hasRoleMatch(normalizedRoles, ['manager', 'approver'])) {
+      return 'manager';
+    }
+
+    if (
+      this.hasRoleMatch(normalizedRoles, [
+        'auditor',
+        'complianceofficer',
+        'compliance',
+        'inspector',
+      ])
+    ) {
+      return 'compliance-officer';
+    }
+
+    if (
+      this.hasRoleMatch(normalizedRoles, [
+        'staff',
+        'employee',
+        'requisitionofficer',
+        'viewer',
+        'user',
+      ])
+    ) {
+      return 'employee';
+    }
+
+    return 'employee';
+  }
+
+  getDashboardRouteForUser(user: User | null): string {
+    return `/dashboard/${this.mapUserToDashboardRole(user)}`;
+  }
+
+  isDashboardRole(value: string): value is DashboardRole {
+    return DASHBOARD_ROLES.includes(value as DashboardRole);
+  }
+
+  private extractAuthResponse(
+    response: ApiResponseModel<AuthResponse> | AuthResponse,
+  ): AuthResponse {
+    if (this.isAuthResponse(response)) {
+      return response;
+    }
+
+    if (response?.data && this.isAuthResponse(response.data)) {
+      return response.data;
+    }
+
+    return {
+      succeeded: false,
+      token: '',
+      refreshToken: '',
+      expiresAt: '',
+      user: {
+        id: '',
+        username: '',
+        fullName: '',
+        email: '',
+        roles: [],
+        permissions: [],
+      },
+      errors: ['Unexpected authentication response.'],
+    };
+  }
+
+  private isAuthResponse(value: unknown): value is AuthResponse {
+    if (!value || typeof value !== 'object') {
+      return false;
+    }
+
+    return 'succeeded' in value && 'token' in value && 'user' in value;
+  }
+
+  private normalizeRoleName(role: string): string {
+    return role.replace(/[\s_-]+/g, '').toLowerCase();
+  }
+
+  private hasRoleMatch(normalizedRoles: string[], expected: string[]): boolean {
+    return normalizedRoles.some((role) => expected.includes(role));
   }
 }
-
-

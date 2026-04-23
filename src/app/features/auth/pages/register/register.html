@@ -1,4 +1,11 @@
 <section class="auth-page auth-sakai" aria-labelledby="register-title">
+  <div class="auth-video-layer" aria-hidden="true">
+    <video class="auth-video" autoplay muted loop>
+      <source src="/assets/videos/" type="video/mp4" />
+    </video>
+    <div class="auth-video-brand-tint"></div>
+  </div>
+
   <header class="auth-toolbar" aria-label="Theme controls">
     <button
       type="button"
@@ -6,6 +13,7 @@
       (click)="toggleDarkMode()"
       [attr.aria-pressed]="theme.darkMode()"
       [attr.aria-label]="theme.darkMode() ? 'Switch to light mode' : 'Switch to dark mode'"
+      title="{{ theme.darkMode() ? 'Switch to light mode' : 'Switch to dark mode' }}"
     >
       <i
         class="bi"
@@ -20,6 +28,7 @@
       [attr.aria-expanded]="themePanelOpen()"
       aria-controls="auth-theme-panel"
       aria-label="Open primary palette"
+      title="Open primary palette"
     >
       <i class="bi bi-palette2"></i>
     </button>
@@ -35,6 +44,7 @@
               [class.active]="theme.selectedPrimary() === option.id"
               [style.background]="option.value"
               [attr.aria-label]="'Set primary color ' + option.label"
+              title="{{ 'Set primary color ' + option.label }}"
               (click)="setPrimary(option.id)"
             ></button>
           }
@@ -52,7 +62,7 @@
       alt="AFRICOM Technologies"
       priority
     />
-    <h1 id="register-title">Create AFRICOM Account</h1>
+    <h1 id="register-title">Create Account</h1>
     <p class="auth-subtitle">Set up your account to continue</p>
 
     <form class="auth-form" [formGroup]="registerForm" (ngSubmit)="submit()" novalidate>
@@ -136,6 +146,7 @@
           class="input-action"
           (click)="togglePasswordVisibility()"
           [attr.aria-label]="showPassword() ? 'Hide password' : 'Show password'"
+          title="{{ showPassword() ? 'Hide password' : 'Show password' }}"
         >
           <i class="bi" [class.bi-eye-slash]="showPassword()" [class.bi-eye]="!showPassword()"></i>
         </button>
@@ -163,6 +174,7 @@
           [attr.aria-label]="
             showConfirmPassword() ? 'Hide confirm password' : 'Show confirm password'
           "
+          title="{{ showConfirmPassword() ? 'Hide confirm password' : 'Show confirm password' }}"
         >
           <i
             class="bi"
@@ -179,6 +191,18 @@
       }
       @if (passwordMismatch()) {
         <p class="field-error">Passwords do not match.</p>
+      }
+
+      <label class="auth-label" for="register-role">Role</label>
+      <div class="input-shell input-shell--select">
+        <select id="register-role" formControlName="roleName" class="select-field">
+          @for (role of roleOptions; track role.value) {
+            <option [value]="role.value">{{ role.label }}</option>
+          }
+        </select>
+      </div>
+      @if (showControlError('roleName') && registerForm.controls.roleName.hasError('required')) {
+        <p class="field-error">Please select a role.</p>
       }
 
       <label class="remember-row">

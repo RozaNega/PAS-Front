@@ -9,6 +9,7 @@ export interface RegisterRequest {
   phoneNumber?: string;
   email: string;
   password: string;
+  roleName: string;
   acceptedTerms: boolean;
 }
 

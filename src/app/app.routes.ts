@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { MainLayoutComponent } from './layouts/main-layout/main-layout.component';
+import { AuthGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
   {
@@ -21,12 +22,14 @@ export const routes: Routes = [
     children: [
       {
         path: '',
-        loadChildren: () => import('./features/catalog/catalog-module').then((m) => m.CatalogModule),
+        loadChildren: () =>
+          import('./features/catalog/catalog-module').then((m) => m.CatalogModule),
       },
     ],
   },
   {
     path: 'dashboard',
+    canActivate: [AuthGuard],
     loadChildren: () =>
       import('./features/dashboard/dashboard-module').then((m) => m.DashboardModule),
   },
@@ -36,7 +39,8 @@ export const routes: Routes = [
     children: [
       {
         path: '',
-        loadChildren: () => import('./features/storage/storage-module').then((m) => m.StorageModule),
+        loadChildren: () =>
+          import('./features/storage/storage-module').then((m) => m.StorageModule),
       },
     ],
   },
@@ -47,7 +51,9 @@ export const routes: Routes = [
       {
         path: '',
         loadComponent: () =>
-          import('./features/notifications/pages/notifications-page').then((m) => m.NotificationsPage),
+          import('./features/notifications/pages/notifications-page').then(
+            (m) => m.NotificationsPage,
+          ),
       },
     ],
   },
@@ -57,7 +63,8 @@ export const routes: Routes = [
     children: [
       {
         path: '',
-        loadChildren: () => import('./features/reports/reports.module').then((m) => m.ReportsModule),
+        loadChildren: () =>
+          import('./features/reports/reports.module').then((m) => m.ReportsModule),
       },
     ],
   },

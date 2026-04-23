@@ -9,14 +9,19 @@
       >
         <i class="bi bi-list"></i>
       </button>
-      <a class="topbar-brand" routerLink="/dashboard">
+      <a class="topbar-brand" [routerLink]="dashboardHomeRoute()">
         <span class="brand-mark">AFRICOM</span>
         <span class="brand-text">Asset Management Platform</span>
       </a>
     </div>
 
     <div class="topbar-right">
-      <button type="button" class="topbar-action-btn" aria-label="Toggle dark mode" (click)="toggleDarkMode()">
+      <button
+        type="button"
+        class="topbar-action-btn"
+        aria-label="Toggle dark mode"
+        (click)="toggleDarkMode()"
+      >
         <i class="bi" [class.bi-moon-stars-fill]="!darkTheme" [class.bi-sun-fill]="darkTheme"></i>
       </button>
       <a class="topbar-action-btn" routerLink="/notifications" aria-label="Open notifications">
@@ -25,7 +30,12 @@
       <a class="topbar-action-btn" routerLink="/dashboard/profile" aria-label="Open profile">
         <i class="bi bi-person"></i>
       </a>
-      <button type="button" class="topbar-action-btn topbar-action-btn--primary" aria-label="Open appearance config" (click)="toggleConfig()">
+      <button
+        type="button"
+        class="topbar-action-btn topbar-action-btn--primary"
+        aria-label="Open appearance config"
+        (click)="toggleConfig()"
+      >
         <i class="bi bi-palette2"></i>
       </button>
       <div class="user-chip" aria-label="Current user">
@@ -42,7 +52,11 @@
     </div>
   </header>
 
-  <aside class="theme-config" [class.theme-config--open]="configOpen" aria-label="Theme configurator">
+  <aside
+    class="theme-config"
+    [class.theme-config--open]="configOpen"
+    aria-label="Theme configurator"
+  >
     <p class="theme-config__title">Appearance</p>
 
     <p class="theme-config__label">Primary</p>
@@ -53,7 +67,8 @@
           class="swatch-btn"
           [style.background]="option.value"
           [class.swatch-btn--active]="selectedPrimary === option.id"
-          [attr.aria-label]="option.label"
+          aria-label="{{ option.label }}"
+          title="{{ option.label }}"
           (click)="setPrimary(option.id)"
         ></button>
       }
@@ -67,7 +82,8 @@
           class="swatch-btn"
           [style.background]="option.value"
           [class.swatch-btn--active]="selectedSurface === option.id"
-          [attr.aria-label]="option.label"
+          aria-label="{{ option.label }}"
+          title="{{ option.label }}"
           (click)="setSurface(option.id)"
         ></button>
       }
@@ -75,8 +91,16 @@
 
     <p class="theme-config__label">Menu Mode</p>
     <div class="mode-buttons">
-      <button type="button" [class.active]="menuMode === 'static'" (click)="setMenuMode('static')">Static</button>
-      <button type="button" [class.active]="menuMode === 'overlay'" (click)="setMenuMode('overlay')">Overlay</button>
+      <button type="button" [class.active]="menuMode === 'static'" (click)="setMenuMode('static')">
+        Static
+      </button>
+      <button
+        type="button"
+        [class.active]="menuMode === 'overlay'"
+        (click)="setMenuMode('overlay')"
+      >
+        Overlay
+      </button>
     </div>
   </aside>
 
@@ -119,5 +143,3 @@
     </main>
   </div>
 </div>
-
-

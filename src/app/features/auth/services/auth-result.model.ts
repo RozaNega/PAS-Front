@@ -3,6 +3,7 @@ export interface AuthUser {
   displayName: string;
   phoneNumber: string;
   email: string;
+  roleName?: string;
 }
 
 export interface AuthSession {

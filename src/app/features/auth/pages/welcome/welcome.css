@@ -38,7 +38,7 @@
   border: 1px solid rgba(124, 253, 234, 0.28);
   border-radius: 12px;
   background: rgba(5, 20, 19, 0.48);
-  backdrop-filter: blur(9px);
+  
   text-align: center;
   padding: 0.95rem 1rem;
 }

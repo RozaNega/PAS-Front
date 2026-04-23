@@ -23,7 +23,7 @@ export class Models {
     {
       name: 'AuthUser',
       summary: 'Public user profile data shared with the UI and session state.',
-      fields: ['id', 'displayName', 'email'],
+      fields: ['id', 'displayName', 'email', 'roleName?'],
     },
     {
       name: 'AuthSession',
@@ -52,4 +52,3 @@ export class Models {
 
   protected readonly currentUser = this.authApi.activeUser;
 }
-

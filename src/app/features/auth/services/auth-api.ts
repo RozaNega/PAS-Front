@@ -11,6 +11,7 @@ import {
 
 interface StoredUser extends AuthUser {
   password: string;
+  roleName: string;
 }
 
 interface PasswordResetToken {
@@ -31,6 +32,7 @@ const demoUser: StoredUser = {
   displayName: DEMO_DISPLAY_NAME,
   phoneNumber: '+251 911 000 000',
   email: DEMO_EMAIL,
+  roleName: 'Admin',
   password: DEMO_PASSWORD,
 };
 
@@ -77,6 +79,7 @@ export class AuthApi {
 
   register(request: RegisterRequest): AuthResult {
     const email = this.normalizeEmail(request.email);
+    const roleName = request.roleName.trim();
 
     if (!request.acceptedTerms) {
       return {
@@ -97,6 +100,7 @@ export class AuthApi {
       displayName: request.displayName.trim(),
       phoneNumber: request.phoneNumber?.trim() ?? '',
       email,
+      roleName,
       password: request.password,
     };
 
@@ -106,7 +110,7 @@ export class AuthApi {
 
     return {
       success: true,
-      message: `Account created for ${newUser.displayName}. You can sign in right away.`,
+      message: `Account created for ${newUser.displayName} as ${newUser.roleName}. You can sign in right away.`,
     };
   }
 
@@ -215,6 +219,7 @@ export class AuthApi {
       displayName: user.displayName,
       phoneNumber: user.phoneNumber,
       email: user.email,
+      roleName: user.roleName,
     };
   }
 
@@ -362,4 +367,3 @@ export class AuthApi {
     return localStorage;
   }
 }
-
