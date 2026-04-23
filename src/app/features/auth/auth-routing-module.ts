@@ -31,11 +31,6 @@ const routes: Routes = [
         data: { animation: 'login' },
       },
       {
-        path: 'login/:role',
-        component: Login,
-        data: { animation: 'login' },
-      },
-      {
         path: 'register',
         component: Register,
         data: { animation: 'register' },

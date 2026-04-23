@@ -18,6 +18,10 @@ interface ThemeOption {
   imports: [RouterOutlet, RouterLink, RouterLinkActive],
   templateUrl: './main-layout.component.html',
   styleUrls: ['./main-layout.component.scss'],
+  host: {
+    '(document:click)': 'onDocumentClick()',
+    '(document:keydown.escape)': 'closePopovers()',
+  },
 })
 export class MainLayoutComponent implements OnInit {
   protected readonly menuItems: MenuItem[] = menuConfig;
@@ -28,6 +32,26 @@ export class MainLayoutComponent implements OnInit {
   protected menuMode: 'static' | 'overlay' = 'static';
   protected selectedPrimary = 'violet';
   protected selectedSurface = 'slate';
+  protected notificationsOpen = false;
+  protected profileMenuOpen = false;
+
+  protected readonly quickNotifications = [
+    {
+      title: 'Requisition updated',
+      message: 'REQ-1034 changed status to Approved.',
+      time: '2m ago',
+    },
+    {
+      title: 'Low stock alert',
+      message: 'Central warehouse: printer paper is below threshold.',
+      time: '14m ago',
+    },
+    {
+      title: 'Transfer received',
+      message: 'TRF-228 was received at North store.',
+      time: '1h ago',
+    },
+  ];
 
   protected readonly primaryOptions: ThemeOption[] = [
     { id: 'emerald', label: 'Emerald', value: '#10b981' },
@@ -63,6 +87,7 @@ export class MainLayoutComponent implements OnInit {
       .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
       .subscribe(() => {
         this.user = this.authService.getCurrentUser();
+        this.closePopovers();
       });
   }
 
@@ -72,6 +97,52 @@ export class MainLayoutComponent implements OnInit {
 
   protected toggleConfig(): void {
     this.configOpen = !this.configOpen;
+    if (this.configOpen) {
+      this.notificationsOpen = false;
+      this.profileMenuOpen = false;
+    }
+  }
+
+  protected toggleNotifications(event: Event): void {
+    event.stopPropagation();
+    this.notificationsOpen = !this.notificationsOpen;
+    if (this.notificationsOpen) {
+      this.profileMenuOpen = false;
+      this.configOpen = false;
+    }
+  }
+
+  protected toggleProfileMenu(event: Event): void {
+    event.stopPropagation();
+    this.profileMenuOpen = !this.profileMenuOpen;
+    if (this.profileMenuOpen) {
+      this.notificationsOpen = false;
+      this.configOpen = false;
+    }
+  }
+
+  protected onDocumentClick(): void {
+    this.closePopovers();
+  }
+
+  protected closePopovers(): void {
+    this.notificationsOpen = false;
+    this.profileMenuOpen = false;
+    this.configOpen = false;
+  }
+
+  protected keepPopoverOpen(event: Event): void {
+    event.stopPropagation();
+  }
+
+  protected closeNotifications(event: Event): void {
+    event.stopPropagation();
+    this.notificationsOpen = false;
+  }
+
+  protected closeProfileMenu(event: Event): void {
+    event.stopPropagation();
+    this.profileMenuOpen = false;
   }
 
   protected toggleDarkMode(): void {

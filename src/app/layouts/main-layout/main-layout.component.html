@@ -24,17 +24,89 @@
       >
         <i class="bi" [class.bi-moon-stars-fill]="!darkTheme" [class.bi-sun-fill]="darkTheme"></i>
       </button>
-      <a class="topbar-action-btn" routerLink="/notifications" aria-label="Open notifications">
-        <i class="bi bi-bell"></i>
-      </a>
-      <a class="topbar-action-btn" routerLink="/dashboard/profile" aria-label="Open profile">
-        <i class="bi bi-person"></i>
-      </a>
+
+      <div class="topbar-popover-wrap" (click)="keepPopoverOpen($event)">
+        <button
+          type="button"
+          class="topbar-action-btn"
+          aria-label="Open notifications"
+          [attr.aria-expanded]="notificationsOpen"
+          (click)="toggleNotifications($event)"
+        >
+          <i class="bi bi-bell"></i>
+        </button>
+
+        @if (notificationsOpen) {
+          <section class="topbar-popover notifications-popover" aria-label="Recent notifications">
+            <header class="popover-header">
+              <h2>Notifications</h2>
+              <button
+                type="button"
+                class="popover-close"
+                aria-label="Close notifications"
+                title="Close notifications"
+                (click)="closeNotifications($event)"
+              >
+                <i class="bi bi-x-lg"></i>
+              </button>
+            </header>
+
+            <div class="popover-list">
+              @for (item of quickNotifications; track item.title + item.time) {
+                <article class="popover-item">
+                  <p class="popover-item-title">{{ item.title }}</p>
+                  <p class="popover-item-text">{{ item.message }}</p>
+                  <span class="popover-item-time">{{ item.time }}</span>
+                </article>
+              }
+            </div>
+
+            <a
+              class="popover-link"
+              routerLink="/notifications"
+              (click)="closeNotifications($event)"
+            >
+              View all notifications
+            </a>
+          </section>
+        }
+      </div>
+
+      <div class="topbar-popover-wrap" (click)="keepPopoverOpen($event)">
+        <button
+          type="button"
+          class="topbar-action-btn"
+          aria-label="Open profile menu"
+          [attr.aria-expanded]="profileMenuOpen"
+          (click)="toggleProfileMenu($event)"
+        >
+          <i class="bi bi-person"></i>
+        </button>
+
+        @if (profileMenuOpen) {
+          <section class="topbar-popover profile-popover" aria-label="Profile menu">
+            <a routerLink="/dashboard/profile" (click)="closeProfileMenu($event)">
+              <i class="bi bi-person-circle"></i>
+              Profile
+            </a>
+            <a routerLink="/notifications" (click)="closeProfileMenu($event)">
+              <i class="bi bi-bell"></i>
+              Notifications
+            </a>
+            <button type="button" (click)="logout()">
+              <i class="bi bi-box-arrow-right"></i>
+              Sign out
+            </button>
+          </section>
+        }
+      </div>
+
       <button
         type="button"
         class="topbar-action-btn topbar-action-btn--primary"
         aria-label="Open appearance config"
-        (click)="toggleConfig()"
+        [attr.aria-expanded]="configOpen"
+        (click)="toggleConfig(); keepPopoverOpen($event)"
       >
         <i class="bi bi-palette2"></i>
       </button>

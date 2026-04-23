@@ -63,13 +63,7 @@
       priority
     />
     <h1 id="login-title">Welcome to AFRICOM!</h1>
-    <p class="auth-subtitle">
-      @if (activeRoleLabel(); as activeRole) {
-        Sign in as {{ activeRole }} to continue
-      } @else {
-        Sign in to continue
-      }
-    </p>
+    <p class="auth-subtitle">Sign in to continue</p>
 
     <form class="auth-form" [formGroup]="loginForm" (ngSubmit)="submit()" novalidate>
       <label class="auth-label" for="login-username">Email</label>
@@ -134,13 +128,6 @@
         </p>
       }
     </form>
-
-    <p class="sign-as-row">
-      <span>Sign in as:</span>
-      @for (role of quickRoles; track role) {
-        <a class="sign-as-link" [routerLink]="['/auth/login', role.slug]">{{ role.label }}</a>
-      }
-    </p>
 
     <p class="auth-switch-row">
       Don’t have an account?

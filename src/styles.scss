@@ -1,7 +1,7 @@
 ﻿/* You can add global styles to this file, and also import other style files */
 
-@import './styles/auth-shared';
-@import './styles/catalog-shared';
+@use './styles/auth-shared';
+@use './styles/catalog-shared';
 
 :root {
   --surface-ground: #f3f6fb;
