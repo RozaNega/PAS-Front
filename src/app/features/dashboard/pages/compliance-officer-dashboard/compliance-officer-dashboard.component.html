@@ -1,0 +1,101 @@
+<section class="compliance-dashboard" aria-label="Compliance officer dashboard">
+  <header class="welcome-banner">
+    <h1>Compliance Officer Dashboard</h1>
+    <p>Welcome, {{ officerName() }}</p>
+  </header>
+
+  <section class="summary" aria-labelledby="summary-heading">
+    <h2 id="summary-heading">Summary Cards</h2>
+    <div class="card-grid">
+      @for (card of summaryCards(); track card.title) {
+        <article class="summary-card">
+          <p class="card-title">{{ card.title }}</p>
+          <p class="card-value">{{ card.value }}</p>
+        </article>
+      }
+    </div>
+  </section>
+
+  <section class="filters" aria-labelledby="filters-heading">
+    <h2 id="filters-heading">Filters</h2>
+    <div class="actions-row">
+      @for (filter of filters; track filter) {
+        <button
+          type="button"
+          class="filter-chip"
+          [class.filter-chip--active]="selectedFilter() === filter"
+          (click)="setFilter(filter)"
+        >
+          {{ filter }}
+        </button>
+      }
+    </div>
+  </section>
+
+  <section class="content-grid">
+    <section class="logs-panel" aria-labelledby="logs-heading">
+      <h2 id="logs-heading">Activity Logs / Audit Trail</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">User Name</th>
+              <th scope="col">Action</th>
+              <th scope="col">Module</th>
+              <th scope="col">Date &amp; Time</th>
+              <th scope="col">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (entry of filteredLogs(); track entry.id) {
+              <tr>
+                <td>{{ entry.userName }}</td>
+                <td>{{ entry.action }}</td>
+                <td>{{ entry.module }}</td>
+                <td>{{ entry.dateTime }}</td>
+                <td>
+                  <span
+                    class="status-pill"
+                    [class.status-pill--flagged]="entry.status === 'Flagged'"
+                    [class.status-pill--normal]="entry.status === 'Normal'"
+                  >
+                    {{ entry.status }}
+                  </span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <aside class="alerts-panel" aria-labelledby="alerts-heading">
+      <h2 id="alerts-heading">Alerts / Violations</h2>
+      <div class="alerts-list">
+        @for (alert of alerts(); track alert.title) {
+          <article class="alert-card">
+            <div class="alert-card__header">
+              <strong>{{ alert.title }}</strong>
+              <span class="severity severity--{{ alert.severity.toLowerCase() }}">
+                {{ alert.severity }}
+              </span>
+            </div>
+            <p>{{ alert.description }}</p>
+          </article>
+        }
+      </div>
+    </aside>
+  </section>
+
+  <section class="overview-panel" aria-labelledby="overview-heading">
+    <h2 id="overview-heading">Activity Trends</h2>
+    <div class="trend-list">
+      @for (item of dailyActivityOverview(); track item.label) {
+        <article class="trend-item">
+          <span>{{ item.label }}</span>
+          <strong>{{ item.value }}</strong>
+        </article>
+      }
+    </div>
+  </section>
+</section>

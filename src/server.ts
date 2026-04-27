@@ -14,6 +14,51 @@ const publicAssetsFolder = join(process.cwd(), 'public');
 const app = express();
 const angularApp = new AngularNodeAppEngine();
 
+const dashboardStatisticsResponse = {
+  success: true,
+  message: 'Dashboard statistics loaded successfully.',
+  statusCode: 200,
+  data: {
+    platform: {
+      badge: 'Operations Platform 2026',
+      title: "AFRICOM'S TECHNOLOGIES",
+      since: 'SINCE 2004',
+      subtitle:
+        'Coordinate assets, inventory, and requisitions from one command layer with policy-driven workflows and real-time visibility for every department.',
+    },
+    liveAttendees: {
+      total: 14666,
+      trendPercent: 12.5,
+      trendDirection: 'up',
+      comparisonLabel: 'vs last month',
+      countdown: {
+        days: 20,
+        hours: 14,
+        minutes: 6,
+        seconds: 37,
+        untilLabel: 'Until May 14th, 2026',
+      },
+    },
+    highlights: [
+      {
+        value: '500+',
+        label: 'Active Sites',
+        note: 'Across all regions',
+      },
+      {
+        value: '99.9%',
+        label: 'Data Accuracy',
+        note: 'Trusted and verified',
+      },
+      {
+        value: '24/7',
+        label: 'Operations Visibility',
+        note: 'Real-time monitoring',
+      },
+    ],
+  },
+};
+
 /**
  * Example Express Rest API endpoints can be defined here.
  * Uncomment and define endpoints as necessary.
@@ -25,6 +70,9 @@ const angularApp = new AngularNodeAppEngine();
  * });
  * ```
  */
+app.get('/api/Dashboard/statistics', (_req, res) => {
+  res.status(200).json(dashboardStatisticsResponse);
+});
 
 /**
  * Serve static files from /browser
@@ -61,9 +109,7 @@ app.use(
 app.use((req, res, next) => {
   angularApp
     .handle(req)
-    .then((response) =>
-      response ? writeResponseToNodeResponse(response, res) : next(),
-    )
+    .then((response) => (response ? writeResponseToNodeResponse(response, res) : next()))
     .catch(next);
 });
 

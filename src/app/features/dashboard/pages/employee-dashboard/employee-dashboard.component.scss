@@ -1,0 +1,262 @@
+.employee-dashboard {
+  display: grid;
+  gap: 1.25rem;
+  color: var(--text-color);
+}
+
+.welcome-banner h1 {
+  margin: 0;
+  font-size: 1.9rem;
+  font-weight: 700;
+}
+
+.welcome-banner p {
+  margin: 0.35rem 0 0;
+  color: var(--text-color-muted);
+  font-size: 0.98rem;
+}
+
+.summary,
+.quick-actions,
+.recent-requests,
+.notifications,
+.panel {
+  background: var(--surface-card);
+  border: 1px solid var(--surface-border);
+  border-radius: 14px;
+  padding: 1rem;
+}
+
+.summary h2,
+.quick-actions h2,
+.recent-requests h2,
+.notifications h2 {
+  margin: 0 0 0.8rem;
+  font-size: 1.1rem;
+}
+
+.card-grid {
+  display: grid;
+  gap: 0.8rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.summary-card {
+  border: 1px solid var(--surface-border);
+  border-radius: 12px;
+  padding: 0.8rem;
+  background: linear-gradient(180deg, var(--surface-section) 0%, var(--surface-card) 100%);
+}
+
+.card-title {
+  margin: 0;
+  color: var(--text-color-muted);
+  font-weight: 600;
+}
+
+.card-value {
+  margin: 0.4rem 0 0;
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+
+.actions-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.5rem;
+  padding: 0.35rem 1rem;
+  border-radius: 10px;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.action-btn.primary {
+  background: var(--primary-color);
+  color: #ffffff;
+}
+
+.action-btn.secondary {
+  background: var(--primary-color-soft);
+  color: var(--primary-color);
+}
+
+.action-btn.action-active {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 1px;
+}
+
+.summary-strip {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-bottom: 0.9rem;
+}
+
+.summary-metric {
+  border: 1px solid var(--surface-border);
+  border-radius: 12px;
+  padding: 0.75rem;
+  background: var(--surface-card);
+}
+
+.summary-metric p {
+  margin: 0;
+  color: var(--text-color-muted);
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+
+.summary-metric strong {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 1.25rem;
+  color: var(--primary-color);
+}
+
+.panel-note {
+  display: inline-flex;
+  gap: 0.35rem;
+  margin-bottom: 0.9rem;
+  border: 1px solid var(--primary-color);
+  border-radius: 999px;
+  padding: 0.32rem 0.7rem;
+  background: var(--primary-color-soft);
+  color: var(--text-color);
+}
+
+.content-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 1.5fr 1fr;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  padding: 0.7rem;
+  text-align: left;
+  border-bottom: 1px solid var(--surface-border);
+}
+
+th {
+  color: var(--text-color-muted);
+  font-size: 0.9rem;
+}
+
+.status-pill {
+  border-radius: 999px;
+  padding: 0.2rem 0.6rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.status-pending {
+  color: #8f6b00;
+  background: #fff3cf;
+}
+
+.status-approved {
+  color: #0b6b3e;
+  background: #d9f5e6;
+}
+
+.status-rejected {
+  color: #922a2a;
+  background: #f9dfe0;
+}
+
+.notifications-list {
+  margin: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.notifications-list [role='listitem'] {
+  position: relative;
+  padding-left: 1.2rem;
+}
+
+.notifications-list [role='listitem']::before {
+  content: '\2022';
+  position: absolute;
+  left: 0;
+  color: var(--text-color-muted);
+}
+
+.simple-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem;
+  margin-bottom: 0.9rem;
+}
+
+.simple-form-grid label {
+  display: grid;
+  gap: 0.35rem;
+  font-weight: 600;
+  color: var(--text-color-muted);
+}
+
+.simple-form-grid input,
+.simple-form-grid textarea {
+  border: 1px solid var(--surface-border);
+  background: var(--surface-card);
+  color: var(--text-color);
+  border-radius: 10px;
+  padding: 0.6rem 0.7rem;
+  font: inherit;
+}
+
+.simple-form-grid .full-width {
+  grid-column: 1 / -1;
+}
+
+.profile-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+@media (max-width: 900px) {
+  .card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .content-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .simple-form-grid,
+  .profile-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .summary-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .summary-strip {
+    grid-template-columns: 1fr;
+  }
+}

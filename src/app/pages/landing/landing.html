@@ -53,9 +53,11 @@
             class="theme-icon-btn"
             type="button"
             (click)="toggleThemePanel()"
+            [class.active]="themePanelOpen()"
             [attr.aria-expanded]="themePanelOpen()"
             aria-controls="landing-theme-panel"
-            aria-label="Open theme palette"
+            [attr.aria-label]="themePanelOpen() ? 'Close theme palette' : 'Open theme palette'"
+            title="Theme palette"
           >
             <i class="bi bi-palette-fill" aria-hidden="true"></i>
           </button>
@@ -93,7 +95,6 @@
       <div class="container hero-grid">
         <div class="hero-copy">
           <p class="promo-pill"><span aria-hidden="true">●</span> Operations Platform 2026</p>
-
 
           <h1>
             <span class="headline-line">AFRICOM'S </span>

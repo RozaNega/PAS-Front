@@ -6,7 +6,7 @@ export const routes: Routes = [
   {
     path: '',
     pathMatch: 'full',
-    redirectTo: 'landing',
+    redirectTo: 'employee/dashboard',
   },
   {
     path: 'landing',
@@ -28,9 +28,123 @@ export const routes: Routes = [
     ],
   },
   {
+    path: 'employee',
+    component: MainLayoutComponent,
+    children: [
+      {
+        path: '',
+        pathMatch: 'full',
+        redirectTo: 'dashboard',
+      },
+      {
+        path: 'dashboard',
+        loadComponent: () =>
+          import('./features/dashboard/pages/employee-dashboard/employee-dashboard.component').then(
+            (m) => m.EmployeeDashboardComponent,
+          ),
+      },
+      {
+        path: 'dashboard/new-request',
+        loadComponent: () =>
+          import('./features/dashboard/pages/employee-dashboard/employee-dashboard.component').then(
+            (m) => m.EmployeeDashboardComponent,
+          ),
+      },
+      {
+        path: 'dashboard/my-requests',
+        loadComponent: () =>
+          import('./features/dashboard/pages/employee-dashboard/employee-dashboard.component').then(
+            (m) => m.EmployeeDashboardComponent,
+          ),
+      },
+      {
+        path: 'dashboard/my-requests-summary',
+        loadComponent: () =>
+          import('./features/dashboard/pages/employee-dashboard/employee-dashboard.component').then(
+            (m) => m.EmployeeDashboardComponent,
+          ),
+      },
+      {
+        path: 'dashboard/my-activity',
+        loadComponent: () =>
+          import('./features/dashboard/pages/employee-dashboard/employee-dashboard.component').then(
+            (m) => m.EmployeeDashboardComponent,
+          ),
+      },
+      {
+        path: 'dashboard/profile',
+        loadComponent: () =>
+          import('./features/dashboard/pages/employee-dashboard/employee-dashboard.component').then(
+            (m) => m.EmployeeDashboardComponent,
+          ),
+      },
+      {
+        path: 'dashboard/notifications',
+        loadComponent: () =>
+          import('./features/dashboard/pages/employee-dashboard/employee-dashboard.component').then(
+            (m) => m.EmployeeDashboardComponent,
+          ),
+      },
+      {
+        path: 'dashboard/catalog-items',
+        loadComponent: () =>
+          import('./features/dashboard/pages/employee-dashboard/employee-dashboard.component').then(
+            (m) => m.EmployeeDashboardComponent,
+          ),
+      },
+    ],
+  },
+  {
+    path: 'manager',
+    component: MainLayoutComponent,
+    children: [
+      {
+        path: '',
+        pathMatch: 'full',
+        redirectTo: 'dashboard',
+      },
+      {
+        path: 'dashboard',
+        loadComponent: () =>
+          import('./features/dashboard/pages/manager-dashboard/manager-dashboard.component').then(
+            (m) => m.ManagerDashboardComponent,
+          ),
+      },
+    ],
+  },
+  {
+    path: 'compliance-officer',
+    component: MainLayoutComponent,
+    children: [
+      {
+        path: '',
+        pathMatch: 'full',
+        redirectTo: 'dashboard',
+      },
+      {
+        path: 'dashboard',
+        loadComponent: () =>
+          import('./features/dashboard/pages/compliance-officer-dashboard/compliance-officer-dashboard.component').then(
+            (m) => m.ComplianceOfficerDashboardComponent,
+          ),
+      },
+    ],
+  },
+  {
     path: 'dashboard',
     loadChildren: () =>
       import('./features/dashboard/dashboard-module').then((m) => m.DashboardModule),
+  },
+  {
+    path: 'requisition',
+    component: MainLayoutComponent,
+    children: [
+      {
+        path: '',
+        loadChildren: () =>
+          import('./features/requisition/requisition.module').then((m) => m.RequisitionModule),
+      },
+    ],
   },
   {
     path: 'storage',
@@ -69,6 +183,6 @@ export const routes: Routes = [
   },
   {
     path: '**',
-    redirectTo: 'landing',
+    redirectTo: 'employee/dashboard',
   },
 ];

@@ -1,0 +1,255 @@
+<section class="employee-dashboard" aria-label="Employee dashboard">
+  <header class="welcome-banner">
+    <h1>{{ pageTitle }}</h1>
+    <p>Welcome, {{ userName }}</p>
+  </header>
+
+  @if (currentView === 'home') {
+    <section class="summary" aria-labelledby="summary-heading">
+      <h2 id="summary-heading">Summary Cards</h2>
+      <div class="card-grid">
+        @for (card of summaryCards; track card.title) {
+          <article class="summary-card">
+            <p class="card-title">{{ card.title }}</p>
+            <p class="card-value">{{ card.value }}</p>
+          </article>
+        }
+      </div>
+    </section>
+
+    <section class="quick-actions" aria-labelledby="quick-actions-heading">
+      <h2 id="quick-actions-heading">Quick Actions</h2>
+      <div class="actions-row">
+        <a
+          class="action-btn primary"
+          routerLink="/employee/dashboard/new-request"
+          [class.action-active]="router.url.includes('/employee/dashboard/new-request')"
+          >+ New Request</a
+        >
+        <a
+          class="action-btn secondary"
+          routerLink="/employee/dashboard/my-requests"
+          [class.action-active]="router.url.includes('/employee/dashboard/my-requests')"
+          >My Requests</a
+        >
+      </div>
+    </section>
+
+    <section class="content-grid">
+      <section class="recent-requests" aria-labelledby="recent-requests-heading">
+        <h2 id="recent-requests-heading">Recent Requests</h2>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Item Name</th>
+                <th scope="col">Quantity</th>
+                <th scope="col">Status</th>
+                <th scope="col">Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (request of recentRequests; track request.itemName + request.dateLabel) {
+                <tr>
+                  <td>{{ request.itemName }}</td>
+                  <td>{{ request.quantity }}</td>
+                  <td>
+                    <span
+                      class="status-pill"
+                      [class.status-pending]="request.status === 'Pending'"
+                      [class.status-approved]="request.status === 'Approved'"
+                      [class.status-rejected]="request.status === 'Rejected'"
+                    >
+                      {{ request.status }}
+                    </span>
+                  </td>
+                  <td>{{ request.dateLabel }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <aside class="notifications" aria-labelledby="notifications-heading">
+        <h2 id="notifications-heading">Notifications</h2>
+        <div class="notifications-list" role="list">
+          @for (notification of notifications; track notification) {
+            <div role="listitem">{{ notification }}</div>
+          }
+        </div>
+      </aside>
+    </section>
+  }
+
+  @if (currentView === 'new-request') {
+    <section class="panel" aria-labelledby="new-request-heading">
+      <h2 id="new-request-heading">Create New Request</h2>
+      <div class="simple-form-grid">
+        <label>
+          Item Name
+          <input type="text" value="Laptop" />
+        </label>
+        <label>
+          Quantity
+          <input type="number" value="1" min="1" />
+        </label>
+        <label class="full-width">
+          Note
+          <textarea rows="4">Need for office assignment.</textarea>
+        </label>
+      </div>
+      <div class="actions-row">
+        <a class="action-btn primary" routerLink="/employee/dashboard/my-requests"
+          >Submit Request</a
+        >
+      </div>
+    </section>
+  }
+
+  @if (currentView === 'my-requests') {
+    <section class="panel" aria-labelledby="my-requests-heading">
+      <h2 id="my-requests-heading">My Requests</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Item Name</th>
+              <th scope="col">Quantity</th>
+              <th scope="col">Status</th>
+              <th scope="col">Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (request of recentRequests; track request.itemName + request.dateLabel) {
+              <tr>
+                <td>{{ request.itemName }}</td>
+                <td>{{ request.quantity }}</td>
+                <td>
+                  <span
+                    class="status-pill"
+                    [class.status-pending]="request.status === 'Pending'"
+                    [class.status-approved]="request.status === 'Approved'"
+                    [class.status-rejected]="request.status === 'Rejected'"
+                  >
+                    {{ request.status }}
+                  </span>
+                </td>
+                <td>{{ request.dateLabel }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  }
+
+  @if (currentView === 'my-requests-summary') {
+    <section class="panel" aria-labelledby="my-requests-summary-heading">
+      <h2 id="my-requests-summary-heading">My Requests Summary</h2>
+
+      <div class="summary-strip" role="list" aria-label="Request summary metrics">
+        @for (metric of requestSummaryMetrics; track metric.label) {
+          <article class="summary-metric" role="listitem">
+            <p>{{ metric.label }}</p>
+            <strong>{{ metric.value }}</strong>
+          </article>
+        }
+      </div>
+
+      <div class="panel-note">
+        <strong>Total Requested Quantity:</strong>
+        <span>{{ totalRequestedQuantity }}</span>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Status</th>
+              <th scope="col">Count</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="status-pill status-pending">Pending</span></td>
+              <td>7</td>
+            </tr>
+            <tr>
+              <td><span class="status-pill status-approved">Approved</span></td>
+              <td>13</td>
+            </tr>
+            <tr>
+              <td><span class="status-pill status-rejected">Rejected</span></td>
+              <td>4</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  }
+
+  @if (currentView === 'my-activity') {
+    <section class="panel" aria-labelledby="my-activity-heading">
+      <h2 id="my-activity-heading">My Activity</h2>
+      <div class="notifications-list" role="list">
+        @for (activity of activities; track activity) {
+          <div role="listitem">{{ activity }}</div>
+        }
+      </div>
+    </section>
+  }
+
+  @if (currentView === 'profile') {
+    <section class="panel" aria-labelledby="profile-heading">
+      <h2 id="profile-heading">User Profile</h2>
+      <div class="profile-grid">
+        <div><strong>Name:</strong> {{ userName }}</div>
+        <div><strong>Role:</strong> Operator</div>
+        <div><strong>Department:</strong> Operations</div>
+        <div><strong>Email:</strong> user@africom.local</div>
+      </div>
+    </section>
+  }
+
+  @if (currentView === 'notifications') {
+    <section class="panel" aria-labelledby="employee-notification-heading">
+      <h2 id="employee-notification-heading">Notifications</h2>
+      <div class="notifications-list" role="list">
+        @for (notification of notifications; track notification) {
+          <div role="listitem">{{ notification }}</div>
+        }
+      </div>
+    </section>
+  }
+
+  @if (currentView === 'catalog-items') {
+    <section class="panel" aria-labelledby="catalog-items-heading">
+      <h2 id="catalog-items-heading">Catalog Items</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Item</th>
+              <th scope="col">Category</th>
+              <th scope="col">Availability</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of catalogItems; track item.name) {
+              <tr>
+                <td>{{ item.name }}</td>
+                <td>{{ item.category }}</td>
+                <td>{{ item.availability }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <div class="actions-row">
+        <a class="action-btn secondary" routerLink="/catalog/items">Open Full Catalog</a>
+      </div>
+    </section>
+  }
+</section>
