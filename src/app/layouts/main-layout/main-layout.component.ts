@@ -1,9 +1,11 @@
-﻿import { Component, OnInit } from '@angular/core';
+﻿import { Component, OnInit, computed, inject } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { SignalRService } from '../../core/services/signalr.service';
-import { filter } from 'rxjs';
-import { MenuItem, menuConfig } from '../../config/menu.config';
+import { filter, map } from 'rxjs';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { getMenuConfigForRole, MenuItem } from '../../config/menu.config';
 import { User } from '../../core/services/auth.service';
 
 interface ThemeOption {
@@ -12,10 +14,16 @@ interface ThemeOption {
   value: string;
 }
 
+interface PopoverNotificationItem {
+  title: string;
+  message: string;
+  time: string;
+}
+
 @Component({
   selector: 'app-main-layout',
   standalone: true,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive],
   templateUrl: './main-layout.component.html',
   styleUrls: ['./main-layout.component.scss'],
   host: {
@@ -24,34 +32,111 @@ interface ThemeOption {
   },
 })
 export class MainLayoutComponent implements OnInit {
-  protected readonly menuItems: MenuItem[] = menuConfig;
+  private readonly authService = inject(AuthService);
+  private readonly signalRService = inject(SignalRService);
+  private readonly router = inject(Router);
+
+  protected menuItems: MenuItem[] = [];
   protected user: User | null = null;
-  protected sidebarOpen = false;
+  protected sidebarOpen = true;
   protected configOpen = false;
   protected darkTheme = false;
   protected menuMode: 'static' | 'overlay' = 'static';
   protected selectedPrimary = 'violet';
   protected selectedSurface = 'slate';
   protected notificationsOpen = false;
-  protected profileMenuOpen = false;
+  protected openMenuGroups: Set<string> = new Set();
+  protected readonly notifications = toSignal(
+    this.signalRService.notifications$.pipe(
+      map((items) =>
+        items.map<PopoverNotificationItem>((item) => ({
+          title: item.type === 'error' ? 'Error' : item.type === 'success' ? 'Success' : 'Info',
+          message: item.message,
+          time: this.formatNotificationTime(item.sentDate),
+        })),
+      ),
+    ),
+    { initialValue: [] as PopoverNotificationItem[] },
+  );
 
-  protected readonly quickNotifications = [
-    {
-      title: 'Requisition updated',
-      message: 'REQ-1034 changed status to Approved.',
-      time: '2m ago',
-    },
-    {
-      title: 'Low stock alert',
-      message: 'Central warehouse: printer paper is below threshold.',
-      time: '14m ago',
-    },
-    {
-      title: 'Transfer received',
-      message: 'TRF-228 was received at North store.',
-      time: '1h ago',
-    },
-  ];
+  protected readonly quickNotifications = computed<PopoverNotificationItem[]>(() => {
+    const notifications = this.notifications();
+
+    if (notifications.length > 0) {
+      return notifications;
+    }
+
+    // Admin-specific notifications
+    if (this.router.url.startsWith('/admin')) {
+      return [
+        {
+          title: 'New Property Added',
+          message: 'Property "Sunset Villas" has been successfully added to the system.',
+          time: '5m ago',
+        },
+        {
+          title: 'User Approval Request',
+          message: '3 new users awaiting approval for admin access.',
+          time: '30m ago',
+        },
+        {
+          title: 'System Backup Completed',
+          message: 'Daily backup completed successfully. Database size: 2.4GB',
+          time: '2h ago',
+        },
+        {
+          title: 'Security Alert',
+          message: 'Multiple failed login attempts detected from unknown IP address.',
+          time: '4h ago',
+        },
+      ];
+    }
+
+    // Storekeeper-specific notifications
+    if (this.router.url.startsWith('/storekeeper')) {
+      return [
+        {
+          title: 'Urgent: Stock Issuance Pending',
+          message: '3 urgent stock issuance requests need immediate attention.',
+          time: '5m ago',
+        },
+        {
+          title: 'New GRN Received',
+          message: 'GRN-2024-0456 received from Tech Supplies Ltd. Ready for inspection.',
+          time: '15m ago',
+        },
+        {
+          title: 'Low Stock Alert',
+          message: 'Laptop stock is critically low (5 units). Minimum threshold: 20 units.',
+          time: '45m ago',
+        },
+        {
+          title: 'Warehouse Transfer Completed',
+          message: 'Transfer of 50 monitors from Warehouse A to Warehouse B completed.',
+          time: '2h ago',
+        },
+      ];
+    }
+
+    // Default notifications for other roles
+    return [
+      {
+        title: 'Requisition updated',
+        message: 'REQ-1034 changed status to Approved.',
+        time: '2m ago',
+      },
+      {
+        title: 'Low stock alert',
+        message: 'Central warehouse: printer paper is below threshold.',
+        time: '14m ago',
+      },
+      {
+        title: 'Transfer received',
+        message: 'TRF-228 was received at North store.',
+        time: '1h ago',
+      },
+    ];
+  });
 
   protected readonly primaryOptions: ThemeOption[] = [
     { id: 'emerald', label: 'Emerald', value: '#10b981' },
@@ -71,14 +156,11 @@ export class MainLayoutComponent implements OnInit {
     { id: 'gray', label: 'Gray', value: '#f3f4f6' },
   ];
 
-  constructor(
-    private authService: AuthService,
-    private signalRService: SignalRService,
-    private router: Router,
-  ) {}
+  constructor() {}
 
   ngOnInit(): void {
     this.user = this.authService.getCurrentUser();
+    this.updateMenuItems();
     this.signalRService.startConnection();
     this.restoreTheme();
     this.applyTheme();
@@ -87,6 +169,7 @@ export class MainLayoutComponent implements OnInit {
       .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
       .subscribe(() => {
         this.user = this.authService.getCurrentUser();
+        this.updateMenuItems();
         this.closePopovers();
       });
   }
@@ -99,7 +182,6 @@ export class MainLayoutComponent implements OnInit {
     this.configOpen = !this.configOpen;
     if (this.configOpen) {
       this.notificationsOpen = false;
-      this.profileMenuOpen = false;
     }
   }
 
@@ -107,16 +189,6 @@ export class MainLayoutComponent implements OnInit {
     event.stopPropagation();
     this.notificationsOpen = !this.notificationsOpen;
     if (this.notificationsOpen) {
-      this.profileMenuOpen = false;
-      this.configOpen = false;
-    }
-  }
-
-  protected toggleProfileMenu(event: Event): void {
-    event.stopPropagation();
-    this.profileMenuOpen = !this.profileMenuOpen;
-    if (this.profileMenuOpen) {
-      this.notificationsOpen = false;
       this.configOpen = false;
     }
   }
@@ -127,7 +199,6 @@ export class MainLayoutComponent implements OnInit {
 
   protected closePopovers(): void {
     this.notificationsOpen = false;
-    this.profileMenuOpen = false;
     this.configOpen = false;
   }
 
@@ -138,11 +209,6 @@ export class MainLayoutComponent implements OnInit {
   protected closeNotifications(event: Event): void {
     event.stopPropagation();
     this.notificationsOpen = false;
-  }
-
-  protected closeProfileMenu(event: Event): void {
-    event.stopPropagation();
-    this.profileMenuOpen = false;
   }
 
   protected toggleDarkMode(): void {
@@ -165,7 +231,7 @@ export class MainLayoutComponent implements OnInit {
 
   protected setMenuMode(mode: 'static' | 'overlay'): void {
     this.menuMode = mode;
-    this.sidebarOpen = false;
+    this.sidebarOpen = mode === 'static';
     this.persistTheme();
   }
 
@@ -174,11 +240,76 @@ export class MainLayoutComponent implements OnInit {
   }
 
   protected onSidebarItemClick(): void {
-    this.sidebarOpen = false;
+    if (
+      this.menuMode === 'overlay' ||
+      (typeof window !== 'undefined' && window.innerWidth <= 1024)
+    ) {
+      this.sidebarOpen = false;
+    }
   }
 
   protected dashboardHomeRoute(): string {
+    if (this.isManagerRoute()) {
+      return '/manager/dashboard';
+    }
+
+    if (this.isComplianceOfficerRoute()) {
+      return '/compliance-officer/dashboard';
+    }
+
     return this.authService.getDashboardRouteForUser(this.user);
+  }
+
+  protected profileRoute(): string {
+    if (this.isManagerRoute()) {
+      return '/manager/dashboard';
+    }
+
+    if (this.isComplianceOfficerRoute()) {
+      return '/compliance-officer/dashboard';
+    }
+
+    return '/employee/dashboard/profile';
+  }
+
+  protected notificationsRoute(): string {
+  if (this.router.url.startsWith('/admin')) {
+    return '/admin/notifications';
+  }
+
+  if (this.router.url.startsWith('/storekeeper')) {
+    return '/storekeeper/notifications';
+  }
+
+  if (this.isManagerRoute()) {
+    return '/manager/dashboard';
+  }
+
+  if (this.isComplianceOfficerRoute()) {
+    return '/compliance-officer/dashboard';
+  }
+
+  return '/notifications';
+}
+
+  protected isManagerRoute(): boolean {
+    return this.router.url.startsWith('/manager');
+  }
+
+  protected isComplianceOfficerRoute(): boolean {
+    return this.router.url.startsWith('/compliance-officer');
+  }
+
+  protected toggleMenuGroup(label: string): void {
+    if (this.openMenuGroups.has(label)) {
+      this.openMenuGroups.delete(label);
+    } else {
+      this.openMenuGroups.add(label);
+    }
+  }
+
+  protected isMenuGroupOpen(label: string): boolean {
+    return this.openMenuGroups.has(label);
   }
 
   protected logout(): void {
@@ -202,6 +333,44 @@ export class MainLayoutComponent implements OnInit {
     return new Date().getFullYear();
   }
 
+  protected activeTopbarLabel(): string {
+    const url = this.router.url;
+    const routeItems = this.menuItems.filter(
+      (item): item is MenuItem & { route: string } => typeof item.route === 'string',
+    );
+
+    const match = routeItems
+      .filter((item) => url === item.route || url.startsWith(`${item.route}/`))
+      .sort((a, b) => b.route.length - a.route.length)[0];
+
+    return match?.label ?? 'Dashboard';
+  }
+
+  private updateMenuItems(): void {
+    if (this.router.url.startsWith('/admin')) {
+      this.menuItems = getMenuConfigForRole('admin');
+      return;
+    }
+
+    if (this.router.url.startsWith('/storekeeper')) {
+      this.menuItems = getMenuConfigForRole('storekeeper');
+      return;
+    }
+
+    if (this.isManagerRoute()) {
+      this.menuItems = getMenuConfigForRole('manager');
+      return;
+    }
+
+    if (this.isComplianceOfficerRoute()) {
+      this.menuItems = getMenuConfigForRole('compliance-officer');
+      return;
+    }
+
+    const role = this.authService.mapUserToDashboardRole(this.user);
+    this.menuItems = getMenuConfigForRole(role);
+  }
+
   private applyTheme(): void {
     if (typeof document === 'undefined') {
       return;
@@ -216,11 +385,18 @@ export class MainLayoutComponent implements OnInit {
 
     root.style.setProperty('--primary-color', primary);
     root.style.setProperty('--primary-color-soft', this.hexToSoft(primary));
-    root.style.setProperty('--surface-ground', this.darkTheme ? '#0b1220' : surface);
-    root.style.setProperty('--surface-card', this.darkTheme ? '#111827' : '#ffffff');
-    root.style.setProperty('--surface-border', this.darkTheme ? '#334155' : '#e2e8f0');
-    root.style.setProperty('--text-color', this.darkTheme ? '#dbe7fb' : '#334155');
-    root.style.setProperty('--text-color-muted', this.darkTheme ? '#94a3b8' : '#64748b');
+    root.style.setProperty('--primary-shadow-color', this.hexToRgba(primary, 0.35));
+    root.style.setProperty('--primary-focus-ring', this.hexToRgba(primary, 0.25));
+    root.style.setProperty('--surface-ground', this.darkTheme ? '#0a0a0a' : surface);
+    root.style.setProperty('--surface-card', this.darkTheme ? '#111111' : '#ffffff');
+    root.style.setProperty('--surface-border', this.darkTheme ? '#2f2f2f' : '#e2e8f0');
+    root.style.setProperty('--surface-section', this.darkTheme ? '#171717' : '#f8fafc');
+    root.style.setProperty('--text-color', this.darkTheme ? '#f5f5f5' : '#334155');
+    root.style.setProperty('--text-color-muted', this.darkTheme ? '#c5c5c5' : '#64748b');
+    root.style.setProperty(
+      '--topbar-bg',
+      this.darkTheme ? 'rgba(17, 17, 17, 0.92)' : 'rgba(255, 255, 255, 0.92)',
+    );
 
     body.classList.toggle('app-dark', this.darkTheme);
   }
@@ -263,5 +439,40 @@ export class MainLayoutComponent implements OnInit {
     const toHex = (value: number) => value.toString(16).padStart(2, '0');
 
     return `#${toHex(mix(r))}${toHex(mix(g))}${toHex(mix(b))}`;
+  }
+
+  private hexToRgba(hex: string, alpha: number): string {
+    const normalized = hex.replace('#', '');
+
+    if (normalized.length !== 6) {
+      return `rgba(99, 102, 241, ${alpha})`;
+    }
+
+    const r = Number.parseInt(normalized.slice(0, 2), 16);
+    const g = Number.parseInt(normalized.slice(2, 4), 16);
+    const b = Number.parseInt(normalized.slice(4, 6), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  }
+
+  private formatNotificationTime(date: Date): string {
+    const diffMs = Date.now() - date.getTime();
+    const diffMinutes = Math.floor(diffMs / 60000);
+
+    if (diffMinutes < 1) {
+      return 'just now';
+    }
+
+    if (diffMinutes < 60) {
+      return `${diffMinutes}m ago`;
+    }
+
+    const diffHours = Math.floor(diffMinutes / 60);
+
+    if (diffHours < 24) {
+      return `${diffHours}h ago`;
+    }
+
+    const diffDays = Math.floor(diffHours / 24);
+    return `${diffDays}d ago`;
   }
 }

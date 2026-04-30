@@ -86,6 +86,81 @@
   background: var(--app-surface-muted);
 }
 
+.nav-link--dashboard .nav-icon,
+.nav-link--dashboard .nav-label {
+  color: #1e4ed8;
+}
+
+.nav-link--profile .nav-icon,
+.nav-link--profile .nav-label {
+  color: #0f766e;
+}
+
+.nav-link--notifications .nav-icon,
+.nav-link--notifications .nav-label {
+  color: #b45309;
+}
+
+.nav-link--summary .nav-icon,
+.nav-link--summary .nav-label {
+  color: #5b21b6;
+}
+
+.nav-link--activity .nav-icon,
+.nav-link--activity .nav-label {
+  color: #0369a1;
+}
+
+.nav-link--catalog .nav-icon,
+.nav-link--catalog .nav-label {
+  color: #334155;
+}
+
+.nav-link--requests .nav-icon,
+.nav-link--requests .nav-label {
+  color: #166534;
+}
+
+.nav-link--notifications:hover {
+  background: #fff7ed;
+  border-color: #fed7aa;
+}
+
+.nav-link--notifications.active {
+  background: #fff4e6;
+  border-color: #fdba74;
+}
+
+.nav-link--dashboard.active {
+  background: #e8efff;
+  border-color: #bfdbfe;
+}
+
+.nav-link--requests.active {
+  background: #ecfdf3;
+  border-color: #a7f3d0;
+}
+
+.nav-link--summary.active {
+  background: #f5f3ff;
+  border-color: #ddd6fe;
+}
+
+.nav-link--activity.active {
+  background: #ecfeff;
+  border-color: #a5f3fc;
+}
+
+.nav-link--profile.active {
+  background: #ecfdf5;
+  border-color: #86efac;
+}
+
+.nav-link--catalog.active {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
 .nav-link.active {
   background: #e8eefc;
   color: #1d2f48;
@@ -102,6 +177,26 @@
   width: 3px;
   border-radius: 999px;
   background: var(--app-primary);
+}
+
+.nav-link--notifications.active::before {
+  background: #ea580c;
+}
+
+.nav-link--requests.active::before {
+  background: #15803d;
+}
+
+.nav-link--summary.active::before {
+  background: #7c3aed;
+}
+
+.nav-link--activity.active::before {
+  background: #0891b2;
+}
+
+.nav-link--profile.active::before {
+  background: #059669;
 }
 
 .nav-icon {

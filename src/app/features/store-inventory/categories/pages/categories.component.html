@@ -1,0 +1,418 @@
+<div class="categories-container">
+  <div class="page-header">
+    <div class="header-info">
+      <h1>Categories</h1>
+      <p class="subtitle">Organize items into hierarchical categories</p>
+    </div>
+    <button class="btn btn-primary" (click)="openAddModal()">
+      <i class="bi bi-plus-lg"></i> Add New
+    </button>
+  </div>
+
+  <div class="filter-bar">
+    <div class="search-box">
+      <i class="bi bi-search"></i>
+      <input type="text" [value]="searchTerm()" (input)="onSearchChange($any($event.target).value)" placeholder="Search categories...">
+    </div>
+    <div class="view-toggle">
+      <button class="view-btn" [class.active]="viewMode() === 'tree'" (click)="toggleViewMode('tree')">
+        <i class="bi bi-diagram-3"></i> Tree View
+      </button>
+      <button class="view-btn" [class.active]="viewMode() === 'list'" (click)="toggleViewMode('list')">
+        <i class="bi bi-list"></i> List View
+      </button>
+    </div>
+  </div>
+
+  <!-- Tree View -->
+  @if (viewMode() === 'tree') {
+    <div class="tree-view-section">
+      <h3>🌳 CATEGORY TREE VIEW</h3>
+      <div class="category-tree">
+        <div class="tree-node root">
+          <div class="node-content">
+            <i class="bi bi-folder-fill"></i>
+            <span class="node-name">All Categories (45)</span>
+          </div>
+          <div class="tree-children">
+            <div class="tree-node">
+              <div class="node-content">
+                <i class="bi bi-folder-fill"></i>
+                <span class="node-name">Electronics (234 items)</span>
+              </div>
+              <div class="tree-children">
+                <div class="tree-node">
+                  <div class="node-content">
+                    <i class="bi bi-folder"></i>
+                    <span class="node-name">Computers (89 items)</span>
+                  </div>
+                  <div class="tree-children">
+                    <div class="tree-node">
+                      <div class="node-content">
+                        <i class="bi bi-file-earmark"></i>
+                        <span class="node-name">Desktops (34 items)</span>
+                      </div>
+                    </div>
+                    <div class="tree-node">
+                      <div class="node-content">
+                        <i class="bi bi-file-earmark"></i>
+                        <span class="node-name">Laptops (45 items)</span>
+                      </div>
+                    </div>
+                    <div class="tree-node">
+                      <div class="node-content">
+                        <i class="bi bi-file-earmark"></i>
+                        <span class="node-name">Servers (10 items)</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="tree-node">
+                  <div class="node-content">
+                    <i class="bi bi-folder"></i>
+                    <span class="node-name">Printers (56 items)</span>
+                  </div>
+                  <div class="tree-children">
+                    <div class="tree-node">
+                      <div class="node-content">
+                        <i class="bi bi-file-earmark"></i>
+                        <span class="node-name">Laser Printers (34 items)</span>
+                      </div>
+                    </div>
+                    <div class="tree-node">
+                      <div class="node-content">
+                        <i class="bi bi-file-earmark"></i>
+                        <span class="node-name">Inkjet Printers (22 items)</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="tree-node">
+                  <div class="node-content">
+                    <i class="bi bi-folder"></i>
+                    <span class="node-name">Networking (78 items)</span>
+                  </div>
+                </div>
+                <div class="tree-node">
+                  <div class="node-content">
+                    <i class="bi bi-folder"></i>
+                    <span class="node-name">Audio/Visual (11 items)</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="tree-node">
+              <div class="node-content">
+                <i class="bi bi-folder-fill"></i>
+                <span class="node-name">Furniture (189 items)</span>
+              </div>
+              <div class="tree-children">
+                <div class="tree-node">
+                  <div class="node-content">
+                    <i class="bi bi-folder"></i>
+                    <span class="node-name">Chairs (89 items)</span>
+                  </div>
+                </div>
+                <div class="tree-node">
+                  <div class="node-content">
+                    <i class="bi bi-folder"></i>
+                    <span class="node-name">Desks (67 items)</span>
+                  </div>
+                </div>
+                <div class="tree-node">
+                  <div class="node-content">
+                    <i class="bi bi-folder"></i>
+                    <span class="node-name">Cabinets (33 items)</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="tree-node">
+              <div class="node-content">
+                <i class="bi bi-folder-fill"></i>
+                <span class="node-name">Stationery (234 items)</span>
+              </div>
+            </div>
+            <div class="tree-node">
+              <div class="node-content">
+                <i class="bi bi-folder-fill"></i>
+                <span class="node-name">Supplies (156 items)</span>
+              </div>
+            </div>
+            <div class="tree-node">
+              <div class="node-content">
+                <i class="bi bi-folder-fill"></i>
+                <span class="node-name">IT Equipment (89 items)</span>
+              </div>
+            </div>
+            <div class="tree-node">
+              <div class="node-content">
+                <i class="bi bi-folder-fill"></i>
+                <span class="node-name">Office Equipment (67 items)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- List View -->
+  @if (viewMode() === 'list') {
+    <div class="list-view-section">
+      <h3>📋 CATEGORY LIST VIEW</h3>
+      <div class="table-container">
+        <table class="categories-table">
+          <thead>
+            <tr>
+              <th>Category Name</th>
+              <th>Parent Category</th>
+              <th>Items Count</th>
+              <th>Subcategories</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (cat of filteredCategories(); track cat.id) {
+              <tr>
+                <td>{{ cat.name }}</td>
+                <td>{{ cat.parentCategory }}</td>
+                <td>{{ cat.itemsCount }}</td>
+                <td>{{ cat.subcategories }}</td>
+                <td>
+                  <span class="status-icon">{{ getStatusIcon(cat.status) }}</span>
+                </td>
+                <td>
+                  <div class="actions-cell">
+                    <button class="action-btn" (click)="openCategoryItemsModal(cat)" title="View">
+                      <i class="bi bi-eye"></i>
+                    </button>
+                    <button class="action-btn" (click)="editCategory(cat)" title="Edit">
+                      <i class="bi bi-pencil"></i>
+                    </button>
+                    <button class="action-btn" (click)="deleteCategory(cat)" title="Delete">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                    @if (cat.subcategories > 0) {
+                      <button class="action-btn" (click)="viewSubcategories(cat)" title="Subcategories">
+                        <i class="bi bi-folder"></i>
+                      </button>
+                    }
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <div class="pagination-bar">
+        <div class="pagination-info">Showing 1-{{ filteredCategories().length }} of 45 categories</div>
+        <div class="pagination-controls">
+          <button class="page-btn" disabled>Previous</button>
+          <button class="page-btn active">1</button>
+          <button class="page-btn">2</button>
+          <button class="page-btn">→</button>
+          <button class="page-btn">2</button>
+        </div>
+      </div>
+    </div>
+  }
+</div>
+
+<!-- Add Category Modal -->
+@if (showAddModal()) {
+  <div class="modal-overlay" (click)="closeAddModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Add New Category</h3>
+        <button class="btn-close" (click)="closeAddModal()">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-section">
+          <h4>CATEGORY INFORMATION</h4>
+          <div class="form-grid">
+            <div class="form-field full-width">
+              <label>Category Name *</label>
+              <input type="text" placeholder="_________________________________">
+            </div>
+            <div class="form-field full-width">
+              <label>Parent Category</label>
+              <select>
+                <option>None (Root Category)</option>
+                <option>Electronics</option>
+                <option>Furniture</option>
+                <option>Stationery</option>
+              </select>
+            </div>
+            <div class="form-field full-width">
+              <label>Description</label>
+              <textarea rows="2" placeholder="___________________________________________________________"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="form-section">
+          <h4>CATEGORY SETTINGS</h4>
+          <div class="form-grid">
+            <div class="form-field">
+              <label>Icon</label>
+              <select>
+                <option>📁</option>
+                <option>📦</option>
+                <option>📱</option>
+                <option>🪑</option>
+              </select>
+            </div>
+            <div class="form-field">
+              <label>Color</label>
+              <select>
+                <option>🔵 Blue</option>
+                <option>🟢 Green</option>
+                <option>🟡 Yellow</option>
+                <option>🔴 Red</option>
+              </select>
+            </div>
+            <div class="form-field">
+              <label>Display Order</label>
+              <input type="number" placeholder="1">
+              <span class="field-hint">(Higher numbers appear higher)</span>
+            </div>
+          </div>
+          <div class="checkbox-group">
+            <label class="checkbox-label">
+              <input type="checkbox" checked> Active Category
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" checked> Show in Reports
+            </label>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeAddModal()">Cancel</button>
+        <button class="btn btn-secondary">Save as Draft</button>
+        <button class="btn btn-primary" (click)="closeAddModal()">Save</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Category Items Modal -->
+@if (showCategoryItemsModal() && selectedCategory()) {
+  <div class="modal-overlay" (click)="closeCategoryItemsModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Category Items: {{ selectedCategory()?.name }}</h3>
+        <button class="btn-close" (click)="closeCategoryItemsModal()">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="info-section">
+          <h4>CATEGORY SUMMARY</h4>
+          <div class="info-grid">
+            <div class="info-item">
+              <label>Category:</label>
+              <span>{{ selectedCategory()?.name }}</span>
+            </div>
+            <div class="info-item">
+              <label>Parent:</label>
+              <span>{{ selectedCategory()?.parentCategory }}</span>
+            </div>
+            <div class="info-item">
+              <label>Total Items:</label>
+              <span>{{ selectedCategory()?.itemsCount }} items</span>
+            </div>
+            <div class="info-item">
+              <label>Subcategories:</label>
+              <span>{{ selectedCategory()?.subcategories }}</span>
+            </div>
+            <div class="info-item">
+              <label>Total Value:</label>
+              <span>$1,245,678</span>
+            </div>
+          </div>
+        </div>
+        <div class="info-section">
+          <h4>📦 ITEMS IN THIS CATEGORY</h4>
+          <div class="table-container">
+            <table class="items-table">
+              <thead>
+                <tr>
+                  <th>SKU</th>
+                  <th>Item Name</th>
+                  <th>Subcategory</th>
+                  <th>Stock</th>
+                  <th>Price</th>
+                  <th>Total Value</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (item of categoryItems(); track item.sku) {
+                  <tr>
+                    <td>{{ item.sku }}</td>
+                    <td>{{ item.name }}</td>
+                    <td>{{ item.subcategory }}</td>
+                    <td>{{ item.stock }}</td>
+                    <td>{{ formatValue(item.price) }}</td>
+                    <td>{{ formatValue(item.totalValue) }}</td>
+                    <td>
+                      <div class="actions-cell">
+                        <button class="action-btn" title="View"><i class="bi bi-eye"></i></button>
+                        <button class="action-btn" title="Edit"><i class="bi bi-pencil"></i></button>
+                        <button class="action-btn" title="Stock"><i class="bi bi-box-seam"></i></button>
+                      </div>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="info-section">
+          <h4>📁 SUBCATEGORIES</h4>
+          <div class="table-container">
+            <table class="subcategories-table">
+              <thead>
+                <tr>
+                  <th>Subcategory Name</th>
+                  <th>Items Count</th>
+                  <th>Total Value</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (sub of subcategories(); track sub.id) {
+                  <tr>
+                    <td>{{ sub.name }}</td>
+                    <td>{{ sub.itemsCount }}</td>
+                    <td>{{ formatValue(sub.totalValue) }}</td>
+                    <td>
+                      <span class="status-icon">{{ getStatusIcon(sub.status) }}</span>
+                    </td>
+                    <td>
+                      <div class="actions-cell">
+                        <button class="action-btn" title="View"><i class="bi bi-eye"></i></button>
+                        <button class="action-btn" title="Edit"><i class="bi bi-pencil"></i></button>
+                        <button class="action-btn" title="Subcategories"><i class="bi bi-folder"></i></button>
+                      </div>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary">Export List</button>
+        <button class="btn btn-secondary">Print</button>
+        <button class="btn btn-primary" (click)="closeCategoryItemsModal()">Close</button>
+      </div>
+    </div>
+  </div>
+}

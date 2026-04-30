@@ -1,0 +1,200 @@
+<div class="pending-grns-container">
+  <div class="page-header">
+    <div class="header-info">
+      <h1>Pending GRNs ({{ totalPending() }})</h1>
+      <p class="subtitle">GRNs awaiting processing or inspection</p>
+    </div>
+    <button class="btn btn-secondary">
+      <i class="bi bi-arrow-clockwise"></i> Refresh
+    </button>
+  </div>
+
+  <div class="filter-bar">
+    <div class="search-box">
+      <i class="bi bi-search"></i>
+      <input type="text" [value]="searchTerm()" (input)="onSearchChange($any($event.target).value)" placeholder="Search by GRN#, Supplier...">
+    </div>
+    <button class="btn btn-secondary">
+      <i class="bi bi-sliders"></i> Advanced Filters
+    </button>
+    <div class="filter-group">
+      <label>📅 Date:</label>
+      <input type="date" [value]="dateRange.start">
+      <span>to</span>
+      <input type="date" [value]="dateRange.end">
+    </div>
+    <div class="filter-group">
+      <label>🏭 Supplier:</label>
+      <select [(ngModel)]="supplierFilter" (ngModelChange)="onSupplierChange($event)">
+        @for (s of suppliers; track s) {
+          <option [value]="s">{{ s }}</option>
+        }
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>🔧 Status:</label>
+      <select [(ngModel)]="statusFilter" (ngModelChange)="onStatusChange($event)">
+        @for (s of statuses; track s) {
+          <option [value]="s">{{ s }}</option>
+        }
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>⏳ Age:</label>
+      <select [(ngModel)]="ageFilter" (ngModelChange)="onAgeChange($event)">
+        @for (a of ages; track a) {
+          <option [value]="a">{{ a }}</option>
+        }
+      </select>
+    </div>
+  </div>
+
+  <!-- Pending Summary -->
+  <div class="summary-section">
+    <h2>📊 PENDING SUMMARY</h2>
+    <div class="summary-grid">
+      <div class="summary-card">
+        <div class="summary-icon">📋</div>
+        <div class="summary-content">
+          <div class="summary-label">Total Pending GRNs</div>
+          <div class="summary-value">{{ totalPending() }}</div>
+          <div class="summary-sub">▼ -2</div>
+        </div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon">⚪</div>
+        <div class="summary-content">
+          <div class="summary-label">Draft</div>
+          <div class="summary-value">{{ draftCount() }}</div>
+          <div class="summary-sub">⚪ Draft</div>
+        </div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon">🟡</div>
+        <div class="summary-content">
+          <div class="summary-label">Submitted</div>
+          <div class="summary-value">{{ submittedCount() }}</div>
+          <div class="summary-sub">🟡 Submitted</div>
+        </div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon">🟡</div>
+        <div class="summary-content">
+          <div class="summary-label">Awaiting Inspection</div>
+          <div class="summary-value">{{ awaitingInspection() }}</div>
+          <div class="summary-sub">🟡 Waiting</div>
+        </div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon">✅</div>
+        <div class="summary-content">
+          <div class="summary-label">Overdue</div>
+          <div class="summary-value">{{ overdueCount() }}</div>
+          <div class="summary-sub">✅ None</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pending GRNs List -->
+  <div class="grns-list-section">
+    <h3>⏳ PENDING GRNs LIST</h3>
+    @for (grn of filteredGRNs(); track grn.id) {
+      <div class="grn-card">
+        <div class="grn-header">
+          <span class="grn-title">📦 {{ grn.grnNumber }} - {{ grn.supplier }}</span>
+          <span class="received-date">Received: {{ grn.receivedDate }}</span>
+        </div>
+        <div class="grn-details">
+          <div class="grn-meta">
+            <span>Status: {{ getStatusColor(grn.status) }} {{ grn.status }}</span>
+            <span>Items: {{ grn.items }}</span>
+            <span>Quantity: {{ grn.quantity }}</span>
+            <span>Value: ${{ grn.value.toLocaleString() }}</span>
+          </div>
+          <div class="grn-meta">
+            <span>Received By: {{ grn.receivedBy }}</span>
+            <span>PO#: {{ grn.poNumber }}</span>
+            <span>Age: {{ grn.age }}</span>
+          </div>
+          <div class="grn-items">
+            <h4>Items:</h4>
+            <table class="items-table">
+              <thead>
+                <tr>
+                  <th>Item Name</th>
+                  <th>SKU</th>
+                  <th>Received</th>
+                  <th>Inspection Required</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (item of grn.itemsList; track item.sku) {
+                  <tr>
+                    <td>{{ item.name }}</td>
+                    <td>{{ item.sku }}</td>
+                    <td>{{ item.received }}</td>
+                    <td>{{ item.inspectionRequired ? '✅ Yes' : '❌ No' }}</td>
+                    <td>{{ item.status }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <div class="grn-actions">
+            @if (grn.status === 'Pending Inspection') {
+              <button class="btn btn-primary" (click)="startInspection(grn)">
+                <i class="bi bi-search"></i> Start Inspection
+              </button>
+            }
+            @if (grn.status === 'Draft') {
+              <button class="btn btn-secondary" (click)="editDraft(grn)">
+                <i class="bi bi-pencil"></i> Edit Draft
+              </button>
+              <button class="btn btn-primary" (click)="submitForInspection(grn)">
+                <i class="bi bi-check"></i> Submit for Inspection
+              </button>
+            }
+            <button class="btn btn-secondary" (click)="editGRN(grn)">
+              <i class="bi bi-pencil"></i> Edit GRN
+            </button>
+            <button class="btn btn-secondary" (click)="viewDetails(grn)">
+              <i class="bi bi-eye"></i> View Details
+            </button>
+            <button class="btn btn-secondary" (click)="printGRN(grn)">
+              <i class="bi bi-printer"></i> Print
+            </button>
+            <button class="btn btn-secondary" (click)="deleteGRN(grn)">
+              <i class="bi bi-trash"></i> Delete
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- Bulk Actions -->
+  <div class="bulk-actions-section">
+    <h3>⚡ BULK ACTIONS</h3>
+    <div class="bulk-actions">
+      <label class="checkbox-label">
+        <input type="checkbox"> Select All Draft
+      </label>
+      <label class="checkbox-label">
+        <input type="checkbox"> Select All Pending Inspection
+      </label>
+    </div>
+    <div class="bulk-buttons">
+      <button class="btn btn-secondary" (click)="bulkSubmit()">
+        <i class="bi bi-check"></i> Bulk Submit
+      </button>
+      <button class="btn btn-secondary" (click)="bulkDelete()">
+        <i class="bi bi-trash"></i> Bulk Delete
+      </button>
+      <button class="btn btn-secondary" (click)="exportList()">
+        <i class="bi bi-download"></i> Export List
+      </button>
+    </div>
+  </div>
+</div>

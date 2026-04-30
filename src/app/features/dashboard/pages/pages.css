@@ -32,6 +32,7 @@
   color: #64748b;
   font-size: 0.96rem;
 }
+
 .period-filter {
   display: inline-flex;
   gap: 8px;
@@ -257,57 +258,4 @@
   inset: 72px;
   background: #ffffff;
   border-radius: 50%;
-}
-
-@media (max-width: 880px) {
-  .dashboard-header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .stats-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .charts-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .donut {
-    width: min(270px, 90vw);
-  }
-}
-
-@media (max-width: 640px) {
-  .stats-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .dashboard-header h1 {
-    font-size: 1.52rem;
-  }
-
-  .dashboard-header p,
-  .period-filter button,
-  .chart-title,
-  .bar-lines .line span,
-  .bar-column label,
-  .donut-legend,
-  .stat-card h2,
-  .stat-caption,
-  .trend {
-    font-size: 0.88rem;
-  }
-
-  .stat-value {
-    font-size: 1.85rem;
-  }
-
-  .donut {
-    width: min(240px, 90vw);
-  }
-
-  .donut::after {
-    inset: 62px;
-  }
 }

@@ -165,7 +165,17 @@ export class AuthService {
   }
 
   getDashboardRouteForUser(user: User | null): string {
-    return '/dashboard';
+    const role = this.mapUserToDashboardRole(user);
+
+    if (role === 'manager') {
+      return '/manager/dashboard';
+    }
+
+    if (role === 'compliance-officer') {
+      return '/compliance-officer/dashboard';
+    }
+
+    return '/employee/dashboard';
   }
 
   isDashboardRole(value: string): value is DashboardRole {

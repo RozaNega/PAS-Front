@@ -1,0 +1,395 @@
+<div class="receiving-history-container">
+  <div class="page-header">
+    <div class="header-info">
+      <h1>Receiving History</h1>
+      <p class="subtitle">Complete record of all goods received</p>
+    </div>
+    <button class="btn btn-secondary" (click)="exportList()">
+      <i class="bi bi-download"></i> Export
+    </button>
+  </div>
+
+  <div class="filter-bar">
+    <div class="search-box">
+      <i class="bi bi-search"></i>
+      <input type="text" [value]="searchTerm()" (input)="onSearchChange($any($event.target).value)" placeholder="Search by GRN#, PO#, Supplier, Item...">
+    </div>
+    <div class="filter-group">
+      <label>📅 Date Range:</label>
+      <input type="date" [value]="dateRange.start">
+      <span>to</span>
+      <input type="date" [value]="dateRange.end">
+    </div>
+    <div class="filter-group">
+      <label>🏭 Supplier:</label>
+      <select [(ngModel)]="supplierFilter" (ngModelChange)="onSupplierChange($event)">
+        @for (s of suppliers; track s) {
+          <option [value]="s">{{ s }}</option>
+        }
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>🔧 Status:</label>
+      <select [(ngModel)]="statusFilter" (ngModelChange)="onStatusChange($event)">
+        @for (s of statuses; track s) {
+          <option [value]="s">{{ s }}</option>
+        }
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>📦 Category:</label>
+      <select [(ngModel)]="categoryFilter" (ngModelChange)="onCategoryChange($event)">
+        @for (c of categories; track c) {
+          <option [value]="c">{{ c }}</option>
+        }
+      </select>
+    </div>
+    <button class="btn btn-secondary" (click)="applyFilters()">Apply Filters</button>
+    <button class="btn btn-secondary" (click)="resetFilters()">Reset</button>
+  </div>
+
+  <!-- Receiving Statistics -->
+  <div class="summary-section">
+    <h2>📊 RECEIVING STATISTICS</h2>
+    <div class="summary-grid">
+      <div class="summary-card">
+        <div class="summary-icon">📋</div>
+        <div class="summary-content">
+          <div class="summary-label">Total GRNs</div>
+          <div class="summary-value">{{ totalGRNs() }}</div>
+          <div class="summary-sub">this month</div>
+        </div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon">📦</div>
+        <div class="summary-content">
+          <div class="summary-label">Total Items Received</div>
+          <div class="summary-value">{{ totalItemsReceived() }} units</div>
+          <div class="summary-sub">▲ +12%</div>
+        </div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon">💰</div>
+        <div class="summary-content">
+          <div class="summary-label">Total Value Received</div>
+          <div class="summary-value">{{ formatValue(totalValueReceived()) }}</div>
+          <div class="summary-sub">▲ +18%</div>
+        </div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon">📊</div>
+        <div class="summary-content">
+          <div class="summary-label">Avg. Value Per GRN</div>
+          <div class="summary-value">{{ formatValue(avgValuePerGRN()) }}</div>
+          <div class="summary-sub">▲ +5%</div>
+        </div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon">⏱️</div>
+        <div class="summary-content">
+          <div class="summary-label">Avg. Processing Time</div>
+          <div class="summary-value">{{ avgProcessingTime() }}</div>
+          <div class="summary-sub">▼ -0.5 days</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Receiving Trend Chart -->
+  <div class="chart-section">
+    <div class="section-header">
+      <h3>📈 RECEIVING TREND CHART</h3>
+    </div>
+    <div class="chart-placeholder">
+      <div class="chart-legend">
+        <span class="legend-item"><span class="dot blue"></span> Items Received</span>
+        <span class="legend-item"><span class="dot green"></span> Total Value</span>
+        <span class="legend-item"><span class="dot orange"></span> Number of GRNs</span>
+      </div>
+      <div class="chart-bars">
+        @for (i of [1,2,3,4,5,6,7,8]; track i) {
+          <div class="bar-group">
+            <div class="bar main" [style.height.px]="getRandomHeight(80, 50)"></div>
+            <div class="bar-label">Week {{ i }}</div>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- Receiving History Table -->
+  <div class="table-section">
+    <div class="section-header">
+      <h3>📋 RECEIVING HISTORY TABLE</h3>
+    </div>
+    <div class="table-container">
+      <table class="grn-table">
+        <thead>
+          <tr>
+            <th>GRN #</th>
+            <th>Date</th>
+            <th>Supplier</th>
+            <th>Items</th>
+            <th>Qty</th>
+            <th>Value</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (grn of filteredGRNs(); track grn.grnNumber) {
+            <tr>
+              <td>{{ grn.grnNumber }}</td>
+              <td>{{ grn.date }}</td>
+              <td>{{ grn.supplier }}</td>
+              <td>{{ grn.items }}</td>
+              <td>{{ grn.quantity }}</td>
+              <td>{{ formatValue(grn.value) }}</td>
+              <td>{{ getStatusColor(grn.status) }} {{ grn.status }}</td>
+              <td>
+                <div class="actions-cell">
+                  <button class="action-btn" (click)="viewGRN(grn)" title="View">
+                    <i class="bi bi-eye"></i>
+                  </button>
+                  <button class="action-btn" (click)="printGRN(grn)" title="Print">
+                    <i class="bi bi-printer"></i>
+                  </button>
+                  <button class="action-btn" (click)="downloadGRN(grn)" title="Download">
+                    <i class="bi bi-download"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <div class="pagination-bar">
+      <div class="pagination-info">Showing 1-{{ filteredGRNs().length }} of 45 GRNs</div>
+      <div class="pagination-controls">
+        <button class="page-btn" disabled>Previous</button>
+        <button class="page-btn active">1</button>
+        <button class="page-btn">2</button>
+        <button class="page-btn">→</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Receiving by Supplier -->
+  <div class="supplier-section">
+    <div class="section-header">
+      <h3>📊 RECEIVING BY SUPPLIER</h3>
+    </div>
+    <div class="supplier-list">
+      <div class="supplier-item">
+        <div class="supplier-info">
+          <span class="supplier-name">Tech Supplies Ltd</span>
+          <span class="supplier-stats">40% $62,800 12 GRNs</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" [style.width.%]="40"></div>
+        </div>
+      </div>
+      <div class="supplier-item">
+        <div class="supplier-info">
+          <span class="supplier-name">Office Depot</span>
+          <span class="supplier-stats">22% $34,500 8 GRNs</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" [style.width.%]="22"></div>
+        </div>
+      </div>
+      <div class="supplier-item">
+        <div class="supplier-info">
+          <span class="supplier-name">Global Suppliers</span>
+          <span class="supplier-stats">18% $28,200 7 GRNs</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" [style.width.%]="18"></div>
+        </div>
+      </div>
+      <div class="supplier-item">
+        <div class="supplier-info">
+          <span class="supplier-name">Paper Co</span>
+          <span class="supplier-stats">12% $18,900 6 GRNs</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" [style.width.%]="12"></div>
+        </div>
+      </div>
+      <div class="supplier-item">
+        <div class="supplier-info">
+          <span class="supplier-name">Others</span>
+          <span class="supplier-stats">8% $12,490 12 GRNs</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" [style.width.%]="8"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quality Inspection Summary -->
+  <div class="quality-section">
+    <div class="section-header">
+      <h3>📊 QUALITY INSPECTION SUMMARY</h3>
+    </div>
+    <div class="quality-list">
+      <div class="quality-item">
+        <div class="quality-info">
+          <span class="quality-label">Pass Rate:</span>
+          <span class="quality-stats">85% (38 GRNs)</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill success" [style.width.%]="85"></div>
+        </div>
+      </div>
+      <div class="quality-item">
+        <div class="quality-info">
+          <span class="quality-label">Fail Rate:</span>
+          <span class="quality-stats">8% (4 GRNs)</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill danger" [style.width.%]="8"></div>
+        </div>
+      </div>
+      <div class="quality-item">
+        <div class="quality-info">
+          <span class="quality-label">Partial Rate:</span>
+          <span class="quality-stats">7% (3 GRNs)</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill warning" [style.width.%]="7"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- GRN Details Modal -->
+@if (showGRNDetailsModal() && selectedGRN()) {
+  <div class="modal-overlay" (click)="closeGRNDetailsModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>GRN Details: {{ selectedGRN()?.grnNumber }}</h3>
+        <button class="btn-close" (click)="closeGRNDetailsModal()">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="grn-info-grid">
+          <div class="grn-info-item">
+            <label>GRN Number:</label>
+            <span>{{ selectedGRN()?.grnNumber }}</span>
+          </div>
+          <div class="grn-info-item">
+            <label>Date:</label>
+            <span>December 14, 2024</span>
+          </div>
+          <div class="grn-info-item">
+            <label>Supplier:</label>
+            <span>Office Depot</span>
+          </div>
+          <div class="grn-info-item">
+            <label>PO Number:</label>
+            <span>PO-2024-1230</span>
+          </div>
+          <div class="grn-info-item">
+            <label>Received By:</label>
+            <span>John Doe</span>
+          </div>
+          <div class="grn-info-item">
+            <label>Status:</label>
+            <span>🟢 Passed Inspection</span>
+          </div>
+          <div class="grn-info-item">
+            <label>Carrier:</label>
+            <span>DHL</span>
+          </div>
+          <div class="grn-info-item">
+            <label>Tracking #:</label>
+            <span>1Z999AA10123456784</span>
+          </div>
+        </div>
+        <div class="received-items-section">
+          <h4>📦 RECEIVED ITEMS</h4>
+          <table class="items-table">
+            <thead>
+              <tr>
+                <th>Item Name</th>
+                <th>SKU</th>
+                <th>Received</th>
+                <th>Unit Price</th>
+                <th>Total</th>
+                <th>Inspection</th>
+                <th>Result</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Office Chair</td>
+                <td>CHR-003</td>
+                <td>30</td>
+                <td>$250.00</td>
+                <td>$7,500</td>
+                <td>Required</td>
+                <td>✅ Pass</td>
+              </tr>
+              <tr>
+                <td>Desk</td>
+                <td>DSK-001</td>
+                <td>20</td>
+                <td>$250.00</td>
+                <td>$5,000</td>
+                <td>Required</td>
+                <td>✅ Pass</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="inspection-results-section">
+          <h4>🔍 INSPECTION RESULTS</h4>
+          <div class="inspection-info">
+            <div class="info-row">
+              <label>Inspector:</label>
+              <span>Sarah Smith</span>
+            </div>
+            <div class="info-row">
+              <label>Date:</label>
+              <span>December 14, 2024 14:30</span>
+            </div>
+            <div class="info-row">
+              <label>Result:</label>
+              <span>Pass - All items met quality standards</span>
+            </div>
+            <div class="info-row">
+              <label>Notes:</label>
+              <span>All items in good condition. Ready for release to stock.</span>
+            </div>
+          </div>
+        </div>
+        <div class="attachments-section">
+          <h4>📎 ATTACHMENTS</h4>
+          <ul>
+            <li>Delivery_Note_DHL.pdf</li>
+            <li>Invoice_Office_Depot.pdf</li>
+            <li>Inspection_Report.pdf</li>
+          </ul>
+        </div>
+        <div class="notes-section">
+          <h4>📝 NOTES</h4>
+          <p>All items received in good condition. Delivery was on time.</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="printGRN(selectedGRN()!)">
+          <i class="bi bi-printer"></i> Print GRN
+        </button>
+        <button class="btn btn-secondary" (click)="downloadGRN(selectedGRN()!)">
+          <i class="bi bi-file-earmark-pdf"></i> Download PDF
+        </button>
+        <button class="btn btn-primary" (click)="closeGRNDetailsModal()">Close</button>
+      </div>
+    </div>
+  </div>
+}

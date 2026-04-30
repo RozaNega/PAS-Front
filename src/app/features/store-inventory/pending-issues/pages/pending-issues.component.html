@@ -1,0 +1,440 @@
+<div class="pending-issues-container">
+  <div class="page-header">
+    <div class="header-info">
+      <h1>Pending Issues ({{ pendingCount() }})</h1>
+      <p class="subtitle">Approved requisitions waiting to be issued</p>
+    </div>
+    <button class="btn btn-secondary">
+      <i class="bi bi-arrow-clockwise"></i> Refresh
+    </button>
+  </div>
+
+  <div class="filter-bar">
+    <div class="search-box">
+      <i class="bi bi-search"></i>
+      <input type="text" [value]="searchTerm()" (input)="onSearchChange($any($event.target).value)" placeholder="Search by SR#, requester, department...">
+    </div>
+    <button class="btn btn-secondary">
+      <i class="bi bi-sliders"></i> Advanced Filters
+    </button>
+    <div class="filter-group">
+      <label>📅 Date:</label>
+      <input type="date" [value]="dateRange.start">
+      <span>to</span>
+      <input type="date" [value]="dateRange.end">
+    </div>
+    <div class="filter-group">
+      <label>🏷️ Priority:</label>
+      <select [(ngModel)]="priorityFilter" (ngModelChange)="onPriorityChange($event)">
+        @for (p of priorities; track p) {
+          <option [value]="p">{{ p }}</option>
+        }
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>👥 Dept:</label>
+      <select [(ngModel)]="departmentFilter" (ngModelChange)="onDepartmentChange($event)">
+        @for (d of departments; track d) {
+          <option [value]="d">{{ d }}</option>
+        }
+      </select>
+    </div>
+  </div>
+
+  <!-- Issuing Summary -->
+  <div class="summary-section">
+    <h2>📊 ISSUING SUMMARY</h2>
+    <div class="summary-grid">
+      <div class="summary-card">
+        <div class="summary-icon">📋</div>
+        <div class="summary-content">
+          <div class="summary-label">Pending Issues</div>
+          <div class="summary-value">{{ pendingCount() }}</div>
+          <div class="summary-sub">▲ +1</div>
+        </div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon">🚨</div>
+        <div class="summary-content">
+          <div class="summary-label">Urgent</div>
+          <div class="summary-value">{{ urgentCount() }}</div>
+          <div class="summary-sub critical">🔴 Critical</div>
+        </div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon">✅</div>
+        <div class="summary-content">
+          <div class="summary-label">Ready to Issue</div>
+          <div class="summary-value">{{ readyToIssue() }}</div>
+          <div class="summary-sub success">🟢 Available</div>
+        </div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon">🟡</div>
+        <div class="summary-content">
+          <div class="summary-label">Awaiting Stock</div>
+          <div class="summary-value">{{ awaitingStock() }}</div>
+          <div class="summary-sub warning">🟡 Backorder</div>
+        </div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon">⏱️</div>
+        <div class="summary-content">
+          <div class="summary-label">Avg. Wait Time</div>
+          <div class="summary-value">{{ avgWaitTime() }}</div>
+          <div class="summary-sub">▲ +0.5 days</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Urgent Priority -->
+  @if (urgentIssues().length > 0) {
+    <div class="priority-section urgent">
+      <h3>🚨 URGENT PRIORITY ({{ urgentIssues().length }})</h3>
+      @for (issue of urgentIssues(); track issue.id) {
+        <div class="issue-card">
+          <div class="issue-header">
+            <span class="priority-badge">{{ getPriorityColor(issue.priority) }} {{ issue.srNumber }} - {{ issue.requester }} ({{ issue.department }})</span>
+            <span class="required-by">Required: {{ issue.requiredBy }}</span>
+          </div>
+          <div class="issue-details">
+            <div class="issue-meta">
+              <span>Requested: {{ issue.requestedDate }}</span>
+              <span>Waiting: {{ issue.waitingTime }}</span>
+              <span>Priority: {{ issue.priority }}</span>
+            </div>
+            <div class="items-table">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Item Name</th>
+                    <th>Requested</th>
+                    <th>Available</th>
+                    <th>Location</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (item of issue.items; track item.name) {
+                    <tr>
+                      <td>{{ item.name }}</td>
+                      <td>{{ item.requested }}</td>
+                      <td>{{ item.available }}</td>
+                      <td>{{ item.location }}</td>
+                      <td>{{ item.status }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+            <div class="issue-actions">
+              <button class="btn btn-primary" (click)="openProcessModal(issue)">
+                <i class="bi bi-box-seam"></i> Process Issue
+              </button>
+              <button class="btn btn-secondary" (click)="viewDetails(issue)">
+                <i class="bi bi-eye"></i> View Details
+              </button>
+              <button class="btn btn-secondary" (click)="addNote(issue)">
+                <i class="bi bi-pencil"></i> Add Note
+              </button>
+              <button class="btn btn-secondary" (click)="snooze(issue)">
+                <i class="bi bi-clock"></i> Snooze
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Medium Priority -->
+  @if (mediumIssues().length > 0) {
+    <div class="priority-section medium">
+      <h3>🟡 MEDIUM PRIORITY ({{ mediumIssues().length }})</h3>
+      @for (issue of mediumIssues(); track issue.id) {
+        <div class="issue-card">
+          <div class="issue-header">
+            <span class="priority-badge">{{ getPriorityColor(issue.priority) }} {{ issue.srNumber }} - {{ issue.requester }} ({{ issue.department }})</span>
+            <span class="required-by">Required: {{ issue.requiredBy }}</span>
+          </div>
+          <div class="issue-details">
+            <div class="issue-meta">
+              <span>Requested: {{ issue.requestedDate }}</span>
+              <span>Waiting: {{ issue.waitingTime }}</span>
+              <span>Priority: {{ issue.priority }}</span>
+            </div>
+            <div class="items-table">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Item Name</th>
+                    <th>Requested</th>
+                    <th>Available</th>
+                    <th>Location</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (item of issue.items; track item.name) {
+                    <tr>
+                      <td>{{ item.name }}</td>
+                      <td>{{ item.requested }}</td>
+                      <td>{{ item.available }}</td>
+                      <td>{{ item.location }}</td>
+                      <td>{{ item.status }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+            <div class="issue-actions">
+              <button class="btn btn-primary" (click)="openProcessModal(issue)">
+                <i class="bi bi-box-seam"></i> Process Issue
+              </button>
+              <button class="btn btn-secondary" (click)="viewDetails(issue)">
+                <i class="bi bi-eye"></i> View Details
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Normal Priority -->
+  @if (normalIssues().length > 0) {
+    <div class="priority-section normal">
+      <h3>🟢 NORMAL PRIORITY ({{ normalIssues().length }})</h3>
+      @for (issue of normalIssues(); track issue.id) {
+        <div class="issue-card">
+          <div class="issue-header">
+            <span class="priority-badge">{{ getPriorityColor(issue.priority) }} {{ issue.srNumber }} - {{ issue.requester }} ({{ issue.department }})</span>
+            <span class="required-by">Required: {{ issue.requiredBy }}</span>
+          </div>
+          <div class="issue-details">
+            <div class="issue-meta">
+              <span>Requested: {{ issue.requestedDate }}</span>
+              <span>Waiting: {{ issue.waitingTime }}</span>
+              <span>Priority: {{ issue.priority }}</span>
+            </div>
+            <div class="items-table">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Item Name</th>
+                    <th>Requested</th>
+                    <th>Available</th>
+                    <th>Location</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (item of issue.items; track item.name) {
+                    <tr>
+                      <td>{{ item.name }}</td>
+                      <td>{{ item.requested }}</td>
+                      <td>{{ item.available }}</td>
+                      <td>{{ item.location }}</td>
+                      <td>{{ item.status }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+            <div class="issue-actions">
+              <button class="btn btn-primary" (click)="openProcessModal(issue)">
+                <i class="bi bi-box-seam"></i> Process Issue
+              </button>
+              <button class="btn btn-secondary" (click)="viewDetails(issue)">
+                <i class="bi bi-eye"></i> View Details
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Bulk Actions -->
+  <div class="bulk-actions-section">
+    <h3>⚡ BULK ACTIONS</h3>
+    <div class="bulk-actions">
+      <label class="checkbox-label">
+        <input type="checkbox"> Select All Urgent
+      </label>
+      <label class="checkbox-label">
+        <input type="checkbox"> Select All Medium
+      </label>
+      <label class="checkbox-label">
+        <input type="checkbox"> Select All Normal
+      </label>
+    </div>
+    <div class="bulk-buttons">
+      <button class="btn btn-secondary" (click)="bulkProcess()">
+        <i class="bi bi-box-seam"></i> Bulk Process
+      </button>
+      <button class="btn btn-secondary" (click)="printPickingList()">
+        <i class="bi bi-printer"></i> Print Picking List
+      </button>
+      <button class="btn btn-secondary" (click)="exportList()">
+        <i class="bi bi-download"></i> Export List
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Process Issue Modal -->
+@if (showProcessModal() && selectedIssue()) {
+  <div class="modal-overlay" (click)="closeProcessModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Process Issue: {{ selectedIssue()?.srNumber }}</h3>
+        <button class="btn-close" (click)="closeProcessModal()">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+
+      <!-- Step Indicator -->
+      <div class="step-indicator">
+        <div class="step-label">Step {{ currentStep() }} of 3: {{ getStepTitle() }}</div>
+        <div class="step-progress">
+          @for (i of [1,2,3]; track i) {
+            <div class="step-dot" [class.active]="currentStep() >= i" [class.current]="currentStep() === i"></div>
+          }
+        </div>
+      </div>
+
+      <div class="modal-body">
+        <!-- Step 1: Review Requisition -->
+        @if (currentStep() === 1) {
+          <div class="form-section">
+            <h4>REQUISITION DETAILS</h4>
+            <div class="info-grid">
+              <div class="info-item">
+                <label>SR Number:</label>
+                <span>{{ selectedIssue()?.srNumber }}</span>
+              </div>
+              <div class="info-item">
+                <label>Requester:</label>
+                <span>{{ selectedIssue()?.requester }} ({{ selectedIssue()?.department }})</span>
+              </div>
+              <div class="info-item">
+                <label>Request Date:</label>
+                <span>{{ selectedIssue()?.requestedDate }}</span>
+              </div>
+              <div class="info-item">
+                <label>Required By:</label>
+                <span>{{ selectedIssue()?.requiredBy }}</span>
+              </div>
+              <div class="info-item">
+                <label>Priority:</label>
+                <span>{{ getPriorityColor(selectedIssue()?.priority || '') }} {{ selectedIssue()?.priority }}</span>
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- Step 2: Select Items & Quantities -->
+        @if (currentStep() === 2) {
+          <div class="form-section">
+            <h4>ITEMS TO ISSUE</h4>
+            @for (item of selectedIssue()!.items; track item.name) {
+              <div class="item-selection">
+                <label class="checkbox-label">
+                  <input type="checkbox" checked> Item: {{ item.name }} (SKU: LAP-001)
+                </label>
+                <div class="item-details">
+                  <span>Requested: {{ item.requested }}</span>
+                  <span>Available: {{ item.available }}</span>
+                  <span>Location: {{ item.location }}</span>
+                </div>
+                <div class="item-inputs">
+                  <div class="input-group">
+                    <label>Quantity to Issue:</label>
+                    <input type="number" [value]="item.requested">
+                  </div>
+                  <div class="input-group">
+                    <label>Shelf:</label>
+                    <select>
+                      <option>{{ item.location }}</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            }
+            <div class="partial-options">
+              <label class="radio-label">
+                <input type="radio" name="partial" checked> Issue all items (3 units)
+              </label>
+              <label class="radio-label">
+                <input type="radio" name="partial"> Issue selected items (3 units)
+              </label>
+              <label class="radio-label">
+                <input type="radio" name="partial"> Partial issue (specify quantities above)
+              </label>
+            </div>
+          </div>
+        }
+
+        <!-- Step 3: SIV Details & Signature -->
+        @if (currentStep() === 3) {
+          <div class="form-section">
+            <h4>SIV DETAILS</h4>
+            <div class="info-grid">
+              <div class="info-item">
+                <label>SIV NUMBER:</label>
+                <input type="text" value="SIV-2024-046" readonly>
+                <span class="field-hint">(Auto-generated)</span>
+              </div>
+              <div class="info-item">
+                <label>Issue Date:</label>
+                <input type="date" value="2024-12-15">
+              </div>
+              <div class="info-item">
+                <label>Issued By:</label>
+                <input type="text" value="John Doe (Store Officer)" readonly>
+              </div>
+            </div>
+          </div>
+          <div class="form-section">
+            <h4>RECIPIENT SIGNATURE</h4>
+            <div class="signature-area">
+              <div class="signature-pad">
+                <span>Signature Pad Area</span>
+              </div>
+              <div class="signature-line">_______________</div>
+              <span class="signature-hint">(Draw or Type)</span>
+            </div>
+            <div class="signature-actions">
+              <button class="btn btn-secondary">Clear</button>
+              <button class="btn btn-secondary">Type Signature</button>
+            </div>
+          </div>
+          <div class="checkbox-group">
+            <label class="checkbox-label">
+              <input type="checkbox" checked> Send email notification to requester
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" checked> Print SIV after generation
+            </label>
+          </div>
+        }
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeProcessModal()">Cancel</button>
+        <button class="btn btn-primary" (click)="processIssue()">Generate SIV</button>
+      </div>
+
+      <div class="step-navigation">
+        <button class="btn btn-secondary" (click)="previousStep()" [disabled]="currentStep() === 1">
+          <i class="bi bi-chevron-left"></i> Previous
+        </button>
+        <button class="btn btn-primary" (click)="nextStep()" [disabled]="currentStep() === 3">
+          Next <i class="bi bi-chevron-right"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+}

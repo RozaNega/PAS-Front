@@ -1,0 +1,165 @@
+<div class="employee-directory-container">
+  <div class="page-header">
+    <div class="header-info">
+      <h1>Employee Directory</h1>
+      <p class="subtitle">Manage employee information and records</p>
+    </div>
+    <div class="header-actions">
+      <span class="employee-count">Total: {{ totalEmployees() }} employees</span>
+      <button type="button" class="btn btn-primary">
+        <i class="bi bi-plus-lg"></i>
+        Add New Employee
+      </button>
+      <button type="button" class="btn btn-secondary" (click)="exportEmployees('CSV')">
+        <i class="bi bi-download"></i>
+        Export
+      </button>
+      <button type="button" class="btn btn-secondary">
+        <i class="bi bi-upload"></i>
+        Import
+      </button>
+    </div>
+  </div>
+
+  <!-- Filter Bar -->
+  <div class="filter-bar">
+    <div class="filter-group">
+      <div class="filter-field">
+        <i class="bi bi-search"></i>
+        <input type="text" placeholder="Search by name, code, position..." [value]="searchQuery()" (input)="onSearch($event)">
+      </div>
+      <div class="filter-field">
+        <i class="bi bi-building"></i>
+        <select [value]="departmentFilter()" (change)="onDepartmentFilter($event)">
+          <option>All Departments</option>
+          <option>IT</option>
+          <option>HR</option>
+          <option>Finance</option>
+          <option>Operations</option>
+          <option>Warehouse</option>
+        </select>
+      </div>
+      <div class="filter-field">
+        <i class="bi bi-shield-check"></i>
+        <select [value]="statusFilter()" (change)="onStatusFilter($event)">
+          <option>All Status</option>
+          <option>Active</option>
+          <option>Inactive</option>
+          <option>On Leave</option>
+        </select>
+      </div>
+      <div class="filter-field">
+        <i class="bi bi-person-badge"></i>
+        <select [value]="positionFilter()" (change)="onPositionFilter($event)">
+          <option>All Positions</option>
+          <option>Manager</option>
+          <option>Officer</option>
+          <option>Staff</option>
+          <option>Intern</option>
+        </select>
+      </div>
+    </div>
+    <button type="button" class="btn btn-filter" (click)="resetFilters()">
+      <i class="bi bi-arrow-counterclockwise"></i>
+      Reset Filters
+    </button>
+  </div>
+
+  <!-- Employees Table -->
+  <div class="table-container">
+    <table class="employees-table">
+      <thead>
+        <tr>
+          <th>Employee</th>
+          <th>Department</th>
+          <th>Position</th>
+          <th>Contact</th>
+          <th>User Account</th>
+          <th>Join Date</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (employee of pagedEmployees(); track employee.id) {
+          <tr>
+            <td>
+              <div class="employee-cell">
+                <div class="avatar">{{ employee.avatar }}</div>
+                <div class="employee-info">
+                  <span class="employee-name">{{ employee.name }}</span>
+                  <span class="employee-code">{{ employee.employeeCode }}</span>
+                </div>
+              </div>
+            </td>
+            <td>{{ employee.department }}</td>
+            <td>{{ employee.position }}</td>
+            <td>
+              <div class="contact-cell">
+                <span class="email">{{ employee.email }}</span>
+                <span class="phone">{{ employee.phone }}</span>
+              </div>
+            </td>
+            <td>
+              @if (employee.hasUserAccount) {
+                <span class="badge badge-green">✅ Active</span>
+              } @else {
+                <span class="badge badge-gray">❌ No Account</span>
+              }
+            </td>
+            <td>{{ formatDate(employee.joinDate) }}</td>
+            <td>
+              <span class="badge badge-{{ getStatusColor(employee.status) }}">{{ employee.status }}</span>
+            </td>
+            <td>
+              <div class="actions-cell">
+                <button type="button" class="action-btn" title="View Details">
+                  <i class="bi bi-eye"></i>
+                </button>
+                <button type="button" class="action-btn" title="Edit Employee">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                @if (!employee.hasUserAccount) {
+                  <button type="button" class="action-btn" title="Create User Account" (click)="createUserAccount(employee.id)">
+                    <i class="bi bi-person-plus"></i>
+                  </button>
+                }
+                <button type="button" class="action-btn delete" title="Delete" (click)="deleteEmployee(employee.id)">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  <div class="pagination-bar">
+    <div class="pagination-info">
+      Showing {{ displayRange().start }} - {{ displayRange().end }} of {{ filteredEmployees().length }} employees
+    </div>
+    <div class="pagination-controls">
+      <button type="button" class="page-btn" [disabled]="currentPage() === 1" (click)="goToPage(currentPage() - 1)">
+        <i class="bi bi-chevron-left"></i>
+      </button>
+      @for (page of [].constructor(totalPages()); track $index) {
+        <button type="button" class="page-btn" [class.active]="currentPage() === $index + 1" (click)="goToPage($index + 1)">
+          {{ $index + 1 }}
+        </button>
+      }
+      <button type="button" class="page-btn" [disabled]="currentPage() === totalPages()" (click)="goToPage(currentPage() + 1)">
+        <i class="bi bi-chevron-right"></i>
+      </button>
+    </div>
+    <div class="rows-per-page">
+      Rows per page:
+      <select [value]="rowsPerPage()" (change)="onRowsPerPageChange($event)">
+        <option>10</option>
+        <option>20</option>
+        <option>50</option>
+      </select>
+    </div>
+  </div>
+</div>

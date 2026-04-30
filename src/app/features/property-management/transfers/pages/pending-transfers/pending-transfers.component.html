@@ -1,0 +1,573 @@
+<section class="pending-transfers" aria-label="Pending Property Transfers">
+  <!-- Header -->
+  <header class="page-header">
+    <div class="header-content">
+      <h1>Pending Transfers ({{ summary().pending }})</h1>
+      <p>Manage and approve asset transfer requests</p>
+    </div>
+    <button type="button" class="action-btn secondary" (click)="refreshData()">
+      <i class="bi bi-arrow-repeat"></i>
+      Refresh
+    </button>
+  </header>
+
+  <!-- Filter Bar -->
+  <section class="filter-bar" aria-label="Filter transfers">
+    <div class="filter-row">
+      <div class="search-box">
+        <i class="bi bi-search"></i>
+        <input 
+          type="text" 
+          placeholder="Search by property tag, requester, location..." 
+          [(ngModel)]="searchTerm"
+        >
+      </div>
+    </div>
+    <div class="filter-row">
+      <div class="filter-group">
+        <label>📅 Date:</label>
+        <input type="text" [(ngModel)]="dateFrom" class="date-input">
+        <span>to</span>
+        <input type="text" [(ngModel)]="dateTo" class="date-input">
+      </div>
+      <div class="filter-group">
+        <label>🏷️ Status:</label>
+        <select [(ngModel)]="statusFilter" class="filter-select">
+          <option value="All">All</option>
+          <option value="pending">Pending</option>
+          <option value="approved">Approved</option>
+          <option value="rejected">Rejected</option>
+          <option value="completed">Completed</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>🏭 From:</label>
+        <select [(ngModel)]="fromLocationFilter" class="filter-select">
+          <option value="All Locations">All Locations</option>
+          <option value="IT Department">IT Department</option>
+          <option value="HR Department">HR Department</option>
+          <option value="Warehouse">Warehouse</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>To:</label>
+        <select [(ngModel)]="toLocationFilter" class="filter-select">
+          <option value="All">All</option>
+          <option value="Branch Office">Branch Office</option>
+          <option value="Warehouse">Warehouse</option>
+          <option value="Data Center">Data Center</option>
+        </select>
+      </div>
+      <button type="button" class="action-btn primary" (click)="applyFilters()">Apply Filters</button>
+      <button type="button" class="action-btn secondary" (click)="resetFilters()">Reset</button>
+    </div>
+  </section>
+
+  <!-- Transfer Summary -->
+  <section class="transfer-summary" aria-label="Transfer Summary">
+    <h2>📊 TRANSFER SUMMARY</h2>
+    <div class="summary-grid">
+      <div class="summary-card">
+        <p class="summary-label">Total Transfers</p>
+        <p class="summary-value">{{ summary().totalTransfers }}</p>
+        <p class="summary-sub">this month</p>
+      </div>
+      <div class="summary-card">
+        <p class="summary-label">Pending Approval</p>
+        <p class="summary-value">{{ summary().pending }}</p>
+        <p class="summary-sub urgent">🔴 Urgent: {{ summary().urgent }}</p>
+      </div>
+      <div class="summary-card">
+        <p class="summary-label">Approved</p>
+        <p class="summary-value">{{ summary().approved }}</p>
+        <p class="summary-sub positive">▲ +20%</p>
+      </div>
+      <div class="summary-card">
+        <p class="summary-label">Completed This Month</p>
+        <p class="summary-value">{{ summary().completed }}</p>
+        <p class="summary-sub positive">▲ +15%</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pending Transfers List -->
+  <section class="transfers-list" aria-label="Pending Transfers List">
+    <h2>⏳ PENDING TRANSFERS LIST ({{ filteredTransfers().length }})</h2>
+    
+    @for (transfer of filteredTransfers(); track transfer.id) {
+      <article class="transfer-card {{ getPriorityColor(transfer.priority) }}">
+        <div class="transfer-header">
+          <h3>{{ getPriorityEmoji(transfer.priority) }} {{ transfer.id }}</h3>
+          <span class="requested-by">Requested By: {{ transfer.requestedBy }}</span>
+          <span class="requested-date">Requested Date: {{ transfer.requestedDate }}</span>
+        </div>
+        
+        <div class="transfer-details">
+          <div class="detail-row">
+            <span class="detail-label">Property:</span>
+            <span class="detail-value">{{ transfer.property.name }} ({{ transfer.property.tag }})</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">From:</span>
+            <span class="detail-value">{{ transfer.from.location }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">To:</span>
+            <span class="detail-value">{{ transfer.to.location }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Reason:</span>
+            <span class="detail-value">{{ transfer.reason }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Required By:</span>
+            <span class="detail-value">{{ transfer.requiredBy }}</span>
+          </div>
+        </div>
+        
+        <div class="transfer-actions">
+          <button type="button" class="action-btn secondary small" (click)="openDetailsModal(transfer)">
+            View Details
+          </button>
+          <button type="button" class="action-btn primary small" (click)="openApproveModal(transfer)">
+            Approve
+          </button>
+          <button type="button" class="action-btn danger small" (click)="rejectTransfer(transfer.id)">
+            Reject
+          </button>
+          <button type="button" class="action-btn secondary small">
+            Request Info
+          </button>
+        </div>
+      </article>
+    }
+  </section>
+
+  <!-- Bulk Actions -->
+  <section class="bulk-actions" aria-label="Bulk Actions">
+    <h2>⚡ BULK ACTIONS</h2>
+    <div class="bulk-options">
+      <label class="checkbox-label">
+        <input type="checkbox">
+        <span>Select All</span>
+      </label>
+      <label class="checkbox-label">
+        <input type="checkbox">
+        <span>Urgent Only</span>
+      </label>
+      <label class="checkbox-label">
+        <input type="checkbox">
+        <span>High Priority</span>
+      </label>
+    </div>
+    <div class="bulk-buttons">
+      <button type="button" class="action-btn primary">Bulk Approve</button>
+      <button type="button" class="action-btn danger">Bulk Reject</button>
+      <button type="button" class="action-btn secondary">Export List</button>
+    </div>
+  </section>
+
+  <!-- Completed Transfers History -->
+  <section class="history-section" aria-label="Transfer History">
+    <div class="section-header">
+      <h2>Transfer History</h2>
+      <button type="button" class="action-btn secondary">Export</button>
+    </div>
+    
+    <div class="history-filter">
+      <div class="search-box">
+        <i class="bi bi-search"></i>
+        <input type="text" placeholder="Search transfer history...">
+      </div>
+      <select class="filter-select">
+        <option>Last 30 days</option>
+        <option>Last 7 days</option>
+        <option>Last 90 days</option>
+        <option>This year</option>
+      </select>
+    </div>
+
+    <div class="history-stats">
+      <div class="stat-card">
+        <p class="stat-label">Total Transfers</p>
+        <p class="stat-value">23</p>
+        <p class="stat-sub">this month</p>
+      </div>
+      <div class="stat-card">
+        <p class="stat-label">Avg. Processing</p>
+        <p class="stat-value">2.4 days</p>
+        <p class="stat-sub">▲ -0.5 days</p>
+      </div>
+      <div class="stat-card">
+        <p class="stat-label">Most Active Requester</p>
+        <p class="stat-value">John Doe</p>
+        <p class="stat-sub">(5 requests)</p>
+      </div>
+      <div class="stat-card">
+        <p class="stat-label">Most Transferred Property</p>
+        <p class="stat-value">Office Chair (TAG-003)</p>
+        <p class="stat-sub">(3 times)</p>
+      </div>
+    </div>
+
+    <div class="history-table">
+      <table>
+        <thead>
+          <tr>
+            <th>Transfer #</th>
+            <th>Date</th>
+            <th>Property</th>
+            <th>From → To</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (transfer of completedTransfers(); track transfer.id) {
+            <tr>
+              <td>{{ transfer.id }}</td>
+              <td>{{ transfer.date }}</td>
+              <td>{{ transfer.property }}</td>
+              <td>{{ transfer.fromTo }}</td>
+              <td><span class="status-badge completed">✅</span></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+      <p class="table-footer">Showing 1-{{ completedTransfers().length }} of 23 transfers</p>
+    </div>
+  </section>
+
+  <!-- Transfer Details Modal -->
+  @if (showDetailsModal() && selectedTransfer()) {
+    <div class="modal-overlay" (click)="closeModals()">
+      <div class="modal-content" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h2>Transfer Request Details - {{ selectedTransfer()!.id }}</h2>
+          <button type="button" class="close-btn" (click)="closeModals()">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+
+        <div class="modal-body">
+          <!-- Request Information -->
+          <section class="modal-section">
+            <h3>REQUEST INFORMATION</h3>
+            <div class="info-grid">
+              <div class="info-item">
+                <span class="info-label">Transfer ID:</span>
+                <span class="info-value">{{ selectedTransfer()!.id }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Requested By:</span>
+                <span class="info-value">{{ selectedTransfer()!.requestedBy }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Requested Date:</span>
+                <span class="info-value">{{ selectedTransfer()!.requestedDate }} 09:30 AM</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Priority:</span>
+                <span class="info-value">{{ getPriorityEmoji(selectedTransfer()!.priority) }} {{ selectedTransfer()!.priority }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Required By:</span>
+                <span class="info-value">{{ selectedTransfer()!.requiredBy }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Status:</span>
+                <span class="info-value">⏳ Pending Approval</span>
+              </div>
+            </div>
+          </section>
+
+          <!-- Property Details -->
+          <section class="modal-section">
+            <h3>📦 PROPERTY DETAILS</h3>
+            <div class="info-grid">
+              <div class="info-item">
+                <span class="info-label">Tag Number:</span>
+                <span class="info-value">{{ selectedTransfer()!.property.tag }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Property Name:</span>
+                <span class="info-value">{{ selectedTransfer()!.property.name }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Serial Number:</span>
+                <span class="info-value">C02XK2L8Q6PJ</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Current Value:</span>
+                <span class="info-value">$2,499</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Condition:</span>
+                <span class="info-value">Excellent</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Warranty:</span>
+                <span class="info-value">Active until Nov 14, 2026</span>
+              </div>
+            </div>
+            <button type="button" class="action-btn secondary small">View Full Property Details →</button>
+          </section>
+
+          <!-- Location Change -->
+          <section class="modal-section">
+            <h3>📍 LOCATION CHANGE</h3>
+            <div class="location-change">
+              <div class="location-box from">
+                <h4>FROM:</h4>
+                <div class="location-details">
+                  <p>🏢 {{ selectedTransfer()!.from.location }}</p>
+                  <p>{{ selectedTransfer()!.from.details }}</p>
+                  <p>Safety Box: SAF-001</p>
+                  <p>Shelf: Shelf-03</p>
+                </div>
+              </div>
+              <div class="arrow">─▶</div>
+              <div class="location-box to">
+                <h4>TO:</h4>
+                <div class="location-details">
+                  <p>🏢 {{ selectedTransfer()!.to.location }}</p>
+                  <p>{{ selectedTransfer()!.to.details }}</p>
+                  <p>Safety Box: SAF-008</p>
+                  <p>Shelf: Shelf-01</p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Reason & Justification -->
+          <section class="modal-section">
+            <h3>📝 REASON & JUSTIFICATION</h3>
+            <div class="text-content">
+              <p>{{ selectedTransfer()!.reason }}</p>
+            </div>
+          </section>
+
+          <!-- Supporting Documents -->
+          <section class="modal-section">
+            <h3>📎 SUPPORTING DOCUMENTS</h3>
+            <div class="documents-list">
+              <div class="document-item">
+                <span>📄 Transfer_Approval_IT_Dept.pdf</span>
+                <div class="doc-actions">
+                  <button type="button" class="action-btn secondary small">View</button>
+                  <button type="button" class="action-btn secondary small">Download</button>
+                </div>
+              </div>
+              <div class="document-item">
+                <span>📄 Staff_Transfer_Letter.pdf</span>
+                <div class="doc-actions">
+                  <button type="button" class="action-btn secondary small">View</button>
+                  <button type="button" class="action-btn secondary small">Download</button>
+                </div>
+              </div>
+            </div>
+            <button type="button" class="action-btn secondary small">+ Add Document</button>
+          </section>
+
+          <!-- Transfer History -->
+          <section class="modal-section">
+            <h3>📜 TRANSFER HISTORY</h3>
+            <div class="text-content">
+              <p>This property has been transferred 2 times previously:</p>
+              <ul>
+                <li>• Jan 2023: Warehouse A → IT Department</li>
+                <li>• Mar 2022: Storage → Warehouse A</li>
+              </ul>
+            </div>
+          </section>
+
+          <!-- Approval Decision -->
+          <section class="modal-section">
+            <h3>APPROVAL DECISION</h3>
+            <div class="approval-options">
+              <label class="radio-label">
+                <input type="radio" name="decision" value="approve">
+                <span>Approve</span>
+              </label>
+              <label class="radio-label">
+                <input type="radio" name="decision" value="conditional">
+                <span>Approve with Conditions</span>
+              </label>
+              <label class="radio-label">
+                <input type="radio" name="decision" value="reject" checked>
+                <span>Reject</span>
+              </label>
+            </div>
+            <div class="rejection-reason">
+              <label>Rejection Reason:</label>
+              <textarea rows="3">Branch office does not have secure storage for this equipment. Please reconsider or arrange for safe storage before transfer.</textarea>
+            </div>
+          </section>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="action-btn secondary" (click)="closeModals()">Cancel</button>
+          <button type="button" class="action-btn primary">Submit Decision</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Approve Transfer Modal -->
+  @if (showApproveModal() && selectedTransfer()) {
+    <div class="modal-overlay" (click)="closeModals()">
+      <div class="modal-content" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h2>Approve Transfer Request</h2>
+          <button type="button" class="close-btn" (click)="closeModals()">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+
+        <div class="modal-body">
+          <p class="transfer-info">
+            Transfer ID: {{ selectedTransfer()!.id }}<br>
+            Property: {{ selectedTransfer()!.property.name }} ({{ selectedTransfer()!.property.tag }})
+          </p>
+
+          <section class="modal-section">
+            <h3>APPROVAL DETAILS</h3>
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Approved By:</label>
+                <select class="form-select">
+                  <option>John Doe (Property Admin)</option>
+                  <option>Sarah Smith (Manager)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Approved Date:</label>
+                <input type="text" class="form-input" value="Dec 15, 2024">
+              </div>
+              <div class="form-group">
+                <label>Effective Date:</label>
+                <input type="text" class="form-input" value="Dec 16, 2024">
+              </div>
+            </div>
+          </section>
+
+          <section class="modal-section">
+            <h3>CONDITIONS (Optional)</h3>
+            <div class="checkbox-list">
+              <label class="checkbox-label">
+                <input type="checkbox" checked>
+                <span>Notify requester via email</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" checked>
+                <span>Notify receiving location manager</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox">
+                <span>Require sign-off from receiving department</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox">
+                <span>Schedule security audit after transfer</span>
+              </label>
+            </div>
+          </section>
+
+          <section class="modal-section">
+            <h3>COMMENTS</h3>
+            <textarea class="form-textarea" rows="3">Approved as requested. Ensure proper documentation at receiving end.</textarea>
+          </section>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="action-btn secondary" (click)="closeModals()">Cancel</button>
+          <button type="button" class="action-btn primary" (click)="approveTransfer()">Confirm Approval</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Create Transfer Request Modal -->
+  @if (showCreateModal()) {
+    <div class="modal-overlay" (click)="closeModals()">
+      <div class="modal-content large" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h2>Request Property Transfer</h2>
+          <button type="button" class="close-btn" (click)="closeModals()">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+
+        <div class="modal-body">
+          <!-- Step 1: Select Property -->
+          <section class="modal-section">
+            <h3>Step 1 of 3: Select Property</h3>
+            <div class="search-box">
+              <i class="bi bi-search"></i>
+              <input type="text" placeholder="Search property by Tag #, Name, or Serial...">
+            </div>
+            <div class="property-selection">
+              <label class="checkbox-label card-checkbox">
+                <input type="checkbox" checked>
+                <div class="property-card">
+                  <strong>TAG-001 - Dell XPS Laptop</strong>
+                  <p>Current Location: IT Department, HQ Floor 1</p>
+                  <p>Status: Active</p>
+                </div>
+              </label>
+            </div>
+          </section>
+
+          <!-- Step 2: Select Destination -->
+          <section class="modal-section">
+            <h3>Step 2 of 3: Select Destination</h3>
+            <div class="destination-selection">
+              <div class="from-location">
+                <label>From Location:</label>
+                <p>IT Department, HQ Floor 1 (Current)</p>
+              </div>
+              <div class="arrow-down">↓</div>
+              <div class="to-location">
+                <label>To Location *</label>
+                <select class="form-select">
+                  <option>Branch Office - Marketing Dept</option>
+                  <option>Warehouse A - Aisle B</option>
+                  <option>Data Center - HQ Floor 2</option>
+                </select>
+              </div>
+            </div>
+          </section>
+
+          <!-- Step 3: Transfer Details -->
+          <section class="modal-section">
+            <h3>Step 3 of 3: Transfer Details</h3>
+            <div class="form-group">
+              <label>Reason for Transfer *</label>
+              <input type="text" class="form-input" value="Staff relocation to Branch Office">
+            </div>
+            <div class="form-group">
+              <label>Required By Date *</label>
+              <input type="text" class="form-input" value="Dec 20, 2024">
+            </div>
+            <div class="form-group">
+              <label>Priority *</label>
+              <select class="form-select">
+                <option>🔴 Urgent</option>
+                <option>🟡 Medium</option>
+                <option>🟢 Normal</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Additional Comments (Optional)</label>
+              <textarea class="form-textarea" rows="2">Equipment needed for new hire at branch office</textarea>
+            </div>
+          </section>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="action-btn secondary" (click)="closeModals()">Cancel</button>
+          <button type="button" class="action-btn primary">Submit Transfer Request</button>
+        </div>
+      </div>
+    </div>
+  }
+</section>

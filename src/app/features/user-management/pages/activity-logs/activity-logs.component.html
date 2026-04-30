@@ -1,0 +1,274 @@
+<div class="activity-logs-container">
+  <div class="page-header">
+    <div class="header-info">
+      <h1>System Audit Logs</h1>
+      <p class="subtitle">Track all user activities and system events</p>
+    </div>
+    <div class="header-actions">
+      <span class="log-count">Total: {{ totalLogs() }} entries</span>
+      <button type="button" class="btn btn-secondary" (click)="openLogSettings()">
+        <i class="bi bi-gear"></i>
+        Log Settings
+      </button>
+      <div class="dropdown" [class.open]="showExportDropdown()">
+        <button type="button" class="btn btn-secondary" (click)="showExportDropdown.set(!showExportDropdown())">
+          <i class="bi bi-download"></i>
+          Export Logs
+          <i class="bi bi-chevron-down"></i>
+        </button>
+        @if (showExportDropdown()) {
+          <div class="dropdown-menu">
+            <button type="button" class="dropdown-item" (click)="exportLogs('CSV'); showExportDropdown.set(false)">
+              <i class="bi bi-file-earmark-csv"></i> Export as CSV
+            </button>
+            <button type="button" class="dropdown-item" (click)="exportLogs('Excel'); showExportDropdown.set(false)">
+              <i class="bi bi-file-earmark-excel"></i> Export as Excel
+            </button>
+            <button type="button" class="dropdown-item" (click)="exportLogs('JSON'); showExportDropdown.set(false)">
+              <i class="bi bi-file-earmark-code"></i> Export as JSON
+            </button>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- Filter Bar -->
+  <div class="filter-bar">
+    <div class="filter-group">
+      <div class="filter-field">
+        <i class="bi bi-search"></i>
+        <input type="text" placeholder="Search logs..." [value]="searchQuery()" (input)="onSearch($event)">
+      </div>
+      <div class="filter-field">
+        <i class="bi bi-person"></i>
+        <select [value]="userFilter()" (change)="onUserFilter($event)">
+          <option>All Users</option>
+          <option>John Doe</option>
+          <option>Sarah Smith</option>
+          <option>Mike Wilson</option>
+          <option>Peter Chen</option>
+          <option>Lisa Wong</option>
+        </select>
+      </div>
+      <div class="filter-field">
+        <i class="bi bi-lightning"></i>
+        <select [value]="actionTypeFilter()" (change)="onActionTypeFilter($event)">
+          <option>All Actions</option>
+          <option>Create</option>
+          <option>Update</option>
+          <option>Delete</option>
+          <option>View</option>
+          <option>Login</option>
+          <option>Export</option>
+          <option>Alert</option>
+        </select>
+      </div>
+      <div class="filter-field">
+        <i class="bi bi-box"></i>
+        <select [value]="entityTypeFilter()" (change)="onEntityTypeFilter($event)">
+          <option>All Entities</option>
+          <option>Property</option>
+          <option>User</option>
+          <option>Requisition</option>
+          <option>Stock</option>
+          <option>Report</option>
+        </select>
+      </div>
+      <div class="filter-field">
+        <i class="bi bi-shield-check"></i>
+        <select [value]="statusFilter()" (change)="onStatusFilter($event)">
+          <option>All Status</option>
+          <option>Success</option>
+          <option>Failure</option>
+          <option>Warning</option>
+        </select>
+      </div>
+      <div class="filter-field">
+        <i class="bi bi-calendar"></i>
+        <input type="date" placeholder="Date Range">
+      </div>
+    </div>
+    <button type="button" class="btn btn-filter" (click)="resetFilters()">
+      <i class="bi bi-arrow-counterclockwise"></i>
+      Reset Filters
+    </button>
+  </div>
+
+  <!-- Activity Logs Table -->
+  <div class="table-container">
+    <table class="logs-table">
+      <thead>
+        <tr>
+          <th>Timestamp</th>
+          <th>User</th>
+          <th>Action</th>
+          <th>Entity Type</th>
+          <th>Entity ID</th>
+          <th>Details</th>
+          <th>IP Address</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (log of pagedLogs(); track log.id) {
+          <tr class="clickable-row" (click)="openDetailsModal(log)">
+            <td>{{ formatTimestamp(log.timestamp) }}</td>
+            <td>{{ log.user }}</td>
+            <td>
+              <span class="action-badge action-{{ getActionColor(log.actionType) }}">
+                <i [class]="getActionIcon(log.actionType)"></i>
+                {{ log.action }}
+              </span>
+            </td>
+            <td>{{ log.entityType }}</td>
+            <td>{{ log.entityId }}</td>
+            <td>{{ log.details }}</td>
+            <td>{{ log.ipAddress }}</td>
+            <td>
+              <span class="badge badge-{{ getStatusColor(log.status) }}">{{ log.status }}</span>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  <div class="pagination-bar">
+    <div class="pagination-info">
+      Showing {{ displayRange().start }} - {{ displayRange().end }} of {{ filteredLogs().length }} entries
+    </div>
+    <div class="pagination-controls">
+      <button type="button" class="page-btn" [disabled]="currentPage() === 1" (click)="goToPage(currentPage() - 1)">
+        <i class="bi bi-chevron-left"></i>
+      </button>
+      @for (page of [].constructor(totalPages()); track $index) {
+        <button type="button" class="page-btn" [class.active]="currentPage() === $index + 1" (click)="goToPage($index + 1)">
+          {{ $index + 1 }}
+        </button>
+      }
+      <button type="button" class="page-btn" [disabled]="currentPage() === totalPages()" (click)="goToPage(currentPage() + 1)">
+        <i class="bi bi-chevron-right"></i>
+      </button>
+    </div>
+    <div class="rows-per-page">
+      Rows per page:
+      <select [value]="rowsPerPage()" (change)="onRowsPerPageChange($event)">
+        <option>10</option>
+        <option>20</option>
+        <option>50</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<!-- Activity Details Modal -->
+@if (showDetailsModal() && selectedLog()) {
+  <div class="modal-overlay" (click)="closeDetailsModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Activity Details</h3>
+        <button type="button" class="btn-close" (click)="closeDetailsModal()">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="details-section">
+          <h4>Basic Information</h4>
+          <div class="detail-row">
+            <span>Timestamp:</span>
+            <strong>{{ formatTimestamp(selectedLog()!.timestamp) }}</strong>
+          </div>
+          <div class="detail-row">
+            <span>User:</span>
+            <strong>{{ selectedLog()!.user }}</strong>
+          </div>
+          <div class="detail-row">
+            <span>IP Address:</span>
+            <strong>{{ selectedLog()!.ipAddress }}</strong>
+          </div>
+          <div class="detail-row">
+            <span>Session ID:</span>
+            <strong>ses_abc123def456</strong>
+          </div>
+        </div>
+        <div class="details-section">
+          <h4>Action Details</h4>
+          <div class="detail-row">
+            <span>Action:</span>
+            <strong>{{ selectedLog()!.action }}</strong>
+          </div>
+          <div class="detail-row">
+            <span>Entity:</span>
+            <strong>{{ selectedLog()!.entityType }}</strong>
+          </div>
+          <div class="detail-row">
+            <span>Entity ID:</span>
+            <strong>{{ selectedLog()!.entityId }}</strong>
+          </div>
+          <div class="detail-row">
+            <span>Status:</span>
+            <strong>{{ selectedLog()!.status }}</strong>
+          </div>
+        </div>
+        <div class="details-section">
+          <h4>Changes (What was changed)</h4>
+          <div class="changes-table">
+            <div class="changes-header">
+              <span>Field</span>
+              <span>Old Value</span>
+              <span>New Value</span>
+            </div>
+            <div class="changes-row">
+              <span>Name</span>
+              <span>-</span>
+              <span>MacBook Pro M3</span>
+            </div>
+            <div class="changes-row">
+              <span>Serial Number</span>
+              <span>-</span>
+              <span>C02XK2L8Q6PJ</span>
+            </div>
+            <div class="changes-row">
+              <span>Location</span>
+              <span>-</span>
+              <span>IT Department</span>
+            </div>
+            <div class="changes-row">
+              <span>Value</span>
+              <span>-</span>
+              <span>$2,499</span>
+            </div>
+          </div>
+        </div>
+        <div class="details-section">
+          <h4>Request Information</h4>
+          <div class="detail-row">
+            <span>Method:</span>
+            <strong>POST</strong>
+          </div>
+          <div class="detail-row">
+            <span>Endpoint:</span>
+            <strong>/api/properties</strong>
+          </div>
+          <div class="detail-row">
+            <span>User Agent:</span>
+            <strong>Mozilla/5.0 (Windows NT 10.0; Win64; x64)</strong>
+          </div>
+        </div>
+        <div class="details-section">
+          <h4>Details</h4>
+          <div class="detail-row">
+            <span>Description:</span>
+            <strong>{{ selectedLog()!.details }}</strong>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="copyDetails()">Copy Details</button>
+        <button type="button" class="btn btn-secondary" (click)="closeDetailsModal()">Close</button>
+      </div>
+    </div>
+  </div>
+}

@@ -1,0 +1,166 @@
+<div class="stock-movements-container">
+  <div class="page-header">
+    <div class="header-info">
+      <h1>Stock Movements</h1>
+      <p class="subtitle">Complete transaction log of all inventory changes</p>
+    </div>
+    <button class="btn btn-secondary" (click)="exportData()">
+      <i class="bi bi-download"></i> Export
+    </button>
+  </div>
+
+  <div class="filter-bar">
+    <div class="search-box">
+      <i class="bi bi-search"></i>
+      <input type="text" [value]="searchTerm()" (input)="onSearchChange($any($event.target).value)" placeholder="Search by item, SKU, reference #...">
+    </div>
+    <div class="filter-group">
+      <label>📅 Date:</label>
+      <input type="date" [value]="dateRange.start">
+      <span>to</span>
+      <input type="date" [value]="dateRange.end">
+      <button class="btn btn-sm btn-secondary">Apply Filters</button>
+      <button class="btn btn-sm btn-secondary">Reset</button>
+    </div>
+    <div class="filter-group">
+      <label>🏷️ Type:</label>
+      <select [(ngModel)]="typeFilter" (ngModelChange)="onTypeFilterChange($event)">
+        @for (type of movementTypes; track type) {
+          <option [value]="type">{{ type }}</option>
+        }
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>🏭 Warehouse:</label>
+      <select [(ngModel)]="warehouseFilter" (ngModelChange)="onWarehouseFilterChange($event)">
+        @for (wh of warehouses; track wh) {
+          <option [value]="wh">{{ wh }}</option>
+        }
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>👤 User:</label>
+      <select [(ngModel)]="userFilter">
+        <option value="All Users">All Users</option>
+        <option value="John Doe">John Doe</option>
+        <option value="Sarah Smith">Sarah Smith</option>
+        <option value="Mike Wilson">Mike Wilson</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="summary-grid">
+    <div class="summary-card inflow">
+      <div class="summary-icon">📥</div>
+      <div class="summary-content">
+        <div class="summary-label">Total Inflow</div>
+        <div class="summary-value">{{ summary().inflow.units }} units</div>
+        <div class="summary-subvalue">{{ formatValue(summary().inflow.value) }}</div>
+      </div>
+    </div>
+    <div class="summary-card outflow">
+      <div class="summary-icon">📤</div>
+      <div class="summary-content">
+        <div class="summary-label">Total Outflow</div>
+        <div class="summary-value">{{ summary().outflow.units }} units</div>
+        <div class="summary-subvalue">{{ formatValue(summary().outflow.value) }}</div>
+      </div>
+    </div>
+    <div class="summary-card transfer">
+      <div class="summary-icon">🔄</div>
+      <div class="summary-content">
+        <div class="summary-label">Total Transfers</div>
+        <div class="summary-value">{{ summary().transfer.units }} units</div>
+        <div class="summary-subvalue">{{ formatValue(summary().transfer.value) }}</div>
+      </div>
+    </div>
+    <div class="summary-card adjustment">
+      <div class="summary-icon">📝</div>
+      <div class="summary-content">
+        <div class="summary-label">Total Adjustments</div>
+        <div class="summary-value">{{ summary().adjustment.units }} units</div>
+        <div class="summary-subvalue">{{ formatValue(summary().adjustment.value) }}</div>
+      </div>
+    </div>
+    <div class="summary-card net-change">
+      <div class="summary-icon">📊</div>
+      <div class="summary-content">
+        <div class="summary-label">Net Change</div>
+        <div class="summary-value positive">▲ +258 units</div>
+        <div class="summary-subvalue positive">+$33,440</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="chart-section">
+    <div class="section-header">
+      <h3>📈 MOVEMENT TREND CHART</h3>
+    </div>
+    <div class="chart-placeholder">
+      <div class="chart-legend">
+        <span class="legend-item"><span class="dot green"></span> Inflow</span>
+        <span class="legend-item"><span class="dot red"></span> Outflow</span>
+        <span class="legend-item"><span class="dot blue"></span> Net Change</span>
+      </div>
+      <div class="chart-bars">
+        @for (i of [1,2,3,4,5,6,7,8]; track i) {
+          <div class="bar-group">
+            <div class="bar inflow" [style.height.px]="getRandomHeight(80, 50)"></div>
+            <div class="bar outflow" [style.height.px]="getRandomHeight(60, 40)"></div>
+            <div class="bar net" [style.height.px]="getRandomHeight(40, 20)"></div>
+            <div class="bar-label">Week {{ i }}</div>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+
+  <div class="table-section">
+    <div class="section-header">
+      <h3>📋 MOVEMENT LOG TABLE</h3>
+    </div>
+    <div class="table-container">
+      <table class="movements-table">
+        <thead>
+          <tr>
+            <th>Date/Time</th>
+            <th>Type</th>
+            <th>Item</th>
+            <th>Qty</th>
+            <th>Reference</th>
+            <th>User</th>
+            <th>Balance</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (mov of filteredMovements(); track mov.id) {
+            <tr>
+              <td>{{ mov.dateTime }}</td>
+              <td>
+                <span class="type-badge" [class.badge-green]="mov.type === 'Inflow'" [class.badge-red]="mov.type === 'Outflow'" [class.badge-blue]="mov.type === 'Transfer'" [class.badge-orange]="mov.type === 'Adjustment'">
+                  {{ getMovementIcon(mov.type) }} {{ mov.type }}
+                </span>
+              </td>
+              <td>{{ mov.item }}</td>
+              <td>{{ mov.quantity > 0 ? '+' : '' }}{{ mov.quantity }}</td>
+              <td>{{ mov.refNumber }}</td>
+              <td>{{ mov.user }}</td>
+              <td>{{ mov.balance }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <div class="pagination-bar">
+      <div class="pagination-info">Showing 1-{{ filteredMovements().length }} of 1,234 entries</div>
+      <div class="pagination-controls">
+        <button class="page-btn" disabled>Previous</button>
+        <button class="page-btn active">1</button>
+        <button class="page-btn">2</button>
+        <button class="page-btn">3</button>
+        <button class="page-btn">→</button>
+        <button class="page-btn">25</button>
+      </div>
+    </div>
+  </div>
+</div>

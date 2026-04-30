@@ -68,7 +68,8 @@
               "buildTarget": "PAS-Frontend:build:production"
             },
             "development": {
-              "buildTarget": "PAS-Frontend:build:development"
+              "buildTarget": "PAS-Frontend:build:development",
+              "proxyConfig": "proxy.conf.json"
             }
           },
           "defaultConfiguration": "development"

@@ -1,0 +1,112 @@
+<section class="manager-dashboard" aria-label="Manager dashboard">
+  <header class="welcome-banner">
+    <h1>Manager Dashboard</h1>
+    <p>Welcome, {{ managerName() }}</p>
+  </header>
+
+  <section class="summary" aria-labelledby="summary-heading">
+    <h2 id="summary-heading">Summary Cards</h2>
+    <div class="card-grid">
+      @for (card of summaryCards(); track card.title) {
+        <article class="summary-card">
+          <p class="card-title">{{ card.title }}</p>
+          <p class="card-value">{{ card.value }}</p>
+        </article>
+      }
+    </div>
+  </section>
+
+  <section class="filters" aria-labelledby="filters-heading">
+    <h2 id="filters-heading">Filters</h2>
+    <div class="actions-row">
+      @for (filter of filters; track filter) {
+        <button
+          type="button"
+          class="action-btn"
+          [class.action-active]="selectedFilter() === filter"
+          (click)="setFilter(filter)"
+        >
+          {{ filter }}
+        </button>
+      }
+    </div>
+  </section>
+
+  <section class="content-grid">
+    <section class="requests-panel" aria-labelledby="requests-heading">
+      <div class="panel-header">
+        <h2 id="requests-heading">Requests</h2>
+        <div class="actions-row">
+          <button type="button" class="action-btn secondary" (click)="refresh()">Refresh</button>
+          <button type="button" class="action-btn primary" (click)="viewAllRequests()">
+            View All Requests
+          </button>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Employee Name</th>
+              <th scope="col">Item Name</th>
+              <th scope="col">Quantity</th>
+              <th scope="col">Date</th>
+              <th scope="col">Status</th>
+              <th scope="col">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (request of filteredRequests(); track request.id) {
+              <tr>
+                <td>{{ request.employeeName }}</td>
+                <td>{{ request.itemName }}</td>
+                <td>{{ request.quantity }}</td>
+                <td>{{ request.date }}</td>
+                <td>
+                  <span
+                    class="status-pill"
+                    [class.status-pending]="request.status === 'Pending'"
+                    [class.status-approved]="request.status === 'Approved'"
+                    [class.status-rejected]="request.status === 'Rejected'"
+                  >
+                    {{ request.status }}
+                  </span>
+                </td>
+                <td>
+                  <div class="actions-inline">
+                    <button
+                      type="button"
+                      class="table-btn approve"
+                      [disabled]="request.status !== 'Pending'"
+                      (click)="approveRequest(request.id)"
+                    >
+                      Approve
+                    </button>
+                    <button
+                      type="button"
+                      class="table-btn reject"
+                      [disabled]="request.status !== 'Pending'"
+                      (click)="rejectRequest(request.id)"
+                    >
+                      Reject
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <aside class="activity-panel" aria-labelledby="activity-heading">
+      <h2 id="activity-heading">Recent Activity</h2>
+      <div class="activity-list" role="list">
+        @for (entry of recentActivity(); track entry) {
+          <div role="listitem">{{ entry }}</div>
+        }
+      </div>
+    </aside>
+  </section>
+</section>

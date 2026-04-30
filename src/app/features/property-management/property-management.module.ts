@@ -15,17 +15,14 @@ import { PropertyTypeService } from './property-types/services/property-type.ser
 
 // Property Categories
 import { PropertyCategoryListComponent } from './property-categories/pages/property-category-list/property-category-list.component';
-import { PropertyCategoryFormComponent } from './property-categories/pages/property-category-form/property-category-form.component';
 import { PropertyCategoryService } from './property-categories/services/property-category.service';
 
 // Locations
 import { LocationListComponent } from './locations/pages/location-list/location-list.component';
-import { LocationFormComponent } from './locations/pages/location-form/location-form.component';
 import { LocationService } from './locations/services/location.service';
 
 // Safety Boxes
 import { SafetyBoxListComponent } from './safety-boxes/pages/safety-box-list/safety-box-list.component';
-import { SafetyBoxFormComponent } from './safety-boxes/pages/safety-box-form/safety-box-form.component';
 import { SafetyBoxService } from './safety-boxes/services/safety-box.service';
 
 const routes: Routes = [
@@ -37,29 +34,14 @@ const routes: Routes = [
   { path: 'property-types/new', component: PropertyTypeFormComponent },
   { path: 'property-types/edit/:id', component: PropertyTypeFormComponent },
   { path: 'property-categories', component: PropertyCategoryListComponent },
-  { path: 'property-categories/new', component: PropertyCategoryFormComponent },
-  { path: 'property-categories/edit/:id', component: PropertyCategoryFormComponent },
   { path: 'locations', component: LocationListComponent },
-  { path: 'locations/new', component: LocationFormComponent },
-  { path: 'locations/edit/:id', component: LocationFormComponent },
-  { path: 'safety-boxes', component: SafetyBoxListComponent },
-  { path: 'safety-boxes/new', component: SafetyBoxFormComponent },
-  { path: 'safety-boxes/edit/:id', component: SafetyBoxFormComponent }
+  { path: 'safety-boxes', component: SafetyBoxListComponent }
 ];
 
 @NgModule({
   declarations: [
-    PropertyListComponent,
-    PropertyFormComponent,
     PropertyDetailComponent,
-    PropertyTypeListComponent,
-    PropertyTypeFormComponent,
-    PropertyCategoryListComponent,
-    PropertyCategoryFormComponent,
-    LocationListComponent,
-    LocationFormComponent,
-    SafetyBoxListComponent,
-    SafetyBoxFormComponent
+    PropertyTypeFormComponent
   ],
   imports: [SharedModule, RouterModule.forChild(routes)],
   providers: [

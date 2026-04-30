@@ -1,4 +1,54 @@
-﻿<section class="page ecx-list-surface">
-  <h2>Notifications</h2>
+﻿<section class="notification-page">
+  <div class="page-header">
+    <div class="header-content">
+      <h1>Notifications</h1>
+      <p>Stay updated with your latest alerts and updates</p>
+    </div>
+    <div class="header-actions">
+      <button type="button" class="action-btn secondary" (click)="markAllAsRead()">
+        <i class="bi bi-check-double"></i>
+        Mark All as Read
+      </button>
+      <button type="button" class="action-btn primary" routerLink="/dashboard">
+        <i class="bi bi-arrow-left"></i>
+        Back to Dashboard
+      </button>
+    </div>
+  </div>
+
+  <div class="notification-filters">
+    <button type="button" class="filter-btn" [class.active]="currentFilter === 'all'" (click)="setFilter('all')">All</button>
+    <button type="button" class="filter-btn" [class.active]="currentFilter === 'unread'" (click)="setFilter('unread')">Unread ({{ notifications.filter(n => !n.read).length }})</button>
+    <button type="button" class="filter-btn" [class.active]="currentFilter === 'success'" (click)="setFilter('success')">Success</button>
+    <button type="button" class="filter-btn" [class.active]="currentFilter === 'warning'" (click)="setFilter('warning')">Warning</button>
+    <button type="button" class="filter-btn" [class.active]="currentFilter === 'error'" (click)="setFilter('error')">Error</button>
+  </div>
+
+  <div class="notifications-container">
+    @for (notification of filteredNotifications; track notification.id) {
+      <div class="notification-card {{ notification.read ? 'read' : 'unread' }} {{ getTypeClass(notification.type) }}" (click)="markAsRead(notification.id)">
+        <div class="notification-icon">
+          <i class="bi {{ getIconClass(notification.type) }}"></i>
+        </div>
+        <div class="notification-content">
+          <div class="notification-header">
+            <h3>{{ notification.title }}</h3>
+            <span class="notification-time">{{ formatTime(notification.timestamp) }}</span>
+          </div>
+          <p class="notification-message">{{ notification.message }}</p>
+        </div>
+        <button type="button" class="notification-delete" (click)="deleteNotification(notification.id); $event.stopPropagation()">
+          <i class="bi bi-trash"></i>
+        </button>
+      </div>
+    }
+    @empty {
+      <div class="no-notifications">
+        <i class="bi bi-bell-slash"></i>
+        <h3>No notifications</h3>
+        <p>You're all caught up!</p>
+      </div>
+    }
+  </div>
 </section>
 

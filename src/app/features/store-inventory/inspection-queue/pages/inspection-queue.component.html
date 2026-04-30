@@ -1,0 +1,276 @@
+<div class="inspection-queue-container">
+  <div class="page-header">
+    <div class="header-info">
+      <h1>Inspection Queue ({{ totalPending() }})</h1>
+      <p class="subtitle">Items awaiting quality inspection</p>
+    </div>
+    <button class="btn btn-secondary">
+      <i class="bi bi-arrow-clockwise"></i> Refresh
+    </button>
+  </div>
+
+  <div class="filter-bar">
+    <div class="search-box">
+      <i class="bi bi-search"></i>
+      <input type="text" [value]="searchTerm()" (input)="onSearchChange($any($event.target).value)" placeholder="Search by GRN#, Item, Supplier...">
+    </div>
+    <button class="btn btn-secondary">
+      <i class="bi bi-sliders"></i> Filters
+    </button>
+    <div class="filter-group">
+      <label>🏷️ Priority:</label>
+      <select [(ngModel)]="priorityFilter" (ngModelChange)="onPriorityChange($event)">
+        @for (p of priorities; track p) {
+          <option [value]="p">{{ p }}</option>
+        }
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>🔧 Inspector:</label>
+      <select [(ngModel)]="inspectorFilter" (ngModelChange)="onInspectorChange($event)">
+        @for (i of inspectors; track i) {
+          <option [value]="i">{{ i }}</option>
+        }
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>⏳ Age:</label>
+      <select [(ngModel)]="ageFilter" (ngModelChange)="onAgeChange($event)">
+        @for (a of ages; track a) {
+          <option [value]="a">{{ a }}</option>
+        }
+      </select>
+    </div>
+  </div>
+
+  <!-- Inspection Summary -->
+  <div class="summary-section">
+    <h2>📊 INSPECTION SUMMARY</h2>
+    <div class="summary-grid">
+      <div class="summary-card">
+        <div class="summary-icon">📋</div>
+        <div class="summary-content">
+          <div class="summary-label">Total Pending Inspections</div>
+          <div class="summary-value">{{ totalPending() }}</div>
+          <div class="summary-sub">▼ -1</div>
+        </div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon">📅</div>
+        <div class="summary-content">
+          <div class="summary-label">Today's Queue</div>
+          <div class="summary-value">{{ todayQueue() }}</div>
+          <div class="summary-sub critical">🔴 High</div>
+        </div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon">📆</div>
+        <div class="summary-content">
+          <div class="summary-label">This Week Queue</div>
+          <div class="summary-value">{{ weekQueue() }}</div>
+          <div class="summary-sub warning">🟡 Medium</div>
+        </div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon">⚡</div>
+        <div class="summary-content">
+          <div class="summary-label">Urgent Items</div>
+          <div class="summary-value">{{ urgentItems() }}</div>
+          <div class="summary-sub critical">⚡ Urgent</div>
+        </div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon">⏱️</div>
+        <div class="summary-content">
+          <div class="summary-label">Avg. Wait Time</div>
+          <div class="summary-value">{{ avgWaitTime() }}</div>
+          <div class="summary-sub">▲ +0.5 days</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Inspection Queue List -->
+  <div class="queue-list-section">
+    <h3>⏳ INSPECTION QUEUE</h3>
+    @for (item of filteredItems(); track item.sku) {
+      <div class="inspection-card">
+        <div class="inspection-header">
+          <span class="priority-badge">{{ getPriorityColor(item.priority) }} {{ item.name }} ({{ item.sku }})</span>
+          <span class="age-badge">Age: {{ item.age }}</span>
+        </div>
+        <div class="inspection-details">
+          <div class="inspection-meta">
+            <span>Quantity: {{ item.quantity }} units</span>
+            <span>Supplier: {{ item.supplier }}</span>
+            <span>GRN: {{ item.grnNumber }}</span>
+            <span>Priority: {{ item.priority }}</span>
+          </div>
+          <div class="inspection-actions">
+            <button class="btn btn-primary" (click)="startInspection(item)">
+              <i class="bi bi-check-circle"></i> Start Inspection
+            </button>
+            <button class="btn btn-secondary" (click)="viewGRN(item)">
+              <i class="bi bi-file-earmark"></i> View GRN
+            </button>
+            <button class="btn btn-secondary" (click)="remindLater(item)">
+              <i class="bi bi-clock"></i> Remind Later
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- Inspection Performance -->
+  <div class="performance-section">
+    <h3>📈 INSPECTION PERFORMANCE</h3>
+    <div class="performance-grid">
+      <div class="performance-card">
+        <h4>Average Inspection Time</h4>
+        <div class="performance-value">12 minutes per item</div>
+      </div>
+      <div class="performance-card">
+        <h4>Today's Completed</h4>
+        <div class="performance-stats">
+          <span>8 items</span>
+          <span>Pass Rate: 85%</span>
+          <span>Fail Rate: 8%</span>
+          <span>Partial: 7%</span>
+        </div>
+      </div>
+    </div>
+    <div class="quality-issues">
+      <h4>Quality Issues Summary:</h4>
+      <div class="issues-breakdown">
+        <span>Missing accessories: 45%</span>
+        <span>Physical damage: 30%</span>
+        <span>Wrong quantity: 15%</span>
+        <span>Other: 10%</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Start Inspection Modal -->
+@if (showInspectionModal() && selectedItem()) {
+  <div class="modal-overlay" (click)="closeInspectionModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Quality Inspection - {{ selectedItem()?.grnNumber }}</h3>
+        <button class="btn-close" (click)="closeInspectionModal()">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="inspection-info">
+          <span>Supplier: {{ selectedItem()?.supplier }}</span>
+          <span>Received: Dec 15, 2024</span>
+          <span>Inspector: Sarah Smith</span>
+        </div>
+        <div class="inspection-item-section">
+          <h4>ITEM 1 OF 2: {{ selectedItem()?.name }} (SKU: {{ selectedItem()?.sku }}) - Quantity: {{ selectedItem()?.quantity }} units</h4>
+          <div class="checklist-section">
+            <h5>INSPECTION CHECKLIST</h5>
+            <div class="checklist">
+              <label class="checkbox-label">
+                <input type="checkbox" checked> Packaging intact and undamaged
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" checked> Physical condition - no scratches or dents
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" checked> Serial numbers match documentation
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" checked> All accessories included (charger, cables, manuals)
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" checked> Power on test - boots successfully
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" checked> Display test - no dead pixels
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" checked> Keyboard and trackpad functional
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" checked> Ports test - USB, HDMI, audio working
+              </label>
+            </div>
+            <div class="sample-info">
+              <span>Sample Size: [10] of 10 units</span>
+              <span>Defective Count: [0]</span>
+            </div>
+            <div class="result-section">
+              <h5>Overall Result:</h5>
+              <div class="radio-group">
+                <label class="radio-label">
+                  <input type="radio" name="result" checked> Pass
+                </label>
+                <label class="radio-label">
+                  <input type="radio" name="result"> Fail
+                </label>
+                <label class="radio-label">
+                  <input type="radio" name="result"> Partial
+                </label>
+              </div>
+            </div>
+            <div class="comments-section">
+              <h5>Comments:</h5>
+              <textarea rows="2" placeholder="Enter inspection comments...">All units passed quality inspection. Ready for release to stock.</textarea>
+            </div>
+          </div>
+        </div>
+        <div class="disposition-section">
+          <h4>DISPOSITION DECISION</h4>
+          <div class="disposition-options">
+            <label class="radio-label">
+              <input type="radio" name="disposition" checked> Return to Supplier
+            </label>
+            <label class="radio-label">
+              <input type="radio" name="disposition"> Discount
+            </label>
+            <label class="radio-label">
+              <input type="radio" name="disposition"> Scrap
+            </label>
+            <label class="radio-label">
+              <input type="radio" name="disposition"> Re-inspect
+            </label>
+            <label class="radio-label">
+              <input type="radio" name="disposition"> Quarantine
+            </label>
+          </div>
+        </div>
+        <div class="photo-evidence-section">
+          <h4>PHOTO EVIDENCE</h4>
+          <div class="photo-grid">
+            <div class="photo-placeholder">
+              <span>[Photo]</span>
+              <span>Unit #1</span>
+              <span>Front</span>
+            </div>
+            <div class="photo-placeholder">
+              <span>[Photo]</span>
+              <span>Missing</span>
+              <span>Cable</span>
+            </div>
+            <div class="photo-placeholder">
+              <span>[Photo]</span>
+              <span>Unit #2</span>
+              <span>Label</span>
+            </div>
+          </div>
+          <button class="btn btn-secondary">
+            <i class="bi bi-plus"></i> Add Photo
+          </button>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="cancelInspection()">Cancel</button>
+        <button class="btn btn-secondary" (click)="saveDraft()">Save Draft</button>
+        <button class="btn btn-primary" (click)="submitInspection()">Submit Inspection</button>
+      </div>
+    </div>
+  </div>
+}

@@ -1,3 +1,262 @@
-﻿<section class="page">
-  <h1>Property Form</h1>
-</section>
+﻿<div class="add-property-container">
+  <div class="page-header">
+    <div class="header-info">
+      <h1>Add New Property</h1>
+      <p class="subtitle">Register a new asset in the system</p>
+    </div>
+    <button class="btn btn-secondary" (click)="cancel()">
+      <i class="bi bi-x-lg"></i> Close
+    </button>
+  </div>
+
+  <div class="stepper">
+    @for (step of [1, 2, 3, 4]; track step) {
+      <div class="step" [class.active]="currentStep() === step" [class.completed]="currentStep() > step">
+        <div class="step-circle">{{ step }}</div>
+        <div class="step-title">
+          @if (step === 1) { Basic Information }
+          @if (step === 2) { Financial Details }
+          @if (step === 3) { Location }
+          @if (step === 4) { Additional Info }
+        </div>
+      </div>
+      @if (step < 4) {
+        <div class="step-line" [class.completed]="currentStep() > step"></div>
+      }
+    }
+  </div>
+
+  @if (currentStep() === 1) {
+    <div class="form-section">
+      <h3><i class="bi bi-info-circle"></i> Basic Information</h3>
+      <div class="form-grid">
+        <div class="form-field">
+          <label>Tag Number <span class="required">*</span></label>
+          <div class="input-group">
+            <input type="text" [(ngModel)]="formData().tagNumber" placeholder="TAG-________">
+            <button class="input-btn" (click)="generateTagNumber()">
+              <i class="bi bi-arrow-clockwise"></i> Auto-generate
+            </button>
+          </div>
+        </div>
+        <div class="form-field">
+          <label>Property Name <span class="required">*</span></label>
+          <input type="text" [(ngModel)]="formData().propertyName" placeholder="Enter property name">
+        </div>
+        <div class="form-field">
+          <label>Serial Number <span class="required">*</span></label>
+          <input type="text" [(ngModel)]="formData().serialNumber" placeholder="Enter serial number">
+        </div>
+        <div class="form-field">
+          <label>Model Number</label>
+          <input type="text" [(ngModel)]="formData().modelNumber" placeholder="Enter model number">
+        </div>
+        <div class="form-field full-width">
+          <label>Description</label>
+          <textarea [(ngModel)]="formData().description" rows="3" placeholder="Enter description"></textarea>
+        </div>
+      </div>
+
+      <h3><i class="bi bi-tags"></i> Classification</h3>
+      <div class="form-grid">
+        <div class="form-field">
+          <label>Property Type <span class="required">*</span></label>
+          <select [(ngModel)]="formData().propertyType">
+            <option value="">Select Type</option>
+            @for (type of propertyTypes; track type.value) {
+              <option [value]="type.value">{{ type.icon }} {{ type.label }}</option>
+            }
+          </select>
+        </div>
+        <div class="form-field">
+          <label>Category <span class="required">*</span></label>
+          <select [(ngModel)]="formData().category">
+            <option value="">Select Category</option>
+            @for (cat of categories; track cat.value) {
+              <option [value]="cat.value">{{ cat.label }}</option>
+            }
+          </select>
+        </div>
+      </div>
+    </div>
+  }
+
+  @if (currentStep() === 2) {
+    <div class="form-section">
+      <h3><i class="bi bi-currency-dollar"></i> Financial Details</h3>
+      <div class="form-grid">
+        <div class="form-field">
+          <label>Unit Price <span class="required">*</span></label>
+          <div class="input-group">
+            <i class="bi bi-currency-dollar"></i>
+            <input type="number" [(ngModel)]="formData().unitPrice" (ngModelChange)="calculateTotalValue()" placeholder="0.00">
+          </div>
+        </div>
+        <div class="form-field">
+          <label>Quantity <span class="required">*</span></label>
+          <input type="number" [(ngModel)]="formData().quantity" (ngModelChange)="calculateTotalValue()" min="1" value="1">
+        </div>
+        <div class="form-field">
+          <label>Total Value</label>
+          <div class="input-group">
+            <i class="bi bi-currency-dollar"></i>
+            <input type="text" [value]="formData().totalValue | number:'1.2-2'" disabled>
+          </div>
+        </div>
+        <div class="form-field">
+          <label>Currency</label>
+          <select [(ngModel)]="formData().currency">
+            <option value="USD">USD</option>
+            <option value="EUR">EUR</option>
+            <option value="GBP">GBP</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label>Purchase Date <span class="required">*</span></label>
+          <input type="date" [(ngModel)]="formData().purchaseDate">
+        </div>
+        <div class="form-field">
+          <label>PO Number</label>
+          <input type="text" [(ngModel)]="formData().poNumber" placeholder="PO-________">
+        </div>
+        <div class="form-field full-width">
+          <label>Supplier / Vendor</label>
+          <select [(ngModel)]="formData().supplier">
+            <option value="">Select Supplier</option>
+            @for (sup of suppliers; track sup.value) {
+              <option [value]="sup.value">{{ sup.label }}</option>
+            }
+          </select>
+        </div>
+      </div>
+    </div>
+  }
+
+  @if (currentStep() === 3) {
+    <div class="form-section">
+      <h3><i class="bi bi-geo-alt"></i> Location Details</h3>
+      <div class="form-grid">
+        <div class="form-field full-width">
+          <label>Location <span class="required">*</span></label>
+          <select [(ngModel)]="formData().location">
+            <option value="">Select Location</option>
+            @for (loc of locations; track loc.value) {
+              <option [value]="loc.value">{{ loc.label }}</option>
+            }
+          </select>
+        </div>
+        <div class="form-field full-width">
+          <label>Safety Box (Optional)</label>
+          <select [(ngModel)]="formData().safetyBox">
+            <option value="">Select Safety Box</option>
+            @for (box of safetyBoxes; track box.value) {
+              <option [value]="box.value">{{ box.label }}</option>
+            }
+          </select>
+        </div>
+        @if (formData().safetyBox && formData().safetyBox !== 'none') {
+          <div class="form-field full-width">
+            <label>Shelf / Bin Location</label>
+            <select [(ngModel)]="formData().shelf">
+              <option value="">Select Shelf</option>
+              @for (shelf of shelves; track shelf.value) {
+                <option [value]="shelf.value">{{ shelf.label }}</option>
+              }
+            </select>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  @if (currentStep() === 4) {
+    <div class="form-section">
+      <h3><i class="bi bi-shield-check"></i> Warranty & Maintenance</h3>
+      <div class="form-grid">
+        <div class="form-field">
+          <label>Warranty Start</label>
+          <input type="date" [(ngModel)]="formData().warrantyStart">
+        </div>
+        <div class="form-field">
+          <label>Warranty End</label>
+          <input type="date" [(ngModel)]="formData().warrantyEnd">
+        </div>
+        <div class="form-field full-width">
+          <label>Maintenance Schedule</label>
+          <select [(ngModel)]="formData().maintenanceSchedule">
+            @for (schedule of maintenanceSchedules; track schedule.value) {
+              <option [value]="schedule.value">{{ schedule.label }}</option>
+            }
+          </select>
+        </div>
+      </div>
+
+      <h3><i class="bi bi-person"></i> Assignee / Custodian</h3>
+      <div class="form-grid">
+        <div class="form-field full-width">
+          <label>Assigned To (Optional)</label>
+          <select [(ngModel)]="formData().assignedTo">
+            <option value="">Select Employee</option>
+            @for (emp of employees; track emp.value) {
+              <option [value]="emp.value">{{ emp.label }}</option>
+            }
+          </select>
+        </div>
+      </div>
+
+      <h3><i class="bi bi-paperclip"></i> Documents & Attachments</h3>
+      <div class="upload-area">
+        <input type="file" multiple (change)="handleFileUpload($event)" #fileInput>
+        <div class="upload-placeholder" (click)="fileInput.click()">
+          <i class="bi bi-cloud-arrow-up"></i>
+          <p>Drag & drop files here or <span>Browse Files</span></p>
+        </div>
+        @if (uploadedFiles().length > 0) {
+          <div class="uploaded-files">
+            <p>Uploaded:</p>
+            @for (file of uploadedFiles(); track $index) {
+              <div class="file-item">
+                <i class="bi bi-file-earmark"></i>
+                <span>{{ file.name }}</span>
+                <button class="btn-remove" (click)="removeFile($index)">
+                  <i class="bi bi-x"></i>
+                </button>
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      <h3><i class="bi bi-pencil"></i> Notes & Remarks</h3>
+      <div class="form-grid">
+        <div class="form-field full-width">
+          <textarea [(ngModel)]="formData().notes" rows="3" placeholder="Enter notes or remarks"></textarea>
+        </div>
+      </div>
+    </div>
+  }
+
+  <div class="form-actions">
+    <div class="action-left">
+      <button class="btn btn-secondary" (click)="cancel()">Cancel</button>
+    </div>
+    <div class="action-right">
+      <button class="btn btn-draft" (click)="saveAsDraft()">Save as Draft</button>
+      @if (currentStep() > 1) {
+        <button class="btn btn-secondary" (click)="previousStep()">
+          <i class="bi bi-arrow-left"></i> Previous
+        </button>
+      }
+      @if (currentStep() < totalSteps) {
+        <button class="btn btn-primary" (click)="nextStep()">
+          Next <i class="bi bi-arrow-right"></i>
+        </button>
+      }
+      @if (currentStep() === totalSteps) {
+        <button class="btn btn-primary" (click)="submitForm()">
+          <i class="bi bi-check-lg"></i> Submit
+        </button>
+      }
+    </div>
+  </div>
+</div>
