@@ -1,0 +1,407 @@
+<div class="warehouse-view-container">
+  <div class="page-header">
+    <div class="header-info">
+      <h1>Warehouse View</h1>
+      <p class="subtitle">View and manage all warehouse locations</p>
+    </div>
+  </div>
+
+  <div class="warehouse-selector">
+    <label>🏭 Select Warehouse:</label>
+    <select [(ngModel)]="selectedWarehouse" (ngModelChange)="onWarehouseChange($event)">
+      @for (wh of warehouses; track wh) {
+        <option [value]="wh">{{ wh }}</option>
+      }
+    </select>
+    <div class="view-toggles">
+      <button class="btn btn-secondary" [class.active]="viewMode() === 'grid'" (click)="setViewMode('grid')">
+        <i class="bi bi-grid"></i> Grid View
+      </button>
+      <button class="btn btn-secondary" [class.active]="viewMode() === 'map'" (click)="setViewMode('map')">
+        <i class="bi bi-map"></i> Map View
+      </button>
+    </div>
+  </div>
+
+  <!-- Warehouse Summary -->
+  <div class="summary-section">
+    <h2>📊 WAREHOUSE SUMMARY - {{ selectedWarehouse() }}</h2>
+    <div class="summary-grid">
+      <div class="summary-card">
+        <div class="summary-icon">📦</div>
+        <div class="summary-content">
+          <div class="summary-label">Total Items</div>
+          <div class="summary-value">5,234 units</div>
+          <div class="summary-sub">▲ +8.3%</div>
+        </div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon">💰</div>
+        <div class="summary-content">
+          <div class="summary-label">Total Value</div>
+          <div class="summary-value">$1,245,678</div>
+          <div class="summary-sub">▲ +12.5%</div>
+        </div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon">🗄️</div>
+        <div class="summary-content">
+          <div class="summary-label">Total Shelves</div>
+          <div class="summary-value">24</div>
+          <div class="summary-sub">● Same</div>
+        </div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon">📊</div>
+        <div class="summary-content">
+          <div class="summary-label">Occupancy Rate</div>
+          <div class="summary-value">18/24 (75%)</div>
+          <div class="summary-sub">▲ +5%</div>
+        </div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon">📈</div>
+        <div class="summary-content">
+          <div class="summary-label">Utilization Rate</div>
+          <div class="summary-value">67%</div>
+          <div class="summary-sub">▼ -2%</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Warehouse Map View -->
+  @if (viewMode() === 'map') {
+    <div class="map-section">
+      <h3>🗺️ WAREHOUSE MAP VIEW</h3>
+      <div class="warehouse-map">
+        <div class="map-header">WAREHOUSE A</div>
+        <div class="aisle-section">
+          <div class="aisle-label">AISLE A</div>
+          <div class="rack-row">
+            @for (i of [1,2,3,4,5]; track i) {
+              <div class="rack-box">
+                <div class="rack-code">A-0{{ i }}</div>
+                <div class="occupancy-bar" [class]="getOccupancyColor(78 - (i * 10))">
+                  {{ getOccupancyBar(78 - (i * 10)) }}
+                </div>
+                <div class="rack-items">{{ 234 - (i * 30) }}</div>
+                <div class="rack-percent">{{ 78 - (i * 10) }}%</div>
+              </div>
+            }
+          </div>
+        </div>
+        <div class="aisle-section">
+          <div class="aisle-label">AISLE B</div>
+          <div class="rack-row">
+            @for (i of [1,2,3,4,5]; track i) {
+              <div class="rack-box">
+                <div class="rack-code">B-0{{ i }}</div>
+                <div class="occupancy-bar" [class]="getOccupancyColor(67 - (i * 12))">
+                  {{ getOccupancyBar(67 - (i * 12)) }}
+                </div>
+                <div class="rack-items">{{ 67 - (i * 10) }}</div>
+                <div class="rack-percent">{{ 67 - (i * 12) }}%</div>
+              </div>
+            }
+          </div>
+        </div>
+        <div class="aisle-section">
+          <div class="aisle-label">AISLE C</div>
+          <div class="rack-row">
+            @for (i of [1,2,3]; track i) {
+              <div class="rack-box">
+                <div class="rack-code">C-0{{ i }}</div>
+                <div class="occupancy-bar" [class]="getOccupancyColor(48 - (i * 10))">
+                  {{ getOccupancyBar(48 - (i * 10)) }}
+                </div>
+                <div class="rack-items">{{ 89 - (i * 20) }}</div>
+                <div class="rack-percent">{{ 48 - (i * 10) }}%</div>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+      <div class="map-legend">
+        <span>Legend: █ = Occupancy</span>
+        <span class="legend-item green">Green = High (>70%)</span>
+        <span class="legend-item yellow">Yellow = Medium (30-70%)</span>
+        <span class="legend-item red">Red = Low (<30%)</span>
+      </div>
+    </div>
+  }
+
+  <!-- Aisle & Shelf List -->
+  <div class="shelf-list-section">
+    <h3>📋 AISLE & SHELF LIST</h3>
+    <div class="table-container">
+      <table class="shelf-table">
+        <thead>
+          <tr>
+            <th>Aisle</th>
+            <th>Rack</th>
+            <th>Shelf</th>
+            <th>Items</th>
+            <th>Value</th>
+            <th>Occupancy</th>
+            <th>Status</th>
+            <th>Last Updated</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (shelf of shelves(); track shelf.aisle + shelf.rack) {
+            <tr>
+              <td>{{ shelf.aisle }}</td>
+              <td>{{ shelf.rack }}</td>
+              <td>S-01</td>
+              <td>{{ shelf.items }}</td>
+              <td>${{ shelf.value.toLocaleString() }}</td>
+              <td>
+                <div class="occupancy-display">
+                  <span class="occupancy-bar-text">{{ getOccupancyBar(shelf.occupancy) }}</span>
+                </div>
+              </td>
+              <td>{{ shelf.status }}</td>
+              <td>{{ shelf.lastUpdated }}</td>
+              <td>
+                <div class="actions-cell">
+                  <button class="action-btn" (click)="viewShelf(shelf)" title="View">
+                    <i class="bi bi-eye"></i>
+                  </button>
+                  <button class="action-btn" (click)="editShelf(shelf)" title="Edit">
+                    <i class="bi bi-pencil"></i>
+                  </button>
+                  <button class="action-btn" (click)="viewItems(shelf)" title="Items">
+                    <i class="bi bi-box"></i>
+                  </button>
+                  <button class="action-btn" (click)="printShelf(shelf)" title="Print">
+                    <i class="bi bi-printer"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <div class="pagination-bar">
+      <div class="pagination-info">Showing 1-{{ shelves().length }} of 156 shelves</div>
+      <div class="pagination-controls">
+        <button class="page-btn" disabled>Previous</button>
+        <button class="page-btn active">1</button>
+        <button class="page-btn">2</button>
+        <button class="page-btn">3</button>
+        <button class="page-btn">→</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Warehouse Statistics -->
+  <div class="statistics-section">
+    <h3>📊 WAREHOUSE STATISTICS</h3>
+    <div class="stats-grid">
+      <div class="stats-column">
+        <h4>Top Categories by Value:</h4>
+        <div class="progress-list">
+          <div class="progress-item">
+            <span>Electronics</span>
+            <div class="progress-bar">
+              <div class="progress-fill" [style.width.%]="45"></div>
+            </div>
+            <span>45%</span>
+          </div>
+          <div class="progress-item">
+            <span>Furniture</span>
+            <div class="progress-bar">
+              <div class="progress-fill" [style.width.%]="25"></div>
+            </div>
+            <span>25%</span>
+          </div>
+          <div class="progress-item">
+            <span>Supplies</span>
+            <div class="progress-bar">
+              <div class="progress-fill" [style.width.%]="15"></div>
+            </div>
+            <span>15%</span>
+          </div>
+          <div class="progress-item">
+            <span>Stationery</span>
+            <div class="progress-bar">
+              <div class="progress-fill" [style.width.%]="8"></div>
+            </div>
+            <span>8%</span>
+          </div>
+          <div class="progress-item">
+            <span>Other</span>
+            <div class="progress-bar">
+              <div class="progress-fill" [style.width.%]="7"></div>
+            </div>
+            <span>7%</span>
+          </div>
+        </div>
+      </div>
+      <div class="stats-column">
+        <h4>Stock Movement (Last 30 days):</h4>
+        <div class="movement-stats">
+          <div class="movement-item">
+            <span>Inflow:</span>
+            <div class="progress-bar">
+              <div class="progress-fill success" [style.width.%]="80"></div>
+            </div>
+            <span>1,245 units</span>
+          </div>
+          <div class="movement-item">
+            <span>Outflow:</span>
+            <div class="progress-bar">
+              <div class="progress-fill danger" [style.width.%]="60"></div>
+            </div>
+            <span>987 units</span>
+          </div>
+          <div class="movement-item">
+            <span>Net:</span>
+            <div class="progress-bar">
+              <div class="progress-fill warning" [style.width.%]="20"></div>
+            </div>
+            <span>258 units</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="quick-actions-section">
+    <h3>⚡ QUICK ACTIONS</h3>
+    <div class="quick-actions">
+      <button class="btn btn-secondary" (click)="addShelf()">
+        <i class="bi bi-plus"></i> Add Shelf
+      </button>
+      <button class="btn btn-secondary" (click)="rearrangeShelves()">
+        <i class="bi bi-arrow-repeat"></i> Rearrange Shelves
+      </button>
+      <button class="btn btn-secondary" (click)="exportData()">
+        <i class="bi bi-download"></i> Export Data
+      </button>
+      <button class="btn btn-secondary" (click)="printLayout()">
+        <i class="bi bi-printer"></i> Print Layout
+      </button>
+      <button class="btn btn-secondary" (click)="scanQRCode()">
+        <i class="bi bi-qr-code-scan"></i> Scan QR Code
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Warehouse Details Modal -->
+@if (showWarehouseDetailsModal()) {
+  <div class="modal-overlay" (click)="closeWarehouseDetailsModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Warehouse Details: {{ selectedWarehouse() }}</h3>
+        <button class="btn-close" (click)="closeWarehouseDetailsModal()">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="warehouse-details-grid">
+          <div class="detail-item">
+            <label>Name:</label>
+            <span>Warehouse A</span>
+          </div>
+          <div class="detail-item">
+            <label>Code:</label>
+            <span>WH-01</span>
+          </div>
+          <div class="detail-item">
+            <label>Type:</label>
+            <span>Main Warehouse</span>
+          </div>
+          <div class="detail-item">
+            <label>Status:</label>
+            <span>🟢 Active</span>
+          </div>
+          <div class="detail-item">
+            <label>Manager:</label>
+            <span>John Doe</span>
+          </div>
+          <div class="detail-item">
+            <label>Phone:</label>
+            <span>+251-911-234567</span>
+          </div>
+          <div class="detail-item">
+            <label>Email:</label>
+            <span>wh-a@afrocom.com</span>
+          </div>
+          <div class="detail-item">
+            <label>Created:</label>
+            <span>Jan 15, 2020</span>
+          </div>
+        </div>
+        <div class="address-section">
+          <h4>📍 ADDRESS</h4>
+          <p>Bole Road, Near Bole Medhanialem Church</p>
+          <p>Addis Ababa, Ethiopia</p>
+          <p>GPS: 9.0320° N, 38.7469° E</p>
+        </div>
+        <div class="capacity-section">
+          <h4>📊 CAPACITY & UTILIZATION</h4>
+          <div class="capacity-grid">
+            <div class="capacity-item">
+              <label>Total Shelves:</label>
+              <span>24 shelves</span>
+            </div>
+            <div class="capacity-item">
+              <label>Occupied Shelves:</label>
+              <span>18 shelves (75%)</span>
+            </div>
+            <div class="capacity-item">
+              <label>Total Capacity:</label>
+              <span>10,000 units</span>
+            </div>
+            <div class="capacity-item">
+              <label>Current Stock:</label>
+              <span>5,234 units (52%)</span>
+            </div>
+            <div class="capacity-item">
+              <label>Available Space:</label>
+              <span>4,766 units (48%)</span>
+            </div>
+          </div>
+        </div>
+        <div class="performance-section">
+          <h4>📈 PERFORMANCE METRICS</h4>
+          <div class="performance-grid">
+            <div class="perf-item">
+              <label>Inventory Turnover:</label>
+              <span>4.2x per year</span>
+            </div>
+            <div class="perf-item">
+              <label>Order Accuracy:</label>
+              <span>99.2%</span>
+            </div>
+            <div class="perf-item">
+              <label>Stockout Rate:</label>
+              <span>2.1%</span>
+            </div>
+            <div class="perf-item">
+              <label>Receiving Accuracy:</label>
+              <span>98.5%</span>
+            </div>
+            <div class="perf-item">
+              <label>Damage Rate:</label>
+              <span>0.8%</span>
+            </div>
+            <div class="perf-item">
+              <label>Audit Score:</label>
+              <span>94%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeWarehouseDetailsModal()">Close</button>
+      </div>
+    </div>
+  </div>
+}

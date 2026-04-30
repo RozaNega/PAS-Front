@@ -1,0 +1,143 @@
+<div class="stock-adjustment-container">
+  <div class="page-header">
+    <div class="header-info">
+      <h1>Stock Adjustment</h1>
+      <p class="subtitle">Manually adjust inventory levels with approval workflow</p>
+    </div>
+    <button class="btn btn-secondary" (click)="viewHistory()">
+      <i class="bi bi-clock-history"></i> History
+    </button>
+  </div>
+
+  <div class="adjustment-form">
+    <div class="form-section">
+      <div class="section-header">
+        <h3>STEP 1: SELECT ITEM</h3>
+      </div>
+      <div class="search-box">
+        <i class="bi bi-search"></i>
+        <input type="text" [value]="searchTerm()" (input)="onSearchChange($any($event.target).value)" placeholder="Search by SKU, Name, or Scan QR Code...">
+        <button class="btn btn-sm btn-secondary">📷 Scan</button>
+      </div>
+      <div class="recent-items">
+        <div class="section-subtitle">Recent Items:</div>
+        @for (item of recentItems(); track item.sku) {
+          <div class="recent-item" [class.low-stock]="item.low" (click)="selectItem(item)">
+            <span class="item-name">{{ item.name }} ({{ item.sku }})</span>
+            <span class="item-current">Current: {{ item.current }} units</span>
+            @if (item.low) {
+              <span class="item-warning">⚠️ Low Stock</span>
+            }
+          </div>
+        }
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="section-header">
+        <h3>STEP 2: ADJUSTMENT DETAILS</h3>
+      </div>
+      <div class="selected-item-info">
+        <div class="info-row">
+          <span>Item Selected:</span>
+          <span>{{ selectedItem() || 'None selected' }}</span>
+        </div>
+        <div class="info-row">
+          <span>Current Location:</span>
+          <span>Warehouse A - Aisle 5 - Shelf B-03</span>
+        </div>
+        <div class="info-row">
+          <span>Current Quantity:</span>
+          <span class="quantity-value">{{ currentQuantity() }} units</span>
+        </div>
+      </div>
+
+      <div class="adjustment-details">
+        <div class="form-field">
+          <label>Adjustment Type:</label>
+          <div class="radio-group">
+            <label class="radio-item">
+              <input type="radio" name="adjustmentType" value="Add" [(ngModel)]="adjustmentType" (ngModelChange)="onAdjustmentTypeChange($event)">
+              <span class="radio-label">➕ Add (+)</span>
+            </label>
+            <label class="radio-item">
+              <input type="radio" name="adjustmentType" value="Remove" [(ngModel)]="adjustmentType" (ngModelChange)="onAdjustmentTypeChange($event)">
+              <span class="radio-label">➖ Remove (-)</span>
+            </label>
+            <label class="radio-item">
+              <input type="radio" name="adjustmentType" value="Set" [(ngModel)]="adjustmentType" (ngModelChange)="onAdjustmentTypeChange($event)">
+              <span class="radio-label">🎯 Set to Exact Value</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-field">
+          <label>Quantity to Adjust:</label>
+          <input type="number" [(ngModel)]="quantityToAdjust" (input)="onQuantityChange($any($event.target).value)" placeholder="50">
+          <span class="field-hint">Enter the quantity to add, remove, or set</span>
+        </div>
+
+        <div class="detail-row highlight">
+          <span>New Quantity After Adjustment:</span>
+          <span class="quantity-value" [class.negative]="newQuantity() < 0">{{ newQuantity() }} units</span>
+          <span class="quantity-hint">(will be {{ newQuantity() < 0 ? '0' : newQuantity() }})</span>
+        </div>
+
+        <div class="form-field">
+          <label>Reason for Adjustment *</label>
+          <select [(ngModel)]="reason">
+            <option value="">Select a reason ▼</option>
+            <option value="Damaged Goods">📦 Damaged Goods</option>
+            <option value="Lost/Missing">🔍 Lost/Missing</option>
+            <option value="Inventory Count Correction">📊 Inventory Count Correction</option>
+            <option value="Quality Issue">⚠️ Quality Issue</option>
+            <option value="Expired">📅 Expired</option>
+            <option value="Return to Supplier">↩️ Return to Supplier</option>
+            <option value="Other">📝 Other</option>
+          </select>
+        </div>
+
+        <div class="form-field">
+          <label>Notes / Comments</label>
+          <textarea [(ngModel)]="notes" rows="3" placeholder="50 units found damaged during inspection - moisture damage"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="section-header">
+        <h3>STEP 3: APPROVAL (if required)</h3>
+      </div>
+      <div class="approval-notice" [class.requires-approval]="requiresApproval()">
+        <span class="notice-icon">⚠️</span>
+        <span>Adjustment of -50 units (>10% of stock) requires approval</span>
+      </div>
+      @if (requiresApproval()) {
+        <div class="approval-info">
+          <div class="info-row">
+            <span>Requesting approval from:</span>
+            <span>John Doe (Store Manager)</span>
+          </div>
+          <div class="info-row">
+            <span>Approval status:</span>
+            <span class="status-pending">⏳ Pending</span>
+          </div>
+        </div>
+        <button class="btn btn-secondary btn-sm">📧 Send Approval Request</button>
+      } @else {
+        <div class="approval-info">
+          <div class="info-row">
+            <span>Approval status:</span>
+            <span class="status-not-required">✓ Not Required</span>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+
+  <div class="form-actions">
+    <button class="btn btn-secondary" (click)="cancelForm()">Cancel</button>
+    <button class="btn btn-secondary">💾 Save as Draft</button>
+    <button class="btn btn-primary" (click)="submitAdjustment()">✓ Submit Adjustment</button>
+  </div>
+</div>

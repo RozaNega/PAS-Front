@@ -1,0 +1,108 @@
+<div class="rejected-container">
+  <div class="page-header">
+    <div class="header-info">
+      <h1>Rejected Requisitions</h1>
+      <p class="subtitle">Requisitions that were not approved</p>
+    </div>
+    <button class="btn btn-secondary" (click)="exportData()">
+      <i class="bi bi-download"></i> Export
+    </button>
+  </div>
+
+  <div class="filter-bar">
+    <div class="search-box">
+      <i class="bi bi-search"></i>
+      <input type="text" [value]="searchTerm()" placeholder="Search rejected requests...">
+    </div>
+    <div class="filter-group">
+      <label>📅 Date:</label>
+      <select [(ngModel)]="dateFilter">
+        <option>Last 30 days</option>
+        <option>Last 7 days</option>
+        <option>Last 90 days</option>
+        <option>All time</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="analysis-grid">
+    <div class="analysis-card">
+      <div class="section-header">
+        <h3>📊 REJECTION ANALYSIS</h3>
+      </div>
+      <div class="analysis-stats">
+        <div class="stat-row">
+          <span>Total Rejected:</span>
+          <span class="stat-value">{{ summary().totalRejected }}</span>
+        </div>
+        <div class="stat-row">
+          <span>This Month:</span>
+          <span class="stat-value">{{ summary().thisMonth }}</span>
+        </div>
+        <div class="stat-row">
+          <span>Rejection Rate:</span>
+          <span class="stat-value">{{ summary().rejectionRate }}%</span>
+        </div>
+      </div>
+      <div class="analysis-breakdown">
+        <div class="breakdown-section">
+          <h4>By Department:</h4>
+          @for (dept of summary().byDepartment; track dept.name) {
+            <div class="breakdown-item">
+              <span>• {{ dept.name }}: {{ dept.count }}</span>
+            </div>
+          }
+        </div>
+        <div class="breakdown-section">
+          <h4>Top Reasons:</h4>
+          @for (reason of summary().topReasons; track reason.name) {
+            <div class="breakdown-item">
+              <span>• {{ reason.name }}: {{ reason.percentage }}%</span>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="table-section">
+    <div class="table-container">
+      <table class="rejected-table">
+        <thead>
+          <tr>
+            <th>SR #</th>
+            <th>Date</th>
+            <th>Requester</th>
+            <th>Dept</th>
+            <th>Reason</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (req of rejectedReqs(); track req.id) {
+            <tr>
+              <td>{{ req.srNumber }}</td>
+              <td>{{ req.date }}</td>
+              <td>{{ req.requester }}</td>
+              <td>{{ req.department }}</td>
+              <td>{{ req.reason }}</td>
+              <td>
+                <div class="actions-cell">
+                  <button class="action-btn" title="View">
+                    <i class="bi bi-eye"></i>
+                  </button>
+                  <button class="action-btn" title="Resubmit" (click)="resubmit(req)">
+                    <i class="bi bi-arrow-clockwise"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <div class="pagination-bar">
+      <div class="pagination-info">Showing 1-{{ rejectedReqs().length }} of {{ summary().totalRejected }} rejected requests</div>
+    </div>
+  </div>
+</div>

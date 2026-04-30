@@ -15,6 +15,13 @@ import { AuthService } from '../../../../core/services/auth.service';
   styleUrl: './login.css',
 })
 export class Login {
+    protected readonly quickRoles = [
+      { label: 'Admin', slug: 'property-admin' },
+      { label: 'Storekeeper', slug: 'storekeeper' },
+      { label: 'Employee', slug: 'employee' },
+      { label: 'Manager', slug: 'manager' },
+      { label: 'Compliance Officer', slug: 'compliance' },
+    ];
   private readonly formBuilder = inject(FormBuilder);
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);

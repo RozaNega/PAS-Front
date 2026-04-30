@@ -1,0 +1,322 @@
+<div class="issue-history-container">
+  <div class="page-header">
+    <div class="header-info">
+      <h1>Issue History</h1>
+      <p class="subtitle">Complete record of all issued items</p>
+    </div>
+  </div>
+
+  <div class="filter-bar">
+    <div class="search-box">
+      <i class="bi bi-search"></i>
+      <input type="text" [value]="searchTerm()" (input)="onSearchChange($any($event.target).value)" placeholder="Search by SIV#, SR#, requester, or date...">
+    </div>
+    <div class="filter-group">
+      <label>📅 Date:</label>
+      <input type="date" [value]="dateRange.start">
+      <span>to</span>
+      <input type="date" [value]="dateRange.end">
+    </div>
+  </div>
+
+  <!-- Issuing Summary -->
+  <div class="summary-section">
+    <h2>📊 ISSUING SUMMARY</h2>
+    <div class="summary-grid">
+      <div class="summary-card">
+        <div class="summary-icon">📋</div>
+        <div class="summary-content">
+          <div class="summary-label">Total SIVs</div>
+          <div class="summary-value">{{ totalSIVs() }}</div>
+          <div class="summary-sub">this month</div>
+        </div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon">📦</div>
+        <div class="summary-content">
+          <div class="summary-label">Total Items Issued</div>
+          <div class="summary-value">{{ totalItemsIssued() }} units</div>
+          <div class="summary-sub">▲ +8%</div>
+        </div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon">💰</div>
+        <div class="summary-content">
+          <div class="summary-label">Total Value Issued</div>
+          <div class="summary-value">{{ formatValue(totalValueIssued()) }}</div>
+          <div class="summary-sub">▲ +15%</div>
+        </div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon">📊</div>
+        <div class="summary-content">
+          <div class="summary-label">Avg. Items Per SIV</div>
+          <div class="summary-value">{{ avgItemsPerSIV() }}</div>
+          <div class="summary-sub">▲ +0.5</div>
+        </div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon">👤</div>
+        <div class="summary-content">
+          <div class="summary-label">Most Active Requester</div>
+          <div class="summary-value">{{ mostActiveRequester() }}</div>
+          <div class="summary-sub">23 requests</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Issuance Trend Chart -->
+  <div class="chart-section">
+    <div class="section-header">
+      <h3>📈 ISSUANCE TREND CHART</h3>
+    </div>
+    <div class="chart-placeholder">
+      <div class="chart-legend">
+        <span class="legend-item"><span class="dot blue"></span> Items Issued</span>
+        <span class="legend-item"><span class="dot green"></span> Total Value</span>
+        <span class="legend-item"><span class="dot orange"></span> Unique Requesters</span>
+      </div>
+      <div class="chart-bars">
+        @for (i of [1,2,3,4,5,6,7,8]; track i) {
+          <div class="bar-group">
+            <div class="bar main" [style.height.px]="getRandomHeight(80, 50)"></div>
+            <div class="bar-label">Week {{ i }}</div>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- Issuance History Table -->
+  <div class="table-section">
+    <div class="section-header">
+      <h3>📋 ISSUANCE HISTORY TABLE</h3>
+    </div>
+    <div class="table-container">
+      <table class="siv-table">
+        <thead>
+          <tr>
+            <th>SIV #</th>
+            <th>Date</th>
+            <th>SR #</th>
+            <th>Requester</th>
+            <th>Dept</th>
+            <th>Items</th>
+            <th>Value</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (siv of filteredSIVs(); track siv.sivNumber) {
+            <tr>
+              <td>{{ siv.sivNumber }}</td>
+              <td>{{ siv.date }}</td>
+              <td>{{ siv.srNumber }}</td>
+              <td>{{ siv.requester }}</td>
+              <td>{{ siv.department }}</td>
+              <td>{{ siv.items }}</td>
+              <td>{{ formatValue(siv.value) }}</td>
+              <td>
+                <div class="actions-cell">
+                  <button class="action-btn" (click)="openSIVDetailsModal(siv)" title="View">
+                    <i class="bi bi-eye"></i>
+                  </button>
+                  <button class="action-btn" (click)="printSIV(siv)" title="Print">
+                    <i class="bi bi-printer"></i>
+                  </button>
+                  <button class="action-btn" (click)="emailSIV(siv)" title="Email">
+                    <i class="bi bi-envelope"></i>
+                  </button>
+                  <button class="action-btn" (click)="downloadSIV(siv)" title="Download">
+                    <i class="bi bi-download"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <div class="pagination-bar">
+      <div class="pagination-info">Showing 1-{{ filteredSIVs().length }} of 156 SIVs</div>
+      <div class="pagination-controls">
+        <button class="page-btn" disabled>Previous</button>
+        <button class="page-btn active">1</button>
+        <button class="page-btn">2</button>
+        <button class="page-btn">3</button>
+        <button class="page-btn">→</button>
+        <button class="page-btn">7</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Top Requested Items -->
+  <div class="top-items-section">
+    <div class="section-header">
+      <h3>📊 TOP REQUESTED ITEMS</h3>
+    </div>
+    <div class="top-items-list">
+      @for (item of topRequestedItems(); track item.name) {
+        <div class="top-item">
+          <div class="item-info">
+            <span class="item-rank">{{ topRequestedItems().indexOf(item) + 1 }}. {{ item.name }}</span>
+            <span class="item-stats">{{ item.requests }} requests</span>
+            <span class="item-value">{{ formatValue(item.value) }}</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" [style.width.%]="item.percentage"></div>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+</div>
+
+<!-- SIV Details Modal -->
+@if (showSIVDetailsModal() && selectedSIV()) {
+  <div class="modal-overlay" (click)="closeSIVDetailsModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>SIV Details: {{ selectedSIV()?.sivNumber }}</h3>
+        <button class="modal-print-btn">
+          <i class="bi bi-printer"></i> Print
+        </button>
+        <button class="btn-close" (click)="closeSIVDetailsModal()">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="siv-header">
+          <h4>AFROCOM ASSET MANAGEMENT SYSTEM</h4>
+          <h5>STORE ISSUE VOUCHER</h5>
+          <div class="divider"></div>
+        </div>
+        <div class="siv-info-grid">
+          <div class="siv-info-item">
+            <label>SIV Number:</label>
+            <span>{{ selectedSIV()?.sivNumber }}</span>
+          </div>
+          <div class="siv-info-item">
+            <label>Date:</label>
+            <span>December 15, 2024</span>
+          </div>
+          <div class="siv-info-item">
+            <label>SR Number:</label>
+            <span>{{ selectedSIV()?.srNumber }}</span>
+          </div>
+          <div class="siv-info-item">
+            <label>Requisition:</label>
+            <span>December 14, 2024</span>
+          </div>
+          <div class="siv-info-item">
+            <label>Issued By:</label>
+            <span>John Doe (Store Officer)</span>
+          </div>
+          <div class="siv-info-item">
+            <label>Approved By:</label>
+            <span>Sarah Smith (Manager)</span>
+          </div>
+        </div>
+        <div class="issued-to-section">
+          <h4>ISSUED TO</h4>
+          <div class="issued-to-info">
+            <div class="info-row">
+              <label>Name:</label>
+              <span>{{ selectedSIV()?.requester }}</span>
+            </div>
+            <div class="info-row">
+              <label>Department:</label>
+              <span>{{ selectedSIV()?.department }}</span>
+            </div>
+            <div class="info-row">
+              <label>Employee Code:</label>
+              <span>EMP-001</span>
+            </div>
+            <div class="info-row">
+              <label>Email:</label>
+              <span>john.doe@afrocom.com</span>
+            </div>
+          </div>
+        </div>
+        <div class="items-issued-section">
+          <h4>ITEMS ISSUED</h4>
+          <table class="items-table">
+            <thead>
+              <tr>
+                <th>SKU</th>
+                <th>Description</th>
+                <th>Quantity</th>
+                <th>Unit Price</th>
+                <th>Total</th>
+                <th>Location</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>LAP-001</td>
+                <td>Dell XPS Laptop</td>
+                <td>2</td>
+                <td>$2,499</td>
+                <td>$4,998</td>
+                <td>WH A - A-01-R-03-S-03</td>
+              </tr>
+              <tr>
+                <td>MON-002</td>
+                <td>HP 27" Monitor</td>
+                <td>1</td>
+                <td>$350</td>
+                <td>$350</td>
+                <td>WH A - A-01-R-03-S-05</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="total-row">
+            <span>Total Items: 3</span>
+            <span>Total Value: $5,348</span>
+          </div>
+        </div>
+        <div class="signatures-section">
+          <h4>SIGNATURES</h4>
+          <div class="signature-grid">
+            <div class="signature-box">
+              <label>Issued By:</label>
+              <div class="signature-line">___________________</div>
+              <span>John Doe</span>
+              <span>Store Officer</span>
+              <span>Date: 12/15/2024</span>
+            </div>
+            <div class="signature-box">
+              <label>Received By:</label>
+              <div class="signature-line">___________________</div>
+              <span>{{ selectedSIV()?.requester }}</span>
+              <span>Recipient</span>
+              <span>Date: 12/15/2024</span>
+            </div>
+          </div>
+        </div>
+        <div class="terms-section">
+          <h4>TERMS & CONDITIONS</h4>
+          <ul>
+            <li>Items must be returned in good condition when no longer needed</li>
+            <li>Report any damages within 48 hours of receipt</li>
+            <li>This voucher is valid for 30 days from issue date</li>
+            <li>For any discrepancies, contact Store Department</li>
+          </ul>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="printSIV(selectedSIV()!)">
+          <i class="bi bi-printer"></i> Print
+        </button>
+        <button class="btn btn-secondary" (click)="downloadSIV(selectedSIV()!)">
+          <i class="bi bi-file-earmark-pdf"></i> Download PDF
+        </button>
+        <button class="btn btn-secondary" (click)="emailSIV(selectedSIV()!)">
+          <i class="bi bi-envelope"></i> Email Copy
+        </button>
+        <button class="btn btn-primary" (click)="closeSIVDetailsModal()">Close</button>
+      </div>
+    </div>
+  </div>
+}

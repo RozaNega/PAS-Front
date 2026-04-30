@@ -1,4 +1,201 @@
-﻿<section class="page ecx-list-surface">
-  <h1>Property Category List</h1>
-</section>
+﻿<div class="categories-container">
+  <div class="page-header">
+    <div class="header-info">
+      <h1>Categories</h1>
+      <p class="subtitle">Organize assets into hierarchical categories</p>
+    </div>
+    <button class="btn btn-primary" (click)="openAddModal()">
+      <i class="bi bi-plus-lg"></i> Category
+    </button>
+  </div>
+
+  <div class="two-panel-layout">
+    <div class="category-tree-panel">
+      <div class="tree-header">
+        <h3>Category Tree</h3>
+        <div class="tree-actions">
+          <button class="btn-link" (click)="expandAll()">Expand All</button>
+          <button class="btn-link" (click)="collapseAll()">Collapse All</button>
+        </div>
+      </div>
+      <div class="tree-content">
+        @for (category of categories(); track category.id) {
+          @if (category.parentId === null) {
+            <div class="tree-item">
+              <div class="tree-node" [class.selected]="selectedCategory()?.id === category.id" (click)="selectCategory(category)">
+                @if (category.subcategories.length > 0) {
+                  <button class="tree-toggle" (click)="$event.stopPropagation(); toggleExpand(category.id)">
+                    <i class="bi" [class.bi-chevron-right]="!expandedCategories().has(category.id)" [class.bi-chevron-down]="expandedCategories().has(category.id)"></i>
+                  </button>
+                } @else {
+                  <span class="tree-spacer"></span>
+                }
+                <span class="tree-icon">{{ category.icon }}</span>
+                <span class="tree-label">{{ category.name }}</span>
+              </div>
+              @if (expandedCategories().has(category.id) && category.subcategories.length > 0) {
+                <div class="tree-children">
+                  @for (subcat of category.subcategories; track subcat.id) {
+                    <div class="tree-item tree-child">
+                      <div class="tree-node" [class.selected]="selectedCategory()?.id === subcat.id" (click)="selectCategory(subcat)">
+                        <span class="tree-spacer"></span>
+                        <span class="tree-icon">{{ subcat.icon }}</span>
+                        <span class="tree-label">{{ subcat.name }}</span>
+                      </div>
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          }
+        }
+      </div>
+    </div>
+
+    <div class="category-details-panel">
+      @if (selectedCategory()) {
+        <div class="details-card">
+          <div class="details-header">
+            <h3>{{ selectedCategory()!.icon }} {{ selectedCategory()!.name }}</h3>
+            <div class="details-actions">
+              <button class="action-btn" (click)="openEditModal(selectedCategory()!)">
+                <i class="bi bi-pencil"></i>
+              </button>
+              <button class="action-btn delete" (click)="deleteCategory(selectedCategory()!.id)">
+                <i class="bi bi-trash"></i>
+              </button>
+            </div>
+          </div>
+          <div class="details-content">
+            <div class="detail-row">
+              <span>ID:</span>
+              <strong>{{ selectedCategory()!.id }}</strong>
+            </div>
+            <div class="detail-row">
+              <span>Parent:</span>
+              <strong>{{ selectedCategory()!.parentId ? 'Subcategory' : 'Root Category' }}</strong>
+            </div>
+            <div class="detail-row">
+              <span>Subcategories:</span>
+              <strong>{{ selectedCategory()!.subcategories.length }}</strong>
+            </div>
+            <div class="detail-row">
+              <span>Properties:</span>
+              <strong>{{ selectedCategory()!.propertiesCount }}</strong>
+            </div>
+            <div class="detail-row">
+              <span>Status:</span>
+              <span class="badge badge-green">{{ selectedCategory()!.status }}</span>
+            </div>
+          </div>
+
+          @if (selectedCategory()!.subcategories.length > 0) {
+            <div class="subcategories-section">
+              <h4>Subcategories</h4>
+              @for (subcat of selectedCategory()!.subcategories; track subcat.id) {
+                <div class="subcategory-item" (click)="selectCategory(subcat)">
+                  <span class="subcategory-icon">{{ subcat.icon }}</span>
+                  <span class="subcategory-name">{{ subcat.name }}</span>
+                  <span class="subcategory-count">({{ subcat.propertiesCount }} properties)</span>
+                </div>
+              }
+            </div>
+          }
+
+          <div class="recent-properties">
+            <h4>Recent Properties</h4>
+            <div class="property-item">
+              <i class="bi bi-laptop"></i>
+              <span>Dell XPS Laptop</span>
+            </div>
+            <div class="property-item">
+              <i class="bi bi-printer"></i>
+              <span>HP LaserJet Printer</span>
+            </div>
+            <div class="property-item">
+              <i class="bi bi-router"></i>
+              <span>Cisco Switch</span>
+            </div>
+          </div>
+        </div>
+      } @else {
+        <div class="empty-state">
+          <i class="bi bi-folder"></i>
+          <h3>Select a Category</h3>
+          <p>Click on a category from the tree to view its details</p>
+        </div>
+      }
+    </div>
+  </div>
+</div>
+
+@if (showModal()) {
+  <div class="modal-overlay" (click)="closeModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>{{ editingCategory() ? 'Edit Category' : 'Add New Category' }}</h3>
+        <button class="btn-close" (click)="closeModal()">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-section">
+          <h4>Category Information</h4>
+          <div class="form-grid">
+            <div class="form-field full-width">
+              <label>Category Name <span class="required">*</span></label>
+              <input type="text" [(ngModel)]="modalFormData().name" placeholder="Enter category name">
+            </div>
+            <div class="form-field full-width">
+              <label>Parent Category</label>
+              <select [(ngModel)]="modalFormData().parentId">
+                <option [value]="null">None (Root Category)</option>
+                @for (cat of getFlatCategories(); track cat.id) {
+                  @if (cat.parentId === null) {
+                    <option [value]="cat.id">{{ cat.icon }} {{ cat.name }}</option>
+                  }
+                }
+              </select>
+            </div>
+            <div class="form-field full-width">
+              <label>Description</label>
+              <textarea [(ngModel)]="modalFormData().description" rows="2" placeholder="Enter description"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h4>Category Settings</h4>
+          <div class="form-grid">
+            <div class="form-field">
+              <label>Icon</label>
+              <select [(ngModel)]="modalFormData().icon">
+                @for (icon of icons; track icon) {
+                  <option [value]="icon">{{ icon }}</option>
+                }
+              </select>
+            </div>
+            <div class="form-field">
+              <label>Color</label>
+              <select [(ngModel)]="modalFormData().color">
+                @for (color of colors; track color.value) {
+                  <option [value]="color.value">{{ color.label }}</option>
+                }
+              </select>
+            </div>
+            <div class="form-field full-width">
+              <label>Display Order</label>
+              <input type="number" [(ngModel)]="modalFormData().displayOrder" min="1" value="1">
+              <small>Higher numbers appear higher</small>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeModal()">Cancel</button>
+        <button class="btn btn-primary" (click)="saveCategory()">Save</button>
+      </div>
+    </div>
+  </div>
+}
 

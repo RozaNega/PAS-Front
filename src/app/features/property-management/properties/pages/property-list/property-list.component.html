@@ -1,4 +1,335 @@
-﻿<section class="page ecx-list-surface">
-  <h1>Property List</h1>
-</section>
+﻿<div class="properties-container">
+  <div class="page-header">
+    <div class="header-info">
+      <h1>All Properties</h1>
+      <p class="subtitle">View and manage all organizational assets</p>
+    </div>
+    <button class="btn btn-primary">
+      <i class="bi bi-plus-lg"></i> Add New
+    </button>
+  </div>
 
+  <div class="filter-bar">
+    <div class="search-box">
+      <i class="bi bi-search"></i>
+      <input type="text" [value]="searchTerm()" (input)="onSearchChange($any($event.target).value)" placeholder="Search by Tag #, Name, Serial...">
+    </div>
+    <div class="filter-group">
+      <label>🏷️ Type:</label>
+      <select [(ngModel)]="typeFilter" (ngModelChange)="applyFilters()">
+        @for (type of propertyTypes; track type) {
+          <option [value]="type">{{ type }}</option>
+        }
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>📍 Location:</label>
+      <select [(ngModel)]="locationFilter" (ngModelChange)="applyFilters()">
+        @for (loc of locations; track loc) {
+          <option [value]="loc">{{ loc }}</option>
+        }
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>🔧 Status:</label>
+      <select [(ngModel)]="statusFilter" (ngModelChange)="applyFilters()">
+        @for (status of statuses; track status) {
+          <option [value]="status">{{ status }}</option>
+        }
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>📅 Purchase:</label>
+      <select [(ngModel)]="purchaseFilter" (ngModelChange)="applyFilters()">
+        @for (date of purchaseDates; track date) {
+          <option [value]="date">{{ date }}</option>
+        }
+      </select>
+    </div>
+    <div class="filter-actions">
+      <button class="btn btn-sm btn-primary" (click)="applyFilters()">Apply Filters</button>
+      <button class="btn btn-sm btn-secondary" (click)="resetFilters()">Reset</button>
+      <button class="btn btn-sm btn-secondary">Save Filter</button>
+    </div>
+  </div>
+
+  <div class="summary-grid">
+    <div class="summary-card">
+      <div class="summary-label">Total Properties</div>
+      <div class="summary-value">{{ summary().totalProperties.toLocaleString() }}</div>
+      <div class="summary-sub">▲ +8.3%</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">Total Value</div>
+      <div class="summary-value">${{ summary().totalValue.toLocaleString() }}</div>
+      <div class="summary-sub">▲ +12.5%</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">Avg. Value</div>
+      <div class="summary-value">${{ summary().avgValue.toLocaleString() }}</div>
+      <div class="summary-sub">▲ +4.2%</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">This Month Added</div>
+      <div class="summary-value">{{ summary().thisMonthAdded }}</div>
+      <div class="summary-sub">▲ +5</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">Active Status</div>
+      <div class="summary-value">{{ summary().activeStatus.toLocaleString() }}</div>
+      <div class="summary-sub">🟢</div>
+    </div>
+  </div>
+
+  <div class="charts-section">
+    <div class="chart-card">
+      <h4>By Category</h4>
+      <div class="chart-bars">
+        @for (item of [
+          { name: 'Electronics', value: 45, color: '#3b82f6' },
+          { name: 'Furniture', value: 20, color: '#10b981' },
+          { name: 'Equipment', value: 12, color: '#f59e0b' },
+          { name: 'Vehicles', value: 10, color: '#ef4444' },
+          { name: 'Other', value: 13, color: '#8b5cf6' }
+        ]; track item.name) {
+          <div class="chart-item">
+            <div class="chart-label">{{ item.name }}</div>
+            <div class="chart-bar-container">
+              <div class="chart-bar" [style.width.%]="item.value" [style.background]="item.color"></div>
+            </div>
+            <div class="chart-value">{{ item.value }}%</div>
+          </div>
+        }
+      </div>
+    </div>
+    <div class="chart-card">
+      <h4>By Location</h4>
+      <div class="chart-bars">
+        @for (item of [
+          { name: 'Headquarters', value: 48, color: '#3b82f6' },
+          { name: 'Warehouse A', value: 25, color: '#10b981' },
+          { name: 'Branch Office', value: 15, color: '#f59e0b' },
+          { name: 'Storage', value: 8, color: '#ef4444' },
+          { name: 'Other', value: 4, color: '#8b5cf6' }
+        ]; track item.name) {
+          <div class="chart-item">
+            <div class="chart-label">{{ item.name }}</div>
+            <div class="chart-bar-container">
+              <div class="chart-bar" [style.width.%]="item.value" [style.background]="item.color"></div>
+            </div>
+            <div class="chart-value">{{ item.value }}%</div>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+
+  <div class="table-section">
+    <div class="table-container">
+      <table class="properties-table">
+        <thead>
+          <tr>
+            <th>Tag #</th>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Location</th>
+            <th>Value</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (prop of filteredProperties(); track prop.id) {
+            <tr>
+              <td>{{ prop.tagNumber }}</td>
+              <td>{{ prop.name }}</td>
+              <td>{{ prop.type }}</td>
+              <td>{{ prop.location }}</td>
+              <td>${{ prop.value.toLocaleString() }}</td>
+              <td>
+                <span class="status-badge" [class]="getStatusColor(prop.status)">
+                  {{ getStatusIcon(prop.status) }}
+                </span>
+              </td>
+              <td>
+                <div class="actions-cell">
+                  <button class="action-btn" (click)="openDetailsModal(prop)" title="View">
+                    <i class="bi bi-eye"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <div class="pagination-bar">
+      <div class="pagination-info">Showing 1-{{ filteredProperties().length }} of {{ summary().totalProperties.toLocaleString() }} properties</div>
+      <div class="pagination-controls">
+        <button class="page-btn" disabled>Previous</button>
+        <button class="page-btn active">1</button>
+        <button class="page-btn">2</button>
+        <button class="page-btn">3</button>
+        <button class="page-btn">→</button>
+        <button class="page-btn">50</button>
+      </div>
+    </div>
+    <div class="table-actions">
+      <button class="btn btn-secondary">Export</button>
+      <button class="btn btn-secondary">Print</button>
+      <button class="btn btn-secondary">Bulk Actions ▼</button>
+    </div>
+  </div>
+</div>
+
+@if (showModal() && selectedProperty()) {
+  <div class="modal-overlay" (click)="closeModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Property Details: {{ selectedProperty()!.tagNumber }}</h3>
+        <button class="btn-close" (click)="closeModal()">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="info-section">
+          <h4>BASIC INFORMATION</h4>
+          <div class="info-grid">
+            <div class="info-item">
+              <span>Tag Number:</span>
+              <span>{{ selectedProperty()!.tagNumber }}</span>
+            </div>
+            <div class="info-item">
+              <span>Name:</span>
+              <span>{{ selectedProperty()!.name }}</span>
+            </div>
+            <div class="info-item">
+              <span>Serial Number:</span>
+              <span>C02XK2L8Q6PJ</span>
+            </div>
+            <div class="info-item">
+              <span>Status:</span>
+              <span class="status-badge" [class]="getStatusColor(selectedProperty()!.status)">
+                {{ getStatusIcon(selectedProperty()!.status) }} {{ selectedProperty()!.status }}
+              </span>
+            </div>
+          </div>
+          <div class="qr-code">
+            <div class="qr-placeholder">[QR Code Image]</div>
+          </div>
+        </div>
+
+        <div class="info-grid-2">
+          <div class="info-box">
+            <h4>CLASSIFICATION</h4>
+            <div class="info-list">
+              <div class="info-item"><span>Type:</span><span>{{ selectedProperty()!.type }}</span></div>
+              <div class="info-item"><span>Category:</span><span>Electronics</span></div>
+              <div class="info-item"><span>Model:</span><span>XPS 9530</span></div>
+              <div class="info-item"><span>Processor:</span><span>Intel i7</span></div>
+              <div class="info-item"><span>RAM:</span><span>16GB</span></div>
+              <div class="info-item"><span>Storage:</span><span>512GB SSD</span></div>
+            </div>
+          </div>
+          <div class="info-box">
+            <h4>FINANCIAL DETAILS</h4>
+            <div class="info-list">
+              <div class="info-item"><span>Unit Price:</span><span>${{ selectedProperty()!.value.toLocaleString() }}</span></div>
+              <div class="info-item"><span>Quantity:</span><span>1</span></div>
+              <div class="info-item"><span>Total Value:</span><span>${{ selectedProperty()!.value.toLocaleString() }}</span></div>
+              <div class="info-item"><span>Purchase Date:</span><span>Nov 15, 2024</span></div>
+              <div class="info-item"><span>PO Number:</span><span>PO-2024-1234</span></div>
+              <div class="info-item"><span>Supplier:</span><span>Tech Supplies</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="info-grid-2">
+          <div class="info-box">
+            <h4>LOCATION</h4>
+            <div class="info-list">
+              <div class="info-item"><span>Location:</span><span>{{ selectedProperty()!.location }}</span></div>
+              <div class="info-item"><span>Safety Box:</span><span>SAF-001</span></div>
+              <div class="info-item"><span>Shelf:</span><span>Shelf-03</span></div>
+              <div class="info-item"><span>Assigned To:</span><span>John Doe</span></div>
+            </div>
+          </div>
+          <div class="info-box">
+            <h4>WARRANTY & MAINTENANCE</h4>
+            <div class="info-list">
+              <div class="info-item"><span>Warranty Start:</span><span>Nov 15, 2024</span></div>
+              <div class="info-item"><span>Warranty End:</span><span>Nov 14, 2026</span></div>
+              <div class="info-item"><span>Status:</span><span>Active</span></div>
+              <div class="info-item"><span>Next Service:</span><span>May 15, 2025</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="attachments-section">
+          <h4>📎 ATTACHMENTS</h4>
+          <div class="attachments-list">
+            <div class="attachment-item">
+              <span>📄 Invoice_Nov2024.pdf</span>
+              <button class="btn-sm btn-secondary">View</button>
+              <button class="btn-sm btn-secondary">Download</button>
+            </div>
+            <div class="attachment-item">
+              <span>🖼️ Laptop_Photo.jpg</span>
+              <button class="btn-sm btn-secondary">View</button>
+              <button class="btn-sm btn-secondary">Download</button>
+            </div>
+            <div class="attachment-item">
+              <span>📑 Warranty_Certificate.pdf</span>
+              <button class="btn-sm btn-secondary">View</button>
+              <button class="btn-sm btn-secondary">Download</button>
+            </div>
+          </div>
+          <button class="btn btn-sm btn-secondary">+ Add File</button>
+        </div>
+
+        <div class="history-section">
+          <h4>📜 HISTORY & AUDIT</h4>
+          <table class="history-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Action</th>
+                <th>User</th>
+                <th>Details</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Dec 15, 2024</td>
+                <td>Created</td>
+                <td>John Doe</td>
+                <td>Property added</td>
+              </tr>
+              <tr>
+                <td>Dec 14, 2024</td>
+                <td>Location</td>
+                <td>Sarah Smith</td>
+                <td>Moved to SAF-001</td>
+              </tr>
+              <tr>
+                <td>Dec 10, 2024</td>
+                <td>Assigned</td>
+                <td>Admin</td>
+                <td>Assigned to John</td>
+              </tr>
+            </tbody>
+          </table>
+          <button class="btn btn-sm btn-secondary">View Full History →</button>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary">Edit</button>
+        <button class="btn btn-secondary">Transfer</button>
+        <button class="btn btn-secondary">Print Label</button>
+        <button class="btn btn-secondary">View QR</button>
+        <button class="btn btn-secondary">Dispose</button>
+        <button class="btn btn-secondary" (click)="closeModal()">Close</button>
+      </div>
+    </div>
+  </div>
+}

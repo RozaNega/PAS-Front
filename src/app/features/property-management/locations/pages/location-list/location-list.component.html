@@ -1,4 +1,401 @@
-﻿<section class="page ecx-list-surface">
-  <h1>Location List</h1>
-</section>
+﻿<div class="locations-container">
+  <div class="page-header">
+    <div class="header-info">
+      <h1>Location Management</h1>
+      <p class="subtitle">Manage all physical locations across the organization</p>
+    </div>
+    <button class="btn btn-primary" (click)="openAddModal()">
+      <i class="bi bi-plus-lg"></i> Location
+    </button>
+  </div>
+
+  <div class="filter-bar">
+    <div class="search-box">
+      <i class="bi bi-search"></i>
+      <input type="text" [value]="searchTerm()" (input)="onSearchChange($any($event.target).value)" placeholder="Search locations...">
+    </div>
+    <div class="filter-group">
+      <label>🏷️ Filter by Type:</label>
+      <select [(ngModel)]="typeFilter" (ngModelChange)="onTypeFilterChange($event)">
+        @for (type of locationTypes; track type) {
+          <option [value]="type">{{ type }}</option>
+        }
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>📍 Parent:</label>
+      <select [(ngModel)]="parentFilter" (ngModelChange)="onParentFilterChange($event)">
+        <option value="All">All Locations</option>
+        @for (loc of locations(); track loc.id) {
+          @if (loc.parentId === null) {
+            <option [value]="loc.id">{{ loc.icon }} {{ loc.name }}</option>
+          }
+        }
+      </select>
+    </div>
+    <div class="view-toggles">
+      <button class="btn-toggle" [class.active]="viewMode() === 'tree'" (click)="setViewMode('tree')">
+        <i class="bi bi-diagram-3"></i> Tree View
+      </button>
+      <button class="btn-toggle" [class.active]="viewMode() === 'list'" (click)="setViewMode('list')">
+        <i class="bi bi-list-ul"></i> List View
+      </button>
+    </div>
+  </div>
+
+  <div class="summary-grid">
+    <div class="summary-card">
+      <div class="summary-label">Total Locations</div>
+      <div class="summary-value">45</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">Building</div>
+      <div class="summary-value">8</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">Floors</div>
+      <div class="summary-value">15</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">Departments/Rooms</div>
+      <div class="summary-value">22</div>
+    </div>
+  </div>
+
+  @if (viewMode() === 'tree') {
+    <div class="tree-view">
+      <div class="tree-node root">
+        <div class="node-content">
+          <span class="node-icon">📁</span>
+          <span class="node-label">All Locations (45)</span>
+        </div>
+        <div class="node-children">
+          <div class="tree-node">
+            <div class="node-content">
+              <span class="node-icon">🏢</span>
+              <span class="node-label">Headquarters (1)</span>
+            </div>
+            <div class="node-children">
+              <div class="tree-node">
+                <div class="node-content">
+                  <span class="node-icon">📍</span>
+                  <span class="node-label">Floor 1 (12 properties)</span>
+                </div>
+                <div class="node-children">
+                  <div class="tree-node leaf">
+                    <div class="node-content">
+                      <span class="node-icon">💻</span>
+                      <span class="node-label">IT Department (28 props)</span>
+                    </div>
+                  </div>
+                  <div class="tree-node leaf">
+                    <div class="node-content">
+                      <span class="node-icon">�</span>
+                      <span class="node-label">HR Department (12 props)</span>
+                    </div>
+                  </div>
+                  <div class="tree-node leaf">
+                    <div class="node-content">
+                      <span class="node-icon">💰</span>
+                      <span class="node-label">Finance (18 props)</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="tree-node">
+                <div class="node-content">
+                  <span class="node-icon">📍</span>
+                  <span class="node-label">Floor 2 (23 properties)</span>
+                </div>
+                <div class="node-children">
+                  <div class="tree-node leaf">
+                    <div class="node-content">
+                      <span class="node-icon">�</span>
+                      <span class="node-label">Sales (15 props)</span>
+                    </div>
+                  </div>
+                  <div class="tree-node leaf">
+                    <div class="node-content">
+                      <span class="node-icon">📢</span>
+                      <span class="node-label">Marketing (8 props)</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="tree-node">
+                <div class="node-content">
+                  <span class="node-icon">📍</span>
+                  <span class="node-label">Floor 3 (8 properties)</span>
+                </div>
+                <div class="node-children">
+                  <div class="tree-node leaf">
+                    <div class="node-content">
+                      <span class="node-icon">👔</span>
+                      <span class="node-label">Executive (8 props)</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="tree-node">
+            <div class="node-content">
+              <span class="node-icon">🏭</span>
+              <span class="node-label">Warehouse A (1)</span>
+            </div>
+            <div class="node-children">
+              <div class="tree-node leaf">
+                <div class="node-content">
+                  <span class="node-icon">�</span>
+                  <span class="node-label">Aisle A (45 props)</span>
+                </div>
+              </div>
+              <div class="tree-node leaf">
+                <div class="node-content">
+                  <span class="node-icon">📦</span>
+                  <span class="node-label">Aisle B (67 props)</span>
+                </div>
+              </div>
+              <div class="tree-node leaf">
+                <div class="node-content">
+                  <span class="node-icon">📦</span>
+                  <span class="node-label">Aisle C (44 props)</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="tree-node">
+            <div class="node-content">
+              <span class="node-icon">🏭</span>
+              <span class="node-label">Warehouse B (1)</span>
+            </div>
+            <div class="node-children">
+              <div class="tree-node leaf">
+                <div class="node-content">
+                  <span class="node-icon">📦</span>
+                  <span class="node-label">Aisle A (34 props)</span>
+                </div>
+              </div>
+              <div class="tree-node leaf">
+                <div class="node-content">
+                  <span class="node-icon">📦</span>
+                  <span class="node-label">Aisle B (23 props)</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="tree-node">
+            <div class="node-content">
+              <span class="node-icon">🏢</span>
+              <span class="node-label">Branch Office (1)</span>
+            </div>
+            <div class="node-children">
+              <div class="tree-node leaf">
+                <div class="node-content">
+                  <span class="node-icon">📍</span>
+                  <span class="node-label">Floor 1 (25 props)</span>
+                </div>
+              </div>
+              <div class="tree-node leaf">
+                <div class="node-content">
+                  <span class="node-icon">📍</span>
+                  <span class="node-label">Floor 2 (20 props)</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  @if (viewMode() === 'list') {
+    <div class="table-container">
+      <table class="locations-table">
+        <thead>
+          <tr>
+            <th>Location</th>
+            <th>Type</th>
+            <th>Parent</th>
+            <th>Properties</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (loc of filteredLocations(); track loc.id) {
+            <tr>
+              <td>
+                <div class="location-name">
+                  <span class="location-icon">{{ loc.icon }}</span>
+                  <span>{{ loc.name }}</span>
+                </div>
+              </td>
+              <td>{{ loc.type }}</td>
+              <td>{{ loc.parentId ? locations().find(l => l.id === loc.parentId)?.name : '-' }}</td>
+              <td>{{ loc.propertiesCount }}</td>
+              <td>
+                <div class="actions-cell">
+                  <button class="action-btn" (click)="openEditModal(loc)" title="Edit">
+                    <i class="bi bi-pencil"></i>
+                  </button>
+                  <button class="action-btn" (click)="toggleStatus(loc.id)" title="Toggle Status">
+                    <i class="bi bi-power"></i>
+                  </button>
+                  <button class="action-btn delete" (click)="deleteLocation(loc.id)" title="Delete">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <div class="pagination-bar">
+      <div class="pagination-info">Showing 1-{{ filteredLocations().length }} of 45 locations</div>
+      <div class="pagination-controls">
+        <button class="page-btn" disabled>Previous</button>
+        <button class="page-btn active">1</button>
+        <button class="page-btn">2</button>
+        <button class="page-btn">→</button>
+        <button class="page-btn">2</button>
+      </div>
+    </div>
+  }
+</div>
+
+@if (showModal()) {
+  <div class="modal-overlay" (click)="closeModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>{{ selectedLocation() ? 'Edit Location' : 'Add New Location' }}</h3>
+        <button class="btn-close" (click)="closeModal()">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-section">
+          <h4>Location Details</h4>
+          <div class="form-grid">
+            <div class="form-field full-width">
+              <label>Location Name <span class="required">*</span></label>
+              <input type="text" [(ngModel)]="modalFormData().name" placeholder="Enter location name">
+            </div>
+            <div class="form-field">
+              <label>Location Type <span class="required">*</span></label>
+              <select [(ngModel)]="modalFormData().type">
+                <option value="Building">Building</option>
+                <option value="Floor">Floor</option>
+                <option value="Department">Department</option>
+                <option value="Room">Room</option>
+                <option value="Warehouse">Warehouse</option>
+                <option value="Aisle">Aisle</option>
+                <option value="Shelf">Shelf</option>
+              </select>
+            </div>
+            <div class="form-field">
+              <label>Parent Location</label>
+              <select [(ngModel)]="modalFormData().parentId">
+                <option [value]="null">None (Root)</option>
+                @for (loc of locations(); track loc.id) {
+                  @if (loc.parentId === null) {
+                    <option [value]="loc.id">{{ loc.icon }} {{ loc.name }}</option>
+                  }
+                }
+              </select>
+            </div>
+            <div class="form-field full-width">
+              <label>Description</label>
+              <textarea [(ngModel)]="modalFormData().description" rows="2" placeholder="Enter description"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h4>Contact Information</h4>
+          <div class="form-grid">
+            <div class="form-field">
+              <label>Contact Person</label>
+              <input type="text" [(ngModel)]="modalFormData().contactPerson" placeholder="Enter contact person">
+            </div>
+            <div class="form-field">
+              <label>Phone Number</label>
+              <input type="text" [(ngModel)]="modalFormData().phone" placeholder="+251-___-_______">
+            </div>
+            <div class="form-field full-width">
+              <label>Email</label>
+              <input type="email" [(ngModel)]="modalFormData().email" placeholder="email@afrocom.com">
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h4>Physical Address</h4>
+          <div class="form-grid">
+            <div class="form-field full-width">
+              <label>Address Line 1</label>
+              <input type="text" [(ngModel)]="modalFormData().addressLine1" placeholder="Enter address">
+            </div>
+            <div class="form-field full-width">
+              <label>Address Line 2</label>
+              <input type="text" [(ngModel)]="modalFormData().addressLine2" placeholder="Enter address">
+            </div>
+            <div class="form-field">
+              <label>City</label>
+              <input type="text" [(ngModel)]="modalFormData().city" placeholder="Addis Ababa">
+            </div>
+            <div class="form-field">
+              <label>ZIP/Postal Code</label>
+              <input type="text" [(ngModel)]="modalFormData().zipCode" placeholder="ZIP code">
+            </div>
+            <div class="form-field">
+              <label>Latitude (Optional)</label>
+              <input type="text" [(ngModel)]="modalFormData().latitude" placeholder="9.0320">
+            </div>
+            <div class="form-field">
+              <label>Longitude (Optional)</label>
+              <input type="text" [(ngModel)]="modalFormData().longitude" placeholder="38.7469">
+            </div>
+          </div>
+          <button class="btn btn-secondary btn-sm" (click)="getCurrentLocation()">
+            <i class="bi bi-geo-alt"></i> Get Current Location
+          </button>
+        </div>
+
+        <div class="form-section">
+          <h4>Capacity & Settings</h4>
+          <div class="form-grid">
+            <div class="form-field">
+              <label>Max Capacity (Items)</label>
+              <input type="number" [(ngModel)]="modalFormData().maxCapacity" placeholder="Enter capacity">
+            </div>
+            <div class="form-field">
+              <label>Current Occupancy</label>
+              <input type="text" value="Auto-calculated" disabled>
+            </div>
+          </div>
+          <div class="checkbox-group">
+            <label class="checkbox-item">
+              <input type="checkbox" [(ngModel)]="modalFormData().allowStorage">
+              <span>Allow storage of properties</span>
+            </label>
+            <label class="checkbox-item">
+              <input type="checkbox" [(ngModel)]="modalFormData().active">
+              <span>Active location</span>
+            </label>
+            <label class="checkbox-item">
+              <input type="checkbox" [(ngModel)]="modalFormData().generateQR">
+              <span>Generate QR code for this location</span>
+            </label>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeModal()">Cancel</button>
+        <button class="btn btn-secondary" (click)="closeModal()">Save as Draft</button>
+        <button class="btn btn-primary" (click)="saveLocation()">Save</button>
+      </div>
+    </div>
+  </div>
+}
 

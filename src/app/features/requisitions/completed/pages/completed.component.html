@@ -1,0 +1,99 @@
+<div class="completed-container">
+  <div class="page-header">
+    <div class="header-info">
+      <h1>Completed Requisitions</h1>
+      <p class="subtitle">Fully processed and closed requests</p>
+    </div>
+    <button class="btn btn-secondary" (click)="exportData()">
+      <i class="bi bi-download"></i> Export
+    </button>
+  </div>
+
+  <div class="filter-bar">
+    <div class="search-box">
+      <i class="bi bi-search"></i>
+      <input type="text" [value]="searchTerm()" placeholder="Search completed requests...">
+    </div>
+    <div class="filter-group">
+      <label>📅 Date:</label>
+      <select [(ngModel)]="dateFilter">
+        <option>Last 30 days</option>
+        <option>Last 7 days</option>
+        <option>Last 90 days</option>
+        <option>All time</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="summary-grid">
+    <div class="summary-card">
+      <div class="summary-label">Total Completed</div>
+      <div class="summary-value">{{ summary().totalCompleted }}</div>
+      <div class="summary-sub">This Month: {{ summary().thisMonth }}</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">Total Value</div>
+      <div class="summary-value">${{ summary().totalValue.toLocaleString() }}</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">Avg Completion Time</div>
+      <div class="summary-value">{{ summary().avgCompletionTime }} days</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">On-time Delivery</div>
+      <div class="summary-value">{{ summary().onTimeDelivery }}%</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">Customer Satisfaction</div>
+      <div class="summary-value">{{ summary().satisfaction }}/5</div>
+    </div>
+  </div>
+
+  <div class="table-section">
+    <div class="table-container">
+      <table class="completed-table">
+        <thead>
+          <tr>
+            <th>SR #</th>
+            <th>Date</th>
+            <th>Requester</th>
+            <th>Items</th>
+            <th>SIV #</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (req of completedReqs(); track req.id) {
+            <tr>
+              <td>{{ req.srNumber }}</td>
+              <td>{{ req.date }}</td>
+              <td>{{ req.requester }}</td>
+              <td>{{ req.items }}</td>
+              <td>{{ req.sivNumber }}</td>
+              <td>
+                <div class="actions-cell">
+                  <button class="action-btn" title="View">
+                    <i class="bi bi-eye"></i>
+                  </button>
+                  <button class="action-btn" title="SIV">
+                    <i class="bi bi-receipt"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <div class="pagination-bar">
+      <div class="pagination-info">Showing 1-{{ completedReqs().length }} of {{ summary().totalCompleted }} completed requests</div>
+      <div class="pagination-controls">
+        <button class="page-btn" disabled>Previous</button>
+        <button class="page-btn active">1</button>
+        <button class="page-btn">2</button>
+        <button class="page-btn">→</button>
+        <button class="page-btn">2</button>
+      </div>
+    </div>
+  </div>
+</div>

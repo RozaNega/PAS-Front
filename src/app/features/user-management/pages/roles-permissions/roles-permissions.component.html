@@ -1,0 +1,156 @@
+<div class="roles-permissions-container">
+  <div class="page-header">
+    <div class="header-info">
+      <h1>Roles & Permissions Management</h1>
+      <p class="subtitle">Define and manage system access levels</p>
+    </div>
+    <button type="button" class="btn btn-primary" (click)="openCreateModal()">
+      <i class="bi bi-plus-lg"></i>
+      New Role
+    </button>
+  </div>
+
+  <div class="two-panel-layout">
+    <!-- Roles Panel -->
+    <div class="roles-panel">
+      <div class="panel-header">
+        <h3>Roles</h3>
+        <div class="panel-actions">
+          <button type="button" class="btn btn-sm">
+            <i class="bi bi-upload"></i>
+            Import
+          </button>
+        </div>
+      </div>
+      <div class="roles-list">
+        @for (role of roles; track role.id) {
+          <div class="role-item {{ selectedRole() === role.id ? 'selected' : '' }}" (click)="selectRole(role.id)">
+            <div class="role-indicator role-{{ role.color }}"></div>
+            <div class="role-info">
+              <span class="role-name">{{ role.name }}</span>
+              <span class="role-count">{{ role.userCount }} users</span>
+            </div>
+            @if (selectedRole() === role.id) {
+              <i class="bi bi-check-circle check-icon"></i>
+            }
+          </div>
+        }
+      </div>
+      <button type="button" class="btn btn-secondary btn-block" (click)="openCreateModal()">
+        <i class="bi bi-plus-circle"></i>
+        Create New Role
+      </button>
+    </div>
+
+    <!-- Permissions Panel -->
+    <div class="permissions-panel">
+      <div class="panel-header">
+        <h3>Permissions - {{ getSelectedRole()?.name || 'Select a Role' }}</h3>
+      </div>
+      <div class="search-permissions">
+        <i class="bi bi-search"></i>
+        <input type="text" placeholder="Search permissions...">
+      </div>
+      @if (selectedRole()) {
+        <div class="permissions-list">
+          @for (perm of permissions; track perm.category) {
+            <div class="permission-category">
+              <div class="category-header">
+                <i [class]="perm.icon"></i>
+                <span>{{ perm.category }}</span>
+              </div>
+              <div class="permission-items">
+                @for (item of perm.items; track item.name) {
+                  <label class="permission-item">
+                    <input type="checkbox" [(ngModel)]="item.checked">
+                    <span class="checkmark"></span>
+                    <span class="item-name">{{ item.name }}</span>
+                  </label>
+                }
+              </div>
+            </div>
+          }
+        </div>
+        <div class="panel-footer">
+          <button type="button" class="btn btn-secondary" (click)="resetPermissions()">
+            <i class="bi bi-arrow-counterclockwise"></i>
+            Reset
+          </button>
+          <button type="button" class="btn btn-primary" (click)="saveChanges()">
+            <i class="bi bi-check-lg"></i>
+            Save Changes
+          </button>
+        </div>
+      } @else {
+        <div class="empty-state">
+          <i class="bi bi-shield-lock"></i>
+          <h3>Select a Role</h3>
+          <p>Choose a role from the left panel to view and manage its permissions</p>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Create Role Modal -->
+  @if (showCreateModal()) {
+    <div class="modal-overlay" (click)="closeCreateModal()">
+      <div class="modal-content" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3>Create New Role</h3>
+          <button type="button" class="btn-close" (click)="closeCreateModal()">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="form-section">
+            <h4>Role Details</h4>
+            <div class="form-field">
+              <label>Role Name <span class="required">*</span></label>
+              <input type="text" placeholder="Enter role name">
+            </div>
+            <div class="form-field">
+              <label>Description</label>
+              <textarea placeholder="Describe this role..."></textarea>
+            </div>
+            <div class="form-field">
+              <label>Role Color</label>
+              <div class="color-picker">
+                <button type="button" class="color-btn red"></button>
+                <button type="button" class="color-btn green"></button>
+                <button type="button" class="color-btn blue"></button>
+                <button type="button" class="color-btn yellow"></button>
+                <button type="button" class="color-btn purple"></button>
+                <button type="button" class="color-btn orange"></button>
+                <button type="button" class="color-btn gray"></button>
+              </div>
+            </div>
+          </div>
+          <div class="form-section">
+            <h4>Copy from Existing Role</h4>
+            <div class="form-field">
+              <select>
+                <option value="">Select role to copy permissions from...</option>
+                @for (role of roles; track role.id) {
+                  <option [value]="role.id">{{ role.name }}</option>
+                }
+              </select>
+            </div>
+          </div>
+          <div class="form-section">
+            <h4>Permission Presets</h4>
+            <div class="presets">
+              <button type="button" class="preset-btn">Full Access</button>
+              <button type="button" class="preset-btn">Read Only</button>
+              <button type="button" class="preset-btn">Custom</button>
+              <button type="button" class="preset-btn">Department Only</button>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="closeCreateModal()">Cancel</button>
+          <button type="button" class="btn btn-primary">Create Role</button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

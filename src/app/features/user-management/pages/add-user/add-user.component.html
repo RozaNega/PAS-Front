@@ -1,0 +1,221 @@
+<div class="modal-overlay">
+  <div class="modal-content add-user-modal">
+    <div class="modal-header">
+      <h2>Add New User</h2>
+      <button type="button" class="btn-close" [routerLink]="['/admin/users']">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+
+    <!-- Stepper -->
+    <div class="stepper">
+      <div class="step-info">Step {{ currentStep() }} of 4: {{ steps[currentStep() - 1].title }}</div>
+      <div class="step-dots">
+        @for (step of steps; track step.number) {
+          <div class="step-dot {{ currentStep() === step.number ? 'active' : '' }} {{ currentStep() > step.number ? 'completed' : '' }}">
+            {{ currentStep() > step.number ? '●' : '●' }}
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Step 1: Basic Information -->
+    @if (currentStep() === 1) {
+      <div class="modal-body">
+        <div class="form-section">
+          <h3><i class="bi bi-person"></i> Employee Information</h3>
+          <div class="form-grid">
+            <div class="form-field">
+              <label>Employee Search <span class="required">*</span></label>
+              <div class="input-group">
+                <i class="bi bi-search"></i>
+                <input type="text" placeholder="Search existing employee..." [(ngModel)]="formData.employeeCode">
+              </div>
+            </div>
+            <div class="form-field">
+              <label>Employee Code <span class="required">*</span></label>
+              <input type="text" placeholder="EMP-________" [(ngModel)]="formData.employeeCode">
+            </div>
+            <div class="form-field">
+              <label>Full Name <span class="required">*</span></label>
+              <input type="text" placeholder="Enter full name" [(ngModel)]="formData.fullName">
+            </div>
+            <div class="form-field">
+              <label>Department <span class="required">*</span></label>
+              <select [(ngModel)]="formData.department">
+                <option value="">Select Department</option>
+                @for (dept of departments; track dept) {
+                  <option [value]="dept">{{ dept }}</option>
+                }
+              </select>
+            </div>
+            <div class="form-field">
+              <label>Position / Title</label>
+              <input type="text" placeholder="Enter position" [(ngModel)]="formData.position">
+            </div>
+            <div class="form-field">
+              <label>Phone Number</label>
+              <input type="text" placeholder="+251-___-_______" [(ngModel)]="formData.phone">
+            </div>
+            <div class="form-field full-width">
+              <label>Email Address <span class="required">*</span></label>
+              <input type="email" placeholder="email@afrocom.com" [(ngModel)]="formData.email">
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h3><i class="bi bi-shield-lock"></i> Account Information</h3>
+          <div class="form-grid">
+            <div class="form-field">
+              <label>Username <span class="required">*</span></label>
+              <input type="text" placeholder="Enter username" [(ngModel)]="formData.username">
+            </div>
+            <div class="form-field">
+              <label>Role <span class="required">*</span></label>
+              <select [(ngModel)]="formData.role">
+                <option value="">Select Role</option>
+                @for (role of roles; track role.value) {
+                  <option [value]="role.value">{{ role.label }}</option>
+                }
+              </select>
+            </div>
+            <div class="form-field">
+              <label>Password <span class="required">*</span></label>
+              <div class="input-group">
+                <input type="password" placeholder="Min 8 characters" [(ngModel)]="formData.password">
+                <button type="button" class="input-btn" (click)="formData.autoGeneratePassword = !formData.autoGeneratePassword">
+                  <i class="bi bi-shuffle"></i> Auto
+                </button>
+              </div>
+            </div>
+            <div class="form-field">
+              <label>Confirm Password <span class="required">*</span></label>
+              <input type="password" placeholder="Repeat password" [(ngModel)]="formData.confirmPassword">
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+
+  <!-- Step 2: Account Setup -->
+  @if (currentStep() === 2) {
+    <div class="modal-body">
+      <div class="form-section">
+        <h3><i class="bi bi-key"></i> Permissions (Based on Role)</h3>
+        <div class="role-display">
+          <span class="role-label">Role:</span>
+          <span class="role-value">{{ formData.role || 'Not selected' }}</span>
+        </div>
+        <div class="permissions-grid">
+          @for (perm of permissions; track perm.category) {
+            <div class="permission-card">
+              <h4>{{ perm.category }}</h4>
+              @for (item of perm.items; track item.name) {
+                <label class="checkbox-item">
+                  <input type="checkbox" [(ngModel)]="item.checked">
+                  <span class="checkmark"></span>
+                  <span class="label-text">{{ item.name }}</span>
+                </label>
+              }
+            </div>
+          }
+        </div>
+      </div>
+      <div class="form-section">
+        <h3><i class="bi bi-bell"></i> Notification Settings</h3>
+        <div class="notification-settings">
+          <label class="checkbox-item">
+            <input type="checkbox" [(ngModel)]="formData.sendWelcomeEmail">
+            <span class="checkmark"></span>
+            <span class="label-text">Send welcome email with login credentials</span>
+          </label>
+          <label class="checkbox-item">
+            <input type="checkbox" [(ngModel)]="formData.sendApprovalEmails">
+            <span class="checkmark"></span>
+            <span class="label-text">Send email notifications for approvals</span>
+          </label>
+          <label class="checkbox-item">
+            <input type="checkbox" [(ngModel)]="formData.sendLowStockAlerts">
+            <span class="checkmark"></span>
+            <span class="label-text">Send low stock alerts</span>
+          </label>
+          <label class="checkbox-item">
+            <input type="checkbox" [(ngModel)]="formData.sendSystemAnnouncements">
+            <span class="checkmark"></span>
+            <span class="label-text">Send system announcements</span>
+          </label>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Step 3: Review & Submit -->
+  @if (currentStep() === 3) {
+    <div class="modal-body">
+      <div class="form-section review">
+        <h3><i class="bi bi-check-circle"></i> Review & Submit</h3>
+        <div class="review-card">
+          <div class="review-section">
+            <h4>Employee Information</h4>
+            <div class="review-row">
+              <span>Full Name:</span>
+              <strong>{{ formData.fullName || '-' }}</strong>
+            </div>
+            <div class="review-row">
+              <span>Employee Code:</span>
+              <strong>{{ formData.employeeCode || '-' }}</strong>
+            </div>
+            <div class="review-row">
+              <span>Email:</span>
+              <strong>{{ formData.email || '-' }}</strong>
+            </div>
+            <div class="review-row">
+              <span>Department:</span>
+              <strong>{{ formData.department || '-' }}</strong>
+            </div>
+          </div>
+          <div class="review-section">
+            <h4>Account Details</h4>
+            <div class="review-row">
+              <span>Username:</span>
+              <strong>{{ formData.username || '-' }}</strong>
+            </div>
+            <div class="review-row">
+              <span>Role:</span>
+              <strong>{{ formData.role || '-' }}</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Actions -->
+  <div class="modal-footer">
+    @if (currentStep() > 1) {
+      <button type="button" class="btn btn-secondary" (click)="prevStep()">
+        <i class="bi bi-arrow-left"></i>
+        Previous
+      </button>
+    }
+    <div class="action-right">
+      <button type="button" class="btn btn-draft" (click)="saveDraft()">
+        <i class="bi bi-save"></i>
+        Save Draft
+      </button>
+      @if (currentStep() < totalSteps) {
+        <button type="button" class="btn btn-primary" (click)="nextStep()">
+          Next
+          <i class="bi bi-arrow-right"></i>
+        </button>
+      } @else {
+        <button type="button" class="btn btn-primary" (click)="submitForm()">
+          <i class="bi bi-check-lg"></i>
+          Submit
+        </button>
+      }
+    </div>
+  </div>
+  </div>
+</div>

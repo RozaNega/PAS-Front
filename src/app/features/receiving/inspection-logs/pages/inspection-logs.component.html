@@ -1,0 +1,249 @@
+<div class="inspection-logs-container">
+  <div class="page-header">
+    <div class="header-info">
+      <h1>Inspection Logs</h1>
+      <p class="subtitle">Historical record of all quality inspections</p>
+    </div>
+    <button class="btn btn-secondary" (click)="exportData()">
+      <i class="bi bi-download"></i> Export
+    </button>
+  </div>
+
+  <div class="filter-bar">
+    <div class="search-box">
+      <i class="bi bi-search"></i>
+      <input type="text" [value]="searchTerm()" (input)="onSearchChange($any($event.target).value)" placeholder="Search by GRN#, item, supplier...">
+    </div>
+    <div class="filter-group">
+      <label>📅 Date:</label>
+      <input type="date" [value]="dateRange.start">
+      <span>to</span>
+      <input type="date" [value]="dateRange.end">
+      <button class="btn btn-sm btn-secondary">Apply Filters</button>
+    </div>
+    <div class="filter-group">
+      <label>🏷️ Result:</label>
+      <select [(ngModel)]="resultFilter" (ngModelChange)="onResultFilterChange($event)">
+        @for (result of results; track result) {
+          <option [value]="result">{{ result }}</option>
+        }
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>🔧 Inspector:</label>
+      <select [(ngModel)]="inspectorFilter" (ngModelChange)="onResultFilterChange($event)">
+        @for (inspector of inspectors; track inspector) {
+          <option [value]="inspector">{{ inspector }}</option>
+        }
+      </select>
+    </div>
+  </div>
+
+  <div class="summary-grid">
+    <div class="summary-card">
+      <div class="summary-label">Total Inspections</div>
+      <div class="summary-value">{{ summary().totalInspections }}</div>
+      <div class="summary-sub">this month</div>
+    </div>
+    <div class="summary-card pass">
+      <div class="summary-label">Pass Rate</div>
+      <div class="summary-value">{{ summary().passRate }}%</div>
+      <div class="summary-sub">▲ +5%</div>
+    </div>
+    <div class="summary-card fail">
+      <div class="summary-label">Fail Rate</div>
+      <div class="summary-value">{{ summary().failRate }}%</div>
+      <div class="summary-sub">▼ -2%</div>
+    </div>
+    <div class="summary-card partial">
+      <div class="summary-label">Partial Rate</div>
+      <div class="summary-value">{{ summary().partialRate }}%</div>
+      <div class="summary-sub">▼ -3%</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">Avg Time per Item</div>
+      <div class="summary-value">{{ summary().avgTime }} min</div>
+      <div class="summary-sub">● Same</div>
+    </div>
+  </div>
+
+  <div class="trends-section">
+    <div class="section-header">
+      <h3>📈 QUALITY TRENDS</h3>
+    </div>
+    <div class="chart-placeholder">
+      <div class="chart-legend">
+        <span class="legend-item"><span class="dot green"></span> Pass Rate</span>
+        <span class="legend-item"><span class="dot red"></span> Fail Rate</span>
+        <span class="legend-item"><span class="dot yellow"></span> Partial Rate</span>
+      </div>
+      <div class="chart-bars">
+        @for (i of [1,2,3,4]; track i) {
+          <div class="bar-group">
+            <div class="bar pass" [style.height.px]="getRandomHeight(70, 20)"></div>
+            <div class="bar fail" [style.height.px]="getRandomHeight(15, 10)"></div>
+            <div class="bar partial" [style.height.px]="getRandomHeight(15, 10)"></div>
+            <div class="bar-label">Week{{ i }}</div>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+
+  <div class="table-section">
+    <div class="table-container">
+      <table class="logs-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>GRN #</th>
+            <th>Item</th>
+            <th>Inspector</th>
+            <th>Result</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (log of filteredLogs(); track log.id) {
+            <tr>
+              <td>{{ log.date }}</td>
+              <td>{{ log.grnNumber }}</td>
+              <td>{{ log.item }}</td>
+              <td>{{ log.inspector }}</td>
+              <td>
+                <span class="status-badge" [class]="getResultColor(log.result)">
+                  {{ getResultIcon(log.result) }} {{ log.result }}
+                </span>
+              </td>
+              <td>
+                <div class="actions-cell">
+                  <button class="action-btn" (click)="openDetailsModal(log)" title="View">
+                    <i class="bi bi-eye"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <div class="pagination-bar">
+      <div class="pagination-info">Showing 1-{{ filteredLogs().length }} of {{ summary().totalInspections }} inspections</div>
+      <div class="pagination-controls">
+        <button class="page-btn" disabled>Previous</button>
+        <button class="page-btn active">1</button>
+        <button class="page-btn">2</button>
+        <button class="page-btn">3</button>
+        <button class="page-btn">→</button>
+        <button class="page-btn">7</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+@if (showModal() && selectedLog()) {
+  <div class="modal-overlay" (click)="closeModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Inspection Details</h3>
+        <button class="btn-close" (click)="closeModal()">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="info-section">
+          <h4>INSPECTION INFORMATION</h4>
+          <div class="info-grid">
+            <div class="info-item">
+              <span>GRN Number:</span>
+              <span>{{ selectedLog()!.grnNumber }}</span>
+            </div>
+            <div class="info-item">
+              <span>Supplier:</span>
+              <span>Tech Supplies Ltd</span>
+            </div>
+            <div class="info-item">
+              <span>Item:</span>
+              <span>{{ selectedLog()!.item }}</span>
+            </div>
+            <div class="info-item">
+              <span>Quantity:</span>
+              <span>15 units (Batch: BCH-001)</span>
+            </div>
+            <div class="info-item">
+              <span>Inspector:</span>
+              <span>{{ selectedLog()!.inspector }}</span>
+            </div>
+            <div class="info-item">
+              <span>Date:</span>
+              <span>December 15, 2024 14:30</span>
+            </div>
+            <div class="info-item">
+              <span>Result:</span>
+              <span class="result-badge" [class]="getResultColor(selectedLog()!.result)">
+                {{ getResultIcon(selectedLog()!.result) }} {{ selectedLog()!.result }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="checklist-section">
+          <h4>✅ INSPECTION CHECKLIST</h4>
+          <div class="checklist-items">
+            <div class="checklist-item passed">
+              <span>✓</span>
+              <span>Screen no scratches</span>
+            </div>
+            <div class="checklist-item passed">
+              <span>✓</span>
+              <span>Display test passed</span>
+            </div>
+            <div class="checklist-item passed">
+              <span>✓</span>
+              <span>Ports working</span>
+            </div>
+            <div class="checklist-item failed">
+              <span>✗</span>
+              <span>Power cable missing (2 units)</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="notes-section">
+          <h4>📝 INSPECTOR NOTES</h4>
+          <div class="notes-content">
+            2 units missing power cables - held for supplier response
+          </div>
+        </div>
+
+        <div class="photos-section">
+          <h4>📸 INSPECTION PHOTOS</h4>
+          <div class="photos-grid">
+            <div class="photo-item">
+              <div class="photo-placeholder">[Photo]</div>
+              <div class="photo-label">Unit #1 Front</div>
+            </div>
+            <div class="photo-item">
+              <div class="photo-placeholder">[Photo]</div>
+              <div class="photo-label">Missing Cable</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="action-section">
+          <h4>🔄 ACTION TAKEN</h4>
+          <div class="action-items">
+            <div class="action-item">• 13 units released to stock</div>
+            <div class="action-item">• 2 units quarantined - pending supplier resolution</div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="printReport()">
+          <i class="bi bi-printer"></i> Print Report
+        </button>
+        <button class="btn btn-secondary" (click)="closeModal()">Close</button>
+      </div>
+    </div>
+  </div>
+}

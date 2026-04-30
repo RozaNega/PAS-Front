@@ -1,0 +1,294 @@
+<div class="receiving-report-container">
+  <div class="page-header">
+    <div class="header-info">
+      <h1>Receiving Report</h1>
+      <p class="subtitle">Track all incoming shipments and supplier performance</p>
+    </div>
+    <button class="btn btn-primary" (click)="generateReport()">
+      <i class="bi bi-play-circle"></i> Generate
+    </button>
+  </div>
+
+  <div class="filter-bar">
+    <div class="filter-group">
+      <label>📅 Date Range:</label>
+      <input type="date" [value]="dateRange.start">
+      <span>to</span>
+      <input type="date" [value]="dateRange.end">
+    </div>
+    <div class="filter-group">
+      <label>🏭 Supplier:</label>
+      <select [(ngModel)]="supplierFilter" (ngModelChange)="onSupplierChange($event)">
+        @for (sup of suppliers; track sup) {
+          <option [value]="sup">{{ sup }}</option>
+        }
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>📦 Category:</label>
+      <select [(ngModel)]="categoryFilter">
+        @for (cat of categories; track cat) {
+          <option [value]="cat">{{ cat }}</option>
+        }
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>🔧 Status:</label>
+      <select [(ngModel)]="statusFilter" (ngModelChange)="onStatusChange($event)">
+        @for (st of statuses; track st) {
+          <option [value]="st">{{ st }}</option>
+        }
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>📄 Format:</label>
+      <select [(ngModel)]="format">
+        @for (fmt of formats; track fmt) {
+          <option [value]="fmt">{{ fmt }}</option>
+        }
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>🔄 Include Rejected:</label>
+      <select [(ngModel)]="includeRejected">
+        <option value="Yes">Yes</option>
+        <option value="No">No</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Receiving Summary -->
+  <div class="summary-section">
+    <h2>📊 RECEIVING SUMMARY</h2>
+    <div class="summary-grid">
+      <div class="summary-card">
+        <div class="summary-icon">📋</div>
+        <div class="summary-content">
+          <div class="summary-label">Total GRNs Received</div>
+          <div class="summary-value">{{ totalGRNs() }}</div>
+          <div class="summary-sub">▲ +15%</div>
+        </div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon">📦</div>
+        <div class="summary-content">
+          <div class="summary-label">Total Items Received</div>
+          <div class="summary-value">{{ totalItemsReceived() }} units</div>
+          <div class="summary-sub">▲ +12%</div>
+        </div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon">💰</div>
+        <div class="summary-content">
+          <div class="summary-label">Total Value Received</div>
+          <div class="summary-value">{{ formatValue(totalValueReceived()) }}</div>
+          <div class="summary-sub">▲ +18%</div>
+        </div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon">📊</div>
+        <div class="summary-content">
+          <div class="summary-label">Avg. Daily Receiving</div>
+          <div class="summary-value">{{ avgDailyReceiving() }}</div>
+          <div class="summary-sub">▲ +8 units</div>
+        </div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon">🏭</div>
+        <div class="summary-content">
+          <div class="summary-label">Active Suppliers</div>
+          <div class="summary-value">{{ activeSuppliers() }}</div>
+          <div class="summary-sub">▲ +2</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Receiving Trend Chart -->
+  <div class="chart-section">
+    <div class="section-header">
+      <h3>📈 RECEIVING TREND CHART</h3>
+    </div>
+    <div class="chart-placeholder">
+      <div class="chart-legend">
+        <span class="legend-item"><span class="dot blue"></span> Items Received</span>
+        <span class="legend-item"><span class="dot green"></span> Total Value</span>
+        <span class="legend-item"><span class="dot orange"></span> Number of GRNs</span>
+      </div>
+      <div class="chart-bars">
+        @for (i of [1,2,3,4,5,6,7,8]; track i) {
+          <div class="bar-group">
+            <div class="bar main" [style.height.px]="getRandomHeight(100, 60)"></div>
+            <div class="bar-label">Week {{ i }}</div>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- Detailed Receiving Table -->
+  <div class="table-section">
+    <div class="section-header">
+      <h3>📋 DETAILED RECEIVING TABLE</h3>
+    </div>
+    <div class="table-container">
+      <table class="receiving-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>GRN #</th>
+            <th>Supplier</th>
+            <th>Items</th>
+            <th>Qty</th>
+            <th>Value</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (receiving of filteredReceivings(); track receiving.grnNumber) {
+            <tr>
+              <td>{{ receiving.date }}</td>
+              <td>{{ receiving.grnNumber }}</td>
+              <td>{{ receiving.supplier }}</td>
+              <td>{{ receiving.items }}</td>
+              <td>{{ receiving.quantity }}</td>
+              <td>{{ formatValue(receiving.value) }}</td>
+              <td>
+                <span class="status-icon">{{ getStatusIcon(receiving.status) }}</span>
+                <span class="status-text">{{ receiving.status }}</span>
+              </td>
+              <td>
+                <div class="actions-cell">
+                  <button class="action-btn" title="View">
+                    <i class="bi bi-eye"></i>
+                  </button>
+                  <button class="action-btn" title="Print">
+                    <i class="bi bi-printer"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <div class="pagination-bar">
+      <div class="pagination-info">Showing 1-{{ filteredReceivings().length }} of 45 GRNs</div>
+      <div class="pagination-controls">
+        <button class="page-btn" disabled>Previous</button>
+        <button class="page-btn active">1</button>
+        <button class="page-btn">2</button>
+        <button class="page-btn">→</button>
+        <button class="page-btn">2</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Receiving by Supplier -->
+  <div class="category-section">
+    <div class="section-header">
+      <h3>📊 RECEIVING BY SUPPLIER</h3>
+    </div>
+    <div class="category-list">
+      @for (sup of receivingBySupplier(); track sup.name) {
+        <div class="category-item">
+          <div class="category-info">
+            <span class="category-name">{{ sup.name }}</span>
+            <span class="category-stats">{{ sup.value }} {{ sup.grns }} GRNs</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" [style.width.%]="sup.percentage"></div>
+            <span class="progress-label">{{ sup.percentage }}%</span>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Quality Inspection Summary -->
+  <div class="quality-section">
+    <div class="section-header">
+      <h3>🔍 QUALITY INSPECTION SUMMARY</h3>
+    </div>
+    <div class="quality-summary">
+      @for (item of qualitySummary(); track item.label) {
+        <div class="quality-item">
+          <div class="quality-info">
+            <span class="quality-label">{{ item.label }}:</span>
+            <span class="quality-count">({{ item.count }} GRNs)</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" [style.width.%]="item.percentage" [style.background-color]="item.color"></div>
+            <span class="progress-label">{{ item.percentage }}%</span>
+          </div>
+        </div>
+      }
+    </div>
+    <div class="quality-issues">
+      <h4>Top Quality Issues:</h4>
+      @for (issue of topQualityIssues(); track issue.issue) {
+        <div class="quality-issue">
+          <span>• {{ issue.issue }} ({{ issue.percentage }}%)</span>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Supplier Performance Ratings -->
+  <div class="performance-section">
+    <div class="section-header">
+      <h3>📊 SUPPLIER PERFORMANCE RATINGS</h3>
+    </div>
+    <div class="table-container">
+      <table class="performance-table">
+        <thead>
+          <tr>
+            <th>Supplier</th>
+            <th>On-Time</th>
+            <th>Quality</th>
+            <th>Price</th>
+            <th>Delivery</th>
+            <th>Overall</th>
+            <th>Trend</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (sup of supplierPerformance(); track sup.name) {
+            <tr>
+              <td>{{ sup.name }}</td>
+              <td>{{ sup.onTime }}</td>
+              <td>{{ sup.quality }}</td>
+              <td>{{ sup.price }}</td>
+              <td>{{ sup.delivery }}</td>
+              <td>{{ sup.overall }}</td>
+              <td class="trend {{ getTrendClass(sup.trend) }}">{{ sup.trend }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Export Options -->
+  <div class="export-section">
+    <h3>⚡ EXPORT OPTIONS</h3>
+    <div class="export-buttons">
+      <button class="btn btn-secondary" (click)="exportToExcel()">
+        <i class="bi bi-file-earmark-excel"></i> Export to Excel
+      </button>
+      <button class="btn btn-secondary" (click)="exportToPDF()">
+        <i class="bi bi-file-earmark-pdf"></i> Export to PDF
+      </button>
+      <button class="btn btn-secondary" (click)="emailReport()">
+        <i class="bi bi-envelope"></i> Email Report
+      </button>
+      <button class="btn btn-secondary" (click)="printReport()">
+        <i class="bi bi-printer"></i> Print Report
+      </button>
+      <button class="btn btn-secondary" (click)="scheduleReport()">
+        <i class="bi bi-calendar-check"></i> Schedule Report
+      </button>
+    </div>
+  </div>
+</div>

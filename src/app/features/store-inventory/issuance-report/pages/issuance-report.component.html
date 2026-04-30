@@ -1,0 +1,272 @@
+<div class="issuance-report-container">
+  <div class="page-header">
+    <div class="header-info">
+      <h1>Issuance Report</h1>
+      <p class="subtitle">Track all issued items and distribution patterns</p>
+    </div>
+    <button class="btn btn-primary" (click)="generateReport()">
+      <i class="bi bi-play-circle"></i> Generate
+    </button>
+  </div>
+
+  <div class="filter-bar">
+    <div class="filter-group">
+      <label>📅 Date Range:</label>
+      <input type="date" [value]="dateRange.start">
+      <span>to</span>
+      <input type="date" [value]="dateRange.end">
+    </div>
+    <div class="filter-group">
+      <label>📍 Warehouse:</label>
+      <select [(ngModel)]="warehouseFilter">
+        @for (wh of warehouses; track wh) {
+          <option [value]="wh">{{ wh }}</option>
+        }
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>👥 Department:</label>
+      <select [(ngModel)]="departmentFilter" (ngModelChange)="onDepartmentChange($event)">
+        @for (dept of departments; track dept) {
+          <option [value]="dept">{{ dept }}</option>
+        }
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>📦 Category:</label>
+      <select [(ngModel)]="categoryFilter">
+        @for (cat of categories; track cat) {
+          <option [value]="cat">{{ cat }}</option>
+        }
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>👤 Requester:</label>
+      <select [(ngModel)]="requesterFilter" (ngModelChange)="onRequesterChange($event)">
+        @for (req of requesters; track req) {
+          <option [value]="req">{{ req }}</option>
+        }
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>📄 Format:</label>
+      <select [(ngModel)]="format">
+        @for (fmt of formats; track fmt) {
+          <option [value]="fmt">{{ fmt }}</option>
+        }
+      </select>
+    </div>
+  </div>
+
+  <!-- Issuance Summary -->
+  <div class="summary-section">
+    <h2>📊 ISSUANCE SUMMARY</h2>
+    <div class="summary-grid">
+      <div class="summary-card">
+        <div class="summary-icon">📋</div>
+        <div class="summary-content">
+          <div class="summary-label">Total SIVs Issued</div>
+          <div class="summary-value">{{ totalSIVs() }}</div>
+          <div class="summary-sub">▲ +12%</div>
+        </div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon">📦</div>
+        <div class="summary-content">
+          <div class="summary-label">Total Items Issued</div>
+          <div class="summary-value">{{ totalItemsIssued() }} units</div>
+          <div class="summary-sub">▲ +8%</div>
+        </div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon">💰</div>
+        <div class="summary-content">
+          <div class="summary-label">Total Value Issued</div>
+          <div class="summary-value">{{ formatValue(totalValueIssued()) }}</div>
+          <div class="summary-sub">▲ +15%</div>
+        </div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon">📊</div>
+        <div class="summary-content">
+          <div class="summary-label">Avg. Per Day</div>
+          <div class="summary-value">{{ avgPerDay() }}</div>
+          <div class="summary-sub">▲ +5 units</div>
+        </div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon">👥</div>
+        <div class="summary-content">
+          <div class="summary-label">Active Users</div>
+          <div class="summary-value">{{ activeUsers() }}</div>
+          <div class="summary-sub">▲ +3</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Issuance Trend Chart -->
+  <div class="chart-section">
+    <div class="section-header">
+      <h3>📈 ISSUANCE TREND CHART</h3>
+    </div>
+    <div class="chart-placeholder">
+      <div class="chart-legend">
+        <span class="legend-item"><span class="dot blue"></span> Items Issued</span>
+        <span class="legend-item"><span class="dot green"></span> Total Value</span>
+        <span class="legend-item"><span class="dot orange"></span> Unique Requesters</span>
+      </div>
+      <div class="chart-bars">
+        @for (i of [1,2,3,4,5,6,7,8]; track i) {
+          <div class="bar-group">
+            <div class="bar main" [style.height.px]="getRandomHeight(100, 60)"></div>
+            <div class="bar-label">Week {{ i }}</div>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- Detailed Issuance Table -->
+  <div class="table-section">
+    <div class="section-header">
+      <h3>📋 DETAILED ISSUANCE TABLE</h3>
+    </div>
+    <div class="table-container">
+      <table class="issuance-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>SIV #</th>
+            <th>Requester</th>
+            <th>Department</th>
+            <th>Item</th>
+            <th>Qty</th>
+            <th>Value</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (issuance of filteredIssuances(); track issuance.sivNumber) {
+            <tr>
+              <td>{{ issuance.date }}</td>
+              <td>{{ issuance.sivNumber }}</td>
+              <td>{{ issuance.requester }}</td>
+              <td>{{ issuance.department }}</td>
+              <td>{{ issuance.item }}</td>
+              <td>{{ issuance.quantity }}</td>
+              <td>{{ formatValue(issuance.value) }}</td>
+              <td>
+                <div class="actions-cell">
+                  <button class="action-btn" title="View">
+                    <i class="bi bi-eye"></i>
+                  </button>
+                  <button class="action-btn" title="Print">
+                    <i class="bi bi-printer"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <div class="pagination-bar">
+      <div class="pagination-info">Showing 1-{{ filteredIssuances().length }} of 156 SIVs</div>
+      <div class="pagination-controls">
+        <button class="page-btn" disabled>Previous</button>
+        <button class="page-btn active">1</button>
+        <button class="page-btn">2</button>
+        <button class="page-btn">3</button>
+        <button class="page-btn">→</button>
+        <button class="page-btn">7</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Issuance by Department -->
+  <div class="category-section">
+    <div class="section-header">
+      <h3>📊 ISSUANCE BY DEPARTMENT</h3>
+    </div>
+    <div class="category-list">
+      @for (dept of issuanceByDepartment(); track dept.name) {
+        <div class="category-item">
+          <div class="category-info">
+            <span class="category-name">{{ dept.name }}</span>
+            <span class="category-stats">{{ dept.units }} units</span>
+            <span class="category-value">{{ formatValue(dept.value) }}</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" [style.width.%]="dept.percentage"></div>
+            <span class="progress-label">{{ dept.percentage }}%</span>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Top Requested Items -->
+  <div class="top-items-section">
+    <div class="section-header">
+      <h3>🔥 TOP REQUESTED ITEMS</h3>
+    </div>
+    <div class="top-items-list">
+      @for (item of topRequestedItems(); track item.name) {
+        <div class="top-item">
+          <div class="item-info">
+            <span class="item-rank">{{ topRequestedItems().indexOf(item) + 1 }}. {{ item.name }}</span>
+            <span class="item-stats">{{ item.requests }} requests</span>
+            <span class="item-value">{{ formatValue(item.value) }}</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" [style.width.%]="item.percentage"></div>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Top Requesters Analysis -->
+  <div class="requesters-section">
+    <div class="section-header">
+      <h3>👥 TOP REQUESTERS ANALYSIS - Most Active Requesters (Last 30 days)</h3>
+    </div>
+    <div class="requesters-list">
+      @for (req of topRequesters(); track req.name) {
+        <div class="requester-item">
+          <div class="requester-info">
+            <span class="requester-rank">{{ topRequesters().indexOf(req) + 1 }}. {{ req.name }}</span>
+            <span class="requester-stats">{{ req.requests }} requests</span>
+            <span class="requester-value">{{ formatValue(req.value) }}</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" [style.width.%]="req.percentage"></div>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Export Options -->
+  <div class="export-section">
+    <h3>⚡ EXPORT OPTIONS</h3>
+    <div class="export-buttons">
+      <button class="btn btn-secondary" (click)="exportToExcel()">
+        <i class="bi bi-file-earmark-excel"></i> Export to Excel
+      </button>
+      <button class="btn btn-secondary" (click)="exportToPDF()">
+        <i class="bi bi-file-earmark-pdf"></i> Export to PDF
+      </button>
+      <button class="btn btn-secondary" (click)="emailReport()">
+        <i class="bi bi-envelope"></i> Email Report
+      </button>
+      <button class="btn btn-secondary" (click)="printReport()">
+        <i class="bi bi-printer"></i> Print Report
+      </button>
+      <button class="btn btn-secondary" (click)="scheduleReport()">
+        <i class="bi bi-calendar-check"></i> Schedule Report
+      </button>
+    </div>
+  </div>
+</div>

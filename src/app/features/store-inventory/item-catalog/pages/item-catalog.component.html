@@ -1,0 +1,393 @@
+<div class="item-catalog-container">
+  <div class="page-header">
+    <div class="header-info">
+      <h1>All Items</h1>
+      <p class="subtitle">Complete inventory of all items in the system</p>
+    </div>
+    <button class="btn btn-primary" (click)="openAddModal()">
+      <i class="bi bi-plus-lg"></i> Add New
+    </button>
+  </div>
+
+  <div class="filter-bar">
+    <div class="search-box">
+      <i class="bi bi-search"></i>
+      <input type="text" [value]="searchTerm()" (input)="onSearchChange($any($event.target).value)" placeholder="Search by SKU, Item Name, or Category...">
+    </div>
+    <div class="filter-group">
+      <label>🏷️ Category:</label>
+      <select [(ngModel)]="categoryFilter" (ngModelChange)="onCategoryChange($event)">
+        @for (cat of categories; track cat) {
+          <option [value]="cat">{{ cat }}</option>
+        }
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>📦 Status:</label>
+      <select [(ngModel)]="statusFilter" (ngModelChange)="onStatusChange($event)">
+        @for (st of statuses; track st) {
+          <option [value]="st">{{ st }}</option>
+        }
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>🔄 Sort by:</label>
+      <select [(ngModel)]="sortBy" (ngModelChange)="onSortChange($event)">
+        @for (opt of sortOptions; track opt) {
+          <option [value]="opt">{{ opt }}</option>
+        }
+      </select>
+    </div>
+    <button class="btn btn-secondary">
+      <i class="bi bi-sliders"></i> Advanced Filters
+    </button>
+  </div>
+
+  <!-- Item Catalog Summary -->
+  <div class="summary-section">
+    <h2>📊 ITEM CATALOG SUMMARY</h2>
+    <div class="summary-grid">
+      <div class="summary-card">
+        <div class="summary-icon">📦</div>
+        <div class="summary-content">
+          <div class="summary-label">Total Items</div>
+          <div class="summary-value">{{ totalItems() }}</div>
+          <div class="summary-sub">▲ +8.3%</div>
+        </div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon">✅</div>
+        <div class="summary-content">
+          <div class="summary-label">Active Items</div>
+          <div class="summary-value">{{ activeItems() }}</div>
+          <div class="summary-sub">▲ +6.2%</div>
+        </div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon">🏷️</div>
+        <div class="summary-content">
+          <div class="summary-label">Categories</div>
+          <div class="summary-value">{{ categoryCount() }}</div>
+          <div class="summary-sub">▲ +2</div>
+        </div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon">⚠️</div>
+        <div class="summary-content">
+          <div class="summary-label">Low Stock Items</div>
+          <div class="summary-value">{{ lowStockItems() }}</div>
+          <div class="summary-sub critical">🔴 Critical</div>
+        </div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon">⭕</div>
+        <div class="summary-content">
+          <div class="summary-label">Out of Stock Items</div>
+          <div class="summary-value">{{ outOfStockItems() }}</div>
+          <div class="summary-sub">⚪ Zero stock</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- View Toggle -->
+  <div class="view-toggle">
+    <button class="view-btn" [class.active]="viewMode() === 'card'" (click)="toggleViewMode('card')">
+      <i class="bi bi-grid"></i> Card View
+    </button>
+    <button class="view-btn" [class.active]="viewMode() === 'table'" (click)="toggleViewMode('table')">
+      <i class="bi bi-list"></i> Table View
+    </button>
+  </div>
+
+  <!-- Card View -->
+  @if (viewMode() === 'card') {
+    <div class="card-view-section">
+      <h3>📦 ITEMS LIST (Card View)</h3>
+      <div class="items-grid">
+        @for (item of filteredItems(); track item.sku) {
+          <div class="item-card" (click)="openItemModal(item)">
+            <div class="card-icon">{{ getCategoryIcon(item.category) }}</div>
+            <div class="card-title">{{ item.name }}</div>
+            <div class="card-sku">SKU: {{ item.sku }}</div>
+            <div class="card-category">Category: {{ item.category }}</div>
+            <div class="card-stock">
+              Stock: {{ item.currentStock }} units {{ getStatusIcon(item.status) }}
+            </div>
+            <div class="card-price">Price: {{ formatValue(item.price) }}</div>
+            <div class="card-actions">
+              <button class="card-action-btn" (click)="$event.stopPropagation(); openItemModal(item)" title="View">
+                <i class="bi bi-eye"></i>
+              </button>
+              <button class="card-action-btn" (click)="$event.stopPropagation(); editItem(item)" title="Edit">
+                <i class="bi bi-pencil"></i>
+              </button>
+              <button class="card-action-btn" (click)="$event.stopPropagation(); adjustStock(item)" title="Stock">
+                <i class="bi bi-box-seam"></i>
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- Table View -->
+  @if (viewMode() === 'table') {
+    <div class="table-section">
+      <h3>📋 ITEMS LIST (Table View)</h3>
+      <div class="table-container">
+        <table class="items-table">
+          <thead>
+            <tr>
+              <th>SKU</th>
+              <th>Item Name</th>
+              <th>Category</th>
+              <th>UOM</th>
+              <th>Min Stock</th>
+              <th>Current</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of filteredItems(); track item.sku) {
+              <tr>
+                <td>{{ item.sku }}</td>
+                <td>{{ item.name }}</td>
+                <td>{{ item.category }}</td>
+                <td>{{ item.uom }}</td>
+                <td>{{ item.minStock }}</td>
+                <td>{{ item.currentStock }}</td>
+                <td>
+                  <span class="status-icon">{{ getStatusIcon(item.status) }}</span>
+                </td>
+                <td>
+                  <div class="actions-cell">
+                    <button class="action-btn" (click)="openItemModal(item)" title="View">
+                      <i class="bi bi-eye"></i>
+                    </button>
+                    <button class="action-btn" (click)="editItem(item)" title="Edit">
+                      <i class="bi bi-pencil"></i>
+                    </button>
+                    <button class="action-btn" (click)="adjustStock(item)" title="Stock">
+                      <i class="bi bi-box-seam"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <div class="pagination-bar">
+        <div class="pagination-info">Showing 1-{{ filteredItems().length }} of 1,234 items</div>
+        <div class="pagination-controls">
+          <button class="page-btn" disabled>Previous</button>
+          <button class="page-btn active">1</button>
+          <button class="page-btn">2</button>
+          <button class="page-btn">3</button>
+          <button class="page-btn">→</button>
+          <button class="page-btn">50</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Bulk Actions -->
+  <div class="bulk-actions-section">
+    <h3>⚡ BULK ACTIONS</h3>
+    <div class="bulk-actions">
+      <label class="checkbox-label">
+        <input type="checkbox"> Select All
+      </label>
+      <label class="checkbox-label">
+        <input type="checkbox"> Select Low Stock
+      </label>
+      <label class="checkbox-label">
+        <input type="checkbox"> Select Out of Stock
+      </label>
+    </div>
+    <div class="bulk-buttons">
+      <button class="btn btn-secondary" (click)="bulkEdit()">
+        <i class="bi bi-pencil"></i> Bulk Edit
+      </button>
+      <button class="btn btn-secondary" (click)="bulkAdjustStock()">
+        <i class="bi bi-sliders"></i> Bulk Adjust Stock
+      </button>
+      <button class="btn btn-secondary" (click)="bulkExport()">
+        <i class="bi bi-download"></i> Bulk Export
+      </button>
+      <button class="btn btn-secondary" (click)="generateQRCodes()">
+        <i class="bi bi-qr-code"></i> Generate QR Codes
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Item Details Modal -->
+@if (showItemModal() && selectedItem()) {
+  <div class="modal-overlay" (click)="closeItemModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Item Details: {{ selectedItem()?.name }} (SKU: {{ selectedItem()?.sku }})</h3>
+        <button class="btn-close" (click)="closeItemModal()">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <!-- Basic Information -->
+        <div class="info-section">
+          <h4>📦 BASIC INFORMATION</h4>
+          <div class="info-grid">
+            <div class="info-item">
+              <label>Item Name:</label>
+              <span>{{ selectedItem()?.name }}</span>
+            </div>
+            <div class="info-item">
+              <label>SKU:</label>
+              <span>{{ selectedItem()?.sku }}</span>
+            </div>
+            <div class="info-item">
+              <label>Category:</label>
+              <span>{{ selectedItem()?.category }}</span>
+            </div>
+            <div class="info-item">
+              <label>UOM:</label>
+              <span>{{ selectedItem()?.uom }}</span>
+            </div>
+            <div class="info-item">
+              <label>Min Stock:</label>
+              <span>{{ selectedItem()?.minStock }} units</span>
+            </div>
+            <div class="info-item">
+              <label>Status:</label>
+              <span>{{ getStatusIcon(selectedItem()?.status || '') }} {{ selectedItem()?.status }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stock Information -->
+        <div class="info-section">
+          <h4>📊 STOCK INFORMATION</h4>
+          <div class="info-grid">
+            <div class="info-item">
+              <label>Total Stock:</label>
+              <span>{{ selectedItem()?.currentStock }} units</span>
+            </div>
+            <div class="info-item">
+              <label>Reserved Stock:</label>
+              <span>5 units</span>
+            </div>
+            <div class="info-item">
+              <label>Available Stock:</label>
+              <span>{{ (selectedItem()?.currentStock || 0) - 5 }} units</span>
+            </div>
+            <div class="info-item">
+              <label>Stock Value:</label>
+              <span>{{ formatValue((selectedItem()?.currentStock || 0) * (selectedItem()?.price || 0)) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stock Locations -->
+        <div class="info-section">
+          <h4>📍 STOCK LOCATIONS</h4>
+          <div class="table-container">
+            <table class="locations-table">
+              <thead>
+                <tr>
+                  <th>Warehouse</th>
+                  <th>Shelf Location</th>
+                  <th>Quantity</th>
+                  <th>Reserved</th>
+                  <th>Available</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (loc of stockLocations(); track loc.warehouse) {
+                  <tr>
+                    <td>{{ loc.warehouse }}</td>
+                    <td>{{ loc.shelfLocation }}</td>
+                    <td>{{ loc.quantity }}</td>
+                    <td>{{ loc.reserved }}</td>
+                    <td>{{ loc.available }}</td>
+                    <td>
+                      <div class="actions-cell">
+                        <button class="action-btn" title="Stock"><i class="bi bi-box-seam"></i></button>
+                        <button class="action-btn" title="Transfer"><i class="bi bi-arrow-repeat"></i></button>
+                        <button class="action-btn" title="Edit"><i class="bi bi-pencil"></i></button>
+                      </div>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <button class="btn btn-secondary">Add Stock Location</button>
+        </div>
+
+        <!-- Recent Movements -->
+        <div class="info-section">
+          <h4>📈 RECENT MOVEMENTS</h4>
+          <div class="table-container">
+            <table class="movements-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Type</th>
+                  <th>Quantity</th>
+                  <th>Reference</th>
+                  <th>User</th>
+                  <th>Balance</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (mov of recentMovements(); track mov.reference) {
+                  <tr>
+                    <td>{{ mov.date }}</td>
+                    <td>{{ mov.type }}</td>
+                    <td>{{ mov.quantity }}</td>
+                    <td>{{ mov.reference }}</td>
+                    <td>{{ mov.user }}</td>
+                    <td>{{ mov.balance }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <button class="btn btn-secondary">View Full History →</button>
+        </div>
+
+        <!-- Item Images -->
+        <div class="info-section">
+          <h4>🖼️ ITEM IMAGES</h4>
+          <div class="images-grid">
+            <div class="image-placeholder">
+              <i class="bi bi-image"></i>
+              <span>Front</span>
+            </div>
+            <div class="image-placeholder">
+              <i class="bi bi-image"></i>
+              <span>Back</span>
+            </div>
+            <div class="image-placeholder">
+              <i class="bi bi-image"></i>
+              <span>Label</span>
+            </div>
+          </div>
+          <button class="btn btn-secondary">Upload New Image</button>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="editItem(selectedItem()!)">Edit Item</button>
+        <button class="btn btn-secondary" (click)="adjustStock(selectedItem()!)">Adjust Stock</button>
+        <button class="btn btn-secondary">Transfer Stock</button>
+        <button class="btn btn-secondary">View QR</button>
+        <button class="btn btn-secondary">Print Label</button>
+        <button class="btn btn-primary" (click)="closeItemModal()">Close</button>
+      </div>
+    </div>
+  </div>
+}

@@ -1,0 +1,125 @@
+<div class="modal-overlay">
+  <div class="modal-content add-employee-modal">
+    <div class="modal-header">
+      <h2>Add New Employee</h2>
+      <button type="button" class="btn-close" [routerLink]="['/admin/users/employees']">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <div class="form-section">
+        <h3><i class="bi bi-person"></i> Personal Information</h3>
+        <div class="form-grid">
+          <div class="form-field">
+            <label>Employee Code <span class="required">*</span></label>
+            <input type="text" placeholder="EMP-________" [(ngModel)]="formData.employeeCode">
+          </div>
+          <div class="form-field">
+            <label>Full Name <span class="required">*</span></label>
+            <input type="text" placeholder="Enter full name" [(ngModel)]="formData.fullName">
+          </div>
+          <div class="form-field">
+            <label>Email <span class="required">*</span></label>
+            <input type="email" placeholder="email@afrocom.com" [(ngModel)]="formData.email">
+          </div>
+          <div class="form-field">
+            <label>Phone Number</label>
+            <input type="text" placeholder="+251-___-_______" [(ngModel)]="formData.phone">
+          </div>
+          <div class="form-field">
+            <label>Department <span class="required">*</span></label>
+            <select [(ngModel)]="formData.department">
+              <option value="">Select Department</option>
+              @for (dept of departments; track dept) {
+                <option [value]="dept">{{ dept }}</option>
+              }
+            </select>
+          </div>
+          <div class="form-field">
+            <label>Position <span class="required">*</span></label>
+            <select [(ngModel)]="formData.position">
+              <option value="">Select Position</option>
+              @for (pos of positions; track pos) {
+                <option [value]="pos">{{ pos }}</option>
+              }
+            </select>
+          </div>
+          <div class="form-field full-width">
+            <label>Address</label>
+            <input type="text" placeholder="Enter address" [(ngModel)]="formData.address">
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <h3><i class="bi bi-briefcase"></i> Employment Details</h3>
+        <div class="form-grid">
+          <div class="form-field">
+            <label>Join Date <span class="required">*</span></label>
+            <input type="date" [(ngModel)]="formData.joinDate">
+          </div>
+          <div class="form-field">
+            <label>Contract Type</label>
+            <select [(ngModel)]="formData.contractType">
+              @for (type of contractTypes; track type) {
+                <option [value]="type">{{ type }}</option>
+              }
+            </select>
+          </div>
+          <div class="form-field">
+            <label>Manager/Supervisor</label>
+            <select [(ngModel)]="formData.manager">
+              <option value="">Select Employee</option>
+              <option>John Doe</option>
+              <option>Sarah Smith</option>
+              <option>Lisa Wong</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label>Reports To</label>
+            <select [(ngModel)]="formData.reportsTo">
+              <option value="">Select Employee</option>
+              <option>John Doe</option>
+              <option>Sarah Smith</option>
+              <option>Lisa Wong</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <h3><i class="bi bi-person-badge"></i> Create User Account (Optional)</h3>
+        <div class="user-account-section">
+          <label class="checkbox-item">
+            <input type="checkbox" [(ngModel)]="formData.createUserAccount">
+            <span class="checkmark"></span>
+            <span class="label-text">Create user account for this employee</span>
+          </label>
+          @if (formData.createUserAccount) {
+            <div class="user-role-selection">
+              <p>If checked, user will be created with role:</p>
+              <select [(ngModel)]="formData.userRole">
+                @for (role of roles; track role.value) {
+                  <option [value]="role.value">{{ role.label }}</option>
+                }
+              </select>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" [routerLink]="['/admin/users/employees']">Cancel</button>
+      <button type="button" class="btn btn-draft" (click)="saveDraft()">
+        <i class="bi bi-save"></i>
+        Save as Draft
+      </button>
+      <button type="button" class="btn btn-primary" (click)="saveEmployee()">
+        <i class="bi bi-check-lg"></i>
+        Save
+      </button>
+    </div>
+  </div>
+</div>

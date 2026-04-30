@@ -1,4 +1,5 @@
 ﻿import { Component, OnInit, computed, inject } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { SignalRService } from '../../core/services/signalr.service';
@@ -22,7 +23,7 @@ interface PopoverNotificationItem {
 @Component({
   selector: 'app-main-layout',
   standalone: true,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive],
   templateUrl: './main-layout.component.html',
   styleUrls: ['./main-layout.component.scss'],
   host: {
@@ -44,6 +45,7 @@ export class MainLayoutComponent implements OnInit {
   protected selectedPrimary = 'violet';
   protected selectedSurface = 'slate';
   protected notificationsOpen = false;
+  protected openMenuGroups: Set<string> = new Set();
   protected readonly notifications = toSignal(
     this.signalRService.notifications$.pipe(
       map((items) =>
@@ -64,6 +66,59 @@ export class MainLayoutComponent implements OnInit {
       return notifications;
     }
 
+    // Admin-specific notifications
+    if (this.router.url.startsWith('/admin')) {
+      return [
+        {
+          title: 'New Property Added',
+          message: 'Property "Sunset Villas" has been successfully added to the system.',
+          time: '5m ago',
+        },
+        {
+          title: 'User Approval Request',
+          message: '3 new users awaiting approval for admin access.',
+          time: '30m ago',
+        },
+        {
+          title: 'System Backup Completed',
+          message: 'Daily backup completed successfully. Database size: 2.4GB',
+          time: '2h ago',
+        },
+        {
+          title: 'Security Alert',
+          message: 'Multiple failed login attempts detected from unknown IP address.',
+          time: '4h ago',
+        },
+      ];
+    }
+
+    // Storekeeper-specific notifications
+    if (this.router.url.startsWith('/storekeeper')) {
+      return [
+        {
+          title: 'Urgent: Stock Issuance Pending',
+          message: '3 urgent stock issuance requests need immediate attention.',
+          time: '5m ago',
+        },
+        {
+          title: 'New GRN Received',
+          message: 'GRN-2024-0456 received from Tech Supplies Ltd. Ready for inspection.',
+          time: '15m ago',
+        },
+        {
+          title: 'Low Stock Alert',
+          message: 'Laptop stock is critically low (5 units). Minimum threshold: 20 units.',
+          time: '45m ago',
+        },
+        {
+          title: 'Warehouse Transfer Completed',
+          message: 'Transfer of 50 monitors from Warehouse A to Warehouse B completed.',
+          time: '2h ago',
+        },
+      ];
+    }
+
+    // Default notifications for other roles
     return [
       {
         title: 'Requisition updated',
@@ -218,16 +273,24 @@ export class MainLayoutComponent implements OnInit {
   }
 
   protected notificationsRoute(): string {
-    if (this.isManagerRoute()) {
-      return '/manager/dashboard';
-    }
-
-    if (this.isComplianceOfficerRoute()) {
-      return '/compliance-officer/dashboard';
-    }
-
-    return '/employee/dashboard/notifications';
+  if (this.router.url.startsWith('/admin')) {
+    return '/admin/notifications';
   }
+
+  if (this.router.url.startsWith('/storekeeper')) {
+    return '/storekeeper/notifications';
+  }
+
+  if (this.isManagerRoute()) {
+    return '/manager/dashboard';
+  }
+
+  if (this.isComplianceOfficerRoute()) {
+    return '/compliance-officer/dashboard';
+  }
+
+  return '/notifications';
+}
 
   protected isManagerRoute(): boolean {
     return this.router.url.startsWith('/manager');
@@ -235,6 +298,18 @@ export class MainLayoutComponent implements OnInit {
 
   protected isComplianceOfficerRoute(): boolean {
     return this.router.url.startsWith('/compliance-officer');
+  }
+
+  protected toggleMenuGroup(label: string): void {
+    if (this.openMenuGroups.has(label)) {
+      this.openMenuGroups.delete(label);
+    } else {
+      this.openMenuGroups.add(label);
+    }
+  }
+
+  protected isMenuGroupOpen(label: string): boolean {
+    return this.openMenuGroups.has(label);
   }
 
   protected logout(): void {
@@ -272,6 +347,16 @@ export class MainLayoutComponent implements OnInit {
   }
 
   private updateMenuItems(): void {
+    if (this.router.url.startsWith('/admin')) {
+      this.menuItems = getMenuConfigForRole('admin');
+      return;
+    }
+
+    if (this.router.url.startsWith('/storekeeper')) {
+      this.menuItems = getMenuConfigForRole('storekeeper');
+      return;
+    }
+
     if (this.isManagerRoute()) {
       this.menuItems = getMenuConfigForRole('manager');
       return;

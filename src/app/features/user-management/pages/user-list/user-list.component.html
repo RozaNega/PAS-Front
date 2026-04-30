@@ -1,0 +1,250 @@
+<div class="user-management-container">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="header-info">
+      <h1>All Users</h1>
+      <p class="subtitle">View, manage, and control all system users</p>
+    </div>
+    <div class="header-actions">
+      <span class="user-count">Total: {{ totalUsers() }} users</span>
+      <button type="button" class="btn btn-primary" [routerLink]="['/admin/users/add']">
+        <i class="bi bi-plus-lg"></i>
+        Add New User
+      </button>
+      <div class="dropdown" [class.open]="showExportDropdown()">
+        <button type="button" class="btn btn-secondary" (click)="showExportDropdown.set(!showExportDropdown())">
+          <i class="bi bi-download"></i>
+          Export
+          <i class="bi bi-chevron-down"></i>
+        </button>
+        @if (showExportDropdown()) {
+          <div class="dropdown-menu">
+            <button type="button" class="dropdown-item" (click)="exportUsers('CSV'); showExportDropdown.set(false)">
+              <i class="bi bi-file-earmark-csv"></i> Export as CSV
+            </button>
+            <button type="button" class="dropdown-item" (click)="exportUsers('Excel'); showExportDropdown.set(false)">
+              <i class="bi bi-file-earmark-excel"></i> Export as Excel
+            </button>
+            <button type="button" class="dropdown-item" (click)="exportUsers('PDF'); showExportDropdown.set(false)">
+              <i class="bi bi-file-earmark-pdf"></i> Export as PDF
+            </button>
+          </div>
+        }
+      </div>
+      <button type="button" class="btn btn-secondary" (click)="importUsers()">
+        <i class="bi bi-upload"></i>
+        Import Bulk
+      </button>
+    </div>
+  </div>
+
+  <!-- Summary Dashboard Cards -->
+  <div class="dashboard-cards">
+    <div class="card card-users">
+      <div class="card-icon">
+        <i class="bi bi-people"></i>
+      </div>
+      <div class="card-content">
+        <div class="card-title">Users</div>
+        <div class="card-value">156</div>
+        <div class="card-subtitle">Active: 142</div>
+        <div class="card-trend positive">▲ +12 this month</div>
+      </div>
+    </div>
+    <div class="card card-employees">
+      <div class="card-icon">
+        <i class="bi bi-person-badge"></i>
+      </div>
+      <div class="card-content">
+        <div class="card-title">Employees</div>
+        <div class="card-value">234</div>
+        <div class="card-subtitle">Active: 218</div>
+        <div class="card-trend positive">▲ +8 this month</div>
+      </div>
+    </div>
+    <div class="card card-roles">
+      <div class="card-icon">
+        <i class="bi bi-shield-lock"></i>
+      </div>
+      <div class="card-content">
+        <div class="card-title">Roles</div>
+        <div class="card-value">12</div>
+        <div class="card-subtitle">Roles Defined</div>
+        <div class="card-trend negative">▼ -2% from last month</div>
+      </div>
+    </div>
+    <div class="card card-activity">
+      <div class="card-icon">
+        <i class="bi bi-activity"></i>
+      </div>
+      <div class="card-content">
+        <div class="card-title">Activity Today</div>
+        <div class="card-value">1,234</div>
+        <div class="card-subtitle">Actions Today</div>
+        <div class="card-trend positive">▲ +15% from yesterday</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filter Bar -->
+  <div class="filter-bar">
+    <div class="filter-group">
+      <div class="filter-field">
+        <i class="bi bi-search"></i>
+        <input type="text" placeholder="Search by name, email, employee code..." [value]="searchQuery()" (input)="onSearch($event)">
+      </div>
+      <div class="filter-field">
+        <i class="bi bi-person-badge"></i>
+        <select [value]="roleFilter()" (change)="onRoleFilter($event)">
+          <option>All Roles</option>
+          <option>Admin</option>
+          <option>Store Officer</option>
+          <option>Staff</option>
+          <option>Manager</option>
+          <option>Auditor</option>
+        </select>
+      </div>
+      <div class="filter-field">
+        <i class="bi bi-shield-check"></i>
+        <select [value]="statusFilter()" (change)="onStatusFilter($event)">
+          <option>All Status</option>
+          <option>Active</option>
+          <option>Inactive</option>
+          <option>Locked</option>
+        </select>
+      </div>
+      <div class="filter-field">
+        <i class="bi bi-building"></i>
+        <select [value]="departmentFilter()" (change)="onDepartmentFilter($event)">
+          <option>All Departments</option>
+          <option>IT</option>
+          <option>HR</option>
+          <option>Finance</option>
+          <option>Operations</option>
+          <option>Sales</option>
+          <option>Warehouse</option>
+        </select>
+      </div>
+      <div class="filter-field">
+        <i class="bi bi-calendar"></i>
+        <input type="date" placeholder="Last login range">
+      </div>
+    </div>
+    <div class="filter-actions">
+      <button type="button" class="btn btn-filter" (click)="applyFilters()">
+        <i class="bi bi-search"></i>
+        Apply Filters
+      </button>
+      <button type="button" class="btn btn-filter" (click)="resetFilters()">
+        <i class="bi bi-arrow-counterclockwise"></i>
+        Reset Filters
+      </button>
+      <button type="button" class="btn btn-filter" (click)="saveFilterSet()">
+        <i class="bi bi-star"></i>
+        Save Filter Set
+      </button>
+      <button type="button" class="btn btn-filter" (click)="pinFilter()">
+        <i class="bi bi-pin"></i>
+        Pin Filter
+      </button>
+    </div>
+  </div>
+
+  <!-- Users Table -->
+  <div class="table-container">
+    <table class="users-table">
+      <thead>
+        <tr>
+          <th>User</th>
+          <th>Contact</th>
+          <th>Role</th>
+          <th>Department</th>
+          <th>Status</th>
+          <th>Last Login</th>
+          <th>Created</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (user of pagedUsers(); track user.id) {
+          <tr>
+            <td>
+              <div class="user-cell">
+                <div class="avatar">{{ user.avatar }}</div>
+                <div class="user-info">
+                  <span class="user-name">{{ user.name }}</span>
+                  <span class="user-code">{{ user.employeeCode }}</span>
+                </div>
+              </div>
+            </td>
+            <td>
+              <div class="contact-cell">
+                <span class="email">{{ user.email }}</span>
+                <span class="phone">{{ user.phone }}</span>
+              </div>
+            </td>
+            <td>
+              <span class="badge badge-{{ getRoleColor(user.role) }}">{{ user.role }}</span>
+            </td>
+            <td>{{ user.department }}</td>
+            <td>
+              <span class="badge badge-{{ getStatusColor(user.status) }}">{{ user.status }}</span>
+            </td>
+            <td>{{ formatTime(user.lastLogin) }}</td>
+            <td>{{ formatDate(user.created) }}</td>
+            <td>
+              <div class="actions-cell">
+                <button type="button" class="action-btn" title="View Details" (click)="viewUserDetails(user.id)">
+                  <i class="bi bi-eye"></i>
+                </button>
+                <button type="button" class="action-btn" title="Edit User" (click)="editUser(user.id)">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button type="button" class="action-btn" title="Reset Password" (click)="resetPassword(user.id)">
+                  <i class="bi bi-key"></i>
+                </button>
+                <button type="button" class="action-btn" title="Toggle Status" (click)="toggleStatus(user.id)">
+                  <i class="bi bi-arrow-repeat"></i>
+                </button>
+                <button type="button" class="action-btn" title="Impersonate" (click)="impersonateUser(user.id)">
+                  <i class="bi bi-person"></i>
+                </button>
+                <button type="button" class="action-btn delete" title="Delete" (click)="deleteUser(user.id)">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  <div class="pagination-bar">
+    <div class="pagination-info">
+      Showing {{ displayRange().start }} - {{ displayRange().end }} of {{ filteredUsers().length }} users
+    </div>
+    <div class="pagination-controls">
+      <button type="button" class="page-btn" [disabled]="currentPage() === 1" (click)="goToPage(currentPage() - 1)">
+        <i class="bi bi-chevron-left"></i>
+      </button>
+      @for (page of [].constructor(totalPages()); track $index) {
+        <button type="button" class="page-btn" [class.active]="currentPage() === $index + 1" (click)="goToPage($index + 1)">
+          {{ $index + 1 }}
+        </button>
+      }
+      <button type="button" class="page-btn" [disabled]="currentPage() === totalPages()" (click)="goToPage(currentPage() + 1)">
+        <i class="bi bi-chevron-right"></i>
+      </button>
+    </div>
+    <div class="rows-per-page">
+      Rows per page:
+      <select [value]="rowsPerPage()" (change)="onRowsPerPageChange($event)">
+        <option>10</option>
+        <option>20</option>
+        <option>50</option>
+      </select>
+    </div>
+  </div>
+</div>
