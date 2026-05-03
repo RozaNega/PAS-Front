@@ -110,6 +110,32 @@ export const routes: Routes = [
             (m) => m.ManagerDashboardComponent,
           ),
       },
+      {
+        path: 'notifications',
+        loadComponent: () =>
+          import('./features/notifications/pages/notifications-page').then(
+            (m) => m.NotificationsPage,
+          ),
+      },
+      {
+        path: 'requisition',
+        loadChildren: () =>
+          import('./features/requisition/requisition.module').then((m) => m.RequisitionModule),
+      },
+      {
+        path: 'workflow',
+        loadChildren: () =>
+          import('./features/workflow/workflow.module').then((m) => m.WorkflowModule),
+      },
+      {
+        path: 'reports',
+        loadChildren: () =>
+          import('./features/reports/reports.module').then((m) => m.ReportsModule),
+      },
+      {
+        path: 'audit-trail',
+        loadChildren: () => import('./features/common/common.module').then((m) => m.CommonModule),
+      },
     ],
   },
   {
@@ -127,6 +153,27 @@ export const routes: Routes = [
           import('./features/dashboard/pages/compliance-officer-dashboard/compliance-officer-dashboard.component').then(
             (m) => m.ComplianceOfficerDashboardComponent,
           ),
+      },
+      {
+        path: 'notifications',
+        loadComponent: () =>
+          import('./features/notifications/pages/notifications-page').then(
+            (m) => m.NotificationsPage,
+          ),
+      },
+      {
+        path: 'workflow',
+        loadChildren: () =>
+          import('./features/workflow/workflow.module').then((m) => m.WorkflowModule),
+      },
+      {
+        path: 'reports',
+        loadChildren: () =>
+          import('./features/reports/reports.module').then((m) => m.ReportsModule),
+      },
+      {
+        path: 'audit-trail',
+        loadChildren: () => import('./features/common/common.module').then((m) => m.CommonModule),
       },
     ],
   },
@@ -178,6 +225,27 @@ export const routes: Routes = [
         path: '',
         loadChildren: () =>
           import('./features/reports/reports.module').then((m) => m.ReportsModule),
+      },
+    ],
+  },
+  {
+    path: 'workflow',
+    component: MainLayoutComponent,
+    children: [
+      {
+        path: '',
+        loadChildren: () =>
+          import('./features/workflow/workflow.module').then((m) => m.WorkflowModule),
+      },
+    ],
+  },
+  {
+    path: 'audit-trail',
+    component: MainLayoutComponent,
+    children: [
+      {
+        path: '',
+        loadChildren: () => import('./features/common/common.module').then((m) => m.CommonModule),
       },
     ],
   },

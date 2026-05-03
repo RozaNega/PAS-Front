@@ -2,7 +2,11 @@ import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/c
 
 type ActivityAction = 'Created' | 'Approved' | 'Rejected' | 'Deleted';
 type ActivityStatus = 'Normal' | 'Flagged';
-type ActivityFilter = 'All Activities' | 'Approvals' | 'Rejections' | 'Suspicious / Flagged';
+type ActivityFilter =
+  | 'All Activities'
+  | 'Suspicious / Flagged'
+  | 'Access Control'
+  | 'Policy Violations';
 
 interface ActivityLogEntry {
   readonly id: number;
@@ -34,8 +38,8 @@ export class ComplianceOfficerDashboardComponent {
   readonly officerName = signal('Compliance Officer');
   readonly filters: ActivityFilter[] = [
     'All Activities',
-    'Approvals',
-    'Rejections',
+    'Access Control',
+    'Policy Violations',
     'Suspicious / Flagged',
   ];
   readonly selectedFilter = signal<ActivityFilter>('All Activities');
@@ -45,15 +49,15 @@ export class ComplianceOfficerDashboardComponent {
       id: 1,
       userName: 'Emma Collins',
       action: 'Created',
-      module: 'Request',
+      module: 'AuditTrail',
       dateTime: 'Apr 25, 2026 08:15 AM',
       status: 'Normal',
     },
     {
       id: 2,
       userName: 'Mark Reid',
-      action: 'Approved',
-      module: 'Request',
+      action: 'Deleted',
+      module: 'AccessControl',
       dateTime: 'Apr 25, 2026 08:42 AM',
       status: 'Normal',
     },
@@ -61,7 +65,7 @@ export class ComplianceOfficerDashboardComponent {
       id: 3,
       userName: 'Lara Chen',
       action: 'Rejected',
-      module: 'Inventory',
+      module: 'Policy',
       dateTime: 'Apr 25, 2026 09:05 AM',
       status: 'Flagged',
     },
@@ -69,15 +73,15 @@ export class ComplianceOfficerDashboardComponent {
       id: 4,
       userName: 'Noah Bright',
       action: 'Deleted',
-      module: 'Request',
+      module: 'AccessControl',
       dateTime: 'Apr 25, 2026 09:18 AM',
       status: 'Flagged',
     },
     {
       id: 5,
       userName: 'Sophia Reed',
-      action: 'Approved',
-      module: 'Inventory',
+      action: 'Created',
+      module: 'AuditTrail',
       dateTime: 'Apr 25, 2026 09:40 AM',
       status: 'Normal',
     },
@@ -85,18 +89,18 @@ export class ComplianceOfficerDashboardComponent {
 
   readonly alerts = signal<AlertItem[]>([
     {
-      title: 'Request approved without proper role',
-      description: 'Review the approval trail for request #123 and confirm the approver role.',
+      title: 'Unauthorized access attempt',
+      description: 'Review the account and source for the failed access event.',
       severity: 'High',
     },
     {
-      title: 'Multiple rejections by same user',
-      description: 'User Lara Chen has triggered repeated rejection events in a short time window.',
+      title: 'Policy exception detected',
+      description: 'User Lara Chen triggered repeated policy exceptions in a short time window.',
       severity: 'Medium',
     },
     {
-      title: 'Unusual activity detected',
-      description: 'Deleted request activity increased above the normal daily baseline.',
+      title: 'Audit trail spike',
+      description: 'AuditTrail activity increased above the normal daily baseline.',
       severity: 'High',
     },
   ]);
@@ -107,14 +111,17 @@ export class ComplianceOfficerDashboardComponent {
     return [
       { title: 'Total Activities', value: logs.length },
       {
-        title: 'Approved Requests',
-        value: logs.filter((item) => item.action === 'Approved').length,
+        title: 'Suspicious Actions',
+        value: logs.filter((item) => item.status === 'Flagged').length,
       },
       {
-        title: 'Rejected Requests',
-        value: logs.filter((item) => item.action === 'Rejected').length,
+        title: 'Violations Detected',
+        value: logs.filter((item) => item.module === 'Policy').length,
       },
-      { title: 'Flagged Issues', value: logs.filter((item) => item.status === 'Flagged').length },
+      {
+        title: 'Audit Logs Reviewed',
+        value: logs.filter((item) => item.module === 'AuditTrail').length,
+      },
     ];
   });
 
@@ -126,12 +133,12 @@ export class ComplianceOfficerDashboardComponent {
       return logs;
     }
 
-    if (filter === 'Approvals') {
-      return logs.filter((item) => item.action === 'Approved');
+    if (filter === 'Access Control') {
+      return logs.filter((item) => item.module === 'AccessControl');
     }
 
-    if (filter === 'Rejections') {
-      return logs.filter((item) => item.action === 'Rejected');
+    if (filter === 'Policy Violations') {
+      return logs.filter((item) => item.module === 'Policy' || item.status === 'Flagged');
     }
 
     return logs.filter((item) => item.status === 'Flagged');
@@ -141,10 +148,16 @@ export class ComplianceOfficerDashboardComponent {
     const logs = this.activityLogs();
 
     return [
-      { label: 'Created', value: logs.filter((item) => item.action === 'Created').length },
-      { label: 'Approved', value: logs.filter((item) => item.action === 'Approved').length },
-      { label: 'Rejected', value: logs.filter((item) => item.action === 'Rejected').length },
-      { label: 'Deleted', value: logs.filter((item) => item.action === 'Deleted').length },
+      { label: 'AuditTrail', value: logs.filter((item) => item.module === 'AuditTrail').length },
+      {
+        label: 'AccessControl',
+        value: logs.filter((item) => item.module === 'AccessControl').length,
+      },
+      { label: 'Policy', value: logs.filter((item) => item.module === 'Policy').length },
+      {
+        label: 'Flagged',
+        value: logs.filter((item) => item.status === 'Flagged').length,
+      },
     ];
   });
 

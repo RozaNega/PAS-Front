@@ -8,13 +8,24 @@ type RequestStatus = 'Pending' | 'Approved' | 'Rejected';
 interface SummaryCard {
   readonly title: string;
   readonly value: number;
+  readonly description: string;
+  readonly icon: string;
+  readonly tone: 'blue' | 'amber' | 'green' | 'rose';
 }
 
-interface RecentRequest {
+interface FeaturedRequest {
+  readonly requestId: string;
   readonly itemName: string;
+  readonly category: string;
   readonly quantity: number;
   readonly status: RequestStatus;
   readonly dateLabel: string;
+}
+
+interface HomeNotification {
+  readonly title: string;
+  readonly detail: string;
+  readonly timeLabel: string;
 }
 
 interface RequestSummaryMetric {
@@ -50,27 +61,72 @@ export class EmployeeDashboardComponent {
   readonly userName = 'User';
 
   readonly summaryCards: SummaryCard[] = [
-    { title: 'Total', value: 24 },
-    { title: 'Pending', value: 7 },
-    { title: 'Approved', value: 13 },
-    { title: 'Rejected', value: 4 },
-  ];
-
-  readonly recentRequests: RecentRequest[] = [
     {
-      itemName: 'Laptop',
-      quantity: 1,
-      status: 'Pending',
-      dateLabel: 'Today',
+      title: 'Total Requests',
+      value: 24,
+      description: 'All time requests',
+      icon: 'bi-clipboard2-data',
+      tone: 'blue',
     },
     {
+      title: 'Pending',
+      value: 7,
+      description: 'Awaiting action',
+      icon: 'bi-clock-history',
+      tone: 'amber',
+    },
+    {
+      title: 'Approved',
+      value: 13,
+      description: 'Successfully approved',
+      icon: 'bi-check-circle',
+      tone: 'green',
+    },
+    {
+      title: 'Rejected',
+      value: 4,
+      description: 'Not approved',
+      icon: 'bi-x-circle',
+      tone: 'rose',
+    },
+  ];
+
+  readonly featuredRequest: FeaturedRequest = {
+    requestId: 'REQ-123',
+    itemName: 'Laptop',
+    category: 'IT Equipment',
+    quantity: 1,
+    status: 'Pending',
+    dateLabel: 'Today',
+  };
+
+  readonly homeNotifications: HomeNotification[] = [
+    {
+      title: 'Request Approved',
+      detail: 'Your request #123 for Laptop has been approved.',
+      timeLabel: '10 min ago',
+    },
+    {
+      title: 'Item Issued',
+      detail: 'Your request #121 for Printer has been issued.',
+      timeLabel: '1 hour ago',
+    },
+  ];
+
+  readonly recentRequests: FeaturedRequest[] = [
+    this.featuredRequest,
+    {
+      requestId: 'REQ-124',
       itemName: 'Printer',
+      category: 'IT Equipment',
       quantity: 2,
       status: 'Approved',
       dateLabel: 'Apr 23, 2026',
     },
     {
+      requestId: 'REQ-125',
       itemName: 'Monitor',
+      category: 'IT Equipment',
       quantity: 1,
       status: 'Rejected',
       dateLabel: 'Apr 22, 2026',

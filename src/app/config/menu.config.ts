@@ -1,4 +1,6 @@
-﻿export interface MenuItem {
+﻿import { ROUTES } from './route.config';
+
+export interface MenuItem {
   label: string;
   route?: string;
   icon: string;
@@ -8,14 +10,37 @@
 }
 
 export const managerMenuConfig: MenuItem[] = [
-  { label: 'Manager Dashboard', route: '/manager/dashboard', icon: 'bi bi-clipboard2-data-fill' },
+  { label: 'Approval Dashboard', route: '/manager/dashboard', icon: 'bi bi-house-fill' },
+  { label: 'Notifications', route: '/manager/notifications', icon: 'bi bi-bell-fill' },
+  { label: 'Decision Profile', route: '/manager/dashboard', icon: 'bi bi-person-circle' },
+  {
+    label: 'Approval Queue',
+    route: '/manager/requisition/service-requests',
+    icon: 'bi bi-inboxes-fill',
+  },
+  {
+    label: 'Approval Workflow',
+    route: '/manager/workflow/approval-workflows',
+    icon: 'bi bi-diagram-3-fill',
+  },
+  { label: 'Approver Matrix', route: '/manager/workflow/approvers', icon: 'bi bi-people-fill' },
+  { label: 'Decision Reports', route: '/manager/reports', icon: 'bi bi-bar-chart-fill' },
+  { label: 'Audit Reference', route: '/manager/audit-trail', icon: 'bi bi-clock-history' },
 ];
 
 export const complianceOfficerMenuConfig: MenuItem[] = [
   {
     label: 'Compliance Dashboard',
     route: '/compliance-officer/dashboard',
-    icon: 'bi bi-shield-check',
+    icon: 'bi bi-house-fill',
+  },
+  { label: 'Risk Alerts', route: '/compliance-officer/notifications', icon: 'bi bi-bell-fill' },
+  { label: 'Officer Profile', route: '/compliance-officer/dashboard', icon: 'bi bi-person-circle' },
+  { label: 'Audit Trail', route: '/compliance-officer/audit-trail', icon: 'bi bi-clock-history' },
+  {
+    label: 'Compliance Reports',
+    route: '/compliance-officer/reports',
+    icon: 'bi bi-bar-chart-fill',
   },
 ];
 

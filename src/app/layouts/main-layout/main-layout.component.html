@@ -86,19 +86,6 @@
       >
         <i class="bi bi-palette2"></i>
       </button>
-      <a
-        class="user-chip user-chip--interactive"
-        [routerLink]="profileRoute()"
-        routerLinkActive="user-chip--active"
-        [routerLinkActiveOptions]="{ exact: false }"
-        aria-label="Open profile"
-      >
-        <span class="user-chip-avatar">{{ initials() }}</span>
-        <div class="user-chip-text">
-          <span class="user-chip-name">{{ user?.fullName || 'AFRICOM User' }}</span>
-          <span class="user-chip-role">{{ user?.roles?.[0] || 'Operator' }}</span>
-        </div>
-      </a>
       <button type="button" class="logout-btn" (click)="logout()">
         <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
         Sign out
