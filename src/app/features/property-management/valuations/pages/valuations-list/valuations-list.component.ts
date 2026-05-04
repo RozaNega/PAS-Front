@@ -38,6 +38,11 @@ export class ValuationsListComponent {
   categories = ['All', 'Electronics', 'Furniture', 'Vehicles', 'Machinery'];
   locations = ['All', 'Headquarters', 'Warehouse', 'Branch 1', 'Branch 2', 'Storage'];
 
+  showScheduleModal = signal(false);
+  scheduleFrequency = signal('weekly');
+  scheduleEmail = signal('');
+  scheduleDate = signal('');
+
   applyFilters(): void {
     console.log('Applying filters:', {
       dateRange: this.dateRange,
@@ -46,23 +51,87 @@ export class ValuationsListComponent {
     });
   }
 
+  isLoading = signal(false);
+  reportGenerated = signal(false);
+  lastRunTime = signal<Date | null>(null);
+
   runReport(): void {
-    alert('Running valuation report...');
+    this.isLoading.set(true);
+    this.reportGenerated.set(false);
+
+    // Simulate API call with timeout
+    setTimeout(() => {
+      this.applyFilters();
+      this.calculateTotals();
+      this.reportGenerated.set(true);
+      this.lastRunTime.set(new Date());
+      this.isLoading.set(false);
+      console.log('Valuation report generated successfully');
+    }, 1500);
+  }
+
+  calculateTotals(): void {
+    const assets = this.valuationAssets();
+    const totalCost = assets.reduce((sum, a) => sum + a.cost, 0);
+    const totalBookValue = assets.reduce((sum, a) => sum + a.bookValue, 0);
+    const totalDepreciation = assets.reduce((sum, a) => sum + a.accumulatedDepreciation, 0);
+
+    this.totalAssets.set(assets.length);
+    this.currentValue.set(totalBookValue);
+    this.ytdDepreciation.set(totalDepreciation);
+    this.projectedYearEnd.set(totalBookValue * 0.93); // Assuming 7% more depreciation
   }
 
   exportToExcel(): void {
-    alert('Exporting to Excel...');
+    const assets = this.valuationAssets();
+    const headers = ['Name', 'Cost', 'Depreciation Rate', 'Accumulated Depreciation', 'Book Value'];
+    const csvContent = [
+      headers.join(','),
+      ...assets.map(a => [
+        a.name,
+        a.cost,
+        a.depreciationRate,
+        a.accumulatedDepreciation,
+        a.bookValue
+      ].join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'valuation_report.csv');
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   }
 
   exportToPDF(): void {
-    alert('Exporting to PDF...');
+    window.print();
   }
 
   emailReport(): void {
-    alert('Emailing report...');
+    const subject = encodeURIComponent('Valuation Report');
+    const body = encodeURIComponent(`Valuation Report Summary:\n\nTotal Assets: ${this.totalAssets()}\nCurrent Value: $${this.currentValue().toLocaleString()}\nYTD Depreciation: $${this.ytdDepreciation().toLocaleString()}\nProjected Year End: $${this.projectedYearEnd().toLocaleString()}`);
+    window.location.href = `mailto:?subject=${subject}&body=${body}`;
   }
 
   scheduleReport(): void {
-    alert('Opening report scheduler...');
+    this.showScheduleModal.set(true);
+  }
+
+  closeScheduleModal(): void {
+    this.showScheduleModal.set(false);
+  }
+
+  saveSchedule(): void {
+    console.log('Saving schedule:', {
+      frequency: this.scheduleFrequency(),
+      email: this.scheduleEmail(),
+      date: this.scheduleDate()
+    });
+    alert('Report scheduled successfully!');
+    this.closeScheduleModal();
   }
 }

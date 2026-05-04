@@ -376,6 +376,55 @@
   display: flex;
   gap: 0.75rem;
   margin-top: 1rem;
+  align-items: center;
+}
+
+.bulk-actions-wrapper {
+  position: relative;
+}
+
+.bulk-actions-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: var(--surface-card);
+  border: 1px solid var(--surface-border);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  min-width: 200px;
+  z-index: 100;
+  margin-top: 0.5rem;
+
+  .dropdown-item {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background: transparent;
+    border: none;
+    text-align: left;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--text-color);
+    transition: background 0.2s;
+
+    &:hover {
+      background: var(--surface-hover);
+    }
+
+    &:first-child {
+      border-radius: 8px 8px 0 0;
+    }
+
+    &:last-child {
+      border-radius: 0 0 8px 8px;
+    }
+
+    i {
+      font-size: 1rem;
+    }
+  }
 }
 
 .modal-overlay {

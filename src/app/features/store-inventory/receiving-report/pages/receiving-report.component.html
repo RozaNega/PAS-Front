@@ -4,9 +4,18 @@
       <h1>Receiving Report</h1>
       <p class="subtitle">Track all incoming shipments and supplier performance</p>
     </div>
-    <button class="btn btn-primary" (click)="generateReport()">
-      <i class="bi bi-play-circle"></i> Generate
-    </button>
+    <div class="header-actions">
+      @if (lastRunTime()) {
+        <span class="last-run-time">Last run: {{ lastRunTime() | date:'short' }}</span>
+      }
+      <button class="btn btn-primary" (click)="generateReport()" [disabled]="isLoading()">
+        @if (isLoading()) {
+          <i class="bi bi-arrow-repeat spinning"></i> Generating...
+        } @else {
+          <i class="bi bi-play-circle"></i> Generate
+        }
+      </button>
+    </div>
   </div>
 
   <div class="filter-bar">
@@ -292,3 +301,39 @@
     </div>
   </div>
 </div>
+
+@if (showScheduleModal()) {
+  <div class="modal-overlay" (click)="closeScheduleModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Schedule Receiving Report</h3>
+        <button class="btn-close" (click)="closeScheduleModal()">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-field">
+          <label>Frequency</label>
+          <select [(ngModel)]="scheduleFrequency">
+            <option value="daily">Daily</option>
+            <option value="weekly">Weekly</option>
+            <option value="monthly">Monthly</option>
+            <option value="quarterly">Quarterly</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label>Email Recipient</label>
+          <input type="email" [(ngModel)]="scheduleEmail" placeholder="email@example.com">
+        </div>
+        <div class="form-field">
+          <label>Start Date</label>
+          <input type="date" [(ngModel)]="scheduleDate">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeScheduleModal()">Cancel</button>
+        <button class="btn btn-primary" (click)="saveSchedule()">Save Schedule</button>
+      </div>
+    </div>
+  </div>
+}

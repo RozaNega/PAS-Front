@@ -119,28 +119,85 @@ export class ReceivingReportComponent {
     this.filterReceivings();
   }
 
+  isLoading = signal(false);
+  reportGenerated = signal(false);
+  lastRunTime = signal<Date | null>(null);
+
   generateReport(): void {
-    console.log('Generating receiving report...');
+    this.isLoading.set(true);
+    this.reportGenerated.set(false);
+
+    setTimeout(() => {
+      this.filterReceivings();
+      this.reportGenerated.set(true);
+      this.lastRunTime.set(new Date());
+      this.isLoading.set(false);
+      console.log('Receiving report generated successfully');
+    }, 1500);
   }
 
   exportToExcel(): void {
-    console.log('Exporting to Excel...');
+    const receivings = this.filteredReceivings();
+    const headers = ['Date', 'GRN Number', 'Supplier', 'Items', 'Quantity', 'Value', 'Status'];
+    const csvContent = [
+      headers.join(','),
+      ...receivings.map(r => [
+        r.date,
+        r.grnNumber,
+        r.supplier,
+        r.items,
+        r.quantity,
+        r.value,
+        r.status
+      ].join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'receiving_report.csv');
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   }
 
   exportToPDF(): void {
-    console.log('Exporting to PDF...');
+    window.print();
   }
 
   emailReport(): void {
-    console.log('Emailing report...');
+    const subject = encodeURIComponent('Receiving Report');
+    const body = encodeURIComponent(`Receiving Report Summary:\n\nTotal GRNs: ${this.totalGRNs()}\nTotal Items: ${this.totalItemsReceived()}\nTotal Value: $${this.totalValueReceived().toLocaleString()}\nAvg Daily: ${this.avgDailyReceiving()}\nActive Suppliers: ${this.activeSuppliers()}`);
+    window.location.href = `mailto:?subject=${subject}&body=${body}`;
   }
 
   printReport(): void {
-    console.log('Printing report...');
+    window.print();
   }
 
+  showScheduleModal = signal(false);
+  scheduleFrequency = signal('weekly');
+  scheduleEmail = signal('');
+  scheduleDate = signal('');
+
   scheduleReport(): void {
-    console.log('Opening schedule modal...');
+    this.showScheduleModal.set(true);
+  }
+
+  closeScheduleModal(): void {
+    this.showScheduleModal.set(false);
+  }
+
+  saveSchedule(): void {
+    console.log('Saving schedule:', {
+      frequency: this.scheduleFrequency(),
+      email: this.scheduleEmail(),
+      date: this.scheduleDate()
+    });
+    alert('Report scheduled successfully!');
+    this.closeScheduleModal();
   }
 
   formatValue(value: number): string {

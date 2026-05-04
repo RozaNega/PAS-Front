@@ -5,9 +5,9 @@
       <p class="brand-subtitle">Welcome to Admin Dashboard</p>
     </div>
     <div class="info-box">
-      <div class="info-item">🗓️ Thursday, April 30, 2026</div>
-      <div class="info-item">🕐 02:45:30 PM</div>
-      <div class="info-item">📍 Addis Ababa, Ethiopia</div>
+      <div class="info-item">🗓️ {{ currentDate() }}</div>
+      <div class="info-item">🕐 {{ currentTime() }}</div>
+      <div class="info-item">📍 {{ location() }}</div>
     </div>
   </header>
 
