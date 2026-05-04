@@ -1,6 +1,7 @@
-﻿import { Component, signal } from '@angular/core';
+﻿import { Component, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 
 interface Property {
   id: string;
@@ -20,6 +21,8 @@ interface Property {
   styleUrls: ['./property-list.component.scss']
 })
 export class PropertyListComponent {
+  readonly router = inject(Router);
+
   searchTerm = signal('');
   typeFilter = signal('All Types');
   locationFilter = signal('All Locations');
@@ -50,6 +53,7 @@ export class PropertyListComponent {
 
   showModal = signal(false);
   selectedProperty = signal<Property | null>(null);
+  showBulkActionsDropdown = signal(false);
 
   filteredProperties = signal<Property[]>([]);
 
@@ -123,5 +127,115 @@ export class PropertyListComponent {
 
   getRandomBarWidth(base: number, variance: number): number {
     return base + Math.random() * variance;
+  }
+
+  addNewProperty(): void {
+    console.log('Add new property');
+    this.router.navigate(['/admin/properties/add']);
+  }
+
+  saveFilter(): void {
+    console.log('Save current filter configuration');
+    // Save filter to user preferences
+  }
+
+  exportProperties(): void {
+    console.log('Export properties list');
+    const properties = this.filteredProperties();
+    const headers = ['Tag Number', 'Name', 'Type', 'Location', 'Value', 'Status'];
+    const csvContent = [
+      headers.join(','),
+      ...properties.map(p => [
+        p.tagNumber,
+        p.name,
+        p.type,
+        p.location,
+        p.value,
+        p.status
+      ].join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'properties_export.csv');
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  printProperties(): void {
+    console.log('Print properties list');
+    window.print();
+  }
+
+  showBulkActions(): void {
+    this.showBulkActionsDropdown.set(!this.showBulkActionsDropdown());
+  }
+
+  closeBulkActions(): void {
+    this.showBulkActionsDropdown.set(false);
+  }
+
+  bulkDelete(): void {
+    console.log('Bulk delete selected properties');
+    this.closeBulkActions();
+  }
+
+  bulkTransfer(): void {
+    console.log('Bulk transfer selected properties');
+    this.closeBulkActions();
+  }
+
+  bulkExport(): void {
+    console.log('Bulk export selected properties');
+    this.closeBulkActions();
+  }
+
+  editProperty(property: Property): void {
+    console.log('Edit property:', property.tagNumber);
+    this.router.navigate(['/admin/properties/edit', property.id]);
+  }
+
+  transferProperty(property: Property): void {
+    console.log('Transfer property:', property.tagNumber);
+    // Open transfer modal
+  }
+
+  printLabel(property: Property): void {
+    console.log('Print label for:', property.tagNumber);
+    // Print QR label
+  }
+
+  viewQR(property: Property): void {
+    console.log('View QR code for:', property.tagNumber);
+    // Show QR code modal
+  }
+
+  disposeProperty(property: Property): void {
+    console.log('Dispose property:', property.tagNumber);
+    // Open disposal confirmation
+  }
+
+  viewAttachment(filename: string): void {
+    console.log('View attachment:', filename);
+    // Open file viewer
+  }
+
+  downloadAttachment(filename: string): void {
+    console.log('Download attachment:', filename);
+    // Download file
+  }
+
+  addAttachment(): void {
+    console.log('Add new attachment');
+    // Open file upload dialog
+  }
+
+  viewFullHistory(): void {
+    console.log('View full history');
+    // Navigate to history page
   }
 }

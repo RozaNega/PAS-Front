@@ -4,9 +4,14 @@
       <h1>Pending Approvals ({{ urgentReqs().length + mediumReqs().length + normalReqs().length }})</h1>
       <p class="subtitle">Requisitions waiting for your approval</p>
     </div>
-    <button class="btn btn-secondary" (click)="refreshData()">
-      <i class="bi bi-arrow-clockwise"></i> Refresh
-    </button>
+    <div class="header-actions">
+      <button class="btn btn-secondary" (click)="exportList()">
+        <i class="bi bi-download"></i> Export List
+      </button>
+      <button class="btn btn-secondary" (click)="refreshData()">
+        <i class="bi bi-arrow-clockwise"></i> Refresh
+      </button>
+    </div>
   </div>
 
   <div class="filter-bar">
@@ -28,6 +33,7 @@
       @for (req of urgentReqs(); track req.id) {
         <div class="req-card urgent">
           <div class="req-header">
+            <input type="checkbox" (change)="toggleSelection('Urgent', req.id, $any($event.target).checked)" [checked]="selectedUrgent().includes(req.id)" class="req-checkbox">
             <span class="req-icon">🔴</span>
             <span class="req-title">{{ req.srNumber }} - {{ req.requester }} ({{ req.department }})</span>
           </div>
@@ -88,6 +94,7 @@
       @for (req of mediumReqs(); track req.id) {
         <div class="req-card medium">
           <div class="req-header">
+            <input type="checkbox" (change)="toggleSelection('Medium', req.id, $any($event.target).checked)" [checked]="selectedMedium().includes(req.id)" class="req-checkbox">
             <span class="req-icon">🟡</span>
             <span class="req-title">{{ req.srNumber }} - {{ req.requester }} ({{ req.department }})</span>
           </div>
@@ -118,6 +125,7 @@
       @for (req of normalReqs(); track req.id) {
         <div class="req-card normal">
           <div class="req-header">
+            <input type="checkbox" (change)="toggleSelection('Normal', req.id, $any($event.target).checked)" [checked]="selectedNormal().includes(req.id)" class="req-checkbox">
             <span class="req-icon">🟢</span>
             <span class="req-title">{{ req.srNumber }} - {{ req.requester }} ({{ req.department }})</span>
           </div>
@@ -140,18 +148,22 @@
   <div class="bulk-actions">
     <div class="bulk-checkboxes">
       <label class="checkbox-item">
-        <input type="checkbox"> Select All Urgent
+        <input type="checkbox" (change)="selectAllUrgent($any($event.target).checked)" [checked]="selectedUrgent().length === urgentReqs().length && urgentReqs().length > 0"> Select All Urgent ({{ selectedUrgent().length }})
       </label>
       <label class="checkbox-item">
-        <input type="checkbox"> Select All Medium
+        <input type="checkbox" (change)="selectAllMedium($any($event.target).checked)" [checked]="selectedMedium().length === mediumReqs().length && mediumReqs().length > 0"> Select All Medium ({{ selectedMedium().length }})
       </label>
       <label class="checkbox-item">
-        <input type="checkbox"> Select All Normal
+        <input type="checkbox" (change)="selectAllNormal($any($event.target).checked)" [checked]="selectedNormal().length === normalReqs().length && normalReqs().length > 0"> Select All Normal ({{ selectedNormal().length }})
       </label>
     </div>
     <div class="bulk-buttons">
-      <button class="btn btn-primary">Bulk Approve</button>
-      <button class="btn btn-secondary">Bulk Reject</button>
+      <button class="btn btn-primary" (click)="bulkApprove()">
+        <i class="bi bi-check-lg"></i> Bulk Approve
+      </button>
+      <button class="btn btn-secondary" (click)="bulkReject()">
+        <i class="bi bi-x-lg"></i> Bulk Reject
+      </button>
     </div>
   </div>
 </div>

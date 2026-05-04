@@ -4,7 +4,7 @@
       <h1>All Properties</h1>
       <p class="subtitle">View and manage all organizational assets</p>
     </div>
-    <button class="btn btn-primary">
+    <button class="btn btn-primary" (click)="addNewProperty()">
       <i class="bi bi-plus-lg"></i> Add New
     </button>
   </div>
@@ -49,7 +49,7 @@
     <div class="filter-actions">
       <button class="btn btn-sm btn-primary" (click)="applyFilters()">Apply Filters</button>
       <button class="btn btn-sm btn-secondary" (click)="resetFilters()">Reset</button>
-      <button class="btn btn-sm btn-secondary">Save Filter</button>
+      <button class="btn btn-sm btn-secondary" (click)="saveFilter()">Save Filter</button>
     </div>
   </div>
 
@@ -175,9 +175,24 @@
       </div>
     </div>
     <div class="table-actions">
-      <button class="btn btn-secondary">Export</button>
-      <button class="btn btn-secondary">Print</button>
-      <button class="btn btn-secondary">Bulk Actions ▼</button>
+      <button class="btn btn-secondary" (click)="exportProperties()">Export</button>
+      <button class="btn btn-secondary" (click)="printProperties()">Print</button>
+      <div class="bulk-actions-wrapper">
+        <button class="btn btn-secondary" (click)="showBulkActions()">Bulk Actions ▼</button>
+        @if (showBulkActionsDropdown()) {
+          <div class="bulk-actions-dropdown">
+            <button class="dropdown-item" (click)="bulkDelete()">
+              <i class="bi bi-trash"></i> Delete Selected
+            </button>
+            <button class="dropdown-item" (click)="bulkTransfer()">
+              <i class="bi bi-arrow-repeat"></i> Transfer Selected
+            </button>
+            <button class="dropdown-item" (click)="bulkExport()">
+              <i class="bi bi-download"></i> Export Selected
+            </button>
+          </div>
+        }
+      </div>
     </div>
   </div>
 </div>
@@ -270,21 +285,21 @@
           <div class="attachments-list">
             <div class="attachment-item">
               <span>📄 Invoice_Nov2024.pdf</span>
-              <button class="btn-sm btn-secondary">View</button>
-              <button class="btn-sm btn-secondary">Download</button>
+              <button class="btn-sm btn-secondary" (click)="viewAttachment('Invoice_Nov2024.pdf')">View</button>
+              <button class="btn-sm btn-secondary" (click)="downloadAttachment('Invoice_Nov2024.pdf')">Download</button>
             </div>
             <div class="attachment-item">
               <span>🖼️ Laptop_Photo.jpg</span>
-              <button class="btn-sm btn-secondary">View</button>
-              <button class="btn-sm btn-secondary">Download</button>
+              <button class="btn-sm btn-secondary" (click)="viewAttachment('Laptop_Photo.jpg')">View</button>
+              <button class="btn-sm btn-secondary" (click)="downloadAttachment('Laptop_Photo.jpg')">Download</button>
             </div>
             <div class="attachment-item">
               <span>📑 Warranty_Certificate.pdf</span>
-              <button class="btn-sm btn-secondary">View</button>
-              <button class="btn-sm btn-secondary">Download</button>
+              <button class="btn-sm btn-secondary" (click)="viewAttachment('Warranty_Certificate.pdf')">View</button>
+              <button class="btn-sm btn-secondary" (click)="downloadAttachment('Warranty_Certificate.pdf')">Download</button>
             </div>
           </div>
-          <button class="btn btn-sm btn-secondary">+ Add File</button>
+          <button class="btn btn-sm btn-secondary" (click)="addAttachment()">+ Add File</button>
         </div>
 
         <div class="history-section">
@@ -319,15 +334,15 @@
               </tr>
             </tbody>
           </table>
-          <button class="btn btn-sm btn-secondary">View Full History →</button>
+          <button class="btn btn-sm btn-secondary" (click)="viewFullHistory()">View Full History →</button>
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-secondary">Edit</button>
-        <button class="btn btn-secondary">Transfer</button>
-        <button class="btn btn-secondary">Print Label</button>
-        <button class="btn btn-secondary">View QR</button>
-        <button class="btn btn-secondary">Dispose</button>
+        <button class="btn btn-secondary" (click)="editProperty(selectedProperty()!)">Edit</button>
+        <button class="btn btn-secondary" (click)="transferProperty(selectedProperty()!)">Transfer</button>
+        <button class="btn btn-secondary" (click)="printLabel(selectedProperty()!)">Print Label</button>
+        <button class="btn btn-secondary" (click)="viewQR(selectedProperty()!)">View QR</button>
+        <button class="btn btn-secondary" (click)="disposeProperty(selectedProperty()!)">Dispose</button>
         <button class="btn btn-secondary" (click)="closeModal()">Close</button>
       </div>
     </div>

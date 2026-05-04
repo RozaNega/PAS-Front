@@ -151,7 +151,7 @@
     <div class="dashboard-card">
       <div class="card-header">
         <h3>🏭 Stock by Warehouse</h3>
-        <a href="#" class="view-link">View Details →</a>
+        <a class="view-link" (click)="viewWarehouseDetails()" style="cursor: pointer;">View Details →</a>
       </div>
       <div class="warehouse-list">
         @for (wh of warehouseStock(); track wh.name) {
@@ -165,7 +165,7 @@
     <div class="dashboard-card">
       <div class="card-header">
         <h3>📂 Stock by Category</h3>
-        <a href="#" class="view-link">View Details →</a>
+        <a class="view-link" (click)="viewCategoryDetails()" style="cursor: pointer;">View Details →</a>
       </div>
       <div class="category-list">
         @for (cat of categoryStock(); track cat.name) {
@@ -186,7 +186,7 @@
   <div class="top-items-section">
     <div class="section-header">
       <h3>🔥 Top 10 Items by Stock Value</h3>
-      <a href="#" class="view-link">View All Items →</a>
+      <a class="view-link" (click)="viewAllItems()" style="cursor: pointer;">View All Items →</a>
     </div>
     <div class="table-container">
       <table class="top-items-table">

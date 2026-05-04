@@ -23,6 +23,17 @@
       font-size: 0.875rem;
     }
   }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+
+    .last-run-time {
+      font-size: 0.875rem;
+      color: var(--text-color-muted);
+    }
+  }
 }
 
 .btn {
@@ -487,4 +498,24 @@
       justify-content: center;
     }
   }
+}
+
+// Loading spinner animation
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+}
+
+// Disabled button state
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }

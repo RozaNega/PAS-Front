@@ -1,6 +1,7 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router, RouterLink } from '@angular/router';
 
 interface StockItem {
   rank: number;
@@ -24,11 +25,12 @@ interface CategoryStock {
 @Component({
   selector: 'app-stock-overview',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './stock-overview.component.html',
   styleUrls: ['./stock-overview.component.scss']
 })
 export class StockOverviewComponent {
+  readonly router = inject(Router);
   currentDate = signal('Dec 15, 2024');
   lastUpdated = signal('2 minutes ago');
 
@@ -88,5 +90,18 @@ export class StockOverviewComponent {
 
   getRandomHeight(base: number, variance: number): number {
     return base + Math.random() * variance;
+  }
+
+  // Navigation methods
+  viewWarehouseDetails(): void {
+    this.router.navigate(['/admin/warehouses']);
+  }
+
+  viewCategoryDetails(): void {
+    this.router.navigate(['/admin/inventory/current-stock']);
+  }
+
+  viewAllItems(): void {
+    this.router.navigate(['/admin/inventory/current-stock']);
   }
 }

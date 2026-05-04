@@ -1,4 +1,4 @@
-﻿import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+﻿import { ChangeDetectionStrategy, Component, inject, signal, DestroyRef } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { CalendarWidgetComponent } from '../../../../shared/components/calendar-widget/calendar-widget.component';
 
@@ -49,6 +49,11 @@ interface LowStockAlert {
 })
 export class AdminDashboardComponent {
   readonly router = inject(Router);
+  private destroyRef = inject(DestroyRef);
+
+  readonly currentDate = signal('');
+  readonly currentTime = signal('');
+  readonly location = signal('Addis Ababa, Ethiopia');
 
   readonly summaryCards = [
     { title: 'Total Properties Value', value: '$2.4M', trend: '+12%', icon: 'bi bi-currency-dollar', color: 'blue' },
@@ -145,8 +150,23 @@ export class AdminDashboardComponent {
 
   readonly complianceScore = 94;
 
+  constructor() {
+    this.updateDateTime();
+    const interval = setInterval(() => this.updateDateTime(), 1000);
+    this.destroyRef.onDestroy(() => clearInterval(interval));
+  }
+
+  updateDateTime(): void {
+    const now = new Date();
+    const options: Intl.DateTimeFormatOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    this.currentDate.set(now.toLocaleDateString('en-US', options));
+    this.currentTime.set(now.toLocaleTimeString('en-US', { hour12: true }));
+  }
+
   refreshData() {
     console.log('Refreshing data...');
+    this.updateDateTime();
+    // In a real application, this would fetch fresh data from an API
   }
 
   viewAllRequisitions() {
