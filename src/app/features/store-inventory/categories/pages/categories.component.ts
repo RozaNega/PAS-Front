@@ -1,6 +1,10 @@
-import { Component, signal, computed } from '@angular/core';
+import { Component, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, Validators } from '@angular/forms';
+import { finalize } from 'rxjs';
+
+import { CategoriesService } from '../../../../core/services/categories.service';
 
 interface Category {
   id: string;
@@ -22,13 +26,17 @@ interface Subcategory {
 @Component({
   selector: 'app-categories',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule],
   templateUrl: './categories.component.html',
   styleUrls: ['./categories.component.scss']
 })
 export class CategoriesComponent {
+  private readonly formBuilder = inject(FormBuilder);
+  private readonly categoriesService = inject(CategoriesService);
+
   searchTerm = signal('');
   viewMode = signal('tree'); // 'tree' or 'list'
+  loading = signal(false);
 
   categories = signal<Category[]>([
     { id: '1', name: 'Electronics', parentCategory: '-', itemsCount: 234, subcategories: 8, status: 'Active' },
@@ -43,6 +51,12 @@ export class CategoriesComponent {
   showAddModal = signal(false);
   showCategoryItemsModal = signal(false);
   selectedCategory = signal<Category | null>(null);
+
+  readonly categoryForm = this.formBuilder.nonNullable.group({
+    name: ['', [Validators.required, Validators.minLength(2)]],
+    description: [''],
+    parentCategoryId: ['']
+  });
 
   // Subcategories for selected category
   subcategories = signal<Subcategory[]>([
@@ -88,11 +102,45 @@ export class CategoriesComponent {
   }
 
   openAddModal(): void {
+    this.categoryForm.reset();
     this.showAddModal.set(true);
   }
 
   closeAddModal(): void {
     this.showAddModal.set(false);
+    this.categoryForm.reset();
+  }
+
+  saveCategory(): void {
+    if (this.categoryForm.invalid) {
+      this.categoryForm.markAllAsTouched();
+      return;
+    }
+
+    this.loading.set(true);
+    const formValue = this.categoryForm.getRawValue();
+
+    this.categoriesService.createCategory({
+      name: formValue.name,
+      description: formValue.description,
+      parentCategoryId: formValue.parentCategoryId || null
+    }).pipe(finalize(() => this.loading.set(false)))
+    .subscribe({
+      next: (response) => {
+        if (response.success) {
+          console.log('Category created successfully:', response.data);
+          this.closeAddModal();
+          // TODO: Reload categories from backend
+        } else {
+          console.error('Failed to create category:', response.message);
+          alert('Failed to create category: ' + response.message);
+        }
+      },
+      error: (error) => {
+        console.error('Error creating category:', error);
+        alert('Error creating category: ' + (error.error?.message || 'Unknown error'));
+      }
+    });
   }
 
   openCategoryItemsModal(category: Category): void {

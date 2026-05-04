@@ -10,8 +10,8 @@ export interface RegisterRequest {
   fullName: string;
   roleName: string;
   department: string;
-  employeeCode: string;
-  phoneNumber: string;
+  employeeCode?: string;
+  phoneNumber?: string;
 }
 
 export interface RegisterResponse {
@@ -28,6 +28,6 @@ export class RegistrationService {
   constructor(private apiService: ApiService) {}
 
   register(request: RegisterRequest): Observable<RegisterResponse> {
-    return this.apiService.post<RegisterResponse>('auth/register', request);
+    return this.apiService.post<RegisterResponse>('Auth/register', request);
   }
 }

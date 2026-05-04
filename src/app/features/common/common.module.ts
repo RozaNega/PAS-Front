@@ -21,15 +21,8 @@ const routes: Routes = [
 ];
 
 @NgModule({
- Dashboard
-  declarations: [NotificationListComponent, DocumentListComponent, AuditTrailComponent],
-
-  declarations: [
-    DocumentListComponent,
-    AuditTrailComponent
-  ],
- main
-  imports: [SharedModule, RouterModule.forChild(routes)],
+  declarations: [DocumentListComponent, AuditTrailComponent],
+  imports: [SharedModule, RouterModule.forChild(routes), NotificationListComponent],
   providers: [NotificationService, DocumentService, AuditTrailService],
 })
 export class CommonModule {}

@@ -66,18 +66,18 @@
     <p class="auth-subtitle">Sign in to continue</p>
 
     <form class="auth-form" [formGroup]="loginForm" (ngSubmit)="submit()" novalidate>
-      <label class="auth-label" for="login-username">Email</label>
+      <label class="auth-label" for="login-username">Username</label>
       <div class="input-shell">
         <input
           id="login-username"
           type="text"
           formControlName="username"
-          placeholder="Email address"
+          placeholder="Username"
           autocomplete="username"
         />
       </div>
       @if (hasRequiredError('username')) {
-        <p class="field-error">Email is required.</p>
+        <p class="field-error">Username is required.</p>
       }
 
       <label class="auth-label" for="login-password">Password</label>
