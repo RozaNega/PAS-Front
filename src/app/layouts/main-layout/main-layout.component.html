@@ -38,12 +38,16 @@
           (click)="toggleNotifications($event)"
         >
           <i class="bi bi-bell"></i>
+          <span class="notification-badge" *ngIf="quickNotifications().length > 0">{{ quickNotifications().length }}</span>
         </button>
 
         @if (notificationsOpen) {
           <section class="topbar-popover notifications-popover" aria-label="Recent notifications">
             <header class="popover-header">
-              <h2>Notifications</h2>
+              <div class="popover-header-content">
+                <h2>Notifications</h2>
+                <span class="notification-count">{{ quickNotifications().length }} new</span>
+              </div>
               <button
                 type="button"
                 class="popover-close"
@@ -58,9 +62,14 @@
             <div class="popover-list">
               @for (item of quickNotifications(); track item.title + item.time) {
                 <article class="popover-item">
-                  <p class="popover-item-title">{{ item.title }}</p>
-                  <p class="popover-item-text">{{ item.message }}</p>
-                  <span class="popover-item-time">{{ item.time }}</span>
+                  <div class="popover-item-icon">
+                    <i class="bi bi-info-circle"></i>
+                  </div>
+                  <div class="popover-item-content">
+                    <p class="popover-item-title">{{ item.title }}</p>
+                    <p class="popover-item-text">{{ item.message }}</p>
+                    <span class="popover-item-time">{{ item.time }}</span>
+                  </div>
                 </article>
               }
             </div>
@@ -71,6 +80,7 @@
               (click)="closeNotifications($event)"
             >
               View all notifications
+              <i class="bi bi-arrow-right"></i>
             </a>
           </section>
         }
@@ -152,7 +162,39 @@
     <aside class="sakai-sidebar" [class.sakai-sidebar--open]="sidebarOpen">
       <nav class="sakai-nav" aria-label="Main navigation">
         @for (item of menuItems; track item.label) {
-          @if (item.route) {
+          @if (item.children) {
+            <div class="sakai-nav-group">
+              <button type="button" class="sakai-nav-link sakai-nav-link--toggle" (click)="toggleMenuGroup(item.label)">
+                <i [class]="item.icon"></i>
+                <span>{{ item.label }}</span>
+                @if (item.badge) {
+                  <span class="sakai-badge">{{ item.badge }}</span>
+                }
+                <i class="bi bi-chevron-down sakai-nav-toggle-icon"></i>
+              </button>
+              @if (isMenuGroupOpen(item.label)) {
+                <div class="sakai-nav-submenu">
+                  @for (child of item.children; track child.label) {
+                    @if (child.route) {
+                      <a
+                        class="sakai-nav-link sakai-nav-link--sub"
+                        [routerLink]="child.route"
+                        routerLinkActive="sakai-nav-link--active"
+                        [routerLinkActiveOptions]="{ exact: false }"
+                        (click)="onSidebarItemClick()"
+                      >
+                        <i [class]="child.icon"></i>
+                        <span>{{ child.label }}</span>
+                        @if (child.badge) {
+                          <span class="sakai-badge">{{ child.badge }}</span>
+                        }
+                      </a>
+                    }
+                  }
+                </div>
+              }
+            </div>
+          } @else if (item.route) {
             <a
               class="sakai-nav-link"
               [routerLink]="item.route"
@@ -162,6 +204,9 @@
             >
               <i [class]="item.icon"></i>
               <span>{{ item.label }}</span>
+              @if (item.badge) {
+                <span class="sakai-badge">{{ item.badge }}</span>
+              }
             </a>
           }
         }

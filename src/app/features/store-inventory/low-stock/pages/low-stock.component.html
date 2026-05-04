@@ -1,0 +1,282 @@
+<div class="low-stock-container">
+  <div class="page-header">
+    <div class="header-info">
+      <h1>Low Stock Alerts ({{ criticalAlerts().length + warningAlerts().length }})</h1>
+      <p class="subtitle">Items requiring immediate attention</p>
+    </div>
+    <button class="btn btn-secondary" (click)="refreshData()">
+      <i class="bi bi-arrow-clockwise"></i> Refresh
+    </button>
+  </div>
+
+  <div class="filter-bar">
+    <div class="filter-group">
+      <label>🔔 Alert Threshold:</label>
+      <select [(ngModel)]="alertThreshold">
+        <option>Show items below minimum ▼</option>
+        <option>Show items below reorder point</option>
+        <option>Show all low stock items</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>📍 Warehouse:</label>
+      <select [(ngModel)]="warehouseFilter">
+        @for (wh of warehouses; track wh) {
+          <option [value]="wh">{{ wh }}</option>
+        }
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>� Category:</label>
+      <select [(ngModel)]="categoryFilter">
+        @for (cat of categories; track cat) {
+          <option [value]="cat">{{ cat }}</option>
+        }
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>🔄 Auto-refresh:</label>
+      <select>
+        <option>Every 30 sec ▼</option>
+        <option>Every 1 min</option>
+        <option>Every 5 min</option>
+        <option>Off</option>
+      </select>
+    </div>
+  </div>
+
+  @if (criticalAlerts().length > 0) {
+    <div class="alerts-section critical">
+      <div class="section-header">
+        <h3>🚨 CRITICAL ALERTS ({{ criticalAlerts().length }})</h3>
+      </div>
+      @for (alert of criticalAlerts(); track alert.id) {
+        <div class="alert-card critical">
+          <div class="alert-header">
+            <span class="alert-icon">🔴</span>
+            <span class="alert-title">{{ alert.name }} (SKU: {{ alert.sku }})</span>
+          </div>
+          <div class="alert-details-grid">
+            <div class="detail-box">
+              <span class="detail-label">Current Stock:</span>
+              <span class="detail-value">{{ alert.current }} units</span>
+            </div>
+            <div class="detail-box">
+              <span class="detail-label">Min Stock Level:</span>
+              <span class="detail-value">{{ alert.minStock }} units</span>
+            </div>
+            <div class="detail-box">
+              <span class="detail-label">Deficit:</span>
+              <span class="detail-value">{{ alert.deficit }}</span>
+            </div>
+            <div class="detail-box">
+              <span class="detail-label">Days Until Empty:</span>
+              <span class="detail-value">{{ alert.daysUntilEmpty }}</span>
+            </div>
+            <div class="detail-box">
+              <span class="detail-label">Location:</span>
+              <span class="detail-value">{{ alert.location }}</span>
+            </div>
+            <div class="detail-box">
+              <span class="detail-label">Last Ordered:</span>
+              <span class="detail-value">{{ alert.lastOrder }}</span>
+            </div>
+            <div class="detail-box">
+              <span class="detail-label">Status:</span>
+              <span class="detail-value critical">🔴 Critical - Immediate Action</span>
+            </div>
+            <div class="detail-box">
+              <span class="detail-label">Days Overdue:</span>
+              <span class="detail-value">{{ alert.daysOverdue }}</span>
+            </div>
+          </div>
+          <div class="alert-actions">
+            <button class="btn btn-sm btn-primary" (click)="openOrderModal(alert)">⚡ Order Now</button>
+            <button class="btn btn-sm btn-secondary">🔄 Transfer Stock</button>
+            <button class="btn btn-sm btn-secondary">📝 Adjust Min Level</button>
+            <button class="btn btn-sm btn-secondary">🔔 Remind Later</button>
+            <button class="btn btn-sm btn-secondary">✓ Ignore</button>
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  @if (warningAlerts().length > 0) {
+    <div class="alerts-section warning">
+      <div class="section-header">
+        <h3>⚠️ WARNING ALERTS ({{ warningAlerts().length }})</h3>
+      </div>
+      @for (alert of warningAlerts(); track alert.id) {
+        <div class="alert-card warning">
+          <div class="alert-header">
+            <span class="alert-icon">🟡</span>
+            <span class="alert-title">{{ alert.name }} (SKU: {{ alert.sku }})</span>
+          </div>
+          <div class="alert-details">
+            <span>Current: {{ alert.current }} units | Min: {{ alert.minStock }} units | Deficit: {{ alert.deficit }} | Location: {{ alert.location }}</span>
+          </div>
+          <div class="alert-actions">
+            <button class="btn btn-sm btn-primary" (click)="openOrderModal(alert)">Order Now</button>
+            <button class="btn btn-sm btn-secondary">Transfer Stock</button>
+            <button class="btn btn-sm btn-secondary">Adjust Min Level</button>
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  <div class="table-section">
+    <div class="section-header">
+      <h3>📋 ALL LOW STOCK ITEMS</h3>
+    </div>
+    <div class="table-container">
+      <table class="low-stock-table">
+        <thead>
+          <tr>
+            <th>Severity</th>
+            <th>SKU</th>
+            <th>Item Name</th>
+            <th>Current</th>
+            <th>Min</th>
+            <th>Deficit</th>
+            <th>Location</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of allLowStock(); track item.id) {
+            <tr>
+              <td>
+                <span class="severity-badge" [class]="getSeverityClass(item.severity)">
+                  {{ getSeverityIcon(item.severity) }} {{ item.severity === 'Critical' ? 'Crit' : item.severity === 'Warning' ? 'Warn' : 'Info' }}
+                </span>
+              </td>
+              <td>{{ item.sku }}</td>
+              <td>{{ item.name }}</td>
+              <td>{{ item.current }}</td>
+              <td>{{ item.minStock }}</td>
+              <td>{{ item.deficit }}</td>
+              <td>{{ item.location }}</td>
+              <td>
+                <div class="actions-cell">
+                  <button class="action-btn" (click)="openOrderModal(item)" title="Order">📦</button>
+                  <button class="action-btn" title="Transfer">🔄</button>
+                  <button class="action-btn" title="Settings">⚙️</button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="analysis-grid">
+    <div class="analysis-card">
+      <div class="section-header">
+        <h3>📊 LOW STOCK ANALYSIS</h3>
+      </div>
+      <div class="analysis-subtitle">By Category</div>
+      <div class="analysis-list">
+        @for (cat of categoryAnalysis(); track cat.name) {
+          <div class="analysis-item">
+            <div class="analysis-info">
+              <span class="analysis-name">{{ cat.name }}:</span>
+              <span class="analysis-count">{{ cat.items }} items</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" [style.width.%]="cat.percentage"></div>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+
+    <div class="analysis-card">
+      <div class="section-header">
+        <h3>📊 LOW STOCK ANALYSIS</h3>
+      </div>
+      <div class="analysis-subtitle">By Warehouse</div>
+      <div class="analysis-list">
+        @for (wh of warehouseAnalysis(); track wh.name) {
+          <div class="analysis-item">
+            <div class="analysis-info">
+              <span class="analysis-name">{{ wh.name }}:</span>
+              <span class="analysis-count">{{ wh.items }} items</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" [style.width.%]="wh.percentage"></div>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+</div>
+
+@if (showModal() && selectedItem()) {
+  <div class="modal-overlay" (click)="closeModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Create Purchase Order</h3>
+        <button class="btn-close" (click)="closeModal()">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="item-info">
+          <div class="info-row">
+            <span>Item:</span>
+            <span>{{ selectedItem()!.name }}</span>
+          </div>
+          <div class="info-row">
+            <span>Current Stock:</span>
+            <span>{{ selectedItem()!.current }} units</span>
+          </div>
+          <div class="info-row">
+            <span>Min Stock Level:</span>
+            <span>{{ selectedItem()!.minStock }} units</span>
+          </div>
+          <div class="info-row">
+            <span>Deficit:</span>
+            <span>{{ selectedItem()!.deficit }} units</span>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h4>Order Details</h4>
+          <div class="form-field">
+            <label>Order Quantity *</label>
+            <input type="number" value="100">
+            <span class="field-hint">(Recommended: 100 to cover 2 months)</span>
+          </div>
+          <div class="form-field">
+            <label>Supplier *</label>
+            <select>
+              <option>Tech Supplies Ltd</option>
+              <option>Office Depot</option>
+              <option>Staples</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label>Priority *</label>
+            <select>
+              <option>🔴 Urgent</option>
+              <option>🟡 Normal</option>
+              <option>🟢 Low</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label>Notes</label>
+            <textarea rows="2">Critical low stock - urgent restock needed</textarea>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeModal()">Cancel</button>
+        <button class="btn btn-primary" (click)="createOrder()">Create Purchase Order</button>
+      </div>
+    </div>
+  </div>
+}

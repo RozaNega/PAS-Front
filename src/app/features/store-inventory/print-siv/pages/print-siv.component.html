@@ -1,0 +1,252 @@
+<div class="print-siv-container">
+  <div class="page-header">
+    <div class="header-info">
+      <h1>Print Store Issue Voucher</h1>
+      <p class="subtitle">Reprint or download existing SIVs</p>
+    </div>
+    <button class="btn btn-secondary" (click)="openBatchPrintModal()">
+      <i class="bi bi-printer"></i> Batch Print
+    </button>
+  </div>
+
+  <!-- Step Indicator -->
+  <div class="step-indicator">
+    <div class="step-progress">
+      @for (i of [1,2,3]; track i) {
+        <div class="step-dot" [class.active]="currentStep() >= i" [class.current]="currentStep() === i"></div>
+      }
+    </div>
+    <div class="step-label">Step {{ currentStep() }} of {{ totalSteps }}: {{ getStepTitle() }}</div>
+  </div>
+
+  <div class="form-container">
+    <!-- Step 1: Select SIV -->
+    @if (currentStep() === 1) {
+      <div class="form-section">
+        <h4>STEP 1: SELECT SIV</h4>
+        <div class="search-box">
+          <i class="bi bi-search"></i>
+          <input type="text" placeholder="Search by SIV Number, SR Number, Requester, or Date...">
+        </div>
+        <div class="sivs-list">
+          <h5>Recent SIVs:</h5>
+          @for (siv of sivs(); track siv.sivNumber) {
+            <label class="siv-item" [class.selected]="selectedSIV()?.sivNumber === siv.sivNumber">
+              <input type="radio" [name]="'siv'" [value]="siv.sivNumber" (change)="selectSIV(siv)">
+              <span>{{ siv.sivNumber }} - {{ siv.date }} - {{ siv.requester }} ({{ siv.department }}) - ${{ siv.totalValue }}</span>
+            </label>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- Step 2: Selected SIV Details -->
+    @if (currentStep() === 2 && selectedSIV()) {
+      <div class="form-section">
+        <h4>STEP 2: SELECTED SIV DETAILS</h4>
+        <div class="info-grid">
+          <div class="info-item">
+            <label>SIV Number:</label>
+            <span>{{ selectedSIV()?.sivNumber }}</span>
+          </div>
+          <div class="info-item">
+            <label>Issue Date:</label>
+            <span>{{ selectedSIV()?.date }}</span>
+          </div>
+          <div class="info-item">
+            <label>Requester:</label>
+            <span>{{ selectedSIV()?.requester }} ({{ selectedSIV()?.department }})</span>
+          </div>
+          <div class="info-item">
+            <label>Total Items:</label>
+            <span>{{ selectedSIV()?.totalItems }}</span>
+          </div>
+          <div class="info-item">
+            <label>Total Value:</label>
+            <span>${{ selectedSIV()?.totalValue }}</span>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Step 3: Print Options -->
+    @if (currentStep() === 3) {
+      <div class="form-section">
+        <h4>STEP 3: PRINT OPTIONS</h4>
+        <div class="print-options-grid">
+          <div class="option-item">
+            <label>Copies:</label>
+            <input type="number" [(ngModel)]="copies">
+          </div>
+          <div class="option-item">
+            <label>Paper Size:</label>
+            <select [(ngModel)]="paperSize">
+              <option>A4</option>
+              <option>Letter</option>
+              <option>Legal</option>
+            </select>
+          </div>
+          <div class="option-item">
+            <label>Orientation:</label>
+            <select [(ngModel)]="orientation">
+              <option>Portrait</option>
+              <option>Landscape</option>
+            </select>
+          </div>
+          <div class="option-item">
+            <label>Color:</label>
+            <select [(ngModel)]="color">
+              <option>Color</option>
+              <option>Grayscale</option>
+              <option>Black & White</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="form-section">
+        <div class="checkbox-group">
+          <label class="checkbox-label">
+            <input type="checkbox" [(ngModel)]="includeLetterhead"> Include letterhead
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" [(ngModel)]="showSignatures"> Show signatures
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" [(ngModel)]="includeReturnPolicy"> Include return policy
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" [(ngModel)]="includeQRCode"> Include QR code
+          </label>
+        </div>
+      </div>
+      <div class="form-section">
+        <h4>📄 PRINT PREVIEW</h4>
+        <div class="print-preview">
+          <div class="preview-header">
+            <h5>AFROCOM ASSET MANAGEMENT SYSTEM</h5>
+            <h6>STORE ISSUE VOUCHER</h6>
+            <div class="divider"></div>
+          </div>
+          <div class="preview-info">
+            <div class="preview-row">
+              <span>SIV Number: {{ selectedSIV()?.sivNumber }}</span>
+              <span>Date: {{ selectedSIV()?.date }}</span>
+            </div>
+            <div class="preview-row">
+              <span>SR Number: SR-2024-118</span>
+              <span>Requisition Date: December 11, 2024</span>
+            </div>
+          </div>
+          <div class="preview-issued-to">
+            <span>Issued To: {{ selectedSIV()?.requester }} ({{ selectedSIV()?.department }})</span>
+          </div>
+          <div class="preview-items">
+            <div class="preview-item">
+              <span>USB Cables</span>
+              <span>50 units</span>
+              <span>$250</span>
+            </div>
+            <div class="preview-item">
+              <span>A4 Paper</span>
+              <span>10 units</span>
+              <span>$0 (separate SIV)</span>
+            </div>
+          </div>
+          <div class="preview-total">
+            <span>Total Value: $250</span>
+          </div>
+          <div class="preview-signatures">
+            <div class="signature-box">
+              <span>Issued By: _________________</span>
+            </div>
+            <div class="signature-box">
+              <span>Received By: _________________</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+
+  <div class="form-actions">
+    <button class="btn btn-secondary" (click)="cancel()">Cancel</button>
+    <button class="btn btn-secondary" (click)="previewFullPage()">Preview Full Page</button>
+    <button class="btn btn-secondary" (click)="downloadPDF()">Download PDF</button>
+    <button class="btn btn-primary" (click)="printSIV()">Print</button>
+  </div>
+
+  <div class="step-navigation">
+    <button class="btn btn-secondary" (click)="previousStep()" [disabled]="currentStep() === 1">
+      <i class="bi bi-chevron-left"></i> Previous
+    </button>
+    <button class="btn btn-primary" (click)="nextStep()" [disabled]="currentStep() === totalSteps">
+      Next <i class="bi bi-chevron-right"></i>
+    </button>
+  </div>
+</div>
+
+<!-- Batch Print Modal -->
+@if (showBatchPrintModal()) {
+  <div class="modal-overlay" (click)="closeBatchPrintModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Batch Print SIVs</h3>
+        <button class="btn-close" (click)="closeBatchPrintModal()">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-section">
+          <h4>SELECT SIVs TO PRINT</h4>
+          <div class="sivs-list">
+            @for (siv of sivs(); track siv.sivNumber) {
+              <label class="siv-item">
+                <input type="checkbox"> {{ siv.sivNumber }} - {{ siv.date }} - {{ siv.requester }} ({{ siv.department }}) - ${{ siv.totalValue }}
+              </label>
+            }
+          </div>
+        </div>
+        <div class="form-section">
+          <h4>PRINT SETTINGS</h4>
+          <div class="print-options-grid">
+            <div class="option-item">
+              <label>Copies per SIV:</label>
+              <input type="number" [value]="1">
+            </div>
+            <div class="option-item">
+              <label>Paper Size:</label>
+              <select>
+                <option>A4</option>
+                <option>Letter</option>
+              </select>
+            </div>
+            <div class="option-item">
+              <label>Orientation:</label>
+              <select>
+                <option>Portrait</option>
+                <option>Landscape</option>
+              </select>
+            </div>
+            <div class="option-item">
+              <label>Sort by:</label>
+              <select>
+                <option>Date</option>
+                <option>SIV Number</option>
+                <option>Requester</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="batch-summary">
+          <span>Selected SIVs: 3</span>
+          <span>Total Pages: 3</span>
+          <span>Estimated Print Time: 30 seconds</span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeBatchPrintModal()">Cancel</button>
+        <button class="btn btn-primary" (click)="printAll()">Print All</button>
+      </div>
+    </div>
+  </div>
+}

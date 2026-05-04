@@ -1,0 +1,224 @@
+<div class="pending-inspection-container">
+  <div class="page-header">
+    <div class="header-info">
+      <h1>Pending Inspection ({{ pendingInspections().length }})</h1>
+      <p class="subtitle">Items awaiting quality inspection</p>
+    </div>
+    <button class="btn btn-secondary" (click)="refreshData()">
+      <i class="bi bi-arrow-clockwise"></i> Refresh
+    </button>
+  </div>
+
+  <div class="filter-bar">
+    <div class="search-box">
+      <i class="bi bi-search"></i>
+      <input type="text" [value]="searchTerm()" placeholder="Search pending inspections...">
+    </div>
+    <div class="filter-group">
+      <label>📅 Sort by:</label>
+      <select [(ngModel)]="sortBy">
+        <option>Oldest</option>
+        <option>Newest</option>
+        <option>Priority</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="inspections-section">
+    <div class="section-header">
+      <h3>⏳ AWAITING INSPECTION ({{ pendingInspections().length }})</h3>
+    </div>
+
+    @for (inspection of pendingInspections(); track inspection.id) {
+      <div class="inspection-card" [class.priority-high]="inspection.priority === 'High'">
+        <div class="inspection-header">
+          <span class="inspection-icon">📦</span>
+          <span class="inspection-title">{{ inspection.grnNumber }} - {{ inspection.supplier }}</span>
+        </div>
+        <div class="inspection-details">
+          <div class="detail-row">
+            <span>Received: {{ inspection.receivedDate }}</span>
+          </div>
+          <div class="detail-row">
+            <span>Items to inspect: {{ inspection.itemsToInspect }} items</span>
+          </div>
+          <div class="detail-row">
+            <span>Priority: {{ getPriorityIcon(inspection.priority) }} {{ inspection.priority }} (Electronics)</span>
+          </div>
+        </div>
+        <div class="inspection-items">
+          <table>
+            <thead>
+              <tr>
+                <th>Item Name</th>
+                <th>Received</th>
+                <th>Batch #</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (item of inspection.items; track item.name) {
+                <tr>
+                  <td>{{ item.name }}</td>
+                  <td>{{ item.received }}</td>
+                  <td>{{ item.batchNumber }}</td>
+                  <td>⏳ Pending</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <div class="inspection-actions">
+          <button class="btn btn-sm btn-primary" (click)="openInspectionModal(inspection)">Start Inspection</button>
+          <button class="btn btn-sm btn-secondary">View GRN</button>
+          @if (inspection.priority === 'High') {
+            <button class="btn btn-sm btn-secondary">Return to Supplier</button>
+          }
+        </div>
+      </div>
+    }
+  </div>
+
+  <div class="bulk-actions">
+    <div class="bulk-checkboxes">
+      <label class="checkbox-item">
+        <input type="checkbox"> Select All
+      </label>
+      <label class="checkbox-item">
+        <input type="checkbox"> Select Electronics
+      </label>
+      <label class="checkbox-item">
+        <input type="checkbox"> Select Office Supplies
+      </label>
+    </div>
+    <div class="bulk-buttons">
+      <button class="btn btn-primary">Bulk Inspect</button>
+      <button class="btn btn-secondary">Bulk Release to Stock</button>
+    </div>
+  </div>
+</div>
+
+@if (showModal() && selectedInspection()) {
+  <div class="modal-overlay" (click)="closeModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Quality Inspection Form</h3>
+        <button class="btn-close" (click)="closeModal()">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-info">
+          <span>GRN: {{ selectedInspection()!.grnNumber }}</span>
+          <span>Supplier: {{ selectedInspection()!.supplier }}</span>
+          <span>Date: {{ selectedInspection()!.receivedDate.split('(')[0].trim() }}</span>
+        </div>
+
+        <div class="form-section">
+          <h4>INSPECTION DETAILS</h4>
+          <div class="form-grid">
+            <div class="form-field">
+              <label>Inspector Name *</label>
+              <select [(ngModel)]="inspectionFormData().inspectorName">
+                <option>Sarah Smith</option>
+                <option>John Doe</option>
+                <option>Mike Wilson</option>
+              </select>
+            </div>
+            <div class="form-field">
+              <label>Inspection Date *</label>
+              <input type="date" [(ngModel)]="inspectionFormData().inspectionDate">
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h4>ITEM INSPECTION RESULTS</h4>
+          @for (item of inspectionFormData().results; track item.name) {
+            <div class="item-inspection">
+              <div class="item-header">
+                <span>Item: {{ item.name }} ({{ item.received }} units, Batch: {{ item.batchNumber }})</span>
+              </div>
+              <div class="inspection-checklist">
+                <h5>Inspection Checklist:</h5>
+                <div class="checklist-items">
+                  <label class="checkbox-item">
+                    <input type="checkbox" [(ngModel)]="item.checklist.packagingIntact">
+                    <span>Packaging intact</span>
+                  </label>
+                  <label class="checkbox-item">
+                    <input type="checkbox" [(ngModel)]="item.checklist.physicalCondition">
+                    <span>Physical condition - no damage</span>
+                  </label>
+                  <label class="checkbox-item">
+                    <input type="checkbox" [(ngModel)]="item.checklist.serialNumbersMatch">
+                    <span>Serial numbers match</span>
+                  </label>
+                  <label class="checkbox-item">
+                    <input type="checkbox" [(ngModel)]="item.checklist.accessoriesIncluded">
+                    <span>Accessories included</span>
+                  </label>
+                  <label class="checkbox-item">
+                    <input type="checkbox" [(ngModel)]="item.checklist.powerOnTest">
+                    <span>Power on test passed</span>
+                  </label>
+                </div>
+              </div>
+              <div class="overall-result">
+                <span>Overall Result:</span>
+                <div class="radio-group">
+                  <label class="radio-item">
+                    <input type="radio" [(ngModel)]="item.overallResult" value="Pass">
+                    <span>Pass</span>
+                  </label>
+                  <label class="radio-item">
+                    <input type="radio" [(ngModel)]="item.overallResult" value="Fail">
+                    <span>Fail</span>
+                  </label>
+                  <label class="radio-item">
+                    <input type="radio" [(ngModel)]="item.overallResult" value="Partial">
+                    <span>Partial</span>
+                  </label>
+                </div>
+              </div>
+              <div class="form-field">
+                <label>Comments:</label>
+                <input type="text" [(ngModel)]="item.comments" placeholder="All units passed quality check">
+              </div>
+            </div>
+          }
+        </div>
+
+        <div class="form-section">
+          <h4>DISPOSITION DECISION</h4>
+          <div class="disposition-info">
+            <span>For items that fail inspection:</span>
+          </div>
+          <div class="radio-group">
+            <label class="radio-item">
+              <input type="radio" [(ngModel)]="inspectionFormData().disposition" value="Return to Supplier">
+              <span>Return to Supplier</span>
+            </label>
+            <label class="radio-item">
+              <input type="radio" [(ngModel)]="inspectionFormData().disposition" value="Discount">
+              <span>Discount</span>
+            </label>
+            <label class="radio-item">
+              <input type="radio" [(ngModel)]="inspectionFormData().disposition" value="Scrap">
+              <span>Scrap</span>
+            </label>
+            <label class="radio-item">
+              <input type="radio" [(ngModel)]="inspectionFormData().disposition" value="Re-inspect">
+              <span>Re-inspect</span>
+            </label>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeModal()">Cancel</button>
+        <button class="btn btn-secondary">Save Draft</button>
+        <button class="btn btn-primary" (click)="submitInspection()">Submit</button>
+      </div>
+    </div>
+  </div>
+}

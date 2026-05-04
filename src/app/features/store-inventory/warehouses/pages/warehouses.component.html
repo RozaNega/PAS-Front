@@ -1,0 +1,235 @@
+<div class="warehouses-container">
+  <div class="page-header">
+    <div class="header-info">
+      <h1>Warehouses</h1>
+      <p class="subtitle">Manage all storage facilities and locations</p>
+    </div>
+    <button class="btn btn-primary" (click)="openAddModal()">
+      <i class="bi bi-plus-lg"></i> Add Warehouse
+    </button>
+  </div>
+
+  <div class="filter-bar">
+    <div class="search-box">
+      <i class="bi bi-search"></i>
+      <input type="text" [value]="searchTerm()" (input)="onSearchChange($any($event.target).value)" placeholder="Search by name, code, location...">
+    </div>
+    <div class="filter-group">
+      <label>🏷️ Status:</label>
+      <select [(ngModel)]="statusFilter" (ngModelChange)="onStatusFilterChange($event)">
+        @for (status of statuses; track status) {
+          <option [value]="status">{{ status }}</option>
+        }
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>🏭 Type:</label>
+      <select [(ngModel)]="typeFilter" (ngModelChange)="onTypeFilterChange($event)">
+        <option value="All Types">All Types</option>
+        <option value="Main Warehouse">Main Warehouse</option>
+        <option value="Secondary WH">Secondary WH</option>
+        <option value="Cold Storage">Cold Storage</option>
+        <option value="Storage">Storage</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Summary Section -->
+  <div class="summary-section">
+    <h2>📊 WAREHOUSE SUMMARY</h2>
+    <div class="summary-grid">
+      <div class="summary-card">
+        <div class="summary-icon">🏭</div>
+        <div class="summary-content">
+          <div class="summary-label">Total Warehouses</div>
+          <div class="summary-value">{{ warehouses().length }}</div>
+          <div class="summary-sub">Active: {{ warehouses().length - 1 }}</div>
+        </div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon">📦</div>
+        <div class="summary-content">
+          <div class="summary-label">Total Items</div>
+          <div class="summary-value">{{ formatNumber(totalItems()) }}</div>
+          <div class="summary-sub">Across all warehouses</div>
+        </div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon">💰</div>
+        <div class="summary-content">
+          <div class="summary-label">Total Value</div>
+          <div class="summary-value">{{ formatValue(totalValue()) }}</div>
+          <div class="summary-sub">Inventory value</div>
+        </div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon">🗄️</div>
+        <div class="summary-content">
+          <div class="summary-label">Total Shelves</div>
+          <div class="summary-value">{{ totalShelves() }}</div>
+          <div class="summary-sub">Storage locations</div>
+        </div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon">📊</div>
+        <div class="summary-content">
+          <div class="summary-label">Avg. Occupancy</div>
+          <div class="summary-value">{{ avgOccupancy() }}%</div>
+          <div class="summary-sub">Capacity utilization</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cards-grid">
+    @for (wh of filteredWarehouses(); track wh.id) {
+      <div class="warehouse-card" (click)="openEditModal(wh)">
+        <div class="card-header">
+          <div class="card-icon">🏭</div>
+          <div class="card-title">
+            <div class="warehouse-name">{{ wh.name }}</div>
+            <div class="warehouse-type">{{ wh.type }}</div>
+          </div>
+        </div>
+        <div class="card-stats">
+          <div class="stat-item">
+            <span class="stat-icon">📦</span>
+            <span class="stat-value">{{ formatNumber(wh.items) }} items</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-icon">💰</span>
+            <span class="stat-value">{{ formatValue(wh.value) }}</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-icon">🗄️</span>
+            <span class="stat-value">{{ wh.shelves }} shelves</span>
+          </div>
+        </div>
+        <div class="card-footer">
+          <span class="status-badge" [class]="getStatusColor(wh.status)">{{ wh.status }}</span>
+          <div class="card-actions">
+            <button class="action-btn" title="View">
+              <i class="bi bi-eye"></i>
+            </button>
+            <button class="action-btn" title="Edit">
+              <i class="bi bi-pencil"></i>
+            </button>
+            <button class="action-btn" title="Inventory">
+              <i class="bi bi-box-seam"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+
+  <div class="table-section">
+    <div class="table-container">
+      <table class="warehouses-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Code</th>
+            <th>Location</th>
+            <th>Items</th>
+            <th>Value</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (wh of filteredWarehouses(); track wh.id) {
+            <tr>
+              <td>{{ wh.name }}</td>
+              <td>{{ wh.code }}</td>
+              <td>{{ wh.location }}</td>
+              <td>{{ formatNumber(wh.items) }}</td>
+              <td>{{ formatValue(wh.value) }}</td>
+              <td>
+                <span class="status-badge" [class]="getStatusColor(wh.status)">{{ wh.status }}</span>
+              </td>
+              <td>
+                <div class="actions-cell">
+                  <button class="action-btn" (click)="openEditModal(wh)" title="Edit">
+                    <i class="bi bi-pencil"></i>
+                  </button>
+                  <button class="action-btn delete" (click)="deleteWarehouse(wh.id)" title="Delete">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+@if (showModal()) {
+  <div class="modal-overlay" (click)="closeModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>{{ selectedWarehouse() ? 'Edit Warehouse' : 'Add New Warehouse' }}</h3>
+        <button class="btn-close" (click)="closeModal()">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-section">
+          <h4>Warehouse Details</h4>
+          <div class="form-grid">
+            <div class="form-field full-width">
+              <label>Warehouse Name *</label>
+              <input type="text" [(ngModel)]="modalFormData().name" placeholder="Enter warehouse name">
+            </div>
+            <div class="form-field">
+              <label>Location Code *</label>
+              <input type="text" [(ngModel)]="modalFormData().code" placeholder="WH-___">
+            </div>
+            <div class="form-field">
+              <label>Warehouse Type *</label>
+              <select [(ngModel)]="modalFormData().type">
+                <option value="Main Warehouse">Main Warehouse</option>
+                <option value="Secondary WH">Secondary WH</option>
+                <option value="Cold Storage">Cold Storage</option>
+                <option value="Storage">Storage</option>
+              </select>
+            </div>
+            <div class="form-field full-width">
+              <label>Address</label>
+              <input type="text" [(ngModel)]="modalFormData().address" placeholder="Enter address">
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h4>Capacity & Contact</h4>
+          <div class="form-grid">
+            <div class="form-field">
+              <label>Max Capacity (Items)</label>
+              <input type="number" [(ngModel)]="modalFormData().maxCapacity" placeholder="10000">
+            </div>
+            <div class="form-field">
+              <label>Current Occupancy</label>
+              <input type="text" value="Auto-calculated" disabled>
+            </div>
+            <div class="form-field">
+              <label>Manager Name</label>
+              <input type="text" [(ngModel)]="modalFormData().managerName" placeholder="Enter manager name">
+            </div>
+            <div class="form-field">
+              <label>Contact Phone</label>
+              <input type="text" [(ngModel)]="modalFormData().contactPhone" placeholder="+251-___-_______">
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeModal()">Cancel</button>
+        <button class="btn btn-secondary" (click)="closeModal()">Save as Draft</button>
+        <button class="btn btn-primary" (click)="saveWarehouse()">Save</button>
+      </div>
+    </div>
+  </div>
+}

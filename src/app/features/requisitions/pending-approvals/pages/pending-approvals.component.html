@@ -1,0 +1,342 @@
+<div class="pending-approvals-container">
+  <div class="page-header">
+    <div class="header-info">
+      <h1>Pending Approvals ({{ urgentReqs().length + mediumReqs().length + normalReqs().length }})</h1>
+      <p class="subtitle">Requisitions waiting for your approval</p>
+    </div>
+    <button class="btn btn-secondary" (click)="refreshData()">
+      <i class="bi bi-arrow-clockwise"></i> Refresh
+    </button>
+  </div>
+
+  <div class="filter-bar">
+    <div class="search-box">
+      <i class="bi bi-search"></i>
+      <input type="text" [value]="searchTerm()" placeholder="Search pending requests...">
+    </div>
+    <div class="filter-group">
+      <label>📅 Filter by date</label>
+      <input type="date">
+    </div>
+  </div>
+
+  @if (urgentReqs().length > 0) {
+    <div class="priority-section urgent">
+      <div class="section-header">
+        <h3>🚨 URGENT ({{ urgentReqs().length }})</h3>
+      </div>
+      @for (req of urgentReqs(); track req.id) {
+        <div class="req-card urgent">
+          <div class="req-header">
+            <span class="req-icon">🔴</span>
+            <span class="req-title">{{ req.srNumber }} - {{ req.requester }} ({{ req.department }})</span>
+          </div>
+          <div class="req-details">
+            <div class="detail-row">
+              <span>Requested: {{ req.requestedDate }}</span>
+              <span>Required By: {{ req.requiredBy }}</span>
+            </div>
+            <div class="detail-row">
+              <span>Items: {{ req.items }} items ({{ req.itemsDetail }})</span>
+            </div>
+            <div class="detail-row">
+              <span>Justification: {{ req.justification }}</span>
+            </div>
+          </div>
+          <div class="req-items-preview">
+            <table>
+              <thead>
+                <tr>
+                  <th>Item Name</th>
+                  <th>Qty</th>
+                  <th>Stock</th>
+                  <th>Available</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Dell XPS Laptop</td>
+                  <td>2</td>
+                  <td>45</td>
+                  <td>✅ Yes</td>
+                </tr>
+                <tr>
+                  <td>HP Monitor</td>
+                  <td>1</td>
+                  <td>67</td>
+                  <td>✅ Yes</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="req-actions">
+            <button class="btn btn-sm btn-secondary">View Details</button>
+            <button class="btn btn-sm btn-primary" (click)="openApproveModal(req)">Approve</button>
+            <button class="btn btn-sm btn-secondary" (click)="openRejectModal(req)">Reject</button>
+            <button class="btn btn-sm btn-secondary">Add Comment</button>
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  @if (mediumReqs().length > 0) {
+    <div class="priority-section medium">
+      <div class="section-header">
+        <h3>🟡 MEDIUM PRIORITY ({{ mediumReqs().length }})</h3>
+      </div>
+      @for (req of mediumReqs(); track req.id) {
+        <div class="req-card medium">
+          <div class="req-header">
+            <span class="req-icon">🟡</span>
+            <span class="req-title">{{ req.srNumber }} - {{ req.requester }} ({{ req.department }})</span>
+          </div>
+          <div class="req-details">
+            <div class="detail-row">
+              <span>Requested: {{ req.requestedDate }}</span>
+              <span>Required By: {{ req.requiredBy }}</span>
+            </div>
+            <div class="detail-row">
+              <span>Items: {{ req.items }} items ({{ req.itemsDetail }})</span>
+            </div>
+          </div>
+          <div class="req-actions">
+            <button class="btn btn-sm btn-secondary">View Details</button>
+            <button class="btn btn-sm btn-primary" (click)="openApproveModal(req)">Approve</button>
+            <button class="btn btn-sm btn-secondary" (click)="openRejectModal(req)">Reject</button>
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  @if (normalReqs().length > 0) {
+    <div class="priority-section normal">
+      <div class="section-header">
+        <h3>🟢 NORMAL PRIORITY ({{ normalReqs().length }})</h3>
+      </div>
+      @for (req of normalReqs(); track req.id) {
+        <div class="req-card normal">
+          <div class="req-header">
+            <span class="req-icon">🟢</span>
+            <span class="req-title">{{ req.srNumber }} - {{ req.requester }} ({{ req.department }})</span>
+          </div>
+          <div class="req-details">
+            <div class="detail-row">
+              <span>Requested: {{ req.requestedDate }}</span>
+              <span>Required By: {{ req.requiredBy }}</span>
+            </div>
+          </div>
+          <div class="req-actions">
+            <button class="btn btn-sm btn-secondary">View Details</button>
+            <button class="btn btn-sm btn-primary" (click)="openApproveModal(req)">Approve</button>
+            <button class="btn btn-sm btn-secondary" (click)="openRejectModal(req)">Reject</button>
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  <div class="bulk-actions">
+    <div class="bulk-checkboxes">
+      <label class="checkbox-item">
+        <input type="checkbox"> Select All Urgent
+      </label>
+      <label class="checkbox-item">
+        <input type="checkbox"> Select All Medium
+      </label>
+      <label class="checkbox-item">
+        <input type="checkbox"> Select All Normal
+      </label>
+    </div>
+    <div class="bulk-buttons">
+      <button class="btn btn-primary">Bulk Approve</button>
+      <button class="btn btn-secondary">Bulk Reject</button>
+    </div>
+  </div>
+</div>
+
+@if (showModal() && selectedRequisition()) {
+  @if (modalType() === 'approve') {
+    <div class="modal-overlay" (click)="closeModal()">
+      <div class="modal-content" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3>Approve Requisition</h3>
+          <button class="btn-close" (click)="closeModal()">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="req-info">
+            <div class="info-row">
+              <span>SR Number:</span>
+              <span>{{ selectedRequisition()!.srNumber }}</span>
+            </div>
+            <div class="info-row">
+              <span>Requester:</span>
+              <span>{{ selectedRequisition()!.requester }} ({{ selectedRequisition()!.department }})</span>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <h4>REQUEST DETAILS</h4>
+            <table class="items-table">
+              <thead>
+                <tr>
+                  <th>Item Name</th>
+                  <th>Requested</th>
+                  <th>Available</th>
+                  <th>Recommended</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Dell XPS Laptop</td>
+                  <td>2</td>
+                  <td>45</td>
+                  <td>✅ Approve</td>
+                </tr>
+                <tr>
+                  <td>HP Monitor</td>
+                  <td>1</td>
+                  <td>67</td>
+                  <td>✅ Approve</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="form-section">
+            <h4>APPROVAL OPTIONS</h4>
+            <div class="radio-group">
+              <label class="radio-item">
+                <input type="radio" name="approvalType" [(ngModel)]="approveFormData().approveAll">
+                <span>Approve All Items</span>
+              </label>
+              <label class="radio-item">
+                <input type="radio" name="approvalType" [(ngModel)]="approveFormData().approveWithModifications">
+                <span>Approve with Modifications</span>
+              </label>
+              <label class="radio-item">
+                <input type="radio" name="approvalType" [(ngModel)]="approveFormData().reject">
+                <span>Reject</span>
+              </label>
+            </div>
+
+            @if (approveFormData().approveWithModifications) {
+              <div class="modifications-table">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Item Name</th>
+                      <th>Requested</th>
+                      <th>Approved Qty</th>
+                      <th>Reason</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>Dell XPS Laptop</td>
+                      <td>2</td>
+                      <td><input type="number" value="2"></td>
+                      <td>-</td>
+                    </tr>
+                    <tr>
+                      <td>HP Monitor</td>
+                      <td>1</td>
+                      <td><input type="number" value="1"></td>
+                      <td>-</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            }
+          </div>
+
+          <div class="form-section">
+            <h4>COMMENTS (Optional)</h4>
+            <textarea [(ngModel)]="approveFormData().comments" rows="2" placeholder="Approved as requested - urgent for new team members"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" (click)="closeModal()">Cancel</button>
+          <button class="btn btn-primary" (click)="submitApproval()">Submit Approval</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  @if (modalType() === 'reject') {
+    <div class="modal-overlay" (click)="closeModal()">
+      <div class="modal-content" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3>Reject Requisition</h3>
+          <button class="btn-close" (click)="closeModal()">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="req-info">
+            <div class="info-row">
+              <span>SR Number:</span>
+              <span>{{ selectedRequisition()!.srNumber }}</span>
+            </div>
+            <div class="info-row">
+              <span>Requester:</span>
+              <span>{{ selectedRequisition()!.requester }} ({{ selectedRequisition()!.department }})</span>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <h4>REJECTION REASON *</h4>
+            <div class="radio-group">
+              <label class="radio-item">
+                <input type="radio" name="rejectReason" value="Budget">
+                <span>Budget not available</span>
+              </label>
+              <label class="radio-item">
+                <input type="radio" name="rejectReason" value="Justification">
+                <span>Insufficient justification</span>
+              </label>
+              <label class="radio-item">
+                <input type="radio" name="rejectReason" value="Catalog">
+                <span>Items not in catalog</span>
+              </label>
+              <label class="radio-item">
+                <input type="radio" name="rejectReason" value="Duplicate">
+                <span>Duplicate request</span>
+              </label>
+              <label class="radio-item">
+                <input type="radio" name="rejectReason" value="Other" [(ngModel)]="rejectFormData().reason">
+                <span>Other</span>
+              </label>
+            </div>
+
+            <div class="form-field">
+              <label>Detailed Reason:</label>
+              <textarea [(ngModel)]="rejectFormData().detailedReason" rows="2" placeholder="Request exceeds department budget for Q4. Please resubmit with cost center approval."></textarea>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <h4>NOTIFICATION</h4>
+            <div class="checkbox-group">
+              <label class="checkbox-item">
+                <input type="checkbox" [(ngModel)]="rejectFormData().notifyRequester">
+                <span>Notify requester via email</span>
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" [(ngModel)]="rejectFormData().allowResubmission">
+                <span>Allow resubmission</span>
+              </label>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" (click)="closeModal()">Cancel</button>
+          <button class="btn btn-primary" (click)="submitRejection()">Confirm Rejection</button>
+        </div>
+      </div>
+    </div>
+  }
+}

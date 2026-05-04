@@ -1,0 +1,166 @@
+<div class="create-siv-container">
+  <div class="page-header">
+    <div class="header-info">
+      <h1>Create Store Issue Voucher (SIV)</h1>
+      <p class="subtitle">Generate SIV for approved requisitions</p>
+    </div>
+  </div>
+
+  <!-- Step Indicator -->
+  <div class="step-indicator">
+    <div class="step-progress">
+      @for (i of [1,2,3,4]; track i) {
+        <div class="step-dot" [class.active]="currentStep() >= i" [class.current]="currentStep() === i"></div>
+      }
+    </div>
+    <div class="step-label">Step {{ currentStep() }} of {{ totalSteps }}: {{ getStepTitle() }}</div>
+  </div>
+
+  <div class="form-container">
+    <!-- Step 1: Select Approved Requisition -->
+    @if (currentStep() === 1) {
+      <div class="form-section">
+        <h4>STEP 1: SELECT APPROVED REQUISITION</h4>
+        <div class="search-box">
+          <i class="bi bi-search"></i>
+          <input type="text" placeholder="Search by SR Number, Requester, or Department...">
+        </div>
+        <div class="requisitions-list">
+          <h5>Recent Approved Requisitions:</h5>
+          @for (req of requisitions(); track req.id) {
+            <label class="requisition-item" [class.selected]="selectedRequisition()?.id === req.id">
+              <input type="radio" [name]="'req'" [value]="req.id" (change)="selectRequisition(req)">
+              <span>{{ req.srNumber }} - {{ req.requester }} ({{ req.department }}) - {{ req.priority }} - Required: {{ req.requiredBy }}</span>
+            </label>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- Step 2: Selected Requisition Details -->
+    @if (currentStep() === 2 && selectedRequisition()) {
+      <div class="form-section">
+        <h4>STEP 2: SELECTED REQUISITION DETAILS</h4>
+        <div class="info-grid">
+          <div class="info-item">
+            <label>SR Number:</label>
+            <span>{{ selectedRequisition()?.srNumber }}</span>
+          </div>
+          <div class="info-item">
+            <label>Requester:</label>
+            <span>{{ selectedRequisition()?.requester }} ({{ selectedRequisition()?.department }})</span>
+          </div>
+          <div class="info-item">
+            <label>Approved By:</label>
+            <span>Sarah Smith</span>
+          </div>
+          <div class="info-item">
+            <label>Approved Date:</label>
+            <span>Dec 14, 2024</span>
+          </div>
+          <div class="info-item">
+            <label>Required By:</label>
+            <span>{{ selectedRequisition()?.requiredBy }}</span>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Step 3: Items to Issue -->
+    @if (currentStep() === 3) {
+      <div class="form-section">
+        <h4>STEP 3: ITEMS TO ISSUE</h4>
+        @for (item of sivItems(); track item.sku) {
+          <div class="item-selection">
+            <label class="checkbox-label">
+              <input type="checkbox" checked> Item: {{ item.name }} (SKU: {{ item.sku }})
+            </label>
+            <div class="item-details">
+              <span>Requested: {{ item.requested }}</span>
+              <span>Approved: {{ item.approved }}</span>
+              <span>Available: {{ item.available }}</span>
+            </div>
+            <div class="item-inputs">
+              <div class="input-group">
+                <label>Quantity to Issue:</label>
+                <input type="number" [(ngModel)]="item.quantityToIssue">
+              </div>
+              <div class="input-group">
+                <label>Shelf Location:</label>
+                <select [(ngModel)]="item.shelfLocation">
+                  <option>{{ item.shelfLocation }}</option>
+                </select>
+              </div>
+              <div class="input-group full-width">
+                <label>Notes:</label>
+                <input type="text" [(ngModel)]="item.notes">
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- Step 4: SIV Information -->
+    @if (currentStep() === 4) {
+      <div class="form-section">
+        <h4>STEP 4: SIV INFORMATION</h4>
+        <div class="info-grid">
+          <div class="info-item">
+            <label>SIV Number:</label>
+            <input type="text" [(ngModel)]="sivNumber" readonly>
+            <span class="field-hint">(Auto-generated)</span>
+          </div>
+          <div class="info-item">
+            <label>Issue Date:</label>
+            <input type="date" [(ngModel)]="issueDate">
+          </div>
+          <div class="info-item">
+            <label>Issued By:</label>
+            <input type="text" [(ngModel)]="issuedBy" readonly>
+          </div>
+        </div>
+      </div>
+      <div class="form-section">
+        <h4>RECIPIENT SIGNATURE</h4>
+        <div class="signature-area">
+          <div class="signature-pad">
+            <span>Signature Pad Area</span>
+          </div>
+          <div class="signature-line">_______________</div>
+        </div>
+      </div>
+      <div class="form-section">
+        <h4>OPTIONS</h4>
+        <div class="checkbox-group">
+          <label class="checkbox-label">
+            <input type="checkbox" [(ngModel)]="printSIV"> Print SIV after generation
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" [(ngModel)]="sendEmail"> Send email copy to requester
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" [(ngModel)]="sendSMS"> Send SMS notification
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" [(ngModel)]="requireManagerSignature"> Require manager counter-signature
+          </label>
+        </div>
+      </div>
+    }
+  </div>
+
+  <div class="form-actions">
+    <button class="btn btn-secondary" (click)="cancel()">Cancel</button>
+    <button class="btn btn-primary" (click)="generateSIV()">Generate SIV</button>
+  </div>
+
+  <div class="step-navigation">
+    <button class="btn btn-secondary" (click)="previousStep()" [disabled]="currentStep() === 1">
+      <i class="bi bi-chevron-left"></i> Previous
+    </button>
+    <button class="btn btn-primary" (click)="nextStep()" [disabled]="currentStep() === totalSteps">
+      Next <i class="bi bi-chevron-right"></i>
+    </button>
+  </div>
+</div>

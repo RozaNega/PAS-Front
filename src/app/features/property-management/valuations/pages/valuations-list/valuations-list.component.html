@@ -1,0 +1,220 @@
+<div class="valuations-container">
+  <div class="page-header">
+    <div class="header-info">
+      <h1>Valuations</h1>
+      <p class="subtitle">Track and analyze asset values over time</p>
+    </div>
+    <button class="btn btn-primary" (click)="runReport()">
+      <i class="bi bi-play-circle"></i> Run Report
+    </button>
+  </div>
+
+  <div class="filter-bar">
+    <div class="filter-group">
+      <label>📅 Date Range:</label>
+      <input type="date" [(ngModel)]="dateRange.start">
+      <span>to</span>
+      <input type="date" [(ngModel)]="dateRange.end">
+    </div>
+    <div class="filter-group">
+      <label>🏷️ Category:</label>
+      <select [(ngModel)]="categoryFilter">
+        @for (cat of categories; track cat) {
+          <option [value]="cat">{{ cat }}</option>
+        }
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>📍 Location:</label>
+      <select [(ngModel)]="locationFilter">
+        @for (loc of locations; track loc) {
+          <option [value]="loc">{{ loc }}</option>
+        }
+      </select>
+    </div>
+    <button class="btn btn-secondary" (click)="applyFilters()">Apply Filters</button>
+  </div>
+
+  <div class="valuation-summary">
+    <div class="summary-card">
+      <div class="summary-icon">📊</div>
+      <div class="summary-content">
+        <div class="summary-label">Total Assets</div>
+        <div class="summary-value">{{ totalAssets() }}</div>
+        <div class="summary-sub">properties</div>
+      </div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-icon">💰</div>
+      <div class="summary-content">
+        <div class="summary-label">Current Value</div>
+        <div class="summary-value">${{ currentValue() | number:'1.0-0' }}</div>
+        <div class="summary-sub trend-up">▲ +12.5%</div>
+      </div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-icon">📉</div>
+      <div class="summary-content">
+        <div class="summary-label">YTD Depreciation</div>
+        <div class="summary-value">${{ ytdDepreciation() | number:'1.0-0' }}</div>
+        <div class="summary-sub trend-down">▼ -6.9%</div>
+      </div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-icon">🎯</div>
+      <div class="summary-content">
+        <div class="summary-label">Projected Year End</div>
+        <div class="summary-value">${{ projectedYearEnd() | number:'1.0-0' }}</div>
+        <div class="summary-sub trend-down">▼ -7.4%</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="charts-section">
+    <div class="chart-card main-chart">
+      <div class="chart-header">
+        <h3>📈 Value Trend Chart</h3>
+      </div>
+      <div class="chart-placeholder">
+        <div class="chart-bars">
+          <div class="chart-bar" style="height: 60%"></div>
+          <div class="chart-bar" style="height: 70%"></div>
+          <div class="chart-bar" style="height: 65%"></div>
+          <div class="chart-bar" style="height: 80%"></div>
+          <div class="chart-bar" style="height: 75%"></div>
+          <div class="chart-bar" style="height: 85%"></div>
+          <div class="chart-bar" style="height: 90%"></div>
+          <div class="chart-bar" style="height: 88%"></div>
+          <div class="chart-bar" style="height: 95%"></div>
+          <div class="chart-bar" style="height: 92%"></div>
+          <div class="chart-bar" style="height: 98%"></div>
+          <div class="chart-bar" style="height: 100%"></div>
+        </div>
+        <div class="chart-labels">
+          <span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span><span>May</span>
+          <span>Jun</span><span>Jul</span><span>Aug</span><span>Sep</span><span>Oct</span>
+          <span>Nov</span><span>Dec</span>
+        </div>
+      </div>
+      <div class="chart-legend">
+        <span class="legend-item"><span class="legend-color blue"></span> Total Value</span>
+        <span class="legend-item"><span class="legend-color green"></span> Depreciated Value</span>
+        <span class="legend-item"><span class="legend-color orange"></span> New Acquisitions</span>
+      </div>
+    </div>
+
+    <div class="chart-cards-row">
+      <div class="chart-card pie-chart">
+        <div class="chart-header">
+          <h3>🥧 Value by Category</h3>
+        </div>
+        <div class="pie-placeholder">
+          <div class="pie-segment" style="background: #3b82f6; width: 35%"></div>
+          <div class="pie-segment" style="background: #10b981; width: 25%"></div>
+          <div class="pie-segment" style="background: #f59e0b; width: 15%"></div>
+          <div class="pie-segment" style="background: #ef4444; width: 10%"></div>
+          <div class="pie-segment" style="background: #8b5cf6; width: 10%"></div>
+          <div class="pie-segment" style="background: #6b7280; width: 5%"></div>
+        </div>
+        <div class="pie-legend">
+          <div class="pie-legend-item"><span class="pie-color" style="background: #3b82f6"></span> Electronics 35%</div>
+          <div class="pie-legend-item"><span class="pie-color" style="background: #10b981"></span> Furniture 25%</div>
+          <div class="pie-legend-item"><span class="pie-color" style="background: #f59e0b"></span> Vehicles 15%</div>
+          <div class="pie-legend-item"><span class="pie-color" style="background: #ef4444"></span> Machinery 10%</div>
+          <div class="pie-legend-item"><span class="pie-color" style="background: #8b5cf6"></span> Other 10%</div>
+        </div>
+      </div>
+
+      <div class="chart-card location-chart">
+        <div class="chart-header">
+          <h3>🗺️ Value by Location</h3>
+        </div>
+        <div class="location-bars">
+          <div class="location-bar-item">
+            <span>Headquarters</span>
+            <div class="bar-container"><div class="bar-fill" style="width: 60%"></div></div>
+            <span>$1.2M</span>
+          </div>
+          <div class="location-bar-item">
+            <span>Warehouse</span>
+            <div class="bar-container"><div class="bar-fill" style="width: 40%"></div></div>
+            <span>$0.8M</span>
+          </div>
+          <div class="location-bar-item">
+            <span>Branch 1</span>
+            <div class="bar-container"><div class="bar-fill" style="width: 20%"></div></div>
+            <span>$0.4M</span>
+          </div>
+          <div class="location-bar-item">
+            <span>Branch 2</span>
+            <div class="bar-container"><div class="bar-fill" style="width: 15%"></div></div>
+            <span>$0.3M</span>
+          </div>
+          <div class="location-bar-item">
+            <span>Storage</span>
+            <div class="bar-container"><div class="bar-fill" style="width: 10%"></div></div>
+            <span>$0.2M</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="depreciation-section">
+    <div class="section-header">
+      <h3>📋 Depreciation Schedule</h3>
+    </div>
+    <div class="table-container">
+      <table class="depreciation-table">
+        <thead>
+          <tr>
+            <th>Asset Name</th>
+            <th>Cost</th>
+            <th>Depreciation Rate</th>
+            <th>Acc. Dep.</th>
+            <th>Book Value</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (asset of valuationAssets(); track asset.id) {
+            <tr>
+              <td>{{ asset.name }}</td>
+              <td>${{ asset.cost | number:'1.0-0' }}</td>
+              <td>{{ asset.depreciationRate }}%</td>
+              <td>${{ asset.accumulatedDepreciation | number:'1.0-0' }}</td>
+              <td>${{ asset.bookValue | number:'1.0-0' }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <div class="pagination-bar">
+      <div class="pagination-info">Showing 1-{{ valuationAssets().length }} of 234 assets</div>
+      <div class="pagination-controls">
+        <button class="page-btn" disabled>Previous</button>
+        <button class="page-btn active">1</button>
+        <button class="page-btn">2</button>
+        <button class="page-btn">3</button>
+        <button class="page-btn">Next →</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="export-section">
+    <h3>📊 Valuation Report Export</h3>
+    <div class="export-buttons">
+      <button class="btn btn-secondary" (click)="exportToExcel()">
+        <i class="bi bi-file-earmark-excel"></i> Export to Excel
+      </button>
+      <button class="btn btn-secondary" (click)="exportToPDF()">
+        <i class="bi bi-file-earmark-pdf"></i> Export to PDF
+      </button>
+      <button class="btn btn-secondary" (click)="emailReport()">
+        <i class="bi bi-envelope"></i> Email Report
+      </button>
+      <button class="btn btn-secondary" (click)="scheduleReport()">
+        <i class="bi bi-calendar-check"></i> Schedule Report
+      </button>
+    </div>
+  </div>
+</div>

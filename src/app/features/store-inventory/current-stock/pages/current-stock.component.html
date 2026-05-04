@@ -1,0 +1,260 @@
+<section class="current-stock" aria-label="Current Stock Status">
+  <!-- Header -->
+  <header class="page-header">
+    <div class="header-content">
+      <h1>Current Stock</h1>
+      <p>Real-time inventory levels across all locations</p>
+    </div>
+    <button type="button" class="action-btn secondary" (click)="exportData()">
+      <i class="bi bi-download"></i>
+      Export
+    </button>
+  </header>
+
+  <!-- Filter Bar -->
+  <section class="filter-bar" aria-label="Filter stock">
+    <div class="filter-row">
+      <div class="search-box">
+        <i class="bi bi-search"></i>
+        <input 
+          type="text" 
+          placeholder="Search by Item Name, SKU, Category..." 
+          [(ngModel)]="searchTerm"
+        >
+      </div>
+      <div class="filter-group">
+        <label>📍 Warehouse:</label>
+        <select [(ngModel)]="warehouseFilter" class="filter-select">
+          @for (wh of warehouses; track wh) {
+            <option [value]="wh">{{ wh }}</option>
+          }
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>🏷️ Category:</label>
+        <select [(ngModel)]="categoryFilter" class="filter-select">
+          @for (cat of categories; track cat) {
+            <option [value]="cat">{{ cat }}</option>
+          }
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>🔧 Status:</label>
+        <select [(ngModel)]="statusFilter" class="filter-select">
+          @for (st of statuses; track st) {
+            <option [value]="st">{{ st }}</option>
+          }
+        </select>
+      </div>
+      <div class="filter-info">
+        <span>📅 Last Updated: Just now</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Stock Summary Cards -->
+  <section class="stock-summary" aria-label="Stock Summary">
+    <h2>📊 STOCK SUMMARY CARDS</h2>
+    <div class="summary-grid">
+      <div class="summary-card">
+        <p class="summary-icon">📦</p>
+        <p class="summary-label">Total Items</p>
+        <p class="summary-value">{{ formatNumber(summary().totalItems) }}</p>
+        <p class="summary-sub">▲ +8.3%</p>
+      </div>
+      <div class="summary-card">
+        <p class="summary-icon">💰</p>
+        <p class="summary-label">Total Value</p>
+        <p class="summary-value">{{ formatValue(summary().totalValue) }}</p>
+        <p class="summary-sub">▲ +12.5%</p>
+      </div>
+      <div class="summary-card">
+        <p class="summary-icon">📈</p>
+        <p class="summary-label">Total Units</p>
+        <p class="summary-value">{{ formatNumber(summary().totalUnits) }}</p>
+        <p class="summary-sub">▼ -2.1%</p>
+      </div>
+      <div class="summary-card critical">
+        <p class="summary-icon">⚠️</p>
+        <p class="summary-label">Low Stock</p>
+        <p class="summary-value">{{ summary().lowStock }}</p>
+        <p class="summary-sub">🔴 Critical</p>
+      </div>
+      <div class="summary-card">
+        <p class="summary-icon">🟢</p>
+        <p class="summary-label">In Stock</p>
+        <p class="summary-value">{{ formatNumber(summary().inStock) }}</p>
+        <p class="summary-sub">🟡 96%</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Current Stock Table -->
+  <section class="stock-table-section" aria-label="Current Stock Table">
+    <h2>📋 CURRENT STOCK TABLE</h2>
+    <div class="table-container">
+      <table class="stock-table">
+        <thead>
+          <tr>
+            <th>SKU</th>
+            <th>Item Name</th>
+            <th>Category</th>
+            <th>Warehouse</th>
+            <th>Shelf</th>
+            <th>Quantity</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of filteredStock(); track item.sku) {
+            <tr (click)="openDetailsModal(item)" class="clickable-row">
+              <td>{{ item.sku }}</td>
+              <td>{{ item.name }}</td>
+              <td>{{ item.category }}</td>
+              <td>{{ item.warehouse }}</td>
+              <td>{{ item.shelf }}</td>
+              <td>{{ item.quantity }}</td>
+              <td>
+                <span class="status-badge {{ getStatusColor(item.status) }}">
+                  {{ getStatusEmoji(item.status) }} {{ item.status === 'good' ? 'Good' : item.status === 'low' ? 'Low' : 'Critical' }}
+                </span>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+      <p class="table-footer">Showing 1-{{ filteredStock().length }} of {{ formatNumber(summary().totalItems) }} items</p>
+    </div>
+  </section>
+
+  <!-- Stock Details Modal -->
+  @if (showDetailsModal() && selectedStock()) {
+    <div class="modal-overlay" (click)="closeModal()">
+      <div class="modal-content" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h2>Stock Details: {{ selectedStock()!.name }} (SKU: {{ selectedStock()!.sku }})</h2>
+          <button type="button" class="close-btn" (click)="closeModal()">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+
+        <div class="modal-body">
+          <!-- Item Information -->
+          <section class="modal-section">
+            <h3>📦 ITEM INFORMATION</h3>
+            <div class="info-grid">
+              <div class="info-item">
+                <span class="info-label">Item Name:</span>
+                <span class="info-value">{{ selectedStock()!.name }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">SKU:</span>
+                <span class="info-value">{{ selectedStock()!.sku }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Description:</span>
+                <span class="info-value">13th Gen Intel i7, 16GB RAM 512GB SSD, Windows 11 Pro</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Category:</span>
+                <span class="info-value">{{ selectedStock()!.category }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Unit Price:</span>
+                <span class="info-value">$2,499</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Min Stock:</span>
+                <span class="info-value">10 units</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Max Stock:</span>
+                <span class="info-value">100 units</span>
+              </div>
+            </div>
+          </section>
+
+          <!-- Stock Locations -->
+          <section class="modal-section">
+            <h3>📍 STOCK LOCATIONS</h3>
+            <div class="table-container">
+              <table class="locations-table">
+                <thead>
+                  <tr>
+                    <th>Warehouse</th>
+                    <th>Shelf Location</th>
+                    <th>Quantity</th>
+                    <th>Reserved</th>
+                    <th>Available</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (loc of stockLocations(); track loc.shelfLocation) {
+                    <tr>
+                      <td>{{ loc.warehouse }}</td>
+                      <td>{{ loc.shelfLocation }}</td>
+                      <td>{{ loc.quantity }}</td>
+                      <td>{{ loc.reserved }}</td>
+                      <td>{{ loc.available }}</td>
+                      <td>
+                        <div class="action-icons">
+                          <button type="button" class="icon-btn" title="Issue">📦</button>
+                          <button type="button" class="icon-btn" title="Transfer">🔄</button>
+                          <button type="button" class="icon-btn" title="Adjust">📝</button>
+                          <button type="button" class="icon-btn" title="Delete">🗑️</button>
+                        </div>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+              <p class="table-footer">Total: {{ selectedStock()!.quantity }} units | Reserved: 7 units | Available: 38 units</p>
+            </div>
+          </section>
+
+          <!-- Stock Movement History -->
+          <section class="modal-section">
+            <h3>📈 STOCK MOVEMENT HISTORY (Last 30 days)</h3>
+            <div class="table-container">
+              <table class="movements-table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Type</th>
+                    <th>Quantity</th>
+                    <th>Reference</th>
+                    <th>User</th>
+                    <th>Balance</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (mov of stockMovements(); track mov.reference) {
+                    <tr>
+                      <td>{{ mov.date }}</td>
+                      <td>{{ mov.type }}</td>
+                      <td>{{ mov.quantity > 0 ? '+' : '' }}{{ mov.quantity }}</td>
+                      <td>{{ mov.reference }}</td>
+                      <td>{{ mov.user }}</td>
+                      <td>{{ mov.balance }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+              <button type="button" class="action-btn secondary small">View Full History →</button>
+            </div>
+          </section>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="action-btn primary">Issue Item</button>
+          <button type="button" class="action-btn primary">Transfer Stock</button>
+          <button type="button" class="action-btn primary">Adjust Stock</button>
+          <button type="button" class="action-btn secondary">Print Label</button>
+          <button type="button" class="action-btn secondary">View QR</button>
+          <button type="button" class="action-btn secondary" (click)="closeModal()">Close</button>
+        </div>
+      </div>
+    </div>
+  }
+</section>

@@ -1,0 +1,268 @@
+.add-item-container {
+  display: inline-block;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.25rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.3s;
+
+  i {
+    font-size: 1rem;
+  }
+}
+
+.btn-primary {
+  background: var(--primary-color);
+  color: white;
+
+  &:hover {
+    background: var(--primary-color-dark);
+  }
+}
+
+.btn-secondary {
+  background: var(--surface-section);
+  color: var(--text-color);
+  border: 1px solid var(--surface-border);
+
+  &:hover {
+    background: var(--surface-hover);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: var(--surface-card);
+  border-radius: 12px;
+  max-width: 800px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--surface-border);
+
+  h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-color);
+  }
+
+  .btn-close {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    border: none;
+    background: transparent;
+    color: var(--text-color-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+
+    &:hover {
+      background: var(--surface-section);
+      color: var(--text-color);
+    }
+  }
+}
+
+.step-indicator {
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--surface-border);
+}
+
+.step-progress {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.step-dot {
+  width: 40px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--surface-border);
+  transition: all 0.3s;
+
+  &.active {
+    background: var(--primary-color);
+  }
+
+  &.current {
+    background: var(--primary-color);
+    box-shadow: 0 0 0 2px var(--primary-color-dark);
+  }
+}
+
+.step-label {
+  font-size: 0.875rem;
+  color: var(--text-color-muted);
+  font-weight: 600;
+}
+
+.modal-body {
+  padding: 1.5rem;
+}
+
+.form-section {
+  margin-bottom: 2rem;
+
+  h4 {
+    margin: 0 0 1rem;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-color);
+  }
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+
+  &.full-width {
+    grid-column: 1 / -1;
+  }
+
+  label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-color);
+  }
+
+  input,
+  select,
+  textarea {
+    padding: 0.625rem 0.75rem;
+    border: 1px solid var(--surface-border);
+    border-radius: 8px;
+    background: var(--surface-section);
+    color: var(--text-color);
+    font-size: 0.875rem;
+    outline: none;
+
+    &:focus {
+      border-color: var(--primary-color);
+    }
+  }
+
+  textarea {
+    resize: vertical;
+  }
+
+  .field-hint {
+    font-size: 0.75rem;
+    color: var(--text-color-muted);
+  }
+
+  .unit-label {
+    font-size: 0.75rem;
+    color: var(--text-color-muted);
+    align-self: flex-end;
+  }
+}
+
+.checkbox-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--text-color);
+  cursor: pointer;
+
+  input[type="checkbox"] {
+    cursor: pointer;
+  }
+}
+
+.upload-area {
+  border: 2px dashed var(--surface-border);
+  border-radius: 8px;
+  padding: 2rem;
+  text-align: center;
+  background: var(--surface-section);
+  cursor: pointer;
+  transition: all 0.3s;
+
+  &:hover {
+    border-color: var(--primary-color);
+    background: var(--surface-hover);
+  }
+
+  i {
+    font-size: 2rem;
+    color: var(--text-color-muted);
+    margin-bottom: 0.5rem;
+  }
+
+  p {
+    margin: 0.25rem 0;
+    color: var(--text-color);
+    font-size: 0.875rem;
+
+    &.upload-hint {
+      color: var(--text-color-muted);
+      font-size: 0.75rem;
+    }
+  }
+}
+
+.modal-footer {
+  display: flex;
+  gap: 0.75rem;
+  padding: 1.5rem;
+  border-top: 1px solid var(--surface-border);
+  flex-wrap: wrap;
+}
+
+.step-navigation {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 1.5rem 1.5rem;
+}

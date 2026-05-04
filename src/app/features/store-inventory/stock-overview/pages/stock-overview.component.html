@@ -1,0 +1,220 @@
+<div class="stock-overview-container">
+  <div class="page-header">
+    <div class="header-info">
+      <h1>Stock Overview</h1>
+      <p class="subtitle">Real-time inventory status across all warehouses</p>
+    </div>
+    <button class="btn btn-secondary" (click)="refreshData()">
+      <i class="bi bi-arrow-clockwise"></i> Refresh
+    </button>
+  </div>
+
+  <div class="info-bar">
+    <span>📅 Date: {{ currentDate() }}</span>
+    <span>🔄 Last Updated: {{ lastUpdated() }}</span>
+  </div>
+
+  <!-- Quick Stats Dashboard -->
+  <div class="quick-stats-dashboard">
+    <h2>📊 INVENTORY QUICK STATS</h2>
+    <div class="quick-stats-grid">
+      <div class="quick-stats-card">
+        <h3>Today's Activity</h3>
+        <div class="stat-row">
+          <span class="stat-icon">📥</span>
+          <span class="stat-value">+124 units</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-icon">📤</span>
+          <span class="stat-value">-89 units</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-icon">🔄</span>
+          <span class="stat-value">+23 units</span>
+        </div>
+      </div>
+      <div class="quick-stats-card">
+        <h3>This Week Activity</h3>
+        <div class="stat-row">
+          <span class="stat-icon">📥</span>
+          <span class="stat-value">+567 units</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-icon">📤</span>
+          <span class="stat-value">-432 units</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-icon">🔄</span>
+          <span class="stat-value">+98 units</span>
+        </div>
+      </div>
+      <div class="quick-stats-card">
+        <h3>This Month Activity</h3>
+        <div class="stat-row">
+          <span class="stat-icon">📥</span>
+          <span class="stat-value">+2,345 units</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-icon">📤</span>
+          <span class="stat-value">-1,876 units</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-icon">🔄</span>
+          <span class="stat-value">+456 units</span>
+        </div>
+      </div>
+      <div class="quick-stats-card pending-actions">
+        <h3>Pending Actions</h3>
+        <div class="stat-row">
+          <span class="stat-icon">🟡</span>
+          <span class="stat-value">Pending Issues: 4</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-icon">🟢</span>
+          <span class="stat-value">Pending Receiving: 3</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-icon">🔴</span>
+          <span class="stat-value">Low Stock Alerts: 4</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon">📦</div>
+      <div class="stat-content">
+        <div class="stat-label">Total Items</div>
+        <div class="stat-value">{{ formatNumber(totalItems()) }} units</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">💰</div>
+      <div class="stat-content">
+        <div class="stat-label">Total Stock Value</div>
+        <div class="stat-value">{{ formatValue(totalStockValue()) }}</div>
+        <div class="stat-change positive">{{ valueChange() }}</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">📈</div>
+      <div class="stat-content">
+        <div class="stat-label">Avg. Turnover Rate</div>
+        <div class="stat-value">{{ avgTurnoverRate() }}x</div>
+        <div class="stat-change positive">{{ turnoverChange() }}</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">🔄</div>
+      <div class="stat-content">
+        <div class="stat-label">Stock Turnover Days</div>
+        <div class="stat-value">{{ stockTurnoverDays() }} days</div>
+        <div class="stat-change negative">{{ daysChange() }}</div>
+      </div>
+    </div>
+    <div class="stat-card critical">
+      <div class="stat-icon">⚠️</div>
+      <div class="stat-content">
+        <div class="stat-label">Low Stock Items</div>
+        <div class="stat-value">{{ lowStockItems() }} items</div>
+        <div class="stat-label">🔴 Critical</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="chart-section">
+    <div class="section-header">
+      <h3>📈 Stock Level Trends</h3>
+    </div>
+    <div class="chart-placeholder">
+      <div class="chart-legend">
+        <span class="legend-item"><span class="dot blue"></span> Total Stock</span>
+        <span class="legend-item"><span class="dot green"></span> Inflow</span>
+        <span class="legend-item"><span class="dot orange"></span> Outflow</span>
+        <span class="legend-item"><span class="dot red"></span> Min Stock Level</span>
+      </div>
+      <div class="chart-bars">
+        @for (i of [1,2,3,4,5,6,7,8,9,10,11]; track i) {
+          <div class="bar-group">
+            <div class="bar total" [style.height.px]="getRandomHeight(80, 40)"></div>
+            <div class="bar inflow" [style.height.px]="getRandomHeight(30, 20)"></div>
+            <div class="bar outflow" [style.height.px]="getRandomHeight(20, 15)"></div>
+            <div class="bar-label">{{ ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov'][i-1] }}</div>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+
+  <div class="dashboard-grid">
+    <div class="dashboard-card">
+      <div class="card-header">
+        <h3>🏭 Stock by Warehouse</h3>
+        <a href="#" class="view-link">View Details →</a>
+      </div>
+      <div class="warehouse-list">
+        @for (wh of warehouseStock(); track wh.name) {
+          <div class="warehouse-item">
+            <span class="warehouse-name">{{ wh.name }}: {{ formatNumber(wh.items) }}</span>
+          </div>
+        }
+      </div>
+    </div>
+
+    <div class="dashboard-card">
+      <div class="card-header">
+        <h3>📂 Stock by Category</h3>
+        <a href="#" class="view-link">View Details →</a>
+      </div>
+      <div class="category-list">
+        @for (cat of categoryStock(); track cat.name) {
+          <div class="category-item">
+            <div class="category-info">
+              <span class="category-name">{{ cat.name }}:</span>
+              <span class="category-count">{{ formatNumber(cat.items) }}</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" [style.width.%]="cat.percentage"></div>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+
+  <div class="top-items-section">
+    <div class="section-header">
+      <h3>🔥 Top 10 Items by Stock Value</h3>
+      <a href="#" class="view-link">View All Items →</a>
+    </div>
+    <div class="table-container">
+      <table class="top-items-table">
+        <thead>
+          <tr>
+            <th>Rank</th>
+            <th>Item Name</th>
+            <th>Stock Qty</th>
+            <th>Unit Price</th>
+            <th>Value</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of topItems(); track item.rank) {
+            <tr>
+              <td>
+                <span class="rank-badge" [class.rank-1]="item.rank === 1" [class.rank-2]="item.rank === 2" [class.rank-3]="item.rank === 3">
+                  {{ item.rank === 1 ? '🥇' : item.rank === 2 ? '🥈' : item.rank === 3 ? '🥉' : item.rank }}
+                </span>
+              </td>
+              <td>{{ item.name }}</td>
+              <td>{{ item.stockQty }}</td>
+              <td>${{ item.unitPrice }}</td>
+              <td>{{ formatValue(item.value) }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,334 @@
+<div class="create-grn-container">
+  <div class="page-header">
+    <div class="header-info">
+      <h1>Create Goods Receipt Note (GRN)</h1>
+      <p class="subtitle">Register new incoming shipments</p>
+    </div>
+  </div>
+
+  <!-- Step Indicator -->
+  <div class="step-indicator">
+    <div class="step-progress">
+      @for (i of [1,2,3,4]; track i) {
+        <div class="step-dot" [class.active]="currentStep() >= i" [class.current]="currentStep() === i"></div>
+      }
+    </div>
+    <div class="step-label">Step {{ currentStep() }} of {{ totalSteps }}: {{ getStepTitle() }}</div>
+  </div>
+
+  <div class="form-container">
+    <!-- Step 1: Shipment Information -->
+    @if (currentStep() === 1) {
+      <div class="form-section">
+        <h4>SHIPMENT DETAILS</h4>
+        <div class="form-grid">
+          <div class="form-field">
+            <label>GRN Number *</label>
+            <input type="text" [(ngModel)]="grnNumber" readonly>
+            <span class="field-hint">(Auto-generated)</span>
+          </div>
+          <div class="form-field">
+            <label>Date Received *</label>
+            <input type="date" [(ngModel)]="dateReceived">
+          </div>
+          <div class="form-field full-width">
+            <label>Supplier *</label>
+            <select [(ngModel)]="supplier">
+              @for (sup of suppliers; track sup.name) {
+                <option [value]="sup.name">{{ sup.name }} ({{ sup.category }}) - Rating: {{ sup.rating }}</option>
+              }
+            </select>
+            <span class="field-hint">[+ Add New Supplier]</span>
+          </div>
+          <div class="form-field">
+            <label>PO Number (Optional)</label>
+            <input type="text" [(ngModel)]="poNumber">
+          </div>
+          <div class="form-field">
+            <label>Delivery Note Number (Optional)</label>
+            <input type="text" [(ngModel)]="deliveryNoteNumber">
+          </div>
+          <div class="form-field full-width">
+            <label>Received By *</label>
+            <select [(ngModel)]="receivedBy">
+              <option>John Doe (Store Officer)</option>
+              <option>Sarah Smith (Store Officer)</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label>Carrier / Shipping Company</label>
+            <select [(ngModel)]="carrier">
+              @for (c of carriers; track c) {
+                <option [value]="c">{{ c }}</option>
+              }
+            </select>
+          </div>
+          <div class="form-field">
+            <label>Tracking Number</label>
+            <input type="text" [(ngModel)]="trackingNumber">
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Step 2: Items Received -->
+    @if (currentStep() === 2) {
+      <div class="form-section">
+        <div class="items-header">
+          <h4>ITEMS RECEIVED</h4>
+          <div class="items-actions">
+            <button class="btn btn-secondary" (click)="openAddItemModal()">
+              <i class="bi bi-plus"></i> Add Item
+            </button>
+            <button class="btn btn-secondary" (click)="importFromPO()">
+              <i class="bi bi-file-earmark"></i> Import from PO
+            </button>
+            <button class="btn btn-secondary" (click)="scanBarcode()">
+              <i class="bi bi-upc-scan"></i> Scan Barcode
+            </button>
+          </div>
+        </div>
+        <div class="items-table">
+          <table>
+            <thead>
+              <tr>
+                <th>Item Name</th>
+                <th>SKU</th>
+                <th>PO Qty</th>
+                <th>Received Qty</th>
+                <th>Unit Price</th>
+                <th>Inspect</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (item of grnItems(); track item.sku) {
+                <tr>
+                  <td>{{ item.name }}</td>
+                  <td>{{ item.sku }}</td>
+                  <td>{{ item.poQty }}</td>
+                  <td>
+                    <input type="number" [(ngModel)]="item.receivedQty" class="qty-input">
+                  </td>
+                  <td>${{ item.unitPrice.toFixed(2) }}</td>
+                  <td>
+                    <input type="checkbox" [(ngModel)]="item.inspect">
+                  </td>
+                  <td>
+                    <div class="actions-cell">
+                      <button class="action-btn" (click)="editItem(item)" title="Edit">
+                        <i class="bi bi-pencil"></i>
+                      </button>
+                      <button class="action-btn" (click)="deleteItem(item)" title="Delete">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <div class="items-summary">
+          <span>Summary: {{ grnItems().length }} items</span>
+          <span>Total Quantity: {{ getTotalQuantity() }}</span>
+          <span>Total Value: ${{ getTotalValue().toLocaleString() }}</span>
+        </div>
+      </div>
+    }
+
+    <!-- Step 3: Batch & Expiry Information -->
+    @if (currentStep() === 3) {
+      <div class="form-section">
+        <h4>BATCH DETAILS (For selected items)</h4>
+        @for (item of grnItems(); track item.sku) {
+          @if (item.inspect) {
+            <div class="batch-item">
+              <div class="batch-header">
+                <span>Item: {{ item.name }}</span>
+              </div>
+              <div class="batch-grid">
+                <div class="form-field">
+                  <label>Batch Number:</label>
+                  <input type="text" [value]="batchNumber()">
+                </div>
+                <div class="form-field">
+                  <label>Manufacturing Date:</label>
+                  <input type="date" [value]="manufacturingDate()">
+                </div>
+                <div class="form-field">
+                  <label>Expiry Date:</label>
+                  <input type="date" [value]="expiryDate()">
+                </div>
+              </div>
+            </div>
+          }
+        }
+      </div>
+    }
+
+    <!-- Step 4: Documents & Submit -->
+    @if (currentStep() === 4) {
+      <div class="form-section">
+        <h4>ATTACHMENTS</h4>
+        <div class="attachments-list">
+          <div class="attachment-item">
+            <i class="bi bi-file-earmark-pdf"></i>
+            <span>Delivery_Note_DHL.pdf (1.2 MB)</span>
+            <div class="attachment-actions">
+              <button class="btn-link">View</button>
+              <button class="btn-link">Download</button>
+              <button class="btn-link">Remove</button>
+            </div>
+          </div>
+          <div class="attachment-item">
+            <i class="bi bi-file-earmark-pdf"></i>
+            <span>Invoice_Tech_Supplies.pdf (2.1 MB)</span>
+            <div class="attachment-actions">
+              <button class="btn-link">View</button>
+              <button class="btn-link">Download</button>
+              <button class="btn-link">Remove</button>
+            </div>
+          </div>
+          <div class="attachment-item">
+            <i class="bi bi-file-earmark-pdf"></i>
+            <span>Packing_List.pdf (0.8 MB)</span>
+            <div class="attachment-actions">
+              <button class="btn-link">View</button>
+              <button class="btn-link">Download</button>
+              <button class="btn-link">Remove</button>
+            </div>
+          </div>
+        </div>
+        <button class="btn btn-secondary">
+          <i class="bi bi-plus"></i> Add File
+        </button>
+        <span class="field-hint">(Max 10MB per file, supported: PDF, JPG, PNG)</span>
+      </div>
+      <div class="form-section">
+        <h4>NOTES & REMARKS</h4>
+        <textarea [(ngModel)]="notes" rows="3" placeholder="Enter any notes or remarks about this shipment..."></textarea>
+      </div>
+      <div class="form-section">
+        <h4>OPTIONS</h4>
+        <div class="checkbox-group">
+          <label class="checkbox-label">
+            <input type="checkbox" [(ngModel)]="submitForInspection"> Submit for inspection automatically
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" [(ngModel)]="notifyProcurement"> Notify procurement team
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" [(ngModel)]="printGRN"> Print GRN after submission
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" [(ngModel)]="sendEmailToSupplier"> Send email to supplier
+          </label>
+        </div>
+      </div>
+    }
+  </div>
+
+  <div class="form-actions">
+    <button class="btn btn-secondary" (click)="cancel()">Cancel</button>
+    <button class="btn btn-secondary" (click)="saveAsDraft()">Save as Draft</button>
+    <button class="btn btn-primary" (click)="submitForInspectionAction()">Submit for Inspection</button>
+  </div>
+
+  <div class="step-navigation">
+    <button class="btn btn-secondary" (click)="previousStep()" [disabled]="currentStep() === 1">
+      <i class="bi bi-chevron-left"></i> Previous
+    </button>
+    <button class="btn btn-primary" (click)="nextStep()" [disabled]="currentStep() === totalSteps">
+      Next <i class="bi bi-chevron-right"></i>
+    </button>
+  </div>
+</div>
+
+<!-- Add Item Modal -->
+@if (showAddItemModal()) {
+  <div class="modal-overlay" (click)="closeAddItemModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Add Item to GRN</h3>
+        <button class="btn-close" (click)="closeAddItemModal()">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-section">
+          <h4>SEARCH ITEM</h4>
+          <div class="search-box">
+            <i class="bi bi-search"></i>
+            <input type="text" placeholder="Search by SKU, Item Name, or Scan Barcode...">
+          </div>
+          <div class="recent-items">
+            <h5>Recent Items:</h5>
+            <ul>
+              <li>Dell XPS Laptop (LAP-001) - Current Stock: 45</li>
+              <li>HP Monitor (MON-002) - Current Stock: 67</li>
+              <li>USB Cables (CAB-004) - Current Stock: 5 ⚠️ Low Stock</li>
+            </ul>
+          </div>
+        </div>
+        <div class="form-section">
+          <h4>ITEM DETAILS</h4>
+          <div class="info-grid">
+            <div class="info-item">
+              <label>Selected Item:</label>
+              <span>Dell XPS Laptop (SKU: LAP-001)</span>
+            </div>
+            <div class="info-item">
+              <label>PO Quantity:</label>
+              <input type="number" value="10">
+            </div>
+            <div class="info-item">
+              <label>Received Quantity:</label>
+              <input type="number" value="10">
+            </div>
+            <div class="info-item">
+              <label>Unit Price:</label>
+              <input type="number" value="2499">
+            </div>
+            <div class="info-item">
+              <label>Total:</label>
+              <span>$24,990</span>
+            </div>
+            <div class="info-item">
+              <label>Requires Inspection:</label>
+              <div class="radio-group">
+                <label class="radio-label">
+                  <input type="radio" name="inspect" checked> Yes
+                </label>
+                <label class="radio-label">
+                  <input type="radio" name="inspect"> No
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="form-section">
+          <h4>BATCH INFORMATION (Optional)</h4>
+          <div class="form-grid">
+            <div class="form-field">
+              <label>Batch Number:</label>
+              <input type="text" value="BCH-2024-001">
+            </div>
+            <div class="form-field">
+              <label>Manufacturing Date:</label>
+              <input type="date" value="2024-11-15">
+            </div>
+            <div class="form-field">
+              <label>Expiry Date:</label>
+              <input type="date" value="2026-11-14">
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeAddItemModal()">Cancel</button>
+        <button class="btn btn-primary" (click)="addItem()">Add to GRN</button>
+      </div>
+    </div>
+  </div>
+}
