@@ -1,0 +1,274 @@
+<div class="audit-trail-page">
+  <div class="page-header">
+    <h1>Audit Trail</h1>
+    <button class="export-btn" (click)="exportAuditLogs()">Export All</button>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters-section">
+    <div class="filter-row">
+      <input type="text" placeholder="Search by user, action, entity..." />
+      <select>
+        <option>Date: [Dec 01, 2024] to [Dec 15, 2024]</option>
+      </select>
+      <select>
+        <option>User: [All Users ▼]</option>
+      </select>
+      <select>
+        <option>Action: [All Actions ▼]</option>
+      </select>
+      <select>
+        <option>Entity: [All Entities ▼]</option>
+      </select>
+      <select>
+        <option>Status: [All ▼]</option>
+      </select>
+      <button class="filters-btn">Advanced Filters ▼</button>
+    </div>
+  </div>
+
+  <!-- Audit Summary -->
+  <div class="summary-section">
+    <h2>📊 AUDIT SUMMARY</h2>
+    <div class="summary-cards">
+      @for (summary of auditSummaries; track summary.label) {
+        <div class="summary-card">
+          <div class="summary-label">{{ summary.label }}</div>
+          <div class="summary-value">{{ summary.value }}</div>
+          <div class="summary-subtitle">{{ summary.subtitle }}</div>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- System Activity Log -->
+  <div class="activity-section">
+    <h2>📋 SYSTEM ACTIVITY LOG</h2>
+    <div class="activity-table">
+      <table>
+        <thead>
+          <tr>
+            <th>Timestamp</th>
+            <th>User</th>
+            <th>Action</th>
+            <th>Entity</th>
+            <th>Entity ID</th>
+            <th>Details</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (activity of systemActivities; track activity.timestamp) {
+            <tr>
+              <td>{{ activity.timestamp }}</td>
+              <td>{{ activity.user }}</td>
+              <td>{{ activity.action }}</td>
+              <td>{{ activity.entity }}</td>
+              <td>{{ activity.entityId }}</td>
+              <td>{{ activity.details }}</td>
+              <td>{{ activity.status }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <div class="pagination">
+      <span>Showing 1-25 of 45,678 entries</span>
+      <span class="pagination-controls">1  2  3  →  1,828</span>
+    </div>
+  </div>
+
+  <!-- User Actions Summary -->
+  <div class="user-actions-section">
+    <h2>👤 USER ACTIONS SUMMARY</h2>
+    <div class="user-actions-table">
+      <table>
+        <thead>
+          <tr>
+            <th>User</th>
+            <th>Create</th>
+            <th>Update</th>
+            <th>Delete</th>
+            <th>View</th>
+            <th>Export</th>
+            <th>Login</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (summary of userActionSummaries; track summary.user) {
+            <tr>
+              <td>{{ summary.user }}</td>
+              <td>{{ summary.create }}</td>
+              <td>{{ summary.update }}</td>
+              <td>{{ summary.delete }}</td>
+              <td>{{ summary.view }}</td>
+              <td>{{ summary.export }}</td>
+              <td>{{ summary.login }}</td>
+              <td>{{ summary.total }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Property Changes -->
+  <div class="property-section">
+    <h2>🏢 PROPERTY CHANGES</h2>
+    <div class="property-table">
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Property</th>
+            <th>Change Type</th>
+            <th>Old Value</th>
+            <th>New Value</th>
+            <th>User</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (change of propertyChanges; track change.property) {
+            <tr>
+              <td>{{ change.date }}</td>
+              <td>{{ change.property }}</td>
+              <td>{{ change.changeType }}</td>
+              <td>{{ change.oldValue }}</td>
+              <td>{{ change.newValue }}</td>
+              <td>{{ change.user }}</td>
+              <td>{{ change.status }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Stock Movements -->
+  <div class="stock-section">
+    <h2>📦 STOCK MOVEMENTS</h2>
+    <div class="stock-table">
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Item</th>
+            <th>Type</th>
+            <th>Quantity</th>
+            <th>Reference</th>
+            <th>User</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (movement of stockMovements; track movement.item) {
+            <tr>
+              <td>{{ movement.date }}</td>
+              <td>{{ movement.item }}</td>
+              <td>{{ movement.type }}</td>
+              <td>{{ movement.quantity }}</td>
+              <td>{{ movement.reference }}</td>
+              <td>{{ movement.user }}</td>
+              <td>{{ movement.status }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Requisition Audit -->
+  <div class="requisition-section">
+    <h2>📝 REQUISITION AUDIT</h2>
+    <div class="requisition-table">
+      <table>
+        <thead>
+          <tr>
+            <th>SR #</th>
+            <th>Requester</th>
+            <th>Value</th>
+            <th>Approver</th>
+            <th>Status</th>
+            <th>Approval Chain</th>
+            <th>Compliance</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (audit of requisitionAudits; track audit.srNumber) {
+            <tr>
+              <td>{{ audit.srNumber }}</td>
+              <td>{{ audit.requester }}</td>
+              <td>{{ audit.value }}</td>
+              <td>{{ audit.approver }}</td>
+              <td>{{ audit.status }}</td>
+              <td>{{ audit.approvalChain }}</td>
+              <td>{{ audit.compliance }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- User Login History -->
+  <div class="login-section">
+    <h2>🔐 USER LOGIN HISTORY</h2>
+    <div class="login-table">
+      <table>
+        <thead>
+          <tr>
+            <th>Date/Time</th>
+            <th>User</th>
+            <th>IP Address</th>
+            <th>Status</th>
+            <th>Location</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (login of userLoginHistory; track login.dateTime) {
+            <tr>
+              <td>{{ login.dateTime }}</td>
+              <td>{{ login.user }}</td>
+              <td>{{ login.ipAddress }}</td>
+              <td>{{ login.status }}</td>
+              <td>{{ login.location }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Data Export Log -->
+  <div class="export-log-section">
+    <h2>📊 DATA EXPORT LOG</h2>
+    <div class="export-log-table">
+      <table>
+        <thead>
+          <tr>
+            <th>Date/Time</th>
+            <th>User</th>
+            <th>Export Type</th>
+            <th>Records</th>
+            <th>Format</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (log of dataExportLogs; track log.dateTime) {
+            <tr>
+              <td>{{ log.dateTime }}</td>
+              <td>{{ log.user }}</td>
+              <td>{{ log.exportType }}</td>
+              <td>{{ log.records }}</td>
+              <td>{{ log.format }}</td>
+              <td>{{ log.status }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

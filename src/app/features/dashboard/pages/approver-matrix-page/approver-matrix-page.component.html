@@ -1,0 +1,186 @@
+<div class="approver-matrix-page">
+  <div class="page-header">
+    <h1>Approver Matrix</h1>
+  </div>
+
+  <!-- Department Hierarchy -->
+  <div class="hierarchy-section">
+    <h2>🏢 DEPARTMENT HIERARCHY</h2>
+    <div class="hierarchy-tree">
+      <div class="tree-node">
+        <div class="node-box">VP of Operations<br/>Approval: $50,000+</div>
+        <div class="tree-connector"></div>
+        <div class="tree-children">
+          <div class="tree-node">
+            <div class="node-box">IT Director<br/>Approval: $25K</div>
+            <div class="tree-connector"></div>
+            <div class="tree-children">
+              <div class="tree-node">
+                <div class="node-box">IT Manager<br/>Approval: $10K</div>
+                <div class="tree-connector"></div>
+                <div class="tree-children">
+                  <div class="tree-node">
+                    <div class="node-box">Team Lead<br/>Approval: $5K</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Approval Levels -->
+  <div class="levels-section">
+    <h2>📊 APPROVAL LEVELS</h2>
+    <div class="table-container">
+      <table class="levels-table">
+        <thead>
+          <tr>
+            <th>Level</th>
+            <th>Role</th>
+            <th>Approval Limit</th>
+            <th>Escalation To</th>
+            <th>SLA</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (level of approvalLevels; track level.level) {
+            <tr>
+              <td>{{ level.level }}</td>
+              <td>{{ level.role }}</td>
+              <td>{{ level.approvalLimit }}</td>
+              <td>{{ level.escalationTo }}</td>
+              <td>{{ level.sla }}</td>
+              <td>
+                <button class="btn btn-sm btn-outline" (click)="viewLevel(level.level)">👁️</button>
+                <button class="btn btn-sm btn-outline" (click)="editLevel(level.level)">✏️</button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Substitute Approvers -->
+  <div class="substitute-section">
+    <h2>🔄 SUBSTITUTE APPROVERS <button class="btn btn-link" (click)="addSubstitute()">Add Substitute Approver</button></h2>
+    <div class="table-container">
+      <table class="substitute-table">
+        <thead>
+          <tr>
+            <th>Role</th>
+            <th>Primary Approver</th>
+            <th>Substitute Approver</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (sub of substituteApprovers; track sub.role) {
+            <tr>
+              <td>{{ sub.role }}</td>
+              <td>{{ sub.primaryApprover }}</td>
+              <td>{{ sub.substituteApprover }}</td>
+              <td>{{ sub.status }}</td>
+              <td>
+                <button class="btn btn-sm btn-outline" (click)="viewSubstitute(sub.role)">👁️</button>
+                <button class="btn btn-sm btn-outline" (click)="editSubstitute(sub.role)">✏️</button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Authority Matrix -->
+  <div class="authority-section">
+    <h2>📋 AUTHORITY MATRIX</h2>
+    <div class="table-container">
+      <table class="authority-table">
+        <thead>
+          <tr>
+            <th>Request Type</th>
+            <th>&lt;$1K</th>
+            <th>$1K-$5K</th>
+            <th>$5K-$10K</th>
+            <th>$10K-$25K</th>
+            <th>$25K-$50K</th>
+            <th>&gt;$50K</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Hardware</td>
+            <td>Team</td>
+            <td>Manager</td>
+            <td>Director</td>
+            <td>Director</td>
+            <td>VP</td>
+            <td>CEO</td>
+          </tr>
+          <tr>
+            <td>Software</td>
+            <td>Team</td>
+            <td>Manager</td>
+            <td>Manager</td>
+            <td>Director</td>
+            <td>VP</td>
+            <td>CEO</td>
+          </tr>
+          <tr>
+            <td>Supplies</td>
+            <td>Auto</td>
+            <td>Team</td>
+            <td>Manager</td>
+            <td>Director</td>
+            <td>VP</td>
+            <td>CEO</td>
+          </tr>
+          <tr>
+            <td>Training</td>
+            <td>Team</td>
+            <td>Manager</td>
+            <td>Manager</td>
+            <td>Director</td>
+            <td>VP</td>
+            <td>CEO</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Approval Limits by Role -->
+  <div class="limits-section">
+    <h2>💰 APPROVAL LIMITS BY ROLE</h2>
+    <div class="table-container">
+      <table class="limits-table">
+        <thead>
+          <tr>
+            <th>Role</th>
+            <th>Per Request</th>
+            <th>Monthly Limit</th>
+            <th>Annual Limit</th>
+            <th>Requires Justification</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (limit of approvalLimits; track limit.role) {
+            <tr>
+              <td>{{ limit.role }}</td>
+              <td>{{ limit.perRequest }}</td>
+              <td>{{ limit.monthlyLimit }}</td>
+              <td>{{ limit.annualLimit }}</td>
+              <td>{{ limit.requiresJustification }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

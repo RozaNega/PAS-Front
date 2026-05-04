@@ -1,0 +1,80 @@
+<div class="modal-header">
+  <h4 class="modal-title">SIV Details: {{ siv().sivNumber }}</h4>
+  <button type="button" class="btn-close" aria-label="Close" (click)="close()"></button>
+</div>
+
+<div class="modal-body">
+  <!-- SIV Information -->
+  <section class="info-section">
+    <h5>🧾 SIV INFORMATION</h5>
+    <div class="info-grid">
+      <div class="info-item">
+        <strong>SIV Number:</strong> {{ siv().sivNumber }}
+      </div>
+      <div class="info-item">
+        <strong>Date:</strong> {{ siv().date }}
+      </div>
+      <div class="info-item">
+        <strong>SR Number:</strong> {{ siv().srNumber }}
+      </div>
+      <div class="info-item">
+        <strong>Status:</strong> {{ siv().status }}
+      </div>
+      @if (siv().issuedTo) {
+        <div class="info-item">
+          <strong>Issued To:</strong> {{ siv().issuedTo }}
+        </div>
+      }
+      @if (siv().department) {
+        <div class="info-item">
+          <strong>Department:</strong> {{ siv().department }}
+        </div>
+      }
+      <div class="info-item">
+        <strong>Issued By:</strong> {{ siv().issuedBy }}
+      </div>
+      <div class="info-item">
+        <strong>Received By:</strong> {{ siv().receivedBy }}
+      </div>
+    </div>
+  </section>
+
+  <!-- Items -->
+  <section class="info-section">
+    <h5>📦 ITEMS</h5>
+    <table class="items-table">
+      <thead>
+        <tr>
+          <th>Item Name</th>
+          <th>SKU</th>
+          <th>Quantity</th>
+          <th>UOM</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (item of siv().items; track item.sku) {
+          <tr>
+            <td>{{ item.name }}</td>
+            <td>{{ item.sku }}</td>
+            <td>{{ item.quantity }}</td>
+            <td>{{ item.uom ?? '-' }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </section>
+
+  <!-- Notes -->
+  @if (siv().notes) {
+    <section class="info-section">
+      <h5>📝 NOTES</h5>
+      <p>{{ siv().notes }}</p>
+    </section>
+  }
+</div>
+
+<div class="modal-footer">
+  <button class="btn btn-secondary" (click)="close()">Close</button>
+  <button class="btn btn-secondary" (click)="print()">🖨️ Print</button>
+  <button class="btn btn-primary" (click)="email()">📧 Email</button>
+</div>

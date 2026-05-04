@@ -1,0 +1,86 @@
+<div class="requests-summary-page">
+  <div class="page-header">
+    <h1>My Requests Summary</h1>
+  </div>
+
+  <!-- Requests Overview -->
+  <div class="overview-section">
+    <h2>📊 REQUESTS OVERVIEW</h2>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-title">Total Requests</div>
+        <div class="stat-subtitle">(All Time)</div>
+        <div class="stat-value">{{ stats.total }}</div>
+        <div class="stat-trend">this year</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-title">Pending</div>
+        <div class="stat-subtitle">Approval</div>
+        <div class="stat-value">{{ stats.pending }}</div>
+        <div class="stat-trend">🔴 Urgent: {{ stats.urgent }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-title">Approved</div>
+        <div class="stat-subtitle"></div>
+        <div class="stat-value">{{ stats.approved }}</div>
+        <div class="stat-trend">🟢 Ready</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-title">Rejected</div>
+        <div class="stat-subtitle"></div>
+        <div class="stat-value">{{ stats.rejected }}</div>
+        <div class="stat-trend">🔴 Rejected</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-title">Completed</div>
+        <div class="stat-subtitle"></div>
+        <div class="stat-value">{{ stats.completed }}</div>
+        <div class="stat-trend">✅ Done</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Status Breakdown Chart -->
+  <div class="chart-section">
+    <h2>📈 STATUS BREAKDOWN CHART</h2>
+    <div class="chart-container">
+      <div class="pie-chart" [style.--approved-pct]="approvedPercentage" [style.--pending-pct]="pendingPercentage" [style.--rejected-pct]="rejectedPercentage">
+        <div class="pie-chart-inner">
+          <div class="pie-title">Total: {{ stats.total }}</div>
+          <div class="pie-item">🟢 Approved: {{ stats.approved }}</div>
+          <div class="pie-item">🟡 Pending: {{ stats.pending }}</div>
+          <div class="pie-item">🔴 Rejected: {{ stats.rejected }}</div>
+          <div class="pie-item">✅ Completed: {{ stats.completed }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Requests by Month -->
+  <div class="monthly-section">
+    <h2>📊 REQUESTS BY MONTH (2024)</h2>
+    <div class="monthly-grid">
+      @for (data of monthlyData; track data.month) {
+        <div class="monthly-item">
+          <span class="month-label">{{ data.month }}: {{ data.count }}</span>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Value Summary -->
+  <div class="value-section">
+    <h2>💰 VALUE SUMMARY</h2>
+    <div class="value-card">
+      <div class="value-item">
+        <strong>Total Value of Approved Requests:</strong> {{ valueSummary.totalValue }}
+      </div>
+      <div class="value-item">
+        <strong>Average Value per Request:</strong> {{ valueSummary.averageValue }}
+      </div>
+      <div class="value-item">
+        <strong>Highest Value Request:</strong> {{ valueSummary.highestValue }} ({{ valueSummary.highestValueRequest }})
+      </div>
+    </div>
+  </div>
+</div>

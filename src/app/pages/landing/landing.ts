@@ -6,7 +6,6 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { NgOptimizedImage } from '@angular/common';
 import { RouterLink } from '@angular/router';
 
 type ModuleId = 'property' | 'storage' | 'workflow';
@@ -37,7 +36,7 @@ interface ModuleItem {
 
 @Component({
   selector: 'app-landing',
-  imports: [RouterLink, NgOptimizedImage],
+  imports: [RouterLink],
   templateUrl: './landing.html',
   styleUrl: './landing.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

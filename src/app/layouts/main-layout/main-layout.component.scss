@@ -343,61 +343,6 @@
   color: var(--text-color);
 }
 
-.user-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.65rem;
-  padding: 0.4rem 0.6rem;
-  border-radius: 999px;
-  background: var(--surface-section);
-  border: 1px solid var(--surface-border);
-}
-
-.user-chip--interactive {
-  text-decoration: none;
-  cursor: pointer;
-}
-
-.user-chip--interactive:hover {
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 2px var(--primary-focus-ring);
-}
-
-.user-chip--active {
-  border-color: var(--primary-color);
-  background: var(--primary-color-soft);
-}
-
-.user-chip-avatar {
-  width: 2rem;
-  height: 2rem;
-  border-radius: 999px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.72rem;
-  font-weight: 800;
-  color: var(--primary-color);
-  background: var(--primary-color-soft);
-}
-
-.user-chip-text {
-  display: grid;
-}
-
-.user-chip-name {
-  font-size: 0.84rem;
-  font-weight: 700;
-  line-height: 1.2;
-}
-
-.user-chip-role {
-  font-size: 0.72rem;
-  color: var(--text-color-muted);
-  line-height: 1.2;
-  text-transform: capitalize;
-}
-
 .logout-btn {
   border: 1px solid #fca5a5;
   border-radius: 10px;

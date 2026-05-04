@@ -1,0 +1,169 @@
+<div class="decision-reports-page">
+  <div class="page-header">
+    <h1>Decision Reports</h1>
+    <button class="btn btn-primary" (click)="generate()">Generate</button>
+  </div>
+
+  <!-- Report Filters -->
+  <div class="filter-section">
+    <div class="filter-row">
+      <label>📅 Date Range:</label>
+      <input type="text" [(ngModel)]="dateFrom" />
+      <span>to</span>
+      <input type="text" [(ngModel)]="dateTo" />
+      <label>📄 Report Type:</label>
+      <select [(ngModel)]="reportType">
+        <option>Approval Summary ▼</option>
+      </select>
+    </div>
+    <div class="filter-row">
+      <label>📊 Format:</label>
+      <select [(ngModel)]="format">
+        <option>PDF ▼</option>
+      </select>
+      <label>🔄 Include Details:</label>
+      <select [(ngModel)]="includeDetails">
+        <option>Yes ▼</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Approval Summary -->
+  <div class="summary-section">
+    <h2>📊 APPROVAL SUMMARY - IT Department</h2>
+    <div class="summary-grid">
+      <div class="summary-card">
+        <div class="summary-title">Total Requests Processed</div>
+        <div class="summary-value">{{ approvalSummary.totalRequests }}</div>
+        <div class="summary-trend">this month</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-title">Approved</div>
+        <div class="summary-value">{{ approvalSummary.approved }}</div>
+        <div class="summary-trend">+15 from last</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-title">Rejected</div>
+        <div class="summary-value">{{ approvalSummary.rejected }}</div>
+        <div class="summary-trend">-2 from last</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-title">Approval Rate</div>
+        <div class="summary-value">{{ approvalSummary.approvalRate }}</div>
+        <div class="summary-trend">▲ +5%</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-title">Total Value Approved</div>
+        <div class="summary-value">{{ approvalSummary.totalValue }}</div>
+        <div class="summary-trend">▲ +12%</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Response Time Report -->
+  <div class="response-section">
+    <h2>⏱️ RESPONSE TIME REPORT</h2>
+    <div class="response-card">
+      <div class="response-item">
+        <strong>Average Response Time:</strong> {{ responseTimeReport.averageResponseTime }}
+      </div>
+      <div class="response-item">
+        <strong>Fastest Response:</strong> {{ responseTimeReport.fastestResponse }}
+      </div>
+      <div class="response-item">
+        <strong>Slowest Response:</strong> {{ responseTimeReport.slowestResponse }}
+      </div>
+      <div class="response-distribution">
+        <strong>Response Time Distribution:</strong>
+        <div class="distribution-bar">
+          <span>&lt; 1 hour:</span>
+          <div class="bar-fill" style="width: 45%;">45%</div>
+        </div>
+        <div class="distribution-bar">
+          <span>1-2 hours:</span>
+          <div class="bar-fill" style="width: 35%;">35%</div>
+        </div>
+        <div class="distribution-bar">
+          <span>2-4 hours:</span>
+          <div class="bar-fill" style="width: 20%;">20%</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Department Analysis -->
+  <div class="analysis-section">
+    <h2>👥 DEPARTMENT ANALYSIS</h2>
+    <div class="table-container">
+      <table class="analysis-table">
+        <thead>
+          <tr>
+            <th>Department</th>
+            <th>Requests</th>
+            <th>Approved</th>
+            <th>Rejected</th>
+            <th>Value</th>
+            <th>Avg Response</th>
+            <th>Approval Rate</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (dept of departmentAnalysis; track dept.department) {
+            <tr>
+              <td>{{ dept.department }}</td>
+              <td>{{ dept.requests }}</td>
+              <td>{{ dept.approved }}</td>
+              <td>{{ dept.rejected }}</td>
+              <td>{{ dept.value }}</td>
+              <td>{{ dept.avgResponse }}</td>
+              <td>{{ dept.approvalRate }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Value Analysis -->
+  <div class="value-section">
+    <h2>💰 VALUE ANALYSIS</h2>
+    <div class="table-container">
+      <table class="value-table">
+        <thead>
+          <tr>
+            <th>Value Range</th>
+            <th>Requests</th>
+            <th>Approved</th>
+            <th>Rejected</th>
+            <th>Total Value</th>
+            <th>% of Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (value of valueAnalysis; track value.valueRange) {
+            <tr>
+              <td>{{ value.valueRange }}</td>
+              <td>{{ value.requests }}</td>
+              <td>{{ value.approved }}</td>
+              <td>{{ value.rejected }}</td>
+              <td>{{ value.totalValue }}</td>
+              <td>{{ value.percentageOfTotal }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Export Options -->
+  <div class="export-section">
+    <h2>⚡ EXPORT OPTIONS</h2>
+    <div class="export-buttons">
+      <button class="btn btn-secondary" (click)="exportExcel()">📥 Export to Excel</button>
+      <button class="btn btn-secondary" (click)="exportPDF()">📄 Export to PDF</button>
+      <button class="btn btn-secondary" (click)="emailReport()">📧 Email Report</button>
+      <button class="btn btn-secondary" (click)="printReport()">🖨️ Print Report</button>
+      <button class="btn btn-secondary" (click)="scheduleReport()">📅 Schedule Report</button>
+    </div>
+  </div>
+</div>
