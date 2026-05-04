@@ -1,0 +1,137 @@
+<div class="compliance-dashboard">
+  <div class="page-header">
+    <h1>Compliance Dashboard</h1>
+    <p>Monitor compliance score, risk summary, and violation trends</p>
+  </div>
+
+  <!-- Compliance Overview -->
+  <div class="overview-section">
+    <div class="overview-card">
+      <div class="overview-header">
+        <span class="overview-icon">🛡️</span>
+        <span class="overview-title">Compliance Overview</span>
+        <span class="overview-date">📅 Dec 15, 2024</span>
+      </div>
+      <div class="overview-content">
+        <p>System Status: 🟢 All Systems Operational | Last Audit: Dec 14, 2024 | Next Audit: Jan 15, 2025</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Compliance Score -->
+  <div class="score-section">
+    <h2>🎯 COMPLIANCE SCORE</h2>
+    <div class="score-container">
+      <div class="score-circle">
+        <div class="score-value">{{ currentScore }}%</div>
+        <div class="score-label">{{ scoreLabel }}</div>
+      </div>
+      <div class="score-breakdown">
+        @for (score of complianceScores; track score.category) {
+          <div class="score-item">
+            <div class="score-label">{{ score.category }}</div>
+            <div class="score-bar">
+              <div class="score-fill" [style.width.%]="score.percentage"></div>
+            </div>
+            <div class="score-percentage">{{ score.percentage }}%</div>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- Risk Summary -->
+  <div class="risk-section">
+    <h2>⚠️ RISK SUMMARY</h2>
+    <div class="risk-cards">
+      @for (risk of riskSummary; track risk.severity) {
+        <div class="risk-card">
+          <div class="risk-title">{{ risk.severity }} Violations</div>
+          <div class="risk-count">{{ risk.count }}</div>
+          <div class="risk-open">🔴 Open: {{ risk.open }}</div>
+        </div>
+      }
+      <div class="risk-card risk-total">
+        <div class="risk-title">Total Violations</div>
+        <div class="risk-count">{{ totalViolations }}</div>
+        <div class="risk-trend">▼ -15%</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Violation Trends -->
+  <div class="trends-section">
+    <h2>📉 VIOLATION TRENDS (Last 6 months)</h2>
+    <div class="trends-legend">
+      <span class="legend-item"><span class="legend-dot critical"></span> Critical</span>
+      <span class="legend-item"><span class="legend-dot high"></span> High</span>
+      <span class="legend-item"><span class="legend-dot medium"></span> Medium</span>
+      <span class="legend-item"><span class="legend-dot low"></span> Low</span>
+    </div>
+    <div class="trends-chart">
+      <svg viewBox="0 0 600 200" class="trends-svg">
+        <!-- Grid lines -->
+        <line x1="50" y1="20" x2="580" y2="20" stroke="#e5e7eb" stroke-width="1" />
+        <line x1="50" y1="60" x2="580" y2="60" stroke="#e5e7eb" stroke-width="1" />
+        <line x1="50" y1="100" x2="580" y2="100" stroke="#e5e7eb" stroke-width="1" />
+        <line x1="50" y1="140" x2="580" y2="140" stroke="#e5e7eb" stroke-width="1" />
+        <line x1="50" y1="180" x2="580" y2="180" stroke="#e5e7eb" stroke-width="1" />
+
+        <!-- Y-axis labels -->
+        <text x="40" y="25" text-anchor="end" font-size="10">12</text>
+        <text x="40" y="65" text-anchor="end" font-size="10">10</text>
+        <text x="40" y="105" text-anchor="end" font-size="10">8</text>
+        <text x="40" y="145" text-anchor="end" font-size="10">6</text>
+        <text x="40" y="185" text-anchor="end" font-size="10">4</text>
+
+        <!-- X-axis labels -->
+        <text x="50" y="195" text-anchor="middle" font-size="10">Jul</text>
+        <text x="140" y="195" text-anchor="middle" font-size="10">Aug</text>
+        <text x="230" y="195" text-anchor="middle" font-size="10">Sep</text>
+        <text x="320" y="195" text-anchor="middle" font-size="10">Oct</text>
+        <text x="410" y="195" text-anchor="middle" font-size="10">Nov</text>
+        <text x="500" y="195" text-anchor="middle" font-size="10">Dec</text>
+
+        <!-- Critical line -->
+        <polyline fill="none" stroke="#ef4444" stroke-width="2" points="50,130 140,140 230,140 320,150 410,150 500,150" />
+        <!-- High line -->
+        <polyline fill="none" stroke="#f97316" stroke-width="2" points="50,110 140,120 230,110 320,120 410,130 500,130" />
+        <!-- Medium line -->
+        <polyline fill="none" stroke="#eab308" stroke-width="2" points="50,90 140,100 230,110 320,100 410,110 500,110" />
+        <!-- Low line -->
+        <polyline fill="none" stroke="#22c55e" stroke-width="2" points="50,70 140,80 230,90 320,100 410,110 500,120" />
+      </svg>
+    </div>
+  </div>
+
+  <!-- Recent Activity -->
+  <div class="activity-section">
+    <h2>🔔 RECENT ACTIVITY</h2>
+    <div class="activity-list">
+      @for (activity of recentActivities; track activity.description) {
+        <div class="activity-item">
+          <span class="activity-icon">{{ activity.icon }}</span>
+          <span class="activity-date">{{ activity.date }}</span>
+          <span class="activity-description">{{ activity.description }}</span>
+        </div>
+      }
+    </div>
+    <div class="activity-footer">
+      <a href="#" class="view-all-link" (click)="viewAllActivity()">View All Activity →</a>
+    </div>
+  </div>
+
+  <!-- Quick Stats -->
+  <div class="stats-section">
+    <h2>📊 QUICK STATS</h2>
+    <div class="stats-grid">
+      @for (stat of quickStats; track stat.label) {
+        <div class="stat-card">
+          <div class="stat-label">{{ stat.label }}</div>
+          <div class="stat-value">{{ stat.value }}</div>
+          <div class="stat-subtitle">{{ stat.subtitle }}</div>
+        </div>
+      }
+    </div>
+  </div>
+</div>

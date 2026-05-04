@@ -12,20 +12,20 @@ export interface MenuItem {
 export const managerMenuConfig: MenuItem[] = [
   { label: 'Approval Dashboard', route: '/manager/dashboard', icon: 'bi bi-house-fill' },
   { label: 'Notifications', route: '/manager/notifications', icon: 'bi bi-bell-fill' },
-  { label: 'Decision Profile', route: '/manager/dashboard', icon: 'bi bi-person-circle' },
+  { label: 'Decision Profile', route: '/manager/decision-profile', icon: 'bi bi-person-circle' },
   {
     label: 'Approval Queue',
-    route: '/manager/requisition/service-requests',
+    route: '/manager/approval-queue',
     icon: 'bi bi-inboxes-fill',
   },
   {
     label: 'Approval Workflow',
-    route: '/manager/workflow/approval-workflows',
+    route: '/manager/approval-workflow',
     icon: 'bi bi-diagram-3-fill',
   },
-  { label: 'Approver Matrix', route: '/manager/workflow/approvers', icon: 'bi bi-people-fill' },
-  { label: 'Decision Reports', route: '/manager/reports', icon: 'bi bi-bar-chart-fill' },
-  { label: 'Audit Reference', route: '/manager/audit-trail', icon: 'bi bi-clock-history' },
+  { label: 'Approver Matrix', route: '/manager/approver-matrix', icon: 'bi bi-people-fill' },
+  { label: 'Decision Reports', route: '/manager/decision-reports', icon: 'bi bi-bar-chart-fill' },
+  { label: 'Audit Reference', route: '/manager/audit-reference', icon: 'bi bi-clock-history' },
 ];
 
 export const complianceOfficerMenuConfig: MenuItem[] = [
@@ -34,13 +34,16 @@ export const complianceOfficerMenuConfig: MenuItem[] = [
     route: '/compliance-officer/dashboard',
     icon: 'bi bi-house-fill',
   },
-  { label: 'Risk Alerts', route: '/compliance-officer/notifications', icon: 'bi bi-bell-fill' },
-  { label: 'Officer Profile', route: '/compliance-officer/dashboard', icon: 'bi bi-person-circle' },
+  { label: 'Risk Alerts', route: '/compliance-officer/risk-alerts', icon: 'bi bi-bell-fill' },
+  { label: 'Officer Profile', route: '/compliance-officer/officer-profile', icon: 'bi bi-person-circle' },
   { label: 'Audit Trail', route: '/compliance-officer/audit-trail', icon: 'bi bi-clock-history' },
   {
     label: 'Compliance Reports',
-    route: '/compliance-officer/reports',
+    route: '/compliance-officer/compliance-reports',
     icon: 'bi bi-bar-chart-fill',
+    children: [
+      { label: 'Report Preview', route: '/compliance-officer/report-preview', icon: 'bi bi-file-earmark-fill' },
+    ],
   },
 ];
 

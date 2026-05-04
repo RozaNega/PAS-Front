@@ -1,0 +1,269 @@
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--surface-border);
+}
+
+.modal-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.modal-body {
+  padding: 1.5rem;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--surface-border);
+}
+
+.step-indicator {
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  color: var(--primary-color);
+  font-size: 1.1rem;
+}
+
+.form-section {
+  margin-bottom: 1rem;
+}
+
+.form-section label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: var(--text-color);
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.form-row label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: var(--text-color);
+}
+
+.readonly-field {
+  padding: 0.6rem 0.8rem;
+  background: var(--surface-section);
+  border: 1px solid var(--surface-border);
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+input[type='text'],
+input[type='date'],
+input[type='number'],
+select,
+textarea {
+  width: 100%;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--surface-border);
+  border-radius: 8px;
+  background: var(--surface-card);
+  color: var(--text-color);
+  font: inherit;
+}
+
+textarea {
+  resize: vertical;
+}
+
+.search-section {
+  margin-bottom: 1rem;
+}
+
+.search-input {
+  width: 100%;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--surface-border);
+  border-radius: 8px;
+  background: var(--surface-card);
+  color: var(--text-color);
+}
+
+.items-table,
+.selected-table {
+  margin-bottom: 1.5rem;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  padding: 0.6rem;
+  text-align: left;
+  border-bottom: 1px solid var(--surface-border);
+}
+
+th {
+  font-weight: 600;
+  color: var(--text-color-muted);
+  font-size: 0.9rem;
+}
+
+.quantity-input {
+  width: 70px;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--surface-border);
+  border-radius: 6px;
+  background: var(--surface-card);
+  color: var(--text-color);
+}
+
+.btn-add {
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.btn-add:hover {
+  opacity: 0.9;
+}
+
+.selected-items-section {
+  margin-top: 1.5rem;
+}
+
+.selected-items-section h5 {
+  margin: 0 0 1rem 0;
+  font-weight: 700;
+}
+
+.no-items {
+  color: var(--text-color-muted);
+  font-style: italic;
+}
+
+.items-summary {
+  margin-top: 1rem;
+  font-weight: 600;
+  color: var(--text-color-muted);
+}
+
+.summary-section {
+  margin-bottom: 1.5rem;
+}
+
+.summary-section h5 {
+  margin: 0 0 1rem 0;
+  font-weight: 700;
+}
+
+.summary-details {
+  display: grid;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.summary-details p {
+  margin: 0;
+}
+
+.warning-box {
+  padding: 0.75rem 1rem;
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: 8px;
+  color: #92400e;
+  font-weight: 600;
+}
+
+.items-summary-section {
+  margin-top: 1.5rem;
+}
+
+.items-summary-section h5 {
+  margin: 0 0 1rem 0;
+  font-weight: 700;
+}
+
+.item-summary-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--surface-border);
+}
+
+.icon-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.1rem;
+  padding: 0.3rem;
+  border-radius: 6px;
+  transition: background 0.2s;
+}
+
+.icon-btn:hover {
+  background: rgba(14, 165, 233, 0.1);
+}
+
+.btn {
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--primary-color);
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.btn-secondary {
+  background: var(--primary-color-soft);
+  color: var(--primary-color);
+  border: 1px solid var(--primary-color);
+}
+
+.btn-secondary:hover {
+  background: rgba(14, 165, 233, 0.2);
+}
+
+@media (max-width: 600px) {
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-footer {
+    flex-direction: column;
+  }
+
+  .modal-footer .btn {
+    width: 100%;
+  }
+}

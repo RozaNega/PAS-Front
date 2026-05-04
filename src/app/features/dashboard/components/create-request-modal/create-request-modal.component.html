@@ -1,0 +1,188 @@
+<div class="modal-header">
+  <h4 class="modal-title">Create Service Request (SR)</h4>
+  <button type="button" class="btn-close" aria-label="Close" (click)="cancel()"></button>
+</div>
+
+<div class="modal-body">
+  <!-- Step 1: Basic Information -->
+  @if (currentStep === 1) {
+    <div class="step-indicator">Step 1 of 3: Basic Information</div>
+
+    <div class="form-section">
+      <label>SR NUMBER (Auto-generated)</label>
+      <div class="readonly-field">{{ srNumber }}</div>
+    </div>
+
+    <div class="form-row">
+      <label>
+        Requester *
+        <select [(ngModel)]="form.requester">
+          <option>John Doe</option>
+          <option>Jane Smith</option>
+        </select>
+      </label>
+      <label>
+        Department *
+        <select [(ngModel)]="form.department">
+          <option>IT Department</option>
+          <option>HR Department</option>
+          <option>Finance Department</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="form-row">
+      <label>
+        Required By Date *
+        <input type="date" [(ngModel)]="form.requiredBy" />
+      </label>
+    </div>
+
+    <div class="form-section">
+      <label>Justification / Reason *</label>
+      <textarea [(ngModel)]="form.justification" rows="3" placeholder="Enter justification..."></textarea>
+    </div>
+
+    <div class="form-section">
+      <label>Priority *</label>
+      <select [(ngModel)]="form.priority">
+        <option value="Normal">🟢 Normal (3-5 days)</option>
+        <option value="Medium">🟡 Medium (1-3 days)</option>
+        <option value="Urgent">🔴 Urgent (Same day)</option>
+      </select>
+    </div>
+  }
+
+  <!-- Step 2: Items Requested -->
+  @if (currentStep === 2) {
+    <div class="step-indicator">Step 2 of 3: Items Requested</div>
+
+    <div class="search-section">
+      <input
+        type="text"
+        [(ngModel)]="searchQuery"
+        placeholder="🔍 Search Items..."
+        class="search-input"
+      />
+    </div>
+
+    <div class="items-table">
+      <table>
+        <thead>
+          <tr>
+            <th>Item Name</th>
+            <th>SKU</th>
+            <th>Available</th>
+            <th>UOM</th>
+            <th>Requested</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of filteredItems; track item.sku) {
+            <tr>
+              <td>{{ item.name }}</td>
+              <td>{{ item.sku }}</td>
+              <td>{{ item.available }}</td>
+              <td>{{ item.uom }}</td>
+              <td><input type="number" min="1" value="1" class="quantity-input" /></td>
+              <td><button class="btn-add" (click)="addItem(item)">➕ Add</button></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <div class="selected-items-section">
+      <h5>SELECTED ITEMS</h5>
+      @if (selectedItems.length === 0) {
+        <p class="no-items">No items selected</p>
+      } @else {
+        <table class="selected-table">
+          <thead>
+            <tr>
+              <th>Item Name</th>
+              <th>SKU</th>
+              <th>Requested</th>
+              <th>Available</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of selectedItems; track item.sku) {
+              <tr>
+                <td>{{ item.name }}</td>
+                <td>{{ item.sku }}</td>
+                <td>
+                  <input
+                    type="number"
+                    [(ngModel)]="item.quantity"
+                    (ngModelChange)="updateItemQuantity(item.sku, $event)"
+                    min="1"
+                    class="quantity-input"
+                  />
+                </td>
+                <td>✅ Yes</td>
+                <td>
+                  <button class="icon-btn" (click)="removeItem(item.sku)">✏️</button>
+                  <button class="icon-btn" (click)="removeItem(item.sku)">🗑️</button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+        <p class="items-summary">Total Items: {{ totalItems }} | Total Quantity: {{ totalQuantity }}</p>
+      }
+    </div>
+  }
+
+  <!-- Step 3: Review & Submit -->
+  @if (currentStep === 3) {
+    <div class="step-indicator">Step 3 of 3: Review & Submit</div>
+
+    <div class="summary-section">
+      <h5>SUMMARY</h5>
+      <div class="summary-details">
+        <p><strong>• SR Number:</strong> {{ srNumber }}</p>
+        <p><strong>• Requester:</strong> {{ form.requester }} ({{ form.department }})</p>
+        <p><strong>• Total Items:</strong> {{ totalItems }} | <strong>Total Quantity:</strong> {{ totalQuantity }}</p>
+        <p><strong>• Required By:</strong> {{ form.requiredBy }}</p>
+        <p><strong>• Priority:</strong> {{ form.priority }}</p>
+      </div>
+      <div class="warning-box">
+        ⚠️ Please review all information before submitting
+      </div>
+    </div>
+
+    <div class="items-summary-section">
+      <h5>ITEMS TO BE REQUESTED</h5>
+      @for (item of selectedItems; track item.sku) {
+        <div class="item-summary-row">
+          <span>{{ item.name }} ({{ item.sku }})</span>
+          <span>Quantity: {{ item.quantity }}</span>
+        </div>
+      }
+    </div>
+  }
+</div>
+
+<div class="modal-footer">
+  @if (currentStep === 1) {
+    <button class="btn btn-secondary" (click)="cancel()">Cancel</button>
+    <button class="btn btn-secondary" (click)="submit()">Save Draft</button>
+    <button class="btn btn-primary" (click)="nextStep()" [disabled]="!form.requiredBy || !form.justification">
+      Next
+    </button>
+  }
+
+  @if (currentStep === 2) {
+    <button class="btn btn-secondary" (click)="previousStep()">Back</button>
+    <button class="btn btn-primary" (click)="nextStep()" [disabled]="selectedItems.length === 0">Next</button>
+  }
+
+  @if (currentStep === 3) {
+    <button class="btn btn-secondary" (click)="previousStep()">Back</button>
+    <button class="btn btn-secondary" (click)="cancel()">Cancel</button>
+    <button class="btn btn-primary" (click)="submit()">Submit</button>
+  }
+</div>

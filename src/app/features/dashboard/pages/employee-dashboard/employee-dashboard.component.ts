@@ -1,43 +1,17 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
-import { inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Router } from '@angular/router';
-
-type RequestStatus = 'Pending' | 'Approved' | 'Rejected';
-
-interface SummaryCard {
-  readonly title: string;
-  readonly value: number;
-  readonly description: string;
-  readonly icon: string;
-  readonly tone: 'blue' | 'amber' | 'green' | 'rose';
-}
-
-interface FeaturedRequest {
-  readonly requestId: string;
-  readonly itemName: string;
-  readonly category: string;
-  readonly quantity: number;
-  readonly status: RequestStatus;
-  readonly dateLabel: string;
-}
-
-interface HomeNotification {
-  readonly title: string;
-  readonly detail: string;
-  readonly timeLabel: string;
-}
-
-interface RequestSummaryMetric {
-  readonly label: string;
-  readonly value: string;
-}
-
-interface CatalogItem {
-  readonly name: string;
-  readonly category: string;
-  readonly availability: string;
-}
+import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
+import {
+  RequestSummaryCard,
+  PendingRequest,
+  RecentActivity,
+  RequestTrendData,
+  QuickLink,
+  ServiceRequest,
+  CatalogItem,
+} from '../../../../types/dashboard.types';
+import { CreateRequestModalComponent } from '../../components/create-request-modal/create-request-modal.component';
 
 type DashboardView =
   | 'home'
@@ -58,101 +32,251 @@ type DashboardView =
 })
 export class EmployeeDashboardComponent {
   readonly router = inject(Router);
-  readonly userName = 'User';
+  readonly modalService = inject(NgbModal);
+  readonly userName = 'John';
+  readonly currentDate = new Date().toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+  readonly greeting = this.getGreeting();
 
-  readonly summaryCards: SummaryCard[] = [
+  readonly summaryCards: RequestSummaryCard[] = [
     {
       title: 'Total Requests',
-      value: 24,
-      description: 'All time requests',
+      value: 5,
+      subtitle: 'This Month',
+      trend: '▲ +2 from last month',
       icon: 'bi-clipboard2-data',
       tone: 'blue',
     },
     {
       title: 'Pending',
-      value: 7,
-      description: 'Awaiting action',
+      value: 2,
+      subtitle: 'Approval',
+      trend: '🔴 Urgent: 1',
       icon: 'bi-clock-history',
       tone: 'amber',
     },
     {
       title: 'Approved',
-      value: 13,
-      description: 'Successfully approved',
+      value: 2,
+      subtitle: '',
+      trend: '🟢 Ready',
       icon: 'bi-check-circle',
       tone: 'green',
     },
     {
       title: 'Rejected',
-      value: 4,
-      description: 'Not approved',
+      value: 0,
+      subtitle: '',
+      trend: '● Same',
       icon: 'bi-x-circle',
       tone: 'rose',
     },
-  ];
-
-  readonly featuredRequest: FeaturedRequest = {
-    requestId: 'REQ-123',
-    itemName: 'Laptop',
-    category: 'IT Equipment',
-    quantity: 1,
-    status: 'Pending',
-    dateLabel: 'Today',
-  };
-
-  readonly homeNotifications: HomeNotification[] = [
     {
-      title: 'Request Approved',
-      detail: 'Your request #123 for Laptop has been approved.',
-      timeLabel: '10 min ago',
-    },
-    {
-      title: 'Item Issued',
-      detail: 'Your request #121 for Printer has been issued.',
-      timeLabel: '1 hour ago',
+      title: 'Completed',
+      value: 1,
+      subtitle: '',
+      trend: '✅ Done',
+      icon: 'bi-check2-all',
+      tone: 'green',
     },
   ];
 
-  readonly recentRequests: FeaturedRequest[] = [
-    this.featuredRequest,
+  readonly pendingRequests: PendingRequest[] = [
     {
-      requestId: 'REQ-124',
-      itemName: 'Printer',
-      category: 'IT Equipment',
-      quantity: 2,
+      srNumber: 'SR-2024-123',
+      priority: 'Urgent',
+      requestedDate: 'Dec 15, 2024',
+      waitingTime: '2 hours',
+      requiredDate: 'Dec 18, 2024',
+      items: ['Dell XPS Laptop (2)', 'HP Monitor (1)'],
+      status: 'Pending',
+    },
+    {
+      srNumber: 'SR-2024-122',
+      priority: 'Medium',
+      requestedDate: 'Dec 14, 2024',
+      waitingTime: '1 day',
+      requiredDate: 'Dec 20, 2024',
+      items: ['Office Chair (2)', 'Desk (1)'],
+      status: 'Pending',
+    },
+  ];
+
+  readonly recentActivity: RecentActivity[] = [
+    {
+      date: 'Dec 14, 2024',
+      description: 'Your request SR-2024-121 was approved',
+      type: 'approved',
+    },
+    {
+      date: 'Dec 13, 2024',
+      description: 'Your request SR-2024-120 was completed (SIV-045 issued)',
+      type: 'completed',
+    },
+    {
+      date: 'Dec 12, 2024',
+      description: 'Your request SR-2024-119 was submitted for approval',
+      type: 'submitted',
+    },
+    {
+      date: 'Dec 10, 2024',
+      description: 'Your request SR-2024-118 was approved',
+      type: 'approved',
+    },
+    {
+      date: 'Dec 08, 2024',
+      description: 'Your request SR-2024-117 was rejected (Reason: Budget constraints)',
+      type: 'rejected',
+    },
+  ];
+
+  readonly requestTrendData: RequestTrendData[] = [
+    { month: 'Jul', submitted: 3, approved: 2, completed: 2, rejected: 0 },
+    { month: 'Aug', submitted: 4, approved: 3, completed: 3, rejected: 1 },
+    { month: 'Sep', submitted: 5, approved: 4, completed: 4, rejected: 0 },
+    { month: 'Oct', submitted: 6, approved: 5, completed: 5, rejected: 1 },
+    { month: 'Nov', submitted: 7, approved: 6, completed: 6, rejected: 0 },
+    { month: 'Dec', submitted: 5, approved: 2, completed: 1, rejected: 0 },
+  ];
+
+  readonly quickLinks: QuickLink[] = [
+    { label: 'Create New Request', icon: 'bi-plus-lg', route: '/employee/dashboard/new-request' },
+    { label: 'My Requests', icon: 'bi-clipboard-list', route: '/employee/dashboard/my-requests' },
+    { label: 'Available Items', icon: 'bi-box-seam', route: '/employee/dashboard/catalog-items' },
+    { label: 'My Profile', icon: 'bi-person', route: '/employee/dashboard/profile' },
+  ];
+
+  readonly myRequests: ServiceRequest[] = [
+    {
+      srNumber: 'SR-2024-123',
+      date: 'Dec 15',
+      items: 3,
+      priority: 'Urgent',
+      status: 'Pending',
+      requiredBy: 'Dec 18, 2024',
+      requester: 'John Doe',
+      department: 'IT Department',
+      justification: 'New equipment for project',
+    },
+    {
+      srNumber: 'SR-2024-122',
+      date: 'Dec 14',
+      items: 2,
+      priority: 'Medium',
+      status: 'Pending',
+      requiredBy: 'Dec 20, 2024',
+      requester: 'John Doe',
+      department: 'IT Department',
+      justification: 'Office furniture',
+    },
+    {
+      srNumber: 'SR-2024-121',
+      date: 'Dec 13',
+      items: 1,
+      priority: 'Normal',
       status: 'Approved',
-      dateLabel: 'Apr 23, 2026',
+      requiredBy: 'Dec 19, 2024',
+      requester: 'John Doe',
+      department: 'IT Department',
+      justification: 'New equipment for intern',
     },
     {
-      requestId: 'REQ-125',
-      itemName: 'Monitor',
-      category: 'IT Equipment',
-      quantity: 1,
+      srNumber: 'SR-2024-120',
+      date: 'Dec 12',
+      items: 2,
+      priority: 'Medium',
+      status: 'Completed',
+      requiredBy: 'Dec 15, 2024',
+      requester: 'John Doe',
+      department: 'IT Department',
+      justification: 'Monitor upgrade',
+    },
+    {
+      srNumber: 'SR-2024-119',
+      date: 'Dec 10',
+      items: 3,
+      priority: 'Normal',
       status: 'Rejected',
-      dateLabel: 'Apr 22, 2026',
+      requiredBy: 'Dec 14, 2024',
+      requester: 'John Doe',
+      department: 'IT Department',
+      justification: 'Additional supplies',
+    },
+    {
+      srNumber: 'SR-2024-118',
+      date: 'Dec 08',
+      items: 1,
+      priority: 'Normal',
+      status: 'Approved',
+      requiredBy: 'Dec 12, 2024',
+      requester: 'John Doe',
+      department: 'IT Department',
+      justification: 'Laptop replacement',
     },
   ];
-
-  readonly notifications: string[] = ['Your request #123 approved', 'Request #124 rejected'];
 
   readonly catalogItems: CatalogItem[] = [
-    { name: 'Laptop', category: 'IT Equipment', availability: 'Available' },
-    { name: 'Office Chair', category: 'Furniture', availability: 'Available' },
-    { name: 'Printer Toner', category: 'Consumables', availability: 'Low Stock' },
+    {
+      sku: 'LAP-001',
+      name: 'Dell XPS Laptop',
+      category: 'Electronics',
+      available: 45,
+      status: 'Good',
+      lastRestocked: 'Dec 15, 2024',
+      uom: 'PCS',
+      location: 'Warehouse A',
+    },
+    {
+      sku: 'MON-002',
+      name: 'HP 27" Monitor',
+      category: 'Electronics',
+      available: 67,
+      status: 'Good',
+      lastRestocked: 'Dec 14, 2024',
+      uom: 'PCS',
+      location: 'Warehouse A',
+    },
+    {
+      sku: 'CHR-003',
+      name: 'Office Chair',
+      category: 'Furniture',
+      available: 23,
+      status: 'Low',
+      lastRestocked: 'Dec 10, 2024',
+      uom: 'PCS',
+      location: 'Warehouse B',
+    },
+    {
+      sku: 'CAB-004',
+      name: 'USB Cables (10-pack)',
+      category: 'Supplies',
+      available: 55,
+      status: 'Good',
+      lastRestocked: 'Dec 12, 2024',
+      uom: 'PCS',
+      location: 'Warehouse A',
+    },
+    {
+      sku: 'PAP-005',
+      name: 'A4 Paper',
+      category: 'Stationery',
+      available: 120,
+      status: 'Good',
+      lastRestocked: 'Dec 08, 2024',
+      uom: 'PCS',
+      location: 'Warehouse A',
+    },
   ];
 
-  readonly activities: string[] = [
-    'Submitted service request SR-123',
-    'Received approval for request SR-122',
-    'Updated quantity for request SR-121',
-  ];
-
-  readonly requestSummaryMetrics: RequestSummaryMetric[] = [
-    { label: 'Total Requests', value: '24' },
-    { label: 'Approval Rate', value: '54%' },
-    { label: 'Avg. Processing', value: '1.8 days' },
-    { label: 'Rejected Rate', value: '16%' },
-  ];
+  getGreeting(): string {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good Morning';
+    if (hour < 17) return 'Good Afternoon';
+    return 'Good Evening';
+  }
 
   get currentView(): DashboardView {
     if (this.router.url.includes('/employee/dashboard/new-request')) {
@@ -188,37 +312,132 @@ export class EmployeeDashboardComponent {
 
   get pageTitle(): string {
     if (this.currentView === 'my-requests-summary') {
-      return 'Employee Dashboard - My Requests Summary';
+      return 'My Requests Summary';
     }
 
     if (this.currentView === 'my-activity') {
-      return 'Employee Dashboard - My Activity';
+      return 'My Activity';
     }
 
     if (this.currentView === 'new-request') {
-      return 'Employee Dashboard - New Request';
+      return 'Create New Request';
     }
 
     if (this.currentView === 'my-requests') {
-      return 'Employee Dashboard - My Requests';
+      return 'My Requisitions';
     }
 
     if (this.currentView === 'profile') {
-      return 'Employee Dashboard - Profile';
+      return 'My Profile';
     }
 
     if (this.currentView === 'notifications') {
-      return 'Employee Dashboard - Notifications';
+      return 'Notifications';
     }
 
     if (this.currentView === 'catalog-items') {
-      return 'Employee Dashboard - Catalog Items';
+      return 'Available Items';
     }
 
     return 'Employee Dashboard';
   }
 
-  get totalRequestedQuantity(): number {
-    return this.recentRequests.reduce((sum, request) => sum + request.quantity, 0);
+  get pageSubtitle(): string {
+    if (this.currentView === 'home') {
+      return 'My request summary and recent activity';
+    }
+
+    if (this.currentView === 'my-requests') {
+      return 'View and manage all my service requests';
+    }
+
+    if (this.currentView === 'catalog-items') {
+      return 'Browse all items and check availability';
+    }
+
+    if (this.currentView === 'profile') {
+      return 'Personal information and request history';
+    }
+
+    return '';
+  }
+
+  getPriorityIcon(priority: string): string {
+    switch (priority) {
+      case 'Urgent':
+        return '🔴';
+      case 'Medium':
+        return '🟡';
+      case 'Normal':
+      default:
+        return '🟢';
+    }
+  }
+
+  getStatusIcon(status: string): string {
+    switch (status) {
+      case 'Approved':
+        return '🟢';
+      case 'Rejected':
+        return '🔴';
+      case 'Completed':
+        return '✅';
+      case 'Pending':
+      default:
+        return '⏳';
+    }
+  }
+
+  getActivityIcon(type: string): string {
+    switch (type) {
+      case 'approved':
+        return '🟢';
+      case 'rejected':
+        return '🔴';
+      case 'completed':
+        return '🔵';
+      case 'submitted':
+      default:
+        return '🟡';
+    }
+  }
+
+  openCreateRequestModal(): void {
+    const modalRef = this.modalService.open(CreateRequestModalComponent, {
+      size: 'lg',
+      centered: true,
+      backdrop: 'static',
+    });
+
+    modalRef.result.then(
+      (result) => {
+        console.log('Modal closed with result:', result);
+      },
+      (reason) => {
+        console.log('Modal dismissed');
+      }
+    );
+  }
+
+  trackRequest(srNumber: string): void {
+    console.log('Tracking request:', srNumber);
+    alert(`Tracking request ${srNumber} - This would open a detailed view of the request status.`);
+  }
+
+  cancelRequest(srNumber: string): void {
+    if (confirm(`Are you sure you want to cancel request ${srNumber}?`)) {
+      console.log('Cancelling request:', srNumber);
+      alert(`Request ${srNumber} has been cancelled.`);
+    }
+  }
+
+  editProfile(): void {
+    console.log('Editing profile');
+    alert('Profile edit functionality would open an edit modal here.');
+  }
+
+  submitRequest(): void {
+    console.log('Submitting request');
+    alert('Request submitted successfully!');
   }
 }

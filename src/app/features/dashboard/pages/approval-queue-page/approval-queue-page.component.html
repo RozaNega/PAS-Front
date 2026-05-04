@@ -1,0 +1,102 @@
+<div class="approval-queue-page">
+  <div class="page-header">
+    <h1>Approval Queue ({{ pendingApprovals.length }})</h1>
+    <button class="btn btn-secondary" (click)="refresh()">Refresh</button>
+  </div>
+
+  <!-- Search and Filter -->
+  <div class="search-filter-section">
+    <div class="search-bar">
+      <input type="text" placeholder="Search by SR#, requester, item..." />
+    </div>
+    <div class="filter-controls">
+      <span>📅 Date: [{{ dateFrom }}] to [{{ dateTo }}]</span>
+      <select [(ngModel)]="priorityFilter">
+        <option value="All">🏷️ Priority: All ▼</option>
+        <option value="Urgent">Urgent</option>
+        <option value="Medium">Medium</option>
+        <option value="Normal">Normal</option>
+      </select>
+      <select [(ngModel)]="valueFilter">
+        <option value="All">💰 Value: All ▼</option>
+        <option value="low">< $1,000</option>
+        <option value="medium">$1,000 - $10,000</option>
+        <option value="high">> $10,000</option>
+      </select>
+      <button class="btn btn-secondary" (click)="applyFilters()">Advanced Filters ▼</button>
+    </div>
+  </div>
+
+  <!-- Pending Approvals -->
+  <div class="pending-approvals-section">
+    <h2>⏳ PENDING APPROVALS ({{ pendingApprovals.length }})</h2>
+    <div class="pending-approvals-list">
+      @for (approval of pendingApprovals; track approval.srNumber) {
+        <div class="approval-card">
+          <div class="approval-header">
+            <span class="priority-icon">{{ getPriorityIcon(approval.priority) }}</span>
+            <span class="priority-label">{{ approval.priority.toUpperCase() }}</span>
+            <span class="sr-number">{{ approval.srNumber }}</span>
+            <span class="requester">{{ approval.requester }}</span>
+          </div>
+          <div class="approval-details">
+            <span>Requested: {{ approval.requestedDate }}</span>
+            <span>Items: {{ approval.items }}</span>
+            <span>Value: {{ approval.value }}</span>
+            <span>Waiting: {{ approval.waiting }}</span>
+            <span>Required: {{ approval.requiredDate }}</span>
+          </div>
+          <div class="approval-actions">
+            <button class="btn btn-sm btn-primary" (click)="approveRequest(approval.srNumber)">Approve</button>
+            <button class="btn btn-sm btn-secondary" (click)="rejectRequest(approval.srNumber)">Reject</button>
+            <button class="btn btn-sm btn-outline" (click)="viewRequestDetails(approval.srNumber)">View Details</button>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Approval History -->
+  <div class="approval-history-section">
+    <h2>✅ COMPLETED AT MY LEVEL (Last 30 days) <button class="btn btn-link" (click)="viewFullHistory()">View Full History →</button></h2>
+    <div class="approval-history-list">
+      @for (history of approvalHistory; track history.srNumber) {
+        <div class="history-item">
+          <span class="decision-icon">{{ getDecisionIcon(history.decision) }}</span>
+          <span class="sr-number">{{ history.srNumber }}</span>
+          <span class="decision">{{ history.decision }}</span>
+          <span class="value">{{ history.value }}</span>
+          <span class="response-time">Response Time: {{ history.responseTime }}</span>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Escalated Requests -->
+  <div class="escalated-section">
+    <h2>⬆️ ESCALATED REQUESTS (0)</h2>
+    <div class="escalated-card">
+      <p>No escalated requests at this time.</p>
+    </div>
+  </div>
+
+  <!-- Delegated Approvals -->
+  <div class="delegated-section">
+    <h2>🔄 DELEGATED APPROVALS (0)</h2>
+    <div class="delegated-card">
+      <p>No active delegations.</p>
+    </div>
+  </div>
+
+  <!-- Workflow Rules -->
+  <div class="workflow-section">
+    <h2>⚙️ WORKFLOW RULES <button class="btn btn-link" (click)="editWorkflowRules()">Edit Workflow Rules</button></h2>
+    <div class="workflow-rules-list">
+      @for (rule of workflowRules; track rule.rule) {
+        <div class="rule-item">
+          <span>• {{ rule.rule }}</span>
+        </div>
+      }
+    </div>
+  </div>
+</div>

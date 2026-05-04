@@ -1,0 +1,140 @@
+<div class="risk-alerts-page">
+  <div class="page-header">
+    <h1>Risk Alerts ({{ criticalViolations.length + highRiskItems.length + mediumRiskItems.length + lowRiskItems.length }})</h1>
+    <button class="refresh-btn" (click)="refreshAlerts()">Refresh</button>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters-section">
+    <div class="filter-row">
+      <input type="text" placeholder="Search by violation type, entity, date..." [(ngModel)]="searchQuery" />
+      <select [(ngModel)]="filterSeverity">
+        <option value="All">Severity: [All ▼]</option>
+        <option value="Critical">Critical</option>
+        <option value="High">High</option>
+        <option value="Medium">Medium</option>
+        <option value="Low">Low</option>
+      </select>
+      <select [(ngModel)]="filterStatus">
+        <option value="All">Status: [All ▼]</option>
+        <option value="Open">Open</option>
+        <option value="In Progress">In Progress</option>
+        <option value="Resolved">Resolved</option>
+      </select>
+      <button class="filters-btn" (click)="applyFilters()">Filters ▼</button>
+    </div>
+  </div>
+
+  <!-- Critical Violations -->
+  <div class="violations-section critical">
+    <h2>🔴 CRITICAL VIOLATIONS ({{ criticalViolations.length }}) [View All →]</h2>
+    <div class="violations-list">
+      @for (violation of criticalViolations; track violation.id) {
+        <div class="violation-card">
+          <div class="violation-header">
+            <span class="violation-icon">{{ getSeverityIcon(violation.severity) }}</span>
+            <span class="violation-type">{{ violation.type }} - {{ violation.entity }}</span>
+          </div>
+          <div class="violation-details">
+            <p>Detected: {{ violation.detectedDate }} | Status: {{ violation.status }} | Assigned To: {{ violation.assignedTo }} @if (violation.dueDate) { | Due: {{ violation.dueDate }} }</p>
+          </div>
+          <div class="violation-actions">
+            @if (violation.status !== 'Resolved') {
+              <button class="action-btn" (click)="investigateViolation(violation.id)">Investigate</button>
+              <button class="action-btn" (click)="assignViolation(violation.id)">Assign</button>
+              <button class="action-btn" (click)="resolveViolation(violation.id)">Resolve</button>
+            } @else {
+              <button class="action-btn" (click)="viewViolationDetails(violation.id)">View Details</button>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- High Risk Items -->
+  <div class="violations-section high">
+    <h2>🟠 HIGH RISK ITEMS ({{ highRiskItems.length }}) [View All →]</h2>
+    <div class="violations-list">
+      @for (violation of highRiskItems; track violation.id) {
+        <div class="violation-card">
+          <div class="violation-header">
+            <span class="violation-icon">{{ getSeverityIcon(violation.severity) }}</span>
+            <span class="violation-type">{{ violation.type }} - {{ violation.entity }}</span>
+          </div>
+          <div class="violation-details">
+            <p>Detected: {{ violation.detectedDate }} | Status: {{ violation.status }} | Assigned To: {{ violation.assignedTo }} @if (violation.dueDate) { | Due: {{ violation.dueDate }} }</p>
+          </div>
+          <div class="violation-actions">
+            <button class="action-btn" (click)="investigateViolation(violation.id)">Investigate</button>
+            <button class="action-btn" (click)="assignViolation(violation.id)">Assign</button>
+            <button class="action-btn" (click)="resolveViolation(violation.id)">Resolve</button>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Medium Risk Items -->
+  <div class="violations-section medium">
+    <h2>🟡 MEDIUM RISK ITEMS ({{ mediumRiskItems.length }}) [View All →]</h2>
+    <div class="violations-list">
+      @for (violation of mediumRiskItems; track violation.id) {
+        <div class="violation-card">
+          <div class="violation-header">
+            <span class="violation-icon">{{ getSeverityIcon(violation.severity) }}</span>
+            <span class="violation-type">{{ violation.type }} - {{ violation.entity }}</span>
+          </div>
+          <div class="violation-details">
+            <p>Detected: {{ violation.detectedDate }} | Status: {{ violation.status }} | Assigned To: {{ violation.assignedTo }} @if (violation.dueDate) { | Due: {{ violation.dueDate }} }</p>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Low Risk Items -->
+  <div class="violations-section low">
+    <h2>🟢 LOW RISK ITEMS ({{ lowRiskItems.length }}) [View All →]</h2>
+    <div class="violations-list">
+      @for (violation of lowRiskItems; track violation.id) {
+        <div class="violation-card">
+          <div class="violation-header">
+            <span class="violation-icon">{{ getSeverityIcon(violation.severity) }}</span>
+            <span class="violation-type">{{ violation.type }} - {{ violation.entity }}</span>
+          </div>
+          <div class="violation-details">
+            <p>Detected: {{ violation.detectedDate }} | Status: {{ violation.status }} @if (violation.dueDate) { | Due: {{ violation.dueDate }} }</p>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Pending Investigations -->
+  <div class="investigations-section">
+    <h2>🔍 PENDING INVESTIGATIONS ({{ pendingInvestigations.length }})</h2>
+    <div class="investigations-list">
+      @for (investigation of pendingInvestigations; track investigation.id) {
+        <div class="investigation-item">
+          <span>• {{ investigation.type }} - {{ investigation.entity }} (Assigned to {{ investigation.assignedTo }})</span>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Resolved Issues -->
+  <div class="resolved-section">
+    <h2>✅ RESOLVED ISSUES ({{ resolvedIssues.length }} this month)</h2>
+    <div class="resolved-list">
+      @for (issue of resolvedIssues; track issue.id) {
+        <div class="resolved-item">
+          <span>• {{ issue.type }} - Resolved {{ issue.closedDate }}</span>
+        </div>
+      }
+    </div>
+    <div class="resolved-footer">
+      <a href="#" class="view-all-link">View All Resolved →</a>
+    </div>
+  </div>
+</div>

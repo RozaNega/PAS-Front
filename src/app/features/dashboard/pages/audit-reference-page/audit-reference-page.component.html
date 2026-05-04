@@ -1,0 +1,131 @@
+<div class="audit-reference-page">
+  <div class="page-header">
+    <h1>Audit Reference</h1>
+    <button class="btn btn-secondary" (click)="export()">Export</button>
+  </div>
+
+  <!-- Search and Filter -->
+  <div class="search-filter-section">
+    <div class="search-bar">
+      <input type="text" placeholder="Search by SR#, approver, date..." />
+    </div>
+    <div class="filter-controls">
+      <span>📅 Date: [{{ dateFrom }}] to [{{ dateTo }}]</span>
+      <span>👤 Approver: All ▼</span>
+      <span>📦 Status: All ▼</span>
+      <button class="btn btn-secondary" (click)="export()">Advanced Filters ▼</button>
+    </div>
+  </div>
+
+  <!-- Approval Logs -->
+  <div class="logs-section">
+    <h2>📋 APPROVAL LOGS</h2>
+    <div class="table-container">
+      <table class="logs-table">
+        <thead>
+          <tr>
+            <th>Timestamp</th>
+            <th>Approver</th>
+            <th>SR #</th>
+            <th>Decision</th>
+            <th>Value</th>
+            <th>Response</th>
+            <th>Justification</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (log of approvalLogs; track log.timestamp) {
+            <tr>
+              <td>{{ log.timestamp }}</td>
+              <td>{{ log.approver }}</td>
+              <td>{{ log.srNumber }}</td>
+              <td>{{ log.decision }}</td>
+              <td>{{ log.value }}</td>
+              <td>{{ log.responseTime }}</td>
+              <td>{{ log.justification }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <div class="pagination">
+      <span>Showing 1-{{ approvalLogs.length }} of 156 entries</span>
+      <div class="pagination-controls">
+        <button class="btn btn-sm btn-secondary">1</button>
+        <button class="btn btn-sm btn-secondary">2</button>
+        <button class="btn btn-sm btn-secondary">3</button>
+        <button class="btn btn-sm btn-secondary">→</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Decision History -->
+  <div class="history-section">
+    <h2>📜 DECISION HISTORY</h2>
+    <div class="table-container">
+      <table class="history-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>SR #</th>
+            <th>Decision</th>
+            <th>Reason</th>
+            <th>Comments</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (history of decisionHistory; track history.srNumber) {
+            <tr>
+              <td>{{ history.date }}</td>
+              <td>{{ history.srNumber }}</td>
+              <td>{{ history.decision }}</td>
+              <td>{{ history.reason }}</td>
+              <td>{{ history.comments }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Audit Trail Summary -->
+  <div class="summary-section">
+    <h2>🔍 AUDIT TRAIL SUMMARY</h2>
+    <div class="summary-card">
+      <div class="summary-item">
+        <strong>Total Approval Events:</strong> 156
+      </div>
+      <div class="summary-item">
+        <strong>Approved:</strong> 124 (79.5%) <strong>Rejected:</strong> 18 (11.5%) <strong>Pending:</strong> 14 (9%)
+      </div>
+      <div class="summary-item">
+        <strong>Average Response Time:</strong> 1.2 days
+      </div>
+      <div class="summary-item">
+        <strong>Most Active Approver:</strong> Sarah Smith (45 approvals)
+      </div>
+    </div>
+  </div>
+
+  <!-- Compliance Records -->
+  <div class="compliance-section">
+    <h2>✅ COMPLIANCE RECORDS</h2>
+    <div class="compliance-card">
+      <p>All approvals are compliant with department policy.</p>
+      <p>No violations detected in approval chain.</p>
+      <p>Audit ready: Yes</p>
+    </div>
+  </div>
+
+  <!-- Export Options -->
+  <div class="export-section">
+    <h2>⚡ EXPORT OPTIONS</h2>
+    <div class="export-buttons">
+      <button class="btn btn-secondary" (click)="exportExcel()">📥 Export to Excel</button>
+      <button class="btn btn-secondary" (click)="exportPDF()">📄 Export to PDF</button>
+      <button class="btn btn-secondary" (click)="emailReport()">📧 Email Report</button>
+      <button class="btn btn-secondary" (click)="print()">🖨️ Print</button>
+      <button class="btn btn-secondary" (click)="scheduleExport()">📅 Schedule Export</button>
+    </div>
+  </div>
+</div>

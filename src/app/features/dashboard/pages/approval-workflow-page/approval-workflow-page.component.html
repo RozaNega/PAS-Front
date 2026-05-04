@@ -1,0 +1,84 @@
+<div class="approval-workflow-page">
+  <div class="page-header">
+    <h1>Approval Workflow</h1>
+  </div>
+
+  <!-- Workflow Status Diagram -->
+  <div class="workflow-status-section">
+    <h2>📊 WORKFLOW STATUS DIAGRAM</h2>
+    <div class="workflow-diagram">
+      <div class="workflow-level">
+        <div class="workflow-box">Request Created</div>
+      </div>
+      <div class="workflow-arrow">→</div>
+      <div class="workflow-level">
+        <div class="workflow-box">Manager Approval</div>
+        <div class="workflow-pending">PENDING<br/>5</div>
+      </div>
+      <div class="workflow-arrow">→</div>
+      <div class="workflow-level">
+        <div class="workflow-box">Director Approval</div>
+      </div>
+      <div class="workflow-arrow">→</div>
+      <div class="workflow-level">
+        <div class="workflow-box">VP Approval</div>
+      </div>
+      <div class="workflow-arrow">→</div>
+      <div class="workflow-level">
+        <div class="workflow-box">Store Issue</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pending at My Level -->
+  <div class="pending-section">
+    <h2>⏳ PENDING AT MY LEVEL ({{ pendingAtMyLevel.length }})</h2>
+    <div class="pending-list">
+      @for (item of pendingAtMyLevel; track item.srNumber) {
+        <div class="pending-item">
+          <span>• {{ item.srNumber }} - {{ item.requester }} - {{ item.priority }} - {{ item.value }} - Waiting: {{ item.waiting }}</span>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Completed at My Level -->
+  <div class="completed-section">
+    <h2>✅ COMPLETED AT MY LEVEL</h2>
+    <div class="completed-list">
+      @for (item of completedAtMyLevel; track item.srNumber) {
+        <div class="completed-item">
+          <span>• {{ item.srNumber }} - {{ item.decision }} - {{ item.value }} - Response: {{ item.responseTime }}</span>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Escalated Requests -->
+  <div class="escalated-section">
+    <h2>⬆️ ESCALATED REQUESTS (0)</h2>
+    <div class="escalated-card">
+      <p>No escalated requests at this time.</p>
+    </div>
+  </div>
+
+  <!-- Delegated Approvals -->
+  <div class="delegated-section">
+    <h2>🔄 DELEGATED APPROVALS (0)</h2>
+    <div class="delegated-card">
+      <p>No active delegations.</p>
+    </div>
+  </div>
+
+  <!-- Workflow Rules -->
+  <div class="rules-section">
+    <h2>⚙️ WORKFLOW RULES</h2>
+    <div class="rules-list">
+      @for (rule of workflowRules; track rule.rule) {
+        <div class="rule-item">
+          <span>• {{ rule.rule }}</span>
+        </div>
+      }
+    </div>
+  </div>
+</div>

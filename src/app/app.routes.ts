@@ -43,14 +43,7 @@ export const routes: Routes = [
             (m) => m.EmployeeDashboardComponent,
           ),
       },
-      {
-        path: 'dashboard/new-request',
-        loadComponent: () =>
-          import('./features/dashboard/pages/employee-dashboard/employee-dashboard.component').then(
-            (m) => m.EmployeeDashboardComponent,
-          ),
-      },
-      {
+            {
         path: 'dashboard/my-requests',
         loadComponent: () =>
           import('./features/dashboard/pages/employee-dashboard/employee-dashboard.component').then(
@@ -60,15 +53,15 @@ export const routes: Routes = [
       {
         path: 'dashboard/my-requests-summary',
         loadComponent: () =>
-          import('./features/dashboard/pages/employee-dashboard/employee-dashboard.component').then(
-            (m) => m.EmployeeDashboardComponent,
+          import('./features/dashboard/pages/requests-summary-page/requests-summary-page.component').then(
+            (m) => m.RequestsSummaryPageComponent,
           ),
       },
       {
         path: 'dashboard/my-activity',
         loadComponent: () =>
-          import('./features/dashboard/pages/employee-dashboard/employee-dashboard.component').then(
-            (m) => m.EmployeeDashboardComponent,
+          import('./features/dashboard/pages/activity-page/activity-page.component').then(
+            (m) => m.ActivityPageComponent,
           ),
       },
       {
@@ -81,8 +74,8 @@ export const routes: Routes = [
       {
         path: 'dashboard/notifications',
         loadComponent: () =>
-          import('./features/dashboard/pages/employee-dashboard/employee-dashboard.component').then(
-            (m) => m.EmployeeDashboardComponent,
+          import('./features/dashboard/pages/notifications-page/notifications-page.component').then(
+            (m) => m.NotificationsPageComponent,
           ),
       },
       {
@@ -106,15 +99,57 @@ export const routes: Routes = [
       {
         path: 'dashboard',
         loadComponent: () =>
-          import('./features/dashboard/pages/manager-dashboard/manager-dashboard.component').then(
-            (m) => m.ManagerDashboardComponent,
+          import('./features/dashboard/pages/manager-approval-dashboard/manager-approval-dashboard.component').then(
+            (m) => m.ManagerApprovalDashboardComponent,
           ),
       },
       {
         path: 'notifications',
         loadComponent: () =>
-          import('./features/notifications/pages/notifications-page').then(
-            (m) => m.NotificationsPage,
+          import('./features/dashboard/pages/manager-notifications-page/manager-notifications-page.component').then(
+            (m) => m.ManagerNotificationsPageComponent,
+          ),
+      },
+      {
+        path: 'decision-profile',
+        loadComponent: () =>
+          import('./features/dashboard/pages/decision-profile-page/decision-profile-page.component').then(
+            (m) => m.DecisionProfilePageComponent,
+          ),
+      },
+      {
+        path: 'approval-queue',
+        loadComponent: () =>
+          import('./features/dashboard/pages/approval-queue-page/approval-queue-page.component').then(
+            (m) => m.ApprovalQueuePageComponent,
+          ),
+      },
+      {
+        path: 'approval-workflow',
+        loadComponent: () =>
+          import('./features/dashboard/pages/approval-workflow-page/approval-workflow-page.component').then(
+            (m) => m.ApprovalWorkflowPageComponent,
+          ),
+      },
+      {
+        path: 'approver-matrix',
+        loadComponent: () =>
+          import('./features/dashboard/pages/approver-matrix-page/approver-matrix-page.component').then(
+            (m) => m.ApproverMatrixPageComponent,
+          ),
+      },
+      {
+        path: 'decision-reports',
+        loadComponent: () =>
+          import('./features/dashboard/pages/decision-reports-page/decision-reports-page.component').then(
+            (m) => m.DecisionReportsPageComponent,
+          ),
+      },
+      {
+        path: 'audit-reference',
+        loadComponent: () =>
+          import('./features/dashboard/pages/audit-reference-page/audit-reference-page.component').then(
+            (m) => m.AuditReferencePageComponent,
           ),
       },
       {
@@ -150,30 +185,44 @@ export const routes: Routes = [
       {
         path: 'dashboard',
         loadComponent: () =>
-          import('./features/dashboard/pages/compliance-officer-dashboard/compliance-officer-dashboard.component').then(
-            (m) => m.ComplianceOfficerDashboardComponent,
+          import('./features/compliance/pages/compliance-dashboard/compliance-dashboard.component').then(
+            (m) => m.ComplianceDashboardComponent,
           ),
       },
       {
-        path: 'notifications',
+        path: 'risk-alerts',
         loadComponent: () =>
-          import('./features/notifications/pages/notifications-page').then(
-            (m) => m.NotificationsPage,
+          import('./features/compliance/pages/risk-alerts-page/risk-alerts-page.component').then(
+            (m) => m.RiskAlertsPageComponent,
           ),
       },
       {
-        path: 'workflow',
-        loadChildren: () =>
-          import('./features/workflow/workflow.module').then((m) => m.WorkflowModule),
-      },
-      {
-        path: 'reports',
-        loadChildren: () =>
-          import('./features/reports/reports.module').then((m) => m.ReportsModule),
+        path: 'officer-profile',
+        loadComponent: () =>
+          import('./features/compliance/pages/officer-profile-page/officer-profile-page.component').then(
+            (m) => m.OfficerProfilePageComponent,
+          ),
       },
       {
         path: 'audit-trail',
-        loadChildren: () => import('./features/common/common.module').then((m) => m.CommonModule),
+        loadComponent: () =>
+          import('./features/compliance/pages/audit-trail-page/audit-trail-page.component').then(
+            (m) => m.AuditTrailPageComponent,
+          ),
+      },
+      {
+        path: 'compliance-reports',
+        loadComponent: () =>
+          import('./features/compliance/pages/compliance-reports-page/compliance-reports-page.component').then(
+            (m) => m.ComplianceReportsPageComponent,
+          ),
+      },
+      {
+        path: 'report-preview',
+        loadComponent: () =>
+          import('./features/compliance/pages/report-preview-page/report-preview-page.component').then(
+            (m) => m.ReportPreviewPageComponent,
+          ),
       },
     ],
   },

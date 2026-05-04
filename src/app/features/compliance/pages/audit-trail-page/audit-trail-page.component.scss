@@ -1,0 +1,195 @@
+.audit-trail-page {
+  padding: 1.5rem;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.page-header h1 {
+  margin: 0;
+  font-size: 1.75rem;
+  font-weight: 700;
+}
+
+.export-btn {
+  padding: 0.5rem 1rem;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.filters-section {
+  margin-bottom: 1.5rem;
+}
+
+.filter-row {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.filter-row input,
+.filter-row select {
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--surface-card);
+  color: var(--text-color);
+  min-width: 150px;
+}
+
+.filters-btn {
+  padding: 0.5rem 1rem;
+  background: var(--surface-card);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.summary-section,
+.activity-section,
+.user-actions-section,
+.property-section,
+.stock-section,
+.requisition-section,
+.login-section,
+.export-log-section {
+  margin-bottom: 2rem;
+}
+
+h2 {
+  margin: 0 0 1rem 0;
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.summary-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+}
+
+.summary-card {
+  background: var(--surface-card);
+  border-radius: 8px;
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.summary-label {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: var(--text-color-muted);
+}
+
+.summary-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  color: var(--primary-color);
+}
+
+.summary-subtitle {
+  font-size: 0.85rem;
+  color: var(--text-color-muted);
+}
+
+.activity-table,
+.user-actions-table,
+.property-table,
+.stock-table,
+.requisition-table,
+.login-table,
+.export-log-table {
+  background: var(--surface-card);
+  border-radius: 8px;
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 800px;
+}
+
+thead {
+  background: var(--surface-background);
+}
+
+th {
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+  border-bottom: 2px solid var(--border-color);
+  font-size: 0.9rem;
+}
+
+td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border-color);
+  font-size: 0.9rem;
+}
+
+tr:last-child td {
+  border-bottom: none;
+}
+
+.pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background: var(--surface-card);
+  border-radius: 8px;
+  margin-top: 0.5rem;
+}
+
+.pagination-controls {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.pagination-controls span {
+  padding: 0.25rem 0.75rem;
+  background: var(--surface-background);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.pagination-controls span:hover {
+  background: var(--primary-color-soft);
+}
+
+@media (max-width: 768px) {
+  .filter-row {
+    flex-direction: column;
+  }
+
+  .filter-row input,
+  .filter-row select {
+    width: 100%;
+  }
+
+  .summary-cards {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  }
+
+  table {
+    font-size: 0.8rem;
+  }
+
+  th,
+  td {
+    padding: 0.5rem;
+  }
+}

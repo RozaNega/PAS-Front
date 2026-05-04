@@ -1,0 +1,90 @@
+<div class="modal-header">
+  <h4 class="modal-title">Item Details: {{ item().name }}</h4>
+  <button type="button" class="btn-close" aria-label="Close" (click)="modal.close()"></button>
+</div>
+
+<div class="modal-body">
+  <!-- Basic Information -->
+  <section class="info-section">
+    <h5>📋 BASIC INFORMATION</h5>
+    <div class="info-grid">
+      <div class="info-item">
+        <strong>SKU:</strong> {{ item().sku }}
+      </div>
+      <div class="info-item">
+        <strong>Category:</strong> {{ item().category }}
+      </div>
+      <div class="info-item">
+        <strong>UOM:</strong> {{ item().uom }}
+      </div>
+      <div class="info-item">
+        <strong>Status:</strong>
+        <span class="status-badge status-{{ getStatusColor(item().status) }}">
+          {{ item().status }}
+        </span>
+      </div>
+      <div class="info-item">
+        <strong>Available:</strong> {{ item().available }}
+      </div>
+      <div class="info-item">
+        <strong>Last Restocked:</strong> {{ item().lastRestocked }}
+      </div>
+      @if (item().location) {
+        <div class="info-item full-width">
+          <strong>Location:</strong> {{ item().location }}
+        </div>
+      }
+      @if (item().description) {
+        <div class="info-item full-width">
+          <strong>Description:</strong> {{ item().description }}
+        </div>
+      }
+    </div>
+  </section>
+
+  <!-- Availability -->
+  @if (item().availability?.length) {
+    <section class="info-section">
+      <h5>📦 AVAILABILITY BY WAREHOUSE</h5>
+      <table class="availability-table">
+        <thead>
+          <tr>
+            <th>Warehouse</th>
+            <th>Shelf Location</th>
+            <th>Available</th>
+            <th>Reserved</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (avail of item().availability; track avail.warehouse) {
+            <tr>
+              <td>{{ avail.warehouse }}</td>
+              <td>{{ avail.shelfLocation }}</td>
+              <td>{{ avail.available }}</td>
+              <td>{{ avail.reserved }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </section>
+  }
+
+  <!-- Specifications -->
+  @if (item().specifications?.length) {
+    <section class="info-section">
+      <h5>⚙️ SPECIFICATIONS</h5>
+      <div class="specifications-list">
+        @for (spec of item().specifications; track spec) {
+          <div class="spec-item">{{ spec }}</div>
+        }
+      </div>
+    </section>
+  }
+</div>
+
+<div class="modal-footer">
+  <button class="btn btn-secondary" (click)="modal.close()">Close</button>
+  @if (item().status === 'Good') {
+    <button class="btn btn-primary">Add to Request</button>
+  }
+</div>

@@ -1,0 +1,144 @@
+<div class="decision-profile-page">
+  <div class="page-header">
+    <h1>Decision Profile</h1>
+    <button class="btn btn-secondary" (click)="editProfile()">Edit</button>
+  </div>
+
+  <!-- My Profile -->
+  <div class="profile-section">
+    <h2>👤 MY PROFILE</h2>
+    <div class="profile-card">
+      <div class="profile-photo">
+        <div class="photo-placeholder">
+          <span>👤</span>
+          <button class="btn-link" (click)="changePhoto()">[Change Photo]</button>
+        </div>
+      </div>
+      <div class="profile-info">
+        <div class="info-item">
+          <strong>Name:</strong> {{ profile.name }}
+        </div>
+        <div class="info-item">
+          <strong>Title:</strong> {{ profile.title }}
+        </div>
+        <div class="info-item">
+          <strong>Employee Code:</strong> {{ profile.employeeCode }}
+        </div>
+        <div class="info-item">
+          <strong>Department:</strong> {{ profile.department }}
+        </div>
+        <div class="info-item">
+          <strong>Email:</strong> {{ profile.email }}
+        </div>
+        <div class="info-item">
+          <strong>Phone:</strong> {{ profile.phone }}
+        </div>
+        <div class="info-item">
+          <strong>Join Date:</strong> {{ profile.joinDate }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Approval Limits -->
+  <div class="limits-section">
+    <h2>💰 APPROVAL LIMITS</h2>
+    <div class="limits-card">
+      <div class="limit-item">
+        <strong>Single Request Limit:</strong> {{ approvalLimits.singleRequestLimit }}
+      </div>
+      <div class="limit-item">
+        <strong>Monthly Department Limit:</strong> {{ approvalLimits.monthlyDepartmentLimit }}
+      </div>
+      <div class="limit-item">
+        <strong>Require Escalation Above:</strong> {{ approvalLimits.requireEscalationAbove }}
+      </div>
+      <div class="limit-item">
+        <strong>Escalation Approver:</strong> {{ approvalLimits.escalationApprover }}
+      </div>
+    </div>
+  </div>
+
+  <!-- Department Scope -->
+  <div class="scope-section">
+    <h2>🏢 DEPARTMENT SCOPE</h2>
+    <div class="scope-card">
+      <div class="scope-item">
+        <strong>Department:</strong> {{ departmentScope.department }}
+      </div>
+      <div class="scope-item">
+        <strong>Staff Count:</strong> {{ departmentScope.staffCount }} employees
+      </div>
+      <div class="scope-item">
+        <strong>Sub-departments:</strong> {{ departmentScope.subDepartments }}
+      </div>
+      <div class="scope-item">
+        <strong>Approval Authority:</strong> {{ departmentScope.approvalAuthority }}
+      </div>
+    </div>
+  </div>
+
+  <!-- Delegation Settings -->
+  <div class="delegation-section">
+    <h2>🔄 DELEGATION SETTINGS</h2>
+    <div class="delegation-card">
+      <div class="delegation-row">
+        <label>Delegate To:</label>
+        <select [(ngModel)]="delegation.delegateTo">
+          <option value="">Select Delegate ▼</option>
+        </select>
+      </div>
+      <div class="delegation-row">
+        <label>Start Date:</label>
+        <input type="text" [(ngModel)]="delegation.startDate" placeholder="📅 Select Date" />
+      </div>
+      <div class="delegation-row">
+        <label>End Date:</label>
+        <input type="text" [(ngModel)]="delegation.endDate" placeholder="📅 Select Date" />
+      </div>
+      <div class="delegation-row">
+        <label>Reason:</label>
+        <input type="text" [(ngModel)]="delegation.reason" placeholder="Vacation / Leave / Training" />
+      </div>
+      <button class="btn btn-primary" (click)="setDelegation()">Set Delegation</button>
+    </div>
+  </div>
+
+  <!-- Notification Preferences -->
+  <div class="preferences-section">
+    <h2>⚙️ NOTIFICATION PREFERENCES</h2>
+    <div class="preferences-card">
+      <div class="preference-item">
+        <label>
+          <input type="checkbox" [(ngModel)]="notificationPreferences.emailEveryApproval" />
+          Email me for every approval request
+        </label>
+      </div>
+      <div class="preference-item">
+        <label>
+          <input type="checkbox" [(ngModel)]="notificationPreferences.smsUrgent" />
+          Send SMS for urgent requests
+        </label>
+      </div>
+      <div class="preference-item">
+        <label>
+          <input type="checkbox" [(ngModel)]="notificationPreferences.dailySummary" />
+          Daily summary of pending approvals
+        </label>
+      </div>
+      <div class="preference-item">
+        <label>
+          <input type="checkbox" [(ngModel)]="notificationPreferences.weeklyReport" />
+          Weekly department report
+        </label>
+      </div>
+      <div class="preference-item">
+        <label>
+          <input type="checkbox" [(ngModel)]="notificationPreferences.budgetAlerts" />
+          Budget alert notifications
+        </label>
+      </div>
+      <button class="btn btn-primary" (click)="savePreferences()">Save Preferences</button>
+    </div>
+  </div>
+</div>

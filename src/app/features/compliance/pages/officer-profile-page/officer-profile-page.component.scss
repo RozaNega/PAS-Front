@@ -1,0 +1,282 @@
+.officer-profile-page {
+  padding: 1.5rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.page-header h1 {
+  margin: 0;
+  font-size: 1.75rem;
+  font-weight: 700;
+}
+
+.edit-btn {
+  padding: 0.5rem 1rem;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.profile-section,
+.scope-section,
+.settings-section,
+.investigations-section,
+.certifications-section {
+  margin-bottom: 2rem;
+}
+
+h2 {
+  margin: 0 0 1rem 0;
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.profile-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+}
+
+.profile-column {
+  background: var(--surface-card);
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.profile-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.profile-item:last-child {
+  border-bottom: none;
+}
+
+.profile-label {
+  font-weight: 600;
+  color: var(--text-color-muted);
+}
+
+.profile-value {
+  font-weight: 500;
+}
+
+.scope-card,
+.settings-card {
+  background: var(--surface-card);
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.scope-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.scope-item:last-child {
+  border-bottom: none;
+}
+
+.scope-label {
+  font-weight: 600;
+  color: var(--text-color-muted);
+}
+
+.scope-value {
+  font-weight: 500;
+}
+
+.setting-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 0;
+}
+
+.setting-item input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.setting-item label {
+  cursor: pointer;
+}
+
+.save-btn,
+.add-btn {
+  margin-top: 1rem;
+  padding: 0.5rem 1rem;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.investigations-table {
+  background: var(--surface-card);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+thead {
+  background: var(--surface-background);
+}
+
+th {
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+  border-bottom: 2px solid var(--border-color);
+}
+
+td {
+  padding: 1rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+tr:last-child td {
+  border-bottom: none;
+}
+
+.status-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.status-badge.open {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.status-badge.closed {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.table-action-btn {
+  padding: 0.25rem 0.5rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  margin-right: 0.25rem;
+}
+
+.investigations-footer,
+.certifications-footer {
+  text-align: right;
+  margin-top: 1rem;
+}
+
+.view-all-link {
+  color: var(--primary-color);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.view-all-link:hover {
+  text-decoration: underline;
+}
+
+.certifications-list {
+  background: var(--surface-card);
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.certification-item {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.certification-item:last-child {
+  border-bottom: none;
+}
+
+.add-certification-form {
+  background: var(--surface-card);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-top: 1rem;
+}
+
+.form-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.form-row label {
+  font-weight: 600;
+  color: var(--text-color-muted);
+  min-width: 150px;
+}
+
+.form-row input {
+  flex: 1;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--surface-background);
+  color: var(--text-color);
+}
+
+.form-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.cancel-btn {
+  padding: 0.5rem 1rem;
+  background: #6b7280;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.cancel-btn:hover {
+  background: #4b5563;
+}
+
+@media (max-width: 768px) {
+  .profile-grid {
+    grid-template-columns: 1fr;
+  }
+
+  table {
+    font-size: 0.9rem;
+  }
+
+  th,
+  td {
+    padding: 0.75rem 0.5rem;
+  }
+}

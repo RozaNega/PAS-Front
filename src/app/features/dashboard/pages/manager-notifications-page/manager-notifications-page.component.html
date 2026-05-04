@@ -1,0 +1,96 @@
+<div class="manager-notifications-page">
+  <div class="page-header">
+    <h1>Notifications ({{ unreadCount }})</h1>
+    <button class="btn btn-secondary" (click)="markAllAsRead()">Mark All Read</button>
+  </div>
+
+  <!-- Search and Filter -->
+  <div class="search-filter-section">
+    <div class="search-bar">
+      <input type="text" [(ngModel)]="searchQuery" placeholder="Search notifications..." />
+    </div>
+    <div class="filter-controls">
+      <select [(ngModel)]="filterType">
+        <option value="all">All Types</option>
+        <option value="approval">Approval Requests</option>
+        <option value="department">Department Alerts</option>
+        <option value="budget">Budget Alerts</option>
+      </select>
+      <button class="btn btn-secondary" (click)="markAllAsRead()">Mark Read</button>
+    </div>
+  </div>
+
+  <!-- All Notifications -->
+  <div class="notifications-section">
+    <h2>📬 ALL NOTIFICATIONS</h2>
+    <div class="notifications-list">
+      @for (notification of filteredNotifications; track notification.id) {
+        <div class="notification-card" [class.unread]="!notification.read">
+          <div class="notification-header">
+            <span class="notification-icon">{{ getNotificationIcon(notification.type) }}</span>
+            <span class="notification-title">{{ notification.title }}</span>
+            <span class="notification-time">{{ notification.timeAgo }}</span>
+          </div>
+          <p class="notification-message">{{ notification.message }}</p>
+          <div class="notification-actions">
+            @if (notification.type === 'approval') {
+              <button class="btn btn-sm btn-primary" (click)="approveRequest(notification.srNumber)">Approve</button>
+              <button class="btn btn-sm btn-secondary" (click)="rejectRequest(notification.srNumber)">Reject</button>
+              <button class="btn btn-sm btn-outline" (click)="viewRequestDetails(notification.srNumber)">View Details</button>
+            }
+            @if (notification.type === 'department') {
+              <button class="btn btn-sm btn-secondary" (click)="viewDepartmentRequest()">View Request</button>
+            }
+            @if (notification.type === 'budget') {
+              <button class="btn btn-sm btn-secondary" (click)="viewBudget()">View Budget</button>
+            }
+            <button class="btn btn-sm btn-outline" (click)="dismiss(notification.id)">Dismiss</button>
+          </div>
+        </div>
+      }
+    </div>
+    <div class="pagination">
+      <span>Showing 1-{{ filteredNotifications.length }} of {{ notifications.length }} notifications</span>
+    </div>
+  </div>
+
+  <!-- Approval Requests -->
+  <div class="approval-requests-section">
+    <h2>✅ APPROVAL REQUESTS ({{ approvalRequests.length }}) <button class="btn btn-link" (click)="viewAllApprovalRequests()">View All Approval Requests →</button></h2>
+    <div class="approval-requests-list">
+      @for (request of approvalRequests; track request.srNumber) {
+        <div class="approval-request-item">
+          <span class="priority-icon">{{ getPriorityIcon(request.priority) }}</span>
+          <span class="sr-number">{{ request.srNumber }}</span>
+          <span class="requester">{{ request.requester }}</span>
+          <span class="priority">{{ request.priority }}</span>
+          <span class="value">{{ request.value }}</span>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Department Alerts -->
+  <div class="department-alerts-section">
+    <h2>🏢 DEPARTMENT ALERTS ({{ departmentAlerts.length }})</h2>
+    <div class="department-alerts-list">
+      @for (alert of departmentAlerts; track alert.message) {
+        <div class="department-alert-item">
+          <span>• {{ alert.message }}</span>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Budget Alerts -->
+  <div class="budget-alerts-section">
+    <h2>💰 BUDGET ALERTS ({{ budgetAlerts.length }})</h2>
+    <div class="budget-alerts-list">
+      @for (alert of budgetAlerts; track alert.message) {
+        <div class="budget-alert-item">
+          <span>• {{ alert.message }}</span>
+        </div>
+      }
+    </div>
+  </div>
+</div>

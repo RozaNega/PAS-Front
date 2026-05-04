@@ -1,0 +1,59 @@
+<div class="modal-header">
+  <h4 class="modal-title">Edit Profile</h4>
+  <button type="button" class="btn-close" aria-label="Close" (click)="cancel()"></button>
+</div>
+
+<div class="modal-body">
+  <div class="form-section">
+    <label>
+      Full Name *
+      <input type="text" [(ngModel)]="profile.fullName" />
+    </label>
+  </div>
+
+  <div class="form-row">
+    <label>
+      Employee Code
+      <input type="text" [(ngModel)]="profile.employeeCode" readonly />
+    </label>
+    <label>
+      Department *
+      <select [(ngModel)]="profile.department">
+        <option>IT Department</option>
+        <option>HR Department</option>
+        <option>Finance Department</option>
+        <option>Operations</option>
+      </select>
+    </label>
+  </div>
+
+  <div class="form-row">
+    <label>
+      Position *
+      <input type="text" [(ngModel)]="profile.position" />
+    </label>
+    <label>
+      Manager *
+      <input type="text" [(ngModel)]="profile.manager" />
+    </label>
+  </div>
+
+  <div class="form-section">
+    <label>
+      Email *
+      <input type="email" [(ngModel)]="profile.email" />
+    </label>
+  </div>
+
+  <div class="form-section">
+    <label>
+      Phone *
+      <input type="tel" [(ngModel)]="profile.phone" />
+    </label>
+  </div>
+</div>
+
+<div class="modal-footer">
+  <button class="btn btn-secondary" (click)="cancel()">Cancel</button>
+  <button class="btn btn-primary" (click)="save()">Save Changes</button>
+</div>

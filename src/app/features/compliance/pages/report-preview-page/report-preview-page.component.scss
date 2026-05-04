@@ -1,0 +1,263 @@
+.report-preview-page {
+  padding: 1.5rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.page-header h1 {
+  margin: 0;
+  font-size: 1.75rem;
+  font-weight: 700;
+}
+
+.back-btn {
+  padding: 0.5rem 1rem;
+  background: var(--surface-card);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.back-btn:hover {
+  background: var(--surface-background);
+}
+
+.header-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.meta-section {
+  margin-bottom: 2rem;
+}
+
+.meta-card {
+  background: var(--surface-card);
+  border-radius: 8px;
+  padding: 1.5rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.meta-item {
+  font-size: 0.9rem;
+}
+
+.meta-item strong {
+  color: var(--text-color-muted);
+}
+
+.report-content {
+  background: white;
+  border-radius: 8px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.report-section {
+  margin-bottom: 2rem;
+}
+
+.report-section h2 {
+  margin: 0 0 1rem 0;
+  font-weight: 700;
+  font-size: 1.1rem;
+  border-bottom: 2px solid var(--border-color);
+  padding-bottom: 0.5rem;
+}
+
+.score-section {
+  display: flex;
+  justify-content: center;
+}
+
+.score-card {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  border-radius: 12px;
+  padding: 2rem;
+  text-align: center;
+  min-width: 200px;
+}
+
+.score-value {
+  font-size: 3rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.score-label {
+  font-size: 1rem;
+  opacity: 0.9;
+  margin-bottom: 0.25rem;
+}
+
+.score-status {
+  font-size: 0.9rem;
+  opacity: 0.8;
+}
+
+.risk-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
+
+.risk-card {
+  border-radius: 8px;
+  padding: 1.5rem;
+  text-align: center;
+  color: white;
+}
+
+.risk-card.critical {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+}
+
+.risk-card.high {
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+}
+
+.risk-card.medium {
+  background: linear-gradient(135deg, #eab308 0%, #ca8a04 100%);
+}
+
+.risk-card.low {
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+}
+
+.risk-count {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.risk-label {
+  font-size: 0.9rem;
+  opacity: 0.9;
+}
+
+.chart-container {
+  background: var(--surface-background);
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.violations-table {
+  background: var(--surface-card);
+  border-radius: 8px;
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+thead {
+  background: var(--surface-background);
+}
+
+th {
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+  border-bottom: 2px solid var(--border-color);
+}
+
+td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+tr:last-child td {
+  border-bottom: none;
+}
+
+.severity-badge {
+  color: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.export-section {
+  background: var(--surface-card);
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.export-section h2 {
+  margin: 0 0 1rem 0;
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.export-buttons {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.btn-primary {
+  background: var(--primary-color);
+  color: white;
+}
+
+.btn-primary:hover {
+  background: var(--primary-color-dark);
+}
+
+.btn-secondary {
+  background: var(--surface-card);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+}
+
+.btn-secondary:hover {
+  background: var(--surface-background);
+}
+
+@media (max-width: 768px) {
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .meta-card {
+    grid-template-columns: 1fr;
+  }
+
+  .risk-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .export-buttons {
+    flex-direction: column;
+  }
+
+  .export-buttons button {
+    width: 100%;
+  }
+}
