@@ -16,7 +16,7 @@
 
   <!-- KPI Cards and Calendar -->
   <section class="kpi-cards" aria-label="Key performance indicators">
-    @for (card of kpiCards; track card.title) {
+    @for (card of kpiCards(); track card.title) {
       <article class="kpi-card {{ card.color }}" (click)="router.navigate([card.route])">
         <div class="card-icon">
           <i [class]="card.icon"></i>

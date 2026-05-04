@@ -2,9 +2,11 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { NgOptimizedImage } from '@angular/common';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { finalize } from 'rxjs';
 
 import { AuthApi } from '../../services/auth-api';
 import { AuthThemeService } from '../../services/auth-theme.service';
+import { RegistrationService } from '../../../../core/services/registration.service';
 
 @Component({
   selector: 'app-register',
@@ -16,6 +18,7 @@ import { AuthThemeService } from '../../services/auth-theme.service';
 export class Register {
   private readonly formBuilder = inject(FormBuilder);
   private readonly authApi = inject(AuthApi);
+  private readonly registrationService = inject(RegistrationService);
   protected readonly theme = inject(AuthThemeService);
 
   protected readonly roleOptions = [
@@ -40,6 +43,8 @@ export class Register {
       username: ['', [Validators.required, Validators.minLength(3)]],
       phoneNumber: ['', [Validators.required, Validators.pattern(/^\+?[0-9\s()-]{7,20}$/)]],
       email: ['', [Validators.required, Validators.email]],
+      department: ['', [Validators.required]],
+      employeeCode: ['', [Validators.required]],
       roleName: ['Employee', [Validators.required]],
       password: ['', [Validators.required, Validators.minLength(8)]],
       confirmPassword: ['', [Validators.required]],
@@ -63,32 +68,65 @@ export class Register {
     const raw = this.registerForm.getRawValue();
 
     this.loading.set(true);
-    const result = this.authApi.register({
-      displayName: raw.fullName,
-      phoneNumber: raw.phoneNumber,
-      email: raw.email,
-      roleName: raw.roleName,
+    const registerData = {
+      username: raw.username,
       password: raw.password,
-      acceptedTerms: raw.acceptedTerms,
+      confirmPassword: raw.confirmPassword,
+      email: raw.email,
+      fullName: raw.fullName,
+      roleName: raw.roleName,
+      department: raw.department,
+      employeeCode: raw.employeeCode,
+      phoneNumber: raw.phoneNumber || undefined,
+    };
+    console.log('Sending registration data:', registerData);
+
+    this.registrationService.register(registerData)
+    .pipe(finalize(() => this.loading.set(false)))
+    .subscribe({
+      next: (response) => {
+        console.log('Registration response:', response);
+        if (response.success) {
+          this.statusTone.set('success');
+          this.statusMessage.set(response.message || 'Account created successfully! Please login.');
+          this.registerForm.reset({
+            fullName: '',
+            username: '',
+            phoneNumber: '',
+            email: '',
+            department: '',
+            employeeCode: '',
+            roleName: 'Employee',
+            password: '',
+            confirmPassword: '',
+            acceptedTerms: true,
+          });
+          this.submitted.set(false);
+        } else {
+          this.statusTone.set('error');
+          this.statusMessage.set(response.message || 'Registration failed. Please try again.');
+        }
+      },
+      error: (error) => {
+        console.error('Registration error:', error);
+        console.error('Error status:', error.status);
+        console.error('Error details:', error.error);
+        console.error('Full error:', JSON.stringify(error, null, 2));
+        console.error('Error text:', error.error?.text || error.statusText);
+        let errorMessage = 'Registration failed. Please try again.';
+        if (error.error?.message) {
+          errorMessage = error.error.message;
+        } else if (error.error?.errors) {
+          errorMessage = Array.isArray(error.error.errors) ? error.error.errors.join(', ') : JSON.stringify(error.error.errors);
+        } else if (typeof error.error === 'string') {
+          errorMessage = error.error;
+        } else if (error.status === 400) {
+          errorMessage = 'Invalid registration data. Please check your input and try again.';
+        }
+        this.statusTone.set('error');
+        this.statusMessage.set(errorMessage);
+      }
     });
-
-    this.loading.set(false);
-    this.statusTone.set(result.success ? 'success' : 'error');
-    this.statusMessage.set(result.message);
-
-    if (result.success) {
-      this.registerForm.reset({
-        fullName: '',
-        username: '',
-        phoneNumber: '',
-        email: '',
-        roleName: 'Employee',
-        password: '',
-        confirmPassword: '',
-        acceptedTerms: true,
-      });
-      this.submitted.set(false);
-    }
   }
 
   protected togglePasswordVisibility(): void {
@@ -129,6 +167,8 @@ export class Register {
       | 'username'
       | 'phoneNumber'
       | 'email'
+      | 'department'
+      | 'employeeCode'
       | 'roleName'
       | 'password'
       | 'confirmPassword'

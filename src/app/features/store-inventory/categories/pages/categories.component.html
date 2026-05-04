@@ -231,69 +231,37 @@
         </button>
       </div>
       <div class="modal-body">
-        <div class="form-section">
-          <h4>CATEGORY INFORMATION</h4>
-          <div class="form-grid">
-            <div class="form-field full-width">
-              <label>Category Name *</label>
-              <input type="text" placeholder="_________________________________">
-            </div>
-            <div class="form-field full-width">
-              <label>Parent Category</label>
-              <select>
-                <option>None (Root Category)</option>
-                <option>Electronics</option>
-                <option>Furniture</option>
-                <option>Stationery</option>
-              </select>
-            </div>
-            <div class="form-field full-width">
-              <label>Description</label>
-              <textarea rows="2" placeholder="___________________________________________________________"></textarea>
-            </div>
-          </div>
-        </div>
-        <div class="form-section">
-          <h4>CATEGORY SETTINGS</h4>
-          <div class="form-grid">
-            <div class="form-field">
-              <label>Icon</label>
-              <select>
-                <option>📁</option>
-                <option>📦</option>
-                <option>📱</option>
-                <option>🪑</option>
-              </select>
-            </div>
-            <div class="form-field">
-              <label>Color</label>
-              <select>
-                <option>🔵 Blue</option>
-                <option>🟢 Green</option>
-                <option>🟡 Yellow</option>
-                <option>🔴 Red</option>
-              </select>
-            </div>
-            <div class="form-field">
-              <label>Display Order</label>
-              <input type="number" placeholder="1">
-              <span class="field-hint">(Higher numbers appear higher)</span>
+        <form [formGroup]="categoryForm" (ngSubmit)="saveCategory()">
+          <div class="form-section">
+            <h4>CATEGORY INFORMATION</h4>
+            <div class="form-grid">
+              <div class="form-field full-width">
+                <label>Category Name *</label>
+                <input type="text" formControlName="name" placeholder="Enter category name">
+                @if (categoryForm.controls.name.invalid && categoryForm.controls.name.touched) {
+                  <p class="field-error">Category name is required.</p>
+                }
+              </div>
+              <div class="form-field full-width">
+                <label>Parent Category</label>
+                <select formControlName="parentCategoryId">
+                  <option value="">None (Root Category)</option>
+                  @for (cat of categories(); track cat.id) {
+                    <option [value]="cat.id">{{ cat.name }}</option>
+                  }
+                </select>
+              </div>
+              <div class="form-field full-width">
+                <label>Description</label>
+                <textarea rows="2" formControlName="description" placeholder="Enter description"></textarea>
+              </div>
             </div>
           </div>
-          <div class="checkbox-group">
-            <label class="checkbox-label">
-              <input type="checkbox" checked> Active Category
-            </label>
-            <label class="checkbox-label">
-              <input type="checkbox" checked> Show in Reports
-            </label>
-          </div>
-        </div>
+        </form>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-secondary" (click)="closeAddModal()">Cancel</button>
-        <button class="btn btn-secondary">Save as Draft</button>
-        <button class="btn btn-primary" (click)="closeAddModal()">Save</button>
+        <button class="btn btn-secondary" (click)="closeAddModal()" [disabled]="loading()">Cancel</button>
+        <button class="btn btn-primary" type="submit" [disabled]="loading()">{{ loading() ? 'Saving...' : 'Save' }}</button>
       </div>
     </div>
   </div>

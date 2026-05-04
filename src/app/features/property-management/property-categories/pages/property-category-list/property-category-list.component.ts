@@ -1,7 +1,11 @@
-﻿import { Component, signal, inject } from '@angular/core';
+import { Component, signal, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, Validators } from '@angular/forms';
+import { finalize } from 'rxjs';
+
+import { CategoriesService } from '../../../../../core/services/categories.service';
 
 interface Category {
   id: string;
@@ -18,17 +22,20 @@ interface Category {
 @Component({
   selector: 'app-property-category-list',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule],
+  imports: [CommonModule, RouterLink, FormsModule, ReactiveFormsModule],
   templateUrl: './property-category-list.component.html',
   styleUrls: ['./property-category-list.component.scss']
 })
-export class PropertyCategoryListComponent {
+export class PropertyCategoryListComponent implements OnInit {
   private router = inject(Router);
+  private readonly formBuilder = inject(FormBuilder);
+  private readonly categoriesService = inject(CategoriesService);
 
   selectedCategory = signal<Category | null>(null);
   showModal = signal(false);
   editingCategory = signal<Category | null>(null);
   expandedCategories = signal<Set<string>>(new Set());
+  loading = signal(false);
 
   categories = signal<Category[]>([
     {
@@ -110,6 +117,38 @@ export class PropertyCategoryListComponent {
 
   icons = ['💻', '🖨️', '🪑', '🚗', '⚙️', '📠', '💿', '🌐', '🔊', '🔌', '🖥️', '🗄️', '🚚'];
 
+  ngOnInit(): void {
+    this.loadCategories();
+  }
+
+  loadCategories(): void {
+    this.loading.set(true);
+    this.categoriesService.getAll()
+      .pipe(finalize(() => this.loading.set(false)))
+      .subscribe({
+        next: (response) => {
+          if (response.success && response.data) {
+            // Transform backend data to match frontend structure
+            const transformedCategories = response.data.map(cat => ({
+              id: cat.id,
+              name: cat.name,
+              icon: '💻',
+              parentId: cat.parentCategoryId || null,
+              subcategories: [],
+              propertiesCount: 0,
+              status: (cat.isActive ? 'Active' : 'Inactive') as 'Active' | 'Inactive',
+              color: 'blue',
+              displayOrder: 1
+            }));
+            this.categories.set(transformedCategories);
+          }
+        },
+        error: (error) => {
+          console.error('Error loading categories:', error);
+        }
+      });
+  }
+
   selectCategory(category: Category): void {
     this.selectedCategory.set(category);
   }
@@ -177,29 +216,52 @@ export class PropertyCategoryListComponent {
     const data = this.modalFormData();
     const editing = this.editingCategory();
 
+    this.loading.set(true);
+
     if (editing) {
-      this.updateCategoryRecursive(this.categories(), editing.id, data);
-    } else {
-      const newCategory: Category = {
-        id: Date.now().toString(),
+      // Update existing category
+      this.categoriesService.update(editing.id, {
         name: data.name,
-        icon: data.icon,
-        parentId: data.parentId,
-        subcategories: [],
-        propertiesCount: 0,
-        status: 'Active',
-        color: data.color,
-        displayOrder: data.displayOrder
-      };
-
-      if (data.parentId) {
-        this.addToParentRecursive(this.categories(), data.parentId, newCategory);
-      } else {
-        this.categories.update(cats => [...cats, newCategory]);
-      }
+        description: data.description,
+        parentCategoryId: data.parentId || null
+      }).pipe(finalize(() => this.loading.set(false)))
+      .subscribe({
+        next: (response) => {
+          if (response.success) {
+            this.updateCategoryRecursive(this.categories(), editing.id, data);
+            this.closeModal();
+            this.loadCategories();
+          } else {
+            alert('Failed to update category: ' + response.message);
+          }
+        },
+        error: (error) => {
+          console.error('Error updating category:', error);
+          alert('Error updating category: ' + (error.error?.message || 'Unknown error'));
+        }
+      });
+    } else {
+      // Create new category
+      this.categoriesService.createCategory({
+        name: data.name,
+        description: data.description,
+        parentCategoryId: data.parentId || null
+      }).pipe(finalize(() => this.loading.set(false)))
+      .subscribe({
+        next: (response) => {
+          if (response.success) {
+            this.closeModal();
+            this.loadCategories();
+          } else {
+            alert('Failed to create category: ' + response.message);
+          }
+        },
+        error: (error) => {
+          console.error('Error creating category:', error);
+          alert('Error creating category: ' + (error.error?.message || 'Unknown error'));
+        }
+      });
     }
-
-    this.closeModal();
   }
 
   updateCategoryRecursive(cats: Category[], id: string, data: any): boolean {

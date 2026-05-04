@@ -59,9 +59,43 @@ export class AuthService {
 
   login(request: LoginRequest): Observable<AuthResponse> {
     return this.apiService
-      .post<ApiResponseModel<AuthResponse> | AuthResponse>('Auth/login', request)
+      .post<ApiResponseModel<AuthResponse>>('Auth/login', request)
       .pipe(
-        map((response) => this.extractAuthResponse(response)),
+        map((response) => {
+          // Backend returns { success, message, data: { token, refreshToken, expiresAt, user }, statusCode }
+          if (response.success && response.data) {
+            return {
+              succeeded: true,
+              token: response.data.token || '',
+              refreshToken: response.data.refreshToken || '',
+              expiresAt: response.data.expiresAt || '',
+              user: response.data.user || {
+                id: '',
+                username: '',
+                fullName: '',
+                email: '',
+                roles: [],
+                permissions: [],
+              },
+              errors: [],
+            };
+          }
+          return {
+            succeeded: false,
+            token: '',
+            refreshToken: '',
+            expiresAt: '',
+            user: {
+              id: '',
+              username: '',
+              fullName: '',
+              email: '',
+              roles: [],
+              permissions: [],
+            },
+            errors: [response.message || 'Login failed'],
+          };
+        }),
         tap((response) => {
           if (response.succeeded) {
             this.tokenService.setToken(response.token);

@@ -1,6 +1,7 @@
-﻿import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+﻿import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { CalendarWidgetComponent } from '../../../../shared/components/calendar-widget/calendar-widget.component';
+import { DashboardService, DashboardStatistics } from '../../../../core/services/dashboard.service';
 
 type GRNStatus = 'Pending' | 'Received' | 'Rejected';
 type Priority = 'Urgent' | 'Medium' | 'Normal';
@@ -71,56 +72,134 @@ interface StockCategory {
   styleUrl: './storekeeper-dashboard.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class StorekeeperDashboardComponent {
+export class StorekeeperDashboardComponent implements OnInit {
   readonly router = inject(Router);
+  private readonly dashboardService = inject(DashboardService);
 
-  readonly kpiCards: KPICard[] = [
+  // Signals for reactive state
+  readonly isLoading = signal(false);
+  readonly statistics = signal<DashboardStatistics | null>(null);
+  readonly kpiCards = signal<KPICard[]>([]);
+
+  readonly defaultKPICards: KPICard[] = [
     {
       title: 'Total Items in Stock',
-      value: '12,345',
-      secondary: 'Value: $245K',
-      trend: '▼ -2%',
+      value: '0',
+      secondary: 'Loading...',
+      trend: '---',
       color: 'orange',
       icon: 'bi bi-boxes',
       route: '/storekeeper/inventory',
     },
     {
       title: 'Pending Issues',
-      value: '23',
-      secondary: 'Urgent: 4',
-      trend: '🔴',
+      value: '0',
+      secondary: 'Loading...',
+      trend: '---',
       color: 'red',
       icon: 'bi bi-arrow-up-circle',
       route: '/storekeeper/issuing/pending',
     },
     {
       title: 'Pending Receivings',
-      value: '8',
-      secondary: 'Awaiting inspection: 3',
-      trend: '🟡',
+      value: '0',
+      secondary: 'Loading...',
+      trend: '---',
       color: 'yellow',
       icon: 'bi bi-arrow-down-circle',
       route: '/storekeeper/receiving/pending',
     },
     {
       title: 'Low Stock Alerts',
-      value: '4',
-      secondary: 'Critical: 1',
-      trend: '🔴',
+      value: '0',
+      secondary: 'Loading...',
+      trend: '---',
       color: 'red',
       icon: 'bi bi-exclamation-triangle',
       route: '/storekeeper/inventory/low-stock',
     },
     {
       title: 'Issued This Week',
-      value: '156',
-      secondary: 'VS last week',
-      trend: '▲ +15%',
+      value: '0',
+      secondary: 'Loading...',
+      trend: '---',
       color: 'green',
       icon: 'bi bi-check-circle',
       route: '/storekeeper/reports/issuance',
     },
   ];
+
+  ngOnInit(): void {
+    this.loadDashboardData();
+  }
+
+  loadDashboardData(): void {
+    this.isLoading.set(true);
+    this.dashboardService.getStatistics().subscribe({
+      next: (response) => {
+        if (response.success && response.data) {
+          this.statistics.set(response.data);
+          this.updateKPICards(response.data);
+        }
+        this.isLoading.set(false);
+      },
+      error: (error) => {
+        console.error('Error loading dashboard data:', error);
+        this.kpiCards.set(this.defaultKPICards);
+        this.isLoading.set(false);
+      }
+    });
+  }
+
+  updateKPICards(stats: DashboardStatistics): void {
+    this.kpiCards.set([
+      {
+        title: 'Total Items in Stock',
+        value: stats.totalItems.toLocaleString(),
+        secondary: 'Value: Calculating...',
+        trend: '---',
+        color: 'orange',
+        icon: 'bi bi-boxes',
+        route: '/storekeeper/inventory',
+      },
+      {
+        title: 'Pending Issues',
+        value: stats.pendingRequests.toString(),
+        secondary: 'Urgent: 0',
+        trend: '🔴',
+        color: 'red',
+        icon: 'bi bi-arrow-up-circle',
+        route: '/storekeeper/issuing/pending',
+      },
+      {
+        title: 'Pending Receivings',
+        value: '0',
+        secondary: 'Awaiting inspection: 0',
+        trend: '🟡',
+        color: 'yellow',
+        icon: 'bi bi-arrow-down-circle',
+        route: '/storekeeper/receiving/pending',
+      },
+      {
+        title: 'Low Stock Alerts',
+        value: stats.lowStockItems.toString(),
+        secondary: 'Critical: 0',
+        trend: '🔴',
+        color: 'red',
+        icon: 'bi bi-exclamation-triangle',
+        route: '/storekeeper/inventory/low-stock',
+      },
+      {
+        title: 'Issued This Week',
+        value: '0',
+        secondary: 'VS last week',
+        trend: '---',
+        color: 'green',
+        icon: 'bi bi-check-circle',
+        route: '/storekeeper/reports/issuance',
+      },
+    ]);
+  }
 
   readonly stockCategories: StockCategory[] = [
     { name: 'Electronics', percentage: 35, units: 4320, color: '#3B82F6' },
@@ -259,7 +338,7 @@ export class StorekeeperDashboardComponent {
   }
 
   refreshData() {
-    console.log('Refreshing data...');
+    this.loadDashboardData();
   }
 
   viewAllGRNs() {

@@ -132,6 +132,34 @@
         <p class="field-error">Please enter a valid email address.</p>
       }
 
+      <label class="auth-label" for="register-department">Department</label>
+      <div class="input-shell">
+        <input
+          id="register-department"
+          type="text"
+          formControlName="department"
+          placeholder="Department"
+          autocomplete="organization-title"
+        />
+      </div>
+      @if (showControlError('department') && registerForm.controls.department.hasError('required')) {
+        <p class="field-error">Department is required.</p>
+      }
+
+      <label class="auth-label" for="register-employee-code">Employee Code</label>
+      <div class="input-shell">
+        <input
+          id="register-employee-code"
+          type="text"
+          formControlName="employeeCode"
+          placeholder="Employee Code"
+          autocomplete="organization"
+        />
+      </div>
+      @if (showControlError('employeeCode') && registerForm.controls.employeeCode.hasError('required')) {
+        <p class="field-error">Employee code is required.</p>
+      }
+
       <label class="auth-label" for="register-password">Password</label>
       <div class="input-shell input-shell--with-action">
         <input
