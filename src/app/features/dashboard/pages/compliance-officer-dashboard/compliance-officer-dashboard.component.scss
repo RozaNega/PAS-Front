@@ -54,7 +54,7 @@
 
 .card-value {
   margin: 0.55rem 0 0;
-  color: var(--primary-color);
+  color: #1d4ed8;
   font-size: 1.5rem;
   font-weight: 800;
 }
@@ -76,9 +76,14 @@
 }
 
 .filter-chip--active {
-  border-color: var(--primary-color);
-  background: var(--primary-color);
+  border-color: #1d4ed8;
+  background: #1d4ed8;
   color: #ffffff;
+}
+
+.logs-panel {
+  border-color: #bfdbfe;
+  background: #f8fbff;
 }
 
 .content-grid {

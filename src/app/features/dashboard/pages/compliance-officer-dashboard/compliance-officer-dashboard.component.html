@@ -5,7 +5,7 @@
   </header>
 
   <section class="summary" aria-labelledby="summary-heading">
-    <h2 id="summary-heading">Summary Cards</h2>
+    <h2 id="summary-heading">Audit Summary</h2>
     <div class="card-grid">
       @for (card of summaryCards(); track card.title) {
         <article class="summary-card">
@@ -17,7 +17,7 @@
   </section>
 
   <section class="filters" aria-labelledby="filters-heading">
-    <h2 id="filters-heading">Filters</h2>
+    <h2 id="filters-heading">Audit Filters</h2>
     <div class="actions-row">
       @for (filter of filters; track filter) {
         <button
@@ -34,14 +34,14 @@
 
   <section class="content-grid">
     <section class="logs-panel" aria-labelledby="logs-heading">
-      <h2 id="logs-heading">Activity Logs / Audit Trail</h2>
+      <h2 id="logs-heading">Audit Trail Activity Logs</h2>
       <div class="table-wrap">
         <table>
           <thead>
             <tr>
               <th scope="col">User Name</th>
               <th scope="col">Action</th>
-              <th scope="col">Module</th>
+              <th scope="col">Domain</th>
               <th scope="col">Date &amp; Time</th>
               <th scope="col">Status</th>
             </tr>
@@ -70,7 +70,7 @@
     </section>
 
     <aside class="alerts-panel" aria-labelledby="alerts-heading">
-      <h2 id="alerts-heading">Alerts / Violations</h2>
+      <h2 id="alerts-heading">Alerts / Violations Panel</h2>
       <div class="alerts-list">
         @for (alert of alerts(); track alert.title) {
           <article class="alert-card">
@@ -88,7 +88,7 @@
   </section>
 
   <section class="overview-panel" aria-labelledby="overview-heading">
-    <h2 id="overview-heading">Activity Trends</h2>
+    <h2 id="overview-heading">Risk Trends</h2>
     <div class="trend-list">
       @for (item of dailyActivityOverview(); track item.label) {
         <article class="trend-item">

@@ -1,0 +1,166 @@
+<div class="manager-approval-dashboard">
+  <!-- Welcome Banner -->
+  <div class="welcome-banner">
+    <div class="banner-content">
+      <div class="greeting">
+        <h1>👋 {{ greeting }}, {{ managerName }}!</h1>
+        <p>Welcome to IT Department Dashboard. You have 5 pending approvals requiring your attention.</p>
+      </div>
+      <div class="banner-date">📅 {{ currentDate | date:'MMM dd, yyyy' }}</div>
+    </div>
+  </div>
+
+  <!-- Key Metrics -->
+  <div class="metrics-section">
+    <h2>📊 KEY METRICS</h2>
+    <div class="metrics-grid">
+      @for (metric of keyMetrics; track metric.title) {
+        <div class="metric-card metric-{{ metric.tone }}">
+          <div class="metric-title">{{ metric.title }}</div>
+          @if (metric.subtitle) {
+            <div class="metric-subtitle">{{ metric.subtitle }}</div>
+          }
+          <div class="metric-value">{{ metric.value }}</div>
+          @if (metric.trend) {
+            <div class="metric-trend">{{ metric.trend }}</div>
+          }
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Pending Summary -->
+  <div class="pending-summary-section">
+    <h2>⏳ PENDING SUMMARY (5)</h2>
+    <div class="pending-summary-card">
+      <div class="summary-item">
+        <span>🔴 Urgent: 2 requests</span>
+        <span>🟡 Medium: 2 requests</span>
+        <span>🟢 Normal: 1 request</span>
+      </div>
+      <div class="summary-item">
+        <span>Total Value: $12,450</span>
+        <span>Avg Wait Time: 1.5 days</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pending Requests -->
+  <div class="pending-requests-section">
+    <h2>⏳ PENDING REQUESTS (5) <button class="btn btn-link" (click)="viewAllRequests()">View All →</button></h2>
+    <div class="pending-requests-list">
+      @for (request of pendingRequests; track request.srNumber) {
+        <div class="request-card">
+          <div class="request-header">
+            <span class="request-icon">{{ getPriorityIcon(request.priority) }}</span>
+            <span class="request-sr">{{ request.srNumber }}</span>
+            <span class="request-requester">{{ request.requester }}</span>
+            <span class="request-priority">({{ request.priority }})</span>
+          </div>
+          <div class="request-details">
+            <span>Requested: {{ request.requestedDate }}</span>
+            <span>Items: {{ request.items }}</span>
+            <span>Value: {{ request.value }}</span>
+            <span>Required: {{ request.requiredDate }}</span>
+          </div>
+          <div class="request-actions">
+            <button class="btn btn-sm btn-primary" (click)="approveRequest(request.srNumber)">Approve</button>
+            <button class="btn btn-sm btn-secondary" (click)="rejectRequest(request.srNumber)">Reject</button>
+            <button class="btn btn-sm btn-outline" (click)="viewRequestDetails(request.srNumber)">View Details</button>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Recent Activity -->
+  <div class="recent-activity-section">
+    <h2>🔔 RECENT ACTIVITY <button class="btn btn-link" (click)="viewAllActivity()">View All Activity →</button></h2>
+    <div class="activity-list">
+      @for (activity of recentActivity; track activity.date) {
+        <div class="activity-item">
+          <span class="activity-icon">{{ getActivityIcon(activity.action) }}</span>
+          <span class="activity-date">{{ activity.date }}</span>
+          <span class="activity-action">{{ activity.action }}</span>
+          @if (activity.srNumber) {
+            <span class="activity-sr">{{ activity.srNumber }}</span>
+          }
+          @if (activity.requester) {
+            <span class="activity-requester">({{ activity.requester }})</span>
+          }
+          @if (activity.value) {
+            <span class="activity-value">- {{ activity.value }}</span>
+          }
+          @if (activity.reason) {
+            <span class="activity-reason">- {{ activity.reason }}</span>
+          }
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Request Trend -->
+  <div class="request-trend-section">
+    <h2>📈 REQUEST TREND - IT Department</h2>
+    <div class="trend-chart">
+      <svg viewBox="0 0 600 200" class="trend-svg">
+        <!-- Grid lines -->
+        <line x1="50" y1="20" x2="580" y2="20" stroke="#e5e7eb" stroke-width="1" />
+        <line x1="50" y1="60" x2="580" y2="60" stroke="#e5e7eb" stroke-width="1" />
+        <line x1="50" y1="100" x2="580" y2="100" stroke="#e5e7eb" stroke-width="1" />
+        <line x1="50" y1="140" x2="580" y2="140" stroke="#e5e7eb" stroke-width="1" />
+        <line x1="50" y1="180" x2="580" y2="180" stroke="#e5e7eb" stroke-width="1" />
+
+        <!-- Y-axis labels -->
+        <text x="40" y="25" text-anchor="end" font-size="10">12</text>
+        <text x="40" y="65" text-anchor="end" font-size="10">10</text>
+        <text x="40" y="105" text-anchor="end" font-size="10">8</text>
+        <text x="40" y="145" text-anchor="end" font-size="10">6</text>
+        <text x="40" y="185" text-anchor="end" font-size="10">4</text>
+
+        <!-- X-axis labels -->
+        <text x="50" y="195" text-anchor="middle" font-size="10">Jan</text>
+        <text x="95" y="195" text-anchor="middle" font-size="10">Feb</text>
+        <text x="140" y="195" text-anchor="middle" font-size="10">Mar</text>
+        <text x="185" y="195" text-anchor="middle" font-size="10">Apr</text>
+        <text x="230" y="195" text-anchor="middle" font-size="10">May</text>
+        <text x="275" y="195" text-anchor="middle" font-size="10">Jun</text>
+        <text x="320" y="195" text-anchor="middle" font-size="10">Jul</text>
+        <text x="365" y="195" text-anchor="middle" font-size="10">Aug</text>
+        <text x="410" y="195" text-anchor="middle" font-size="10">Sep</text>
+        <text x="455" y="195" text-anchor="middle" font-size="10">Oct</text>
+        <text x="500" y="195" text-anchor="middle" font-size="10">Nov</text>
+        <text x="545" y="195" text-anchor="middle" font-size="10">Dec</text>
+
+        <!-- Submitted line -->
+        <polyline
+          fill="none"
+          stroke="#3b82f6"
+          stroke-width="2"
+          [attr.points]="submittedPoints"
+        />
+
+        <!-- Approved line -->
+        <polyline
+          fill="none"
+          stroke="#22c55e"
+          stroke-width="2"
+          [attr.points]="approvedPoints"
+        />
+
+        <!-- Rejected line -->
+        <polyline
+          fill="none"
+          stroke="#ef4444"
+          stroke-width="2"
+          [attr.points]="rejectedPoints"
+        />
+      </svg>
+      <div class="legend">
+        <span class="legend-item"><span class="legend-dot" style="background: #3b82f6;"></span> Submitted</span>
+        <span class="legend-item"><span class="legend-dot" style="background: #22c55e;"></span> Approved</span>
+        <span class="legend-item"><span class="legend-dot" style="background: #ef4444;"></span> Rejected</span>
+      </div>
+    </div>
+  </div>
+</div>

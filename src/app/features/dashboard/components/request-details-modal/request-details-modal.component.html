@@ -1,0 +1,110 @@
+<div class="modal-header">
+  <h4 class="modal-title">Request Details: {{ request().srNumber }}</h4>
+  <button type="button" class="btn-close" aria-label="Close" (click)="modal.close()"></button>
+</div>
+
+<div class="modal-body">
+  <!-- Request Information -->
+  <section class="info-section">
+    <h5>REQUEST INFORMATION</h5>
+    <div class="info-grid">
+      <div class="info-item">
+        <strong>SR Number:</strong> {{ request().srNumber }}
+      </div>
+      <div class="info-item">
+        <strong>Status:</strong>
+        <span class="status-badge status-{{ getStatusColor(request().status) }}">
+          {{ request().status }}
+        </span>
+      </div>
+      <div class="info-item">
+        <strong>Requested:</strong> {{ request().requestedDate }}
+      </div>
+      <div class="info-item">
+        <strong>Priority:</strong> {{ request().priority }}
+      </div>
+      <div class="info-item">
+        <strong>Required By:</strong> {{ request().requiredBy }}
+      </div>
+      <div class="info-item">
+        <strong>Department:</strong> {{ request().department }}
+      </div>
+      <div class="info-item full-width">
+        <strong>Justification:</strong> {{ request().justification }}
+      </div>
+      @if (request().approvedBy) {
+        <div class="info-item">
+          <strong>Approved By:</strong> {{ request().approvedBy }}
+        </div>
+      }
+    </div>
+  </section>
+
+  <!-- Requested Items -->
+  <section class="info-section">
+    <h5>📦 REQUESTED ITEMS</h5>
+    <table class="items-table">
+      <thead>
+        <tr>
+          <th>Item Name</th>
+          <th>SKU</th>
+          <th>Requested</th>
+          <th>Approved</th>
+          <th>Issued</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (item of request().items; track item.sku) {
+          <tr>
+            <td>{{ item.name }}</td>
+            <td>{{ item.sku }}</td>
+            <td>{{ item.quantity }}</td>
+            <td>{{ item.approved ?? '-' }}</td>
+            <td>{{ item.issued ?? '-' }}</td>
+            <td>{{ item.status ?? '-' }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </section>
+
+  <!-- Timeline -->
+  <section class="info-section">
+    <h5>📅 TIMELINE</h5>
+    <div class="timeline">
+      @for (entry of request().timeline; track entry.date + entry.action) {
+        <div class="timeline-item">
+          <div class="timeline-dot"></div>
+          <div class="timeline-content">
+            <strong>{{ entry.date }}</strong>
+            <p>{{ entry.action }}</p>
+          </div>
+        </div>
+      }
+    </div>
+  </section>
+
+  <!-- Attachments -->
+  @if (request().attachments && request().attachments.length > 0) {
+    <section class="info-section">
+      <h5>📎 ATTACHMENTS</h5>
+      <div class="attachments-list">
+        @for (attachment of request().attachments; track attachment) {
+          <div class="attachment-item">
+            <span class="attachment-icon">📄</span>
+            <span>{{ attachment }}</span>
+          </div>
+        }
+      </div>
+    </section>
+  }
+</div>
+
+<div class="modal-footer">
+  <button class="btn btn-secondary" (click)="modal.close()">Close</button>
+  <button class="btn btn-primary">Track Request</button>
+  @if (request().status === 'Pending') {
+    <button class="btn btn-danger">Cancel Request</button>
+  }
+</div>

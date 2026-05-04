@@ -1,0 +1,166 @@
+<div class="officer-profile-page">
+  <div class="page-header">
+    <h1>Officer Profile</h1>
+    <button class="edit-btn">Edit</button>
+  </div>
+
+  <!-- My Profile -->
+  <div class="profile-section">
+    <h2>👤 MY PROFILE</h2>
+    <div class="profile-grid">
+      <div class="profile-column">
+        <div class="profile-item">
+          <span class="profile-label">Name:</span>
+          <span class="profile-value">{{ profile.name }}</span>
+        </div>
+        <div class="profile-item">
+          <span class="profile-label">Employee Code:</span>
+          <span class="profile-value">{{ profile.employeeCode }}</span>
+        </div>
+        <div class="profile-item">
+          <span class="profile-label">Email:</span>
+          <span class="profile-value">{{ profile.email }}</span>
+        </div>
+        <div class="profile-item">
+          <span class="profile-label">Phone:</span>
+          <span class="profile-value">{{ profile.phone }}</span>
+        </div>
+      </div>
+      <div class="profile-column">
+        <div class="profile-item">
+          <span class="profile-label">Title:</span>
+          <span class="profile-value">{{ profile.title }}</span>
+        </div>
+        <div class="profile-item">
+          <span class="profile-label">Department:</span>
+          <span class="profile-value">{{ profile.department }}</span>
+        </div>
+        <div class="profile-item">
+          <span class="profile-label">Join Date:</span>
+          <span class="profile-value">{{ profile.joinDate }}</span>
+        </div>
+        <div class="profile-item">
+          <span class="profile-label">Status:</span>
+          <span class="profile-value">🟢 {{ profile.status }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Audit Scope -->
+  <div class="scope-section">
+    <h2>🔍 AUDIT SCOPE</h2>
+    <div class="scope-card">
+      <div class="scope-item">
+        <span class="scope-label">Audit Scope:</span>
+        <span class="scope-value">{{ auditScope.auditScope }}</span>
+      </div>
+      <div class="scope-item">
+        <span class="scope-label">Modules Covered:</span>
+        <span class="scope-value">{{ auditScope.modulesCovered }}</span>
+      </div>
+      <div class="scope-item">
+        <span class="scope-label">Read-Only Access:</span>
+        <span class="scope-value">{{ auditScope.readOnlyAccess }}</span>
+      </div>
+      <div class="scope-item">
+        <span class="scope-label">Export Permissions:</span>
+        <span class="scope-value">{{ auditScope.exportPermissions }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notification Settings -->
+  <div class="settings-section">
+    <h2>⚙️ NOTIFICATION SETTINGS</h2>
+    <div class="settings-card">
+      @for (setting of notificationSettings; track setting.label) {
+        <div class="setting-item">
+          <input type="checkbox" [checked]="setting.checked" id="{{ setting.label }}" />
+          <label for="{{ setting.label }}">{{ setting.label }}</label>
+        </div>
+      }
+      <button class="save-btn" (click)="savePreferences()">Save Preferences</button>
+    </div>
+  </div>
+
+  <!-- Investigation Log -->
+  <div class="investigations-section">
+    <h2>📋 INVESTIGATION LOG</h2>
+    <div class="investigations-table">
+      <table>
+        <thead>
+          <tr>
+            <th>Case ID</th>
+            <th>Violation Type</th>
+            <th>Assigned</th>
+            <th>Status</th>
+            <th>Date</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (investigation of investigations; track investigation.caseId) {
+            <tr>
+              <td>{{ investigation.caseId }}</td>
+              <td>{{ investigation.violationType }}</td>
+              <td>{{ investigation.assignedTo }}</td>
+              <td>
+                @if (investigation.status === 'Open') {
+                  <span class="status-badge open">🟡 Open</span>
+                } @else {
+                  <span class="status-badge closed">✅ Closed</span>
+                }
+              </td>
+              <td>{{ investigation.date }}</td>
+              <td>
+                @if (investigation.status === 'Open') {
+                  <button class="table-action-btn">👁️</button>
+                  <button class="table-action-btn">📝</button>
+                } @else {
+                  <button class="table-action-btn">👁️</button>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <div class="investigations-footer">
+      <a href="#" class="view-all-link">View All Investigations →</a>
+    </div>
+  </div>
+
+  <!-- Certifications -->
+  <div class="certifications-section">
+    <h2>📜 CERTIFICATIONS</h2>
+    <div class="certifications-list">
+      @for (cert of certifications; track cert.name) {
+        <div class="certification-item">
+          <span>• {{ cert.name }} - {{ cert.year }}</span>
+        </div>
+      }
+    </div>
+    <div class="certifications-footer">
+      @if (!showAddCertificationForm) {
+        <button class="add-btn" (click)="toggleAddCertificationForm()">Add Certification</button>
+      }
+    </div>
+    @if (showAddCertificationForm) {
+      <div class="add-certification-form">
+        <div class="form-row">
+          <label>Certification Name:</label>
+          <input type="text" [(ngModel)]="newCertificationName" placeholder="Enter certification name" />
+        </div>
+        <div class="form-row">
+          <label>Year:</label>
+          <input type="text" [(ngModel)]="newCertificationYear" placeholder="Enter year" />
+        </div>
+        <div class="form-actions">
+          <button class="save-btn" (click)="addCertification()">Add</button>
+          <button class="cancel-btn" (click)="cancelAddCertification()">Cancel</button>
+        </div>
+      </div>
+    }
+  </div>
+</div>

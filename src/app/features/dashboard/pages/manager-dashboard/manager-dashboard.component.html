@@ -1,95 +1,92 @@
 <section class="manager-dashboard" aria-label="Manager dashboard">
-  <header class="welcome-banner">
-    <h1>Manager Dashboard</h1>
-    <p>Welcome, {{ managerName() }}</p>
+  <header class="hero">
+    <div>
+      <p class="eyebrow">Manager Dashboard</p>
+      <h1>Manager Dashboard</h1>
+      <p class="hero-copy">Welcome back, {{ managerName() }} 👋</p>
+    </div>
   </header>
 
-  <section class="summary" aria-labelledby="summary-heading">
-    <h2 id="summary-heading">Summary Cards</h2>
-    <div class="card-grid">
-      @for (card of summaryCards(); track card.title) {
-        <article class="summary-card">
-          <p class="card-title">{{ card.title }}</p>
-          <p class="card-value">{{ card.value }}</p>
-        </article>
-      }
-    </div>
-  </section>
-
-  <section class="filters" aria-labelledby="filters-heading">
-    <h2 id="filters-heading">Filters</h2>
-    <div class="actions-row">
-      @for (filter of filters; track filter) {
-        <button
-          type="button"
-          class="action-btn"
-          [class.action-active]="selectedFilter() === filter"
-          (click)="setFilter(filter)"
-        >
-          {{ filter }}
-        </button>
-      }
-    </div>
-  </section>
-
-  <section class="content-grid">
-    <section class="requests-panel" aria-labelledby="requests-heading">
-      <div class="panel-header">
-        <h2 id="requests-heading">Requests</h2>
-        <div class="actions-row">
-          <button type="button" class="action-btn secondary" (click)="refresh()">Refresh</button>
-          <button type="button" class="action-btn primary" (click)="viewAllRequests()">
-            View All Requests
-          </button>
+  <section class="summary-grid" aria-label="Summary metrics">
+    @for (card of summaryCards(); track card.title) {
+      <article class="summary-card summary-card--{{ card.tone }}">
+        <div class="summary-card__icon">
+          <i class="bi {{ card.icon }}"></i>
         </div>
-      </div>
+        <div class="summary-card__content">
+          <p class="summary-card__value">{{ card.value }}</p>
+          <h2>{{ card.title }}</h2>
+          <p>{{ card.description }}</p>
+        </div>
+      </article>
+    }
+  </section>
+
+  <section class="dashboard-grid">
+    <section class="panel panel--requests" aria-labelledby="pending-requests-heading">
+      <header class="panel__header">
+        <div>
+          <h2 id="pending-requests-heading">Pending Requests</h2>
+        </div>
+        <button type="button" class="text-button" (click)="viewAllRequests()">View All</button>
+      </header>
 
       <div class="table-wrap">
         <table>
           <thead>
             <tr>
-              <th scope="col">Employee Name</th>
-              <th scope="col">Item Name</th>
+              <th scope="col">Request ID</th>
+              <th scope="col">Employee</th>
+              <th scope="col">Item</th>
               <th scope="col">Quantity</th>
               <th scope="col">Date</th>
-              <th scope="col">Status</th>
-              <th scope="col">Actions</th>
+              <th scope="col">Priority</th>
+              <th scope="col">Action</th>
             </tr>
           </thead>
           <tbody>
             @for (request of filteredRequests(); track request.id) {
               <tr>
+                <td>{{ 'REQ-' + request.id }}</td>
                 <td>{{ request.employeeName }}</td>
                 <td>{{ request.itemName }}</td>
                 <td>{{ request.quantity }}</td>
                 <td>{{ request.date }}</td>
                 <td>
                   <span
-                    class="status-pill"
-                    [class.status-pending]="request.status === 'Pending'"
-                    [class.status-approved]="request.status === 'Approved'"
-                    [class.status-rejected]="request.status === 'Rejected'"
+                    class="priority-pill"
+                    [class.priority-pill--medium]="request.itemName === 'Laptop'"
+                    [class.priority-pill--high]="request.itemName === 'Office Chair'"
+                    [class.priority-pill--low]="
+                      request.itemName !== 'Laptop' && request.itemName !== 'Office Chair'
+                    "
                   >
-                    {{ request.status }}
+                    {{
+                      request.itemName === 'Office Chair'
+                        ? 'High'
+                        : request.itemName === 'Laptop'
+                          ? 'Medium'
+                          : 'Low'
+                    }}
                   </span>
                 </td>
                 <td>
-                  <div class="actions-inline">
+                  <div class="table-actions">
                     <button
                       type="button"
-                      class="table-btn approve"
-                      [disabled]="request.status !== 'Pending'"
+                      class="action-icon action-icon--approve"
                       (click)="approveRequest(request.id)"
                     >
-                      Approve
+                      <span class="sr-only">Approve request {{ 'REQ-' + request.id }}</span>
+                      <i class="bi bi-check-lg"></i>
                     </button>
                     <button
                       type="button"
-                      class="table-btn reject"
-                      [disabled]="request.status !== 'Pending'"
+                      class="action-icon action-icon--reject"
                       (click)="rejectRequest(request.id)"
                     >
-                      Reject
+                      <span class="sr-only">Reject request {{ 'REQ-' + request.id }}</span>
+                      <i class="bi bi-x-lg"></i>
                     </button>
                   </div>
                 </td>
@@ -100,11 +97,83 @@
       </div>
     </section>
 
-    <aside class="activity-panel" aria-labelledby="activity-heading">
-      <h2 id="activity-heading">Recent Activity</h2>
+    <aside class="panel panel--overview" aria-labelledby="overview-heading">
+      <header class="panel__header panel__header--stacked">
+        <div>
+          <h2 id="overview-heading">Requests Overview</h2>
+        </div>
+        <button type="button" class="select-chip" (click)="setPeriod('This Month')">
+          {{ selectedPeriod() }}
+          <i class="bi bi-chevron-down"></i>
+        </button>
+      </header>
+
+      <div
+        class="overview-chart"
+        [style.background]="'conic-gradient(' + overviewConicGradient() + ')'"
+      >
+        <div class="overview-chart__inner">
+          <span>Queue</span>
+          <strong>{{
+            summaryCards()[0].value + summaryCards()[1].value + summaryCards()[2].value
+          }}</strong>
+          <small>Total</small>
+        </div>
+      </div>
+
+      <div class="overview-legend">
+        @for (slice of overviewSlices(); track slice.label) {
+          <div class="legend-row">
+            <span class="legend-dot" [style.background]="slice.color"></span>
+            <span>{{ slice.label }} ({{ slice.percent }}%)</span>
+          </div>
+        }
+      </div>
+    </aside>
+  </section>
+
+  <section class="dashboard-grid dashboard-grid--bottom">
+    <section class="panel panel--activity" aria-labelledby="recent-activity-heading">
+      <header class="panel__header">
+        <h2 id="recent-activity-heading">Recent Activity</h2>
+        <button type="button" class="text-button">View All</button>
+      </header>
+
       <div class="activity-list" role="list">
-        @for (entry of recentActivity(); track entry) {
-          <div role="listitem">{{ entry }}</div>
+        @for (entry of recentActivity(); track entry.title) {
+          <article class="activity-item" role="listitem">
+            <span class="activity-avatar">{{ entry.avatar }}</span>
+            <div class="activity-copy">
+              <strong>{{ entry.title }}</strong>
+              <p>{{ entry.detail }}</p>
+            </div>
+            <time>{{ entry.time }}</time>
+          </article>
+        }
+      </div>
+    </section>
+
+    <aside class="panel panel--approvals" aria-labelledby="approvals-heading">
+      <header class="panel__header">
+        <h2 id="approvals-heading">My Approvals</h2>
+        <button type="button" class="text-button">View All</button>
+      </header>
+
+      <div class="approval-list">
+        @for (item of approvals(); track item.id) {
+          <article class="approval-item">
+            <div class="approval-item__meta">
+              <strong>{{ item.id }}</strong>
+              <span>Approval</span>
+            </div>
+            <div class="approval-item__body">
+              <p>{{ item.employeeName }} • {{ item.itemName }}</p>
+              <time>{{ item.date }}</time>
+            </div>
+            <span class="approval-badge approval-badge--{{ item.status.toLowerCase() }}">{{
+              item.status
+            }}</span>
+          </article>
         }
       </div>
     </aside>

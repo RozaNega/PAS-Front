@@ -15,17 +15,21 @@ import { AuditTrailComponent } from './audit-trail/pages/audit-trail/audit-trail
 import { AuditTrailService } from './audit-trail/services/audit-trail.service';
 
 const routes: Routes = [
+  { path: '', component: AuditTrailComponent },
   { path: 'notifications', component: NotificationListComponent },
   { path: 'documents', component: DocumentListComponent },
-  { path: 'audit-trail', component: AuditTrailComponent }
 ];
 
 @NgModule({
+ Dashboard
+  declarations: [NotificationListComponent, DocumentListComponent, AuditTrailComponent],
+
   declarations: [
     DocumentListComponent,
     AuditTrailComponent
   ],
+ main
   imports: [SharedModule, RouterModule.forChild(routes)],
-  providers: [NotificationService, DocumentService, AuditTrailService]
+  providers: [NotificationService, DocumentService, AuditTrailService],
 })
 export class CommonModule {}

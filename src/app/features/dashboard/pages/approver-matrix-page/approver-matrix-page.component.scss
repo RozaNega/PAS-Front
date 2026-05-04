@@ -1,0 +1,170 @@
+.approver-matrix-page {
+  padding: 1.5rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.page-header {
+  margin-bottom: 1.5rem;
+}
+
+.page-header h1 {
+  margin: 0;
+  font-size: 1.75rem;
+  font-weight: 700;
+}
+
+.hierarchy-section,
+.levels-section,
+.substitute-section,
+.authority-section,
+.limits-section {
+  margin-bottom: 2rem;
+}
+
+.hierarchy-section h2,
+.levels-section h2,
+.substitute-section h2,
+.authority-section h2,
+.limits-section h2 {
+  margin: 0 0 1rem 0;
+  font-weight: 700;
+  font-size: 1.1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.hierarchy-tree {
+  padding: 2rem;
+  background: var(--surface-card);
+  border-radius: 8px;
+  display: flex;
+  justify-content: center;
+  min-height: 300px;
+}
+
+.tree-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.node-box {
+  padding: 1rem 1.5rem;
+  background: var(--primary-color-soft);
+  border: 2px solid var(--primary-color);
+  border-radius: 8px;
+  text-align: center;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.tree-connector {
+  width: 2px;
+  height: 30px;
+  background: var(--surface-border);
+}
+
+.tree-children {
+  display: flex;
+  gap: 2rem;
+}
+
+.table-container {
+  overflow-x: auto;
+}
+
+.levels-table,
+.substitute-table,
+.authority-table,
+.limits-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--surface-card);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.levels-table th,
+.levels-table td,
+.substitute-table th,
+.substitute-table td,
+.authority-table th,
+.authority-table td,
+.limits-table th,
+.limits-table td {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--surface-border);
+}
+
+.levels-table th,
+.substitute-table th,
+.authority-table th,
+.limits-table th {
+  font-weight: 600;
+  color: var(--text-color-muted);
+  font-size: 0.9rem;
+  background: var(--surface-section);
+}
+
+.levels-table tr:hover,
+.substitute-table tr:hover,
+.authority-table tr:hover,
+.limits-table tr:hover {
+  background: var(--surface-section);
+}
+
+.btn {
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s;
+}
+
+.btn-sm {
+  padding: 0.35rem 0.75rem;
+  font-size: 0.9rem;
+}
+
+.btn-outline {
+  background: transparent;
+  border: 1px solid var(--surface-border);
+  color: var(--text-color);
+}
+
+.btn-outline:hover {
+  background: var(--surface-section);
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  color: var(--primary-color);
+  padding: 0;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.btn-link:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 768px) {
+  .tree-children {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .tree-connector {
+    width: 30px;
+    height: 2px;
+  }
+
+  .tree-node {
+    flex-direction: row;
+  }
+}

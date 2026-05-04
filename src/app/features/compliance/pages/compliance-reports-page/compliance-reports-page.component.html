@@ -1,0 +1,355 @@
+<div class="compliance-reports-page">
+  <div class="page-header">
+    <h1>Compliance Reports</h1>
+    <button class="generate-btn" (click)="generateReport()">Generate Report</button>
+  </div>
+
+  <!-- Report Filters -->
+  <div class="filters-section">
+    <div class="filter-row">
+      <label>📅 Date Range:</label>
+      <select>
+        <option>Dec 01, 2024 to Dec 31, 2024</option>
+      </select>
+      <label>📄 Report Type:</label>
+      <select>
+        <option>Compliance Summary</option>
+      </select>
+      <label>📊 Format:</label>
+      <select>
+        <option>PDF</option>
+      </select>
+      <label>🔄 Include Details:</label>
+      <select>
+        <option>Yes</option>
+      </select>
+      <label>🔐 Confidential:</label>
+      <select>
+        <option>Yes</option>
+      </select>
+      <label>📧 Email to:</label>
+      <input type="text" value="sarah.smith@afrocom.com" />
+    </div>
+  </div>
+
+  <!-- Compliance Summary Report -->
+  <div class="summary-section">
+    <h2>📄 COMPLIANCE SUMMARY REPORT</h2>
+    <div class="report-card">
+      <div class="report-header">
+        <h3>AFROCOM ASSET MANAGEMENT SYSTEM</h3>
+        <h3>COMPLIANCE AUDIT REPORT</h3>
+        <div class="report-divider"></div>
+      </div>
+      <div class="report-content">
+        <p><strong>Report Period:</strong> December 1, 2024 - December 31, 2024</p>
+        <p><strong>Generated:</strong> December 15, 2024</p>
+        <p><strong>Prepared By:</strong> Mike Wilson (Compliance Officer)</p>
+        <div class="report-divider"></div>
+        <h4>EXECUTIVE SUMMARY</h4>
+        <p><strong>Overall Compliance Score:</strong> 92% (Excellent)</p>
+        <p><strong>Total Violations:</strong> 23 (▼ 15% from last quarter)</p>
+        <p><strong>Critical Violations:</strong> 3 (▼ 2 from last quarter)</p>
+        <p><strong>Resolved Violations:</strong> 12</p>
+        <p><strong>Recommendations:</strong> 5</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Violation Report -->
+  <div class="violation-section">
+    <h2>⚠️ VIOLATION REPORT</h2>
+    <div class="violation-table">
+      <table>
+        <thead>
+          <tr>
+            <th>Severity</th>
+            <th>Count</th>
+            <th>Percentage</th>
+            <th>Trend</th>
+            <th>Most Common Type</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Critical</td>
+            <td>3</td>
+            <td>13%</td>
+            <td>▼ -2</td>
+            <td>Missing Documentation (2)</td>
+          </tr>
+          <tr>
+            <td>High</td>
+            <td>5</td>
+            <td>22%</td>
+            <td>● Same</td>
+            <td>Approval Chain (3)</td>
+          </tr>
+          <tr>
+            <td>Medium</td>
+            <td>8</td>
+            <td>35%</td>
+            <td>▼ -1</td>
+            <td>Incomplete Audit Trail (4)</td>
+          </tr>
+          <tr>
+            <td>Low</td>
+            <td>7</td>
+            <td>30%</td>
+            <td>▼ -2</td>
+            <td>Outdated Docs (3)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Risk Assessment Report -->
+  <div class="risk-section">
+    <h2>📊 RISK ASSESSMENT REPORT</h2>
+    <div class="risk-table">
+      <table>
+        <thead>
+          <tr>
+            <th>Risk Category</th>
+            <th>Risk Level</th>
+            <th>Likelihood</th>
+            <th>Impact</th>
+            <th>Mitigation Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Data Security</td>
+            <td>High</td>
+            <td>Possible</td>
+            <td>High</td>
+            <td>In Progress</td>
+          </tr>
+          <tr>
+            <td>Compliance</td>
+            <td>Medium</td>
+            <td>Likely</td>
+            <td>Medium</td>
+            <td>Under Control</td>
+          </tr>
+          <tr>
+            <td>Operational</td>
+            <td>Low</td>
+            <td>Unlikely</td>
+            <td>Low</td>
+            <td>Controlled</td>
+          </tr>
+          <tr>
+            <td>Financial</td>
+            <td>Low</td>
+            <td>Rare</td>
+            <td>Medium</td>
+            <td>Controlled</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Audit Report -->
+  <div class="audit-section">
+    <h2>🔍 AUDIT REPORT</h2>
+    <div class="audit-table">
+      <table>
+        <thead>
+          <tr>
+            <th>Audit Area</th>
+            <th>Status</th>
+            <th>Findings</th>
+            <th>Recommendations</th>
+            <th>Target Date</th>
+            <th>Owner</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Documentation</td>
+            <td>🟡 Partial</td>
+            <td>8</td>
+            <td>Complete missing</td>
+            <td>Dec 31, 2024</td>
+            <td>John Doe</td>
+          </tr>
+          <tr>
+            <td>Approval Chain</td>
+            <td>🟢 Good</td>
+            <td>3</td>
+            <td>Enforce policy</td>
+            <td>Jan 15, 2025</td>
+            <td>Sarah Smith</td>
+          </tr>
+          <tr>
+            <td>Data Integrity</td>
+            <td>🟢 Good</td>
+            <td>1</td>
+            <td>Regular audits</td>
+            <td>Ongoing</td>
+            <td>IT Team</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Regulatory Report -->
+  <div class="regulatory-section">
+    <h2>📋 REGULATORY REPORT</h2>
+    <div class="regulatory-table">
+      <table>
+        <thead>
+          <tr>
+            <th>Regulation</th>
+            <th>Status</th>
+            <th>Last Audit</th>
+            <th>Next Due</th>
+            <th>Compliance %</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>ISO 27001</td>
+            <td>🟢 Pass</td>
+            <td>Nov 2024</td>
+            <td>May 2025</td>
+            <td>98%</td>
+            <td>✅ Maintain</td>
+          </tr>
+          <tr>
+            <td>GDPR</td>
+            <td>🟡 Review</td>
+            <td>Oct 2024</td>
+            <td>Apr 2025</td>
+            <td>85%</td>
+            <td>🔧 Improvement needed</td>
+          </tr>
+          <tr>
+            <td>SOX</td>
+            <td>🟢 Pass</td>
+            <td>Sep 2024</td>
+            <td>Mar 2025</td>
+            <td>92%</td>
+            <td>✅ Maintain</td>
+          </tr>
+          <tr>
+            <td>Local Tax Law</td>
+            <td>🟢 Pass</td>
+            <td>Dec 2024</td>
+            <td>Jun 2025</td>
+            <td>100%</td>
+            <td>✅ Compliant</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Export Audit Logs -->
+  <div class="export-section">
+    <h2>📥 EXPORT AUDIT LOGS</h2>
+    <div class="export-card">
+      <div class="export-row">
+        <label>Date Range:</label>
+        <select>
+          <option>Dec 01, 2024 to Dec 15, 2024</option>
+        </select>
+      </div>
+      <div class="export-row">
+        <label>Include:</label>
+        <div class="checkbox-group">
+          <label><input type="checkbox" checked /> All Events</label>
+          <label><input type="checkbox" /> Only Suspicious</label>
+          <label><input type="checkbox" /> Only Violations</label>
+        </div>
+      </div>
+      <div class="export-row">
+        <label>Format:</label>
+        <select>
+          <option>Excel</option>
+        </select>
+      </div>
+      <button class="export-now-btn">Export Now</button>
+    </div>
+  </div>
+
+  <!-- Schedule Reports -->
+  <div class="schedule-section">
+    <h2>📅 SCHEDULE REPORTS</h2>
+    <div class="schedule-card">
+      <div class="schedule-row">
+        <label>Report Type:</label>
+        <select>
+          <option>Monthly Compliance Report</option>
+        </select>
+      </div>
+      <div class="schedule-row">
+        <label>Frequency:</label>
+        <select>
+          <option>Monthly</option>
+        </select>
+      </div>
+      <div class="schedule-row">
+        <label>Send To:</label>
+        <input type="text" value="sarah.smith@afrocom.com, audit@afrocom.com" />
+      </div>
+      <div class="schedule-row">
+        <label>Format:</label>
+        <select>
+          <option>PDF</option>
+        </select>
+      </div>
+      <button class="save-schedule-btn">Save Schedule</button>
+    </div>
+  </div>
+
+  <!-- Saved Reports -->
+  <div class="saved-section">
+    <h2>📋 SAVED REPORTS</h2>
+    <div class="saved-table">
+      <table>
+        <thead>
+          <tr>
+            <th>Report Name</th>
+            <th>Date</th>
+            <th>Type</th>
+            <th>Size</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (report of savedReports; track report.name) {
+            <tr>
+              <td>{{ report.name }}</td>
+              <td>{{ report.date }}</td>
+              <td>{{ report.type }}</td>
+              <td>{{ report.size }}</td>
+              <td>
+                <button class="table-action-btn">👁️</button>
+                <button class="table-action-btn">📥</button>
+                <button class="table-action-btn">🗑️</button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Export Options -->
+  <div class="export-options-section">
+    <h2>⚡ EXPORT OPTIONS</h2>
+    <div class="export-options-buttons">
+      <button class="option-btn" (click)="exportToExcel()">📥 Export to Excel</button>
+      <button class="option-btn" (click)="exportToPdf()">📄 Export to PDF</button>
+      <button class="option-btn" (click)="emailReport()">📧 Email Report</button>
+      <button class="option-btn" (click)="printReport()">🖨️ Print Report</button>
+      <button class="option-btn" (click)="scheduleReport()">📅 Schedule Report</button>
+    </div>
+  </div>
+</div>
