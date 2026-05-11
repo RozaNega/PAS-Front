@@ -166,7 +166,7 @@
       <div class="quick-links-grid">
         @for (link of quickLinks; track link.label) {
           @if (link.label === 'Create New Request') {
-            <a class="quick-link-card" (click)="openCreateRequestModal()">
+            <a class="quick-link-card" [routerLink]="link.route">
               <span class="quick-link-icon">{{ link.icon }}</span>
               <span class="quick-link-label">{{ link.label }}</span>
             </a>

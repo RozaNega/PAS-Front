@@ -7,11 +7,22 @@ export const routes: Routes = [
   {
     path: '',
     pathMatch: 'full',
-    redirectTo: 'auth/login',
+    redirectTo: 'landing',
+  },
+  {
+    path: 'dashboard',
+    pathMatch: 'full',
+    redirectTo: 'employee/dashboard',
+  },
+  {
+    path: 'dashboard/requests/create',
+    pathMatch: 'full',
+    redirectTo: 'employee/requests/create',
   },
   {
     path: 'admin',
     component: MainLayoutComponent,
+    canActivate: [AuthGuard],
     children: [
       {
         path: '',
@@ -215,6 +226,7 @@ export const routes: Routes = [
   {
     path: 'storekeeper',
     component: MainLayoutComponent,
+    canActivate: [AuthGuard],
     children: [
       {
         path: '',
@@ -328,6 +340,10 @@ export const routes: Routes = [
   },
 
   {
+    path: 'landing',
+    loadComponent: () => import('./pages/landing/landing').then((m) => m.Landing),
+  },
+  {
     path: 'auth',
     loadChildren: () => import('./features/auth/auth-module').then((m) => m.AuthModule),
   },
@@ -345,6 +361,7 @@ export const routes: Routes = [
   {
     path: 'employee',
     component: MainLayoutComponent,
+    canActivate: [AuthGuard],
     children: [
       {
         path: '',
@@ -395,6 +412,13 @@ export const routes: Routes = [
       },
       {
         path: 'dashboard/catalog-items',
+        loadComponent: () =>
+          import('./features/dashboard/pages/employee-dashboard/employee-dashboard.component').then(
+            (m) => m.EmployeeDashboardComponent,
+          ),
+      },
+      {
+        path: 'dashboard/new-request',
         loadComponent: () =>
           import('./features/dashboard/pages/employee-dashboard/employee-dashboard.component').then(
             (m) => m.EmployeeDashboardComponent,
@@ -461,6 +485,7 @@ export const routes: Routes = [
   {
     path: 'manager',
     component: MainLayoutComponent,
+    canActivate: [AuthGuard],
     children: [
       {
         path: '',
@@ -673,6 +698,7 @@ export const routes: Routes = [
   {
     path: 'compliance-officer',
     component: MainLayoutComponent,
+    canActivate: [AuthGuard],
     children: [
       {
         path: '',

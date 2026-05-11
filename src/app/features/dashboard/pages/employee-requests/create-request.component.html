@@ -1,91 +1,92 @@
 <div class="create-request-container">
   <div class="page-header">
-    <h1>Create New Request</h1>
-    <p class="subtitle">Submit a new requisition request</p>
+    <h1>Create New Service Request</h1>
+    <p class="subtitle">Submit a new requisition request for items</p>
   </div>
 
   <div class="form-card">
     <form [formGroup]="requestForm" (ngSubmit)="submit()">
       <div class="form-section">
-        <h3>Request Details</h3>
-        
-        <div class="form-field">
-          <label for="title">Request Title *</label>
-          <input
-            id="title"
-            type="text"
-            formControlName="title"
-            placeholder="Enter request title"
-          />
-          <div class="error-message" *ngIf="submitted() && requestForm.get('title')?.errors?.['required']">
-            Title is required
-          </div>
+        <div class="section-header">
+          <h3>Request Items</h3>
+          <button type="button" class="btn-add" (click)="addItem()">
+            <i class="bi bi-plus-lg"></i> Add Item
+          </button>
         </div>
 
-        <div class="form-field">
-          <label for="description">Description *</label>
-          <textarea
-            id="description"
-            formControlName="description"
-            rows="4"
-            placeholder="Describe your request in detail"
-          ></textarea>
-          <div class="error-message" *ngIf="submitted() && requestForm.get('description')?.errors?.['required']">
-            Description is required
-          </div>
-        </div>
+        <div formArrayName="items">
+          <div *ngFor="let item of itemsArray.controls; let i = index" [formGroupName]="i" class="item-row">
+            <div class="item-grid">
+              <div class="form-field">
+                <label [for]="'itemId-' + i">Item *</label>
+                <select [id]="'itemId-' + i" formControlName="itemId">
+                  <option value="">Select an item</option>
+                  <option *ngFor="let option of items()" [value]="option.id">
+                    {{ option.name }} ({{ option.sku }})
+                  </option>
+                </select>
+                <div class="error-message" *ngIf="submitted() && itemsArray.at(i).get('itemId')?.errors?.['required']">
+                  Item is required
+                </div>
+              </div>
 
-        <div class="form-field">
-          <label for="priority">Priority *</label>
-          <select id="priority" formControlName="priority">
-            <option value="Low">Low</option>
-            <option value="Medium">Medium</option>
-            <option value="High">High</option>
-            <option value="Urgent">Urgent</option>
-          </select>
+              <div class="form-field">
+                <label [for]="'quantity-' + i">Quantity *</label>
+                <input
+                  [id]="'quantity-' + i"
+                  type="number"
+                  formControlName="requestedQty"
+                  min="1"
+                  placeholder="Qty"
+                />
+                <div class="error-message" *ngIf="submitted() && itemsArray.at(i).get('requestedQty')?.errors?.['required']">
+                  Qty is required
+                </div>
+              </div>
+
+              <div class="form-field">
+                <label [for]="'shelf-' + i">Preferred Shelf *</label>
+                <select [id]="'shelf-' + i" formControlName="preferredShelfId">
+                  <option value="">Select shelf</option>
+                  <option *ngFor="let shelf of shelves()" [value]="shelf.id">
+                    {{ shelf.code }} - {{ shelf.location }}
+                  </option>
+                </select>
+                <div class="error-message" *ngIf="submitted() && itemsArray.at(i).get('preferredShelfId')?.errors?.['required']">
+                  Shelf is required
+                </div>
+              </div>
+
+              <div class="form-field full-width">
+                <label [for]="'notes-' + i">Notes</label>
+                <input
+                  [id]="'notes-' + i"
+                  type="text"
+                  formControlName="notes"
+                  placeholder="Additional notes for this item"
+                />
+              </div>
+            </div>
+
+            <button type="button" class="btn-remove" (click)="removeItem(i)" [disabled]="itemsArray.length === 1" title="Remove Item">
+              <i class="bi bi-trash"></i>
+            </button>
+          </div>
         </div>
       </div>
 
       <div class="form-section">
-        <h3>Item Details</h3>
-        
+        <h3>General Remarks</h3>
         <div class="form-field">
-          <label for="itemId">Item *</label>
-          <select id="itemId" formControlName="itemId">
-            <option value="">Select an item</option>
-            <option value="1">Laptop - Dell Latitude 5420</option>
-            <option value="2">Office Chair - Ergonomic</option>
-            <option value="3">Printer - HP LaserJet Pro</option>
-            <option value="4">Desk - Adjustable Height</option>
-          </select>
-          <div class="error-message" *ngIf="submitted() && requestForm.get('itemId')?.errors?.['required']">
-            Please select an item
-          </div>
-        </div>
-
-        <div class="form-field">
-          <label for="quantity">Quantity *</label>
-          <input
-            id="quantity"
-            type="number"
-            formControlName="quantity"
-            min="1"
-            placeholder="Enter quantity"
-          />
-          <div class="error-message" *ngIf="submitted() && requestForm.get('quantity')?.errors?.['required']">
-            Quantity is required
-          </div>
-        </div>
-
-        <div class="form-field">
-          <label for="urgencyDate">Required By Date *</label>
-          <input
-            id="urgencyDate"
-            type="date"
-            formControlName="urgencyDate"
-          />
-          <div class="error-message" *ngIf="submitted() && requestForm.get('urgencyDate')?.errors?.['required']">
-            Required date is required
+          <label for="remarks">Remarks *</label>
+          <textarea
+            id="remarks"
+            formControlName="remarks"
+            rows="3"
+            placeholder="Enter any general remarks for this service request"
+          ></textarea>
+          <div class="error-message" *ngIf="submitted() && requestForm.get('remarks')?.errors?.['required']">
+            Remarks are required
           </div>
         </div>
       </div>
@@ -95,8 +96,10 @@
           Cancel
         </button>
         <button type="submit" class="btn btn-primary" [disabled]="loading()">
-          <span *ngIf="loading()">Submitting...</span>
-          <span *ngIf="!loading()">Submit Request</span>
+          <span *ngIf="loading()">
+            <i class="bi bi-arrow-repeat spin"></i> Submitting...
+          </span>
+          <span *ngIf="!loading()">Submit Service Request</span>
         </button>
       </div>
     </form>

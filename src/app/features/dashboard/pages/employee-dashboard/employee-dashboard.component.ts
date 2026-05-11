@@ -259,7 +259,7 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
   ];
 
   readonly quickLinks: QuickLink[] = [
-    { label: 'Create New Request', icon: 'bi-plus-lg', route: '/employee/dashboard/new-request' },
+    { label: 'Create New Request', icon: 'bi-plus-lg', route: '/employee/requests/create' },
     { label: 'My Requests', icon: 'bi-clipboard-list', route: '/employee/dashboard/my-requests' },
     { label: 'Available Items', icon: 'bi-box-seam', route: '/employee/dashboard/catalog-items' },
     { label: 'My Profile', icon: 'bi-person', route: '/employee/dashboard/profile' },

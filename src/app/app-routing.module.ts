@@ -14,7 +14,7 @@ const routes: Routes = [
   // 🔐 AUTH (DEFAULT PAGE)
   {
     path: '',
-    redirectTo: 'login',
+    redirectTo: 'landing',
     pathMatch: 'full',
   },
 
@@ -35,7 +35,7 @@ const routes: Routes = [
   },
 
   // fallback
-  { path: '**', redirectTo: 'login' },
+  { path: '**', redirectTo: 'landing' },
 ];
 
 @NgModule({

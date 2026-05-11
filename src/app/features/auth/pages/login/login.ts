@@ -72,9 +72,26 @@ export class Login {
           this.loginForm.controls.rememberMe.setValue(raw.rememberMe);
           void this.router.navigateByUrl(this.authService.getDashboardRouteForUser(result.user));
         },
-        error: () => {
+        error: (err) => {
+          console.error('Detailed login error:', err);
+          console.error('Error status:', err?.status);
+          console.error('Error message:', err?.message);
+          console.error('Error details:', err?.error);
+
+          let errorMessage = 'Unable to sign in. Verify your credentials and try again.';
+
+          if (err?.status === 0) {
+            errorMessage = 'Unable to connect to the server. Please ensure the backend API is running at http://localhost:5028';
+          } else if (err?.status === 404) {
+            errorMessage = 'Login endpoint not found. Please check API configuration.';
+          } else if (err?.status === 500) {
+            errorMessage = 'Server error occurred. Please try again later.';
+          } else if (err?.error?.message) {
+            errorMessage = err.error.message;
+          }
+
           this.statusTone.set('error');
-          this.statusMessage.set('Unable to sign in. Verify your credentials and try again.');
+          this.statusMessage.set(errorMessage);
         },
       });
   }

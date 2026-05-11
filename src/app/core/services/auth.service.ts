@@ -51,13 +51,34 @@ export class AuthService {
   }
 
   private loadStoredUser(): void {
-    const user = this.tokenService.getUser();
-    if (user && this.tokenService.getToken()) {
+    const token = this.tokenService.getToken();
+    if (!token) return;
+
+    let user = this.tokenService.getUser();
+    
+    // If user object is missing but we have a valid JWT, reconstruct user from claims
+    if (!user && token.includes('.')) {
+      const decoded = this.tokenService.getDecodedToken();
+      if (decoded) {
+        user = {
+          id: decoded.sub || '',
+          username: decoded.unique_name || decoded.name || '',
+          fullName: decoded.fullName || decoded.FullName || '',
+          email: decoded.email || '',
+          roles: Array.isArray(decoded.role) ? decoded.role : (decoded.role ? [decoded.role] : []),
+          permissions: Array.isArray(decoded['permissions']) ? decoded['permissions'] : []
+        };
+        this.tokenService.setUser(user);
+      }
+    }
+
+    if (user) {
       this.currentUserSubject.next(user);
     }
   }
 
   login(request: LoginRequest): Observable<AuthResponse> {
+    console.log('Login request:', request, 'URL:', 'Auth/login');
     return this.apiService
       .post<ApiResponseModel<AuthResponse>>('Auth/login', request)
       .pipe(
@@ -160,11 +181,18 @@ export class AuthService {
   }
 
   getCurrentUser(): User | null {
+    if (!this.currentUserSubject.value && this.isAuthenticated()) {
+      this.loadStoredUser();
+    }
     return this.currentUserSubject.value;
   }
 
   isAuthenticated(): boolean {
-    return !!this.tokenService.getToken();
+    const isValid = this.tokenService.isTokenValid();
+    if (isValid && !this.currentUserSubject.value) {
+      this.loadStoredUser();
+    }
+    return isValid;
   }
 
   hasRole(role: string): boolean {
@@ -246,6 +274,14 @@ export class AuthService {
 
   getDashboardRouteForUser(user: User | null): string {
     const role = this.mapUserToDashboardRole(user);
+
+    if (role === 'admin') {
+      return '/admin/dashboard';
+    }
+
+    if (role === 'storekeeper') {
+      return '/storekeeper/dashboard';
+    }
 
     if (role === 'manager') {
       return '/manager/dashboard';
