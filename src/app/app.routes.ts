@@ -480,6 +480,10 @@ export const routes: Routes = [
         loadComponent: () => import('./features/requisition/service-requests/pages/service-request-form/service-request-form.component').then(m => m.ServiceRequestFormComponent),
       },
       {
+        path: 'requisition/service-requests/item-management/:requestId',
+        loadComponent: () => import('./features/requisition/service-requests/pages/item-management/item-management.component').then(m => m.ItemManagementComponent),
+      },
+      {
         path: 'workflow',
         loadChildren: () =>
           import('./features/workflow/workflow.module').then((m) => m.WorkflowModule),

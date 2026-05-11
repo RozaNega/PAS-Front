@@ -199,7 +199,7 @@
         @if (modalStep() === 2) {
           <div class="step-content">
             <h4>Step 2 of 3: Items Requested</h4>
-            <button class="btn btn-secondary btn-sm">+ Add Item</button>
+            <button class="btn btn-secondary btn-sm" (click)="openAddItemModal()">+ Add Item</button>
             <div class="items-table">
               <table>
                 <thead>
@@ -211,28 +211,28 @@
                   </tr>
                 </thead>
                 <tbody>
+                  @for (item of modalFormData().items; track item.id) {
                   <tr>
-                    <td>Dell XPS Laptop</td>
-                    <td>2</td>
-                    <td>45 in stock</td>
+                    <td>{{ item.name }}</td>
+                    <td>{{ item.qtyRequested }}</td>
+                    <td>{{ item.available }} in stock</td>
                     <td>
-                      <button class="action-btn">✏️</button>
-                      <button class="action-btn">🗑️</button>
+                      <button class="btn btn-sm" style="background-color: #dc3545; color: white; border: none; margin-right: 5px;" (click)="editItem(item)">Edit</button>
+                      <button class="btn btn-sm" style="background-color: #dc3545; color: white; border: none;" (click)="deleteItem(item)">Delete</button>
                     </td>
                   </tr>
+                  }
+                  @if (modalFormData().items.length === 0) {
                   <tr>
-                    <td>HP 27" Monitor</td>
-                    <td>3</td>
-                    <td>67 in stock</td>
-                    <td>
-                      <button class="action-btn">✏️</button>
-                      <button class="action-btn">🗑️</button>
+                    <td colspan="4" style="text-align: center; padding: 20px; color: #666;">
+                      No items added yet. Click "Add Item" to start.
                     </td>
                   </tr>
+                  }
                 </tbody>
               </table>
             </div>
-            <div class="items-summary">Total Items: 2 | Total Quantity: 5</div>
+            <div class="items-summary">Total Items: {{ modalFormData().items.length }} | Total Quantity: {{ modalFormData().items.reduce((sum, item) => sum + item.qtyRequested, 0) }}</div>
           </div>
         }
 

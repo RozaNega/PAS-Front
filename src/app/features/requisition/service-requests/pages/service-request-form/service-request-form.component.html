@@ -75,15 +75,18 @@
     <div class="card">
       <div class="card-header">
         <h3>Items Requested</h3>
-        <button type="button" class="btn btn-primary" (click)="openAddItemModal()">
-          <i class="bi bi-plus-circle"></i> Add Item
+        <button type="button" class="btn btn-success" (click)="goToItemManagement()" [disabled]="isLoading">
+          <i class="bi bi-plus-circle"></i> Manage Items
         </button>
       </div>
       <div class="card-body">
         <div *ngIf="selectedItems.length === 0" class="empty-state">
           <i class="bi bi-inbox"></i>
           <h4>No items added yet</h4>
-          <p>Click "Add Item" to start adding items to your request.</p>
+          <p>Click the green "Manage Items" button above to open the professional item management page.</p>
+          <p *ngIf="availableItems.length === 0 && !isLoading" style="color: #dc3545;">
+            <i class="bi bi-exclamation-triangle"></i> No items available in inventory. Please contact admin.
+          </p>
         </div>
         
         <div *ngIf="selectedItems.length > 0" class="items-table">
@@ -111,11 +114,8 @@
                   </span>
                 </td>
                 <td>
-                  <button type="button" class="btn btn-sm btn-outline-primary" (click)="editItem(item)">
-                    Edit
-                  </button>
-                  <button type="button" class="btn btn-sm btn-danger" (click)="deleteItem(item)">
-                    Delete
+                  <button type="button" class="btn btn-sm btn-primary" (click)="goToItemManagement()">
+                    <i class="bi bi-pencil"></i> Manage Items
                   </button>
                 </td>
               </tr>
@@ -197,62 +197,5 @@
       <span *ngIf="!isLoading">Submit Request</span>
       <span *ngIf="isLoading">Submitting...</span>
     </button>
-  </div>
-
-  <!-- Add Item Modal -->
-  <div class="modal-overlay" *ngIf="showAddItemModal" (click)="closeAddItemModal()">
-    <div class="modal" (click)="$event.stopPropagation()">
-      <div class="modal-header">
-        <h5>{{ editingItem ? 'Edit Item' : 'Add Item' }}</h5>
-        <button type="button" class="btn-close" (click)="closeAddItemModal()">&times;</button>
-      </div>
-      <div class="modal-body">
-        <form [formGroup]="itemsForm">
-          <div class="form-group">
-            <label for="itemId">Item Name *</label>
-            <select id="itemId" formControlName="itemId" class="form-control" (change)="itemsForm.get('requestedQty')?.setValue(1)">
-              <option value="">Select Item</option>
-              <option *ngFor="let item of availableItems" [value]="item.id">
-                {{ item.itemName }} ({{ item.stockQuantity }} in stock)
-              </option>
-            </select>
-            <div class="error-message" *ngIf="itemsForm.get('itemId')?.invalid && itemsForm.get('itemId')?.touched">
-              Please select an item
-            </div>
-          </div>
-          
-          <div *ngIf="selectedItemName" class="selected-item-info">
-            <strong>Selected:</strong> {{ selectedItemName }}
-            <br>
-            <strong>Available:</strong> {{ selectedItemStock }} in stock
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label for="requestedQty">Quantity Requested *</label>
-              <input type="number" id="requestedQty" formControlName="requestedQty" class="form-control" 
-                     min="1" [max]="selectedItemStock">
-              <div class="error-message" *ngIf="itemsForm.get('requestedQty')?.invalid && itemsForm.get('requestedQty')?.touched">
-                Valid quantity required
-              </div>
-            </div>
-            <div class="form-group">
-              <label for="shelfId">Shelf Location (Optional)</label>
-              <input type="text" id="shelfId" formControlName="shelfId" class="form-control" 
-                     placeholder="e.g., A1-B2">
-            </div>
-          </div>
-        </form>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" (click)="closeAddItemModal()">
-          Cancel
-        </button>
-        <button type="button" class="btn btn-primary" (click)="saveItem()" 
-                [disabled]="itemsForm.invalid">
-          {{ editingItem ? 'Update' : 'Add' }} Item
-        </button>
-      </div>
-    </div>
   </div>
 </section>
