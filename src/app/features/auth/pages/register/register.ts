@@ -116,16 +116,25 @@ export class Register {
         console.error('Error details:', error.error);
         console.error('Full error:', JSON.stringify(error, null, 2));
         console.error('Error text:', error.error?.text || error.statusText);
+
         let errorMessage = 'Registration failed. Please try again.';
-        if (error.error?.message) {
+
+        if (error.status === 0) {
+          errorMessage = 'Unable to connect to the server. Please ensure the backend API is running at http://localhost:5028';
+        } else if (error.status === 400) {
+          errorMessage = 'Invalid registration data. Please check your input and try again.';
+        } else if (error.status === 409) {
+          errorMessage = 'Username or email already exists. Please use different credentials.';
+        } else if (error.status === 500) {
+          errorMessage = 'Server error occurred. Please try again later.';
+        } else if (error.error?.message) {
           errorMessage = error.error.message;
         } else if (error.error?.errors) {
           errorMessage = Array.isArray(error.error.errors) ? error.error.errors.join(', ') : JSON.stringify(error.error.errors);
         } else if (typeof error.error === 'string') {
           errorMessage = error.error;
-        } else if (error.status === 400) {
-          errorMessage = 'Invalid registration data. Please check your input and try again.';
         }
+
         this.statusTone.set('error');
         this.statusMessage.set(errorMessage);
       }

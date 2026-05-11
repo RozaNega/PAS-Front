@@ -91,11 +91,12 @@ export class CreateRequestComponent implements OnInit {
       remarks: rawValue.remarks || ''
     };
 
+    console.log('Submitting payload:', payload);
     this.requisitionsService.createServiceRequest(payload)
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
         next: (res) => {
-          if (res.success) {
+          if (res.success || res.succeeded) {
             alert('Request created successfully!');
             this.router.navigate(['/employee/requests/pending']);
           } else {

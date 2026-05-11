@@ -5,7 +5,6 @@ import { catchError } from 'rxjs/operators';
 import { Router } from '@angular/router';
 import { NotificationService } from '../services/notification.service';
 import { AuthService } from '../services/auth.service';
-import { environment } from '../../../environments/environment';
 
 @Injectable()
 export class ErrorInterceptor implements HttpInterceptor {
@@ -18,12 +17,6 @@ export class ErrorInterceptor implements HttpInterceptor {
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
     return next.handle(req).pipe(
       catchError((error: HttpErrorResponse) => {
-        // During development, bypass 401 redirects to allow UI testing without backend
-        if (!environment.production && error.status === 401) {
-          console.warn('Unauthorized request (401) - bypassed in development mode:', req.url);
-          return throwError(() => error);
-        }
-
         if (error.status === 401 && !this.router.url.includes('/auth/login')) {
           console.warn('Unauthorized request (401) to:', req.url, 'from page:', this.router.url);
           this.authService.logout();
@@ -44,5 +37,3 @@ export class ErrorInterceptor implements HttpInterceptor {
     );
   }
 }
-
-

@@ -2,7 +2,6 @@ import { Injectable, Inject, PLATFORM_ID } from '@angular/core';
 import { Router, CanActivate } from '@angular/router';
 import { isPlatformBrowser } from '@angular/common';
 import { AuthService } from '../services/auth.service';
-import { environment } from '../../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class AuthGuard implements CanActivate {
@@ -14,11 +13,6 @@ export class AuthGuard implements CanActivate {
 
   canActivate(): boolean {
     if (!isPlatformBrowser(this.platformId)) {
-      return true;
-    }
-
-    // During development, bypass authentication check
-    if (!environment.production) {
       return true;
     }
 
