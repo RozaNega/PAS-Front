@@ -3,6 +3,10 @@ export interface ServiceRequest {
   srNumber: string;
   requesterId: string;
   requesterName: string;
+  department?: string;
+  purpose?: string;
+  urgency?: string;
+  notes?: string;
   approvedById?: string;
   approvedByName?: string;
   requestDate: string;
@@ -13,10 +17,12 @@ export interface ServiceRequest {
 }
 
 export interface ServiceRequestDetail extends ServiceRequest {
-  department?: string;
   items: ServiceRequestItem[];
   createdAt: string;
   updatedAt?: string;
+  pendingQty: number;
+  shelfId?: string;
+  shelfLocation?: string;
 }
 
 export interface ServiceRequestItem {
@@ -33,6 +39,10 @@ export interface ServiceRequestItem {
 }
 
 export interface CreateServiceRequestRequest {
+  department: string;
+  purpose: string;
+  urgency: string;
+  notes?: string;
   items: CreateServiceRequestItem[];
 }
 

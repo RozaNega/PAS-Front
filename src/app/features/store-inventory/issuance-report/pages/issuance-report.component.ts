@@ -76,9 +76,18 @@ export class IssuanceReportComponent {
     { name: 'Peter Chen (Marketing)', requests: 10, value: 10500, percentage: 43 }
   ]);
 
+  // Bar heights for the chart - calculated once to avoid ExpressionChangedAfterItHasBeenCheckedError
+  barHeights = signal<number[]>([]);
+
   filteredIssuances = signal<Issuance[]>([]);
 
   constructor() {
+    // Calculate bar heights once to avoid ExpressionChangedAfterItHasBeenCheckedError
+    const heights: number[] = [];
+    for (let i = 0; i < 8; i++) {
+      heights.push(this.getRandomHeight(100, 60));
+    }
+    this.barHeights.set(heights);
     this.filterIssuances();
   }
 

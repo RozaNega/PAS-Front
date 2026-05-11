@@ -1,6 +1,7 @@
-import { Component, signal, computed } from '@angular/core';
+import { Component, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { InventoryService } from '../../../../core/services/inventory.service';
 
 interface Warehouse {
   id: string;
@@ -23,11 +24,13 @@ interface Warehouse {
   styleUrls: ['./warehouses.component.scss']
 })
 export class WarehousesComponent {
+  readonly inventoryService = inject(InventoryService);
   searchTerm = signal('');
   statusFilter = signal('All');
   typeFilter = signal('All Types');
   showModal = signal(false);
   selectedWarehouse = signal<Warehouse | null>(null);
+  isLoading = signal(false);
 
   statuses = ['All', 'Active', 'Limited', 'Inactive'];
 
@@ -39,13 +42,14 @@ export class WarehousesComponent {
   ]);
 
   modalFormData = signal({
-    name: '',
-    code: '',
-    type: 'Main Warehouse',
+    warehouseName: '',
+    locationCode: '',
     address: '',
-    maxCapacity: 10000,
-    managerName: '',
-    contactPhone: ''
+    city: '',
+    country: '',
+    contactPerson: '',
+    contactPhone: '',
+    contactEmail: ''
   });
 
   // Computed properties for summary
@@ -75,7 +79,35 @@ export class WarehousesComponent {
   filteredWarehouses = signal<Warehouse[]>([]);
 
   constructor() {
-    this.filterWarehouses();
+    this.loadWarehouses();
+  }
+
+  loadWarehouses(): void {
+    this.isLoading.set(true);
+    this.inventoryService.getAllWarehouses().subscribe({
+      next: (response) => {
+        if (response.success && response.data) {
+          this.warehouses.set(response.data.map(wh => ({
+            id: wh.id,
+            name: wh.name,
+            code: wh.id.substring(0, 8).toUpperCase(),
+            location: wh.location || '',
+            items: 0,
+            value: 0,
+            shelves: 0,
+            status: wh.isActive ? 'Active' : 'Inactive',
+            type: 'Main Warehouse',
+            maxCapacity: 10000
+          })));
+          this.filterWarehouses();
+        }
+        this.isLoading.set(false);
+      },
+      error: (error) => {
+        console.error('Error loading warehouses:', error);
+        this.isLoading.set(false);
+      }
+    });
   }
 
   filterWarehouses(): void {
@@ -111,13 +143,14 @@ export class WarehousesComponent {
   openAddModal(): void {
     this.selectedWarehouse.set(null);
     this.modalFormData.set({
-      name: '',
-      code: '',
-      type: 'Main Warehouse',
+      warehouseName: '',
+      locationCode: '',
       address: '',
-      maxCapacity: 10000,
-      managerName: '',
-      contactPhone: ''
+      city: '',
+      country: '',
+      contactPerson: '',
+      contactPhone: '',
+      contactEmail: ''
     });
     this.showModal.set(true);
   }
@@ -125,13 +158,14 @@ export class WarehousesComponent {
   openEditModal(warehouse: Warehouse): void {
     this.selectedWarehouse.set(warehouse);
     this.modalFormData.set({
-      name: warehouse.name,
-      code: warehouse.code,
-      type: warehouse.type,
+      warehouseName: warehouse.name,
+      locationCode: warehouse.code,
       address: warehouse.location,
-      maxCapacity: 10000,
-      managerName: '',
-      contactPhone: ''
+      city: '',
+      country: '',
+      contactPerson: '',
+      contactPhone: '',
+      contactEmail: ''
     });
     this.showModal.set(true);
   }
@@ -146,32 +180,85 @@ export class WarehousesComponent {
     const editing = this.selectedWarehouse();
 
     if (editing) {
-      this.warehouses.update(whs =>
-        whs.map(w => w.id === editing.id ? { ...w, name: data.name, code: data.code, type: data.type, location: data.address } : w)
-      );
+      this.inventoryService.updateWarehouse(editing.id, {
+        WarehouseName: data.warehouseName,
+        LocationCode: data.locationCode,
+        Address: data.address,
+        City: data.city,
+        Country: data.country,
+        ContactPerson: data.contactPerson,
+        ContactPhone: data.contactPhone,
+        ContactEmail: data.contactEmail
+      }).subscribe({
+        next: () => {
+          this.warehouses.update(whs =>
+            whs.map(w => w.id === editing.id ? { ...w, name: data.warehouseName, code: data.locationCode, location: data.address } : w)
+          );
+          this.filterWarehouses();
+          this.closeModal();
+        },
+        error: (error) => {
+          console.error('Error updating warehouse:', error);
+          if (error.status !== 401) {
+            alert('Failed to update warehouse: ' + (error.error?.message || error.message || 'Server error'));
+          }
+        }
+      });
     } else {
-      const newWarehouse: Warehouse = {
-        id: Date.now().toString(),
-        name: data.name,
-        code: data.code,
-        location: data.address,
-        items: 0,
-        value: 0,
-        shelves: 0,
-        status: 'Active',
-        type: data.type
-      };
-      this.warehouses.update(whs => [...whs, newWarehouse]);
+      this.inventoryService.createWarehouse({
+        WarehouseName: data.warehouseName,
+        LocationCode: data.locationCode,
+        Address: data.address,
+        City: data.city,
+        Country: data.country,
+        ContactPerson: data.contactPerson,
+        ContactPhone: data.contactPhone,
+        ContactEmail: data.contactEmail
+      }).subscribe({
+        next: (response) => {
+          if (response.success) {
+            const newWarehouse: Warehouse = {
+              id: response.data || Date.now().toString(),
+              name: data.warehouseName,
+              code: data.locationCode,
+              location: data.address,
+              items: 0,
+              value: 0,
+              shelves: 0,
+              status: 'Active',
+              type: 'Main Warehouse'
+            };
+            this.warehouses.update(whs => [...whs, newWarehouse]);
+            this.filterWarehouses();
+            this.closeModal();
+          } else {
+            alert('Failed to create warehouse: ' + (response.message || 'Unknown error'));
+          }
+        },
+        error: (error) => {
+          console.error('Error creating warehouse:', error);
+          if (error.status !== 401) {
+            alert('Failed to create warehouse: ' + (error.error?.message || error.message || 'Server error'));
+          }
+        }
+      });
     }
-
-    this.filterWarehouses();
-    this.closeModal();
   }
 
   deleteWarehouse(id: string): void {
     if (confirm('Are you sure you want to delete this warehouse?')) {
-      this.warehouses.update(whs => whs.filter(w => w.id !== id));
-      this.filterWarehouses();
+      this.inventoryService.deleteWarehouse(id).subscribe({
+        next: () => {
+          this.warehouses.update(whs => whs.filter(w => w.id !== id));
+          this.filterWarehouses();
+        },
+        error: (error) => {
+          console.error('Error deleting warehouse:', error);
+          if (error.status !== 401) {
+            alert('Failed to delete warehouse: ' + (error.error?.message || error.message || 'Server error'));
+          }
+        }
+      });
     }
   }
 

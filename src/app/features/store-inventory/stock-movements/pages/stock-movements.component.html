@@ -103,12 +103,12 @@
         <span class="legend-item"><span class="dot blue"></span> Net Change</span>
       </div>
       <div class="chart-bars">
-        @for (i of [1,2,3,4,5,6,7,8]; track i) {
+        @for (height of barHeightsInflow(); track $index) {
           <div class="bar-group">
-            <div class="bar inflow" [style.height.px]="getRandomHeight(80, 50)"></div>
-            <div class="bar outflow" [style.height.px]="getRandomHeight(60, 40)"></div>
-            <div class="bar net" [style.height.px]="getRandomHeight(40, 20)"></div>
-            <div class="bar-label">Week {{ i }}</div>
+            <div class="bar inflow" [style.height.px]="height"></div>
+            <div class="bar outflow" [style.height.px]="barHeightsOutflow()[$index]"></div>
+            <div class="bar net" [style.height.px]="barHeightsNet()[$index]"></div>
+            <div class="bar-label">Week {{ $index + 1 }}</div>
           </div>
         }
       </div>

@@ -35,7 +35,7 @@
     <section class="summary-section" aria-labelledby="summary-heading">
       <h2 id="summary-heading" class="section-title">📊 MY REQUEST SUMMARY</h2>
       <div class="card-grid-5">
-        @for (card of summaryCards; track card.title) {
+        @for (card of summaryCards(); track card.title) {
           <article class="summary-card summary-card--{{ card.tone }}">
             <div class="card-header">
               <p class="card-title">{{ card.title }}</p>

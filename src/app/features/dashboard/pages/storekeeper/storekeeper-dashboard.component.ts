@@ -164,7 +164,7 @@ export class StorekeeperDashboardComponent implements OnInit {
       },
       {
         title: 'Pending Issues',
-        value: stats.pendingRequests.toString(),
+        value: stats.pendingRequisitions.toString(),
         secondary: 'Urgent: 0',
         trend: '🔴',
         color: 'red',
@@ -173,7 +173,7 @@ export class StorekeeperDashboardComponent implements OnInit {
       },
       {
         title: 'Pending Receivings',
-        value: '0',
+        value: stats.pendingInspections.toString(),
         secondary: 'Awaiting inspection: 0',
         trend: '🟡',
         color: 'yellow',
@@ -182,7 +182,7 @@ export class StorekeeperDashboardComponent implements OnInit {
       },
       {
         title: 'Low Stock Alerts',
-        value: stats.lowStockItems.toString(),
+        value: stats.lowStockItemsCount.toString(),
         secondary: 'Critical: 0',
         trend: '🔴',
         color: 'red',
@@ -191,7 +191,7 @@ export class StorekeeperDashboardComponent implements OnInit {
       },
       {
         title: 'Issued This Week',
-        value: '0',
+        value: stats.issuedRequisitions.toString(),
         secondary: 'VS last week',
         trend: '---',
         color: 'green',

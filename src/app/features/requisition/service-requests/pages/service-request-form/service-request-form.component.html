@@ -1,3 +1,258 @@
 ﻿<section class="page">
-  <h1>Service Request Form</h1>
+  <div class="page-header">
+    <h1>Create Service Request</h1>
+    <p>Fill in the details to create a new service request</p>
+  </div>
+
+  <!-- Progress Steps -->
+  <div class="progress-steps">
+    <div class="step" [class.active]="currentStep >= 1" [class.completed]="currentStep > 1">
+      <div class="step-number">1</div>
+      <div class="step-label">Request Details</div>
+    </div>
+    <div class="step" [class.active]="currentStep >= 2" [class.completed]="currentStep > 2">
+      <div class="step-number">2</div>
+      <div class="step-label">Items Requested</div>
+    </div>
+    <div class="step" [class.active]="currentStep >= 3" [class.completed]="currentStep > 3">
+      <div class="step-number">3</div>
+      <div class="step-label">Review & Submit</div>
+    </div>
+  </div>
+
+  <!-- Step 1: Request Details -->
+  <div class="step-content" *ngIf="currentStep === 1">
+    <div class="card">
+      <div class="card-header">
+        <h3>Request Details</h3>
+      </div>
+      <div class="card-body">
+        <form [formGroup]="requestForm">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="department">Department *</label>
+              <select id="department" formControlName="department" class="form-control">
+                <option value="">Select Department</option>
+                <option value="IT">IT Department</option>
+                <option value="HR">Human Resources</option>
+                <option value="Finance">Finance</option>
+                <option value="Operations">Operations</option>
+                <option value="Maintenance">Maintenance</option>
+              </select>
+              <div class="error-message" *ngIf="requestForm.get('department')?.invalid && requestForm.get('department')?.touched">
+                Department is required
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="urgency">Urgency Level *</label>
+              <select id="urgency" formControlName="urgency" class="form-control">
+                <option value="normal">Normal</option>
+                <option value="urgent">Urgent</option>
+                <option value="critical">Critical</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="purpose">Purpose of Request *</label>
+            <textarea id="purpose" formControlName="purpose" class="form-control" rows="3" 
+                      placeholder="Describe the purpose of this request..."></textarea>
+            <div class="error-message" *ngIf="requestForm.get('purpose')?.invalid && requestForm.get('purpose')?.touched">
+              Purpose is required
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="notes">Additional Notes</label>
+            <textarea id="notes" formControlName="notes" class="form-control" rows="2" 
+                      placeholder="Any additional information..."></textarea>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 2: Items Requested -->
+  <div class="step-content" *ngIf="currentStep === 2">
+    <div class="card">
+      <div class="card-header">
+        <h3>Items Requested</h3>
+        <button type="button" class="btn btn-primary" (click)="openAddItemModal()">
+          <i class="bi bi-plus-circle"></i> Add Item
+        </button>
+      </div>
+      <div class="card-body">
+        <div *ngIf="selectedItems.length === 0" class="empty-state">
+          <i class="bi bi-inbox"></i>
+          <h4>No items added yet</h4>
+          <p>Click "Add Item" to start adding items to your request.</p>
+        </div>
+        
+        <div *ngIf="selectedItems.length > 0" class="items-table">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Item Name</th>
+                <th>SKU</th>
+                <th>Unit</th>
+                <th>Qty Requested</th>
+                <th>Available</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of selectedItems">
+                <td>{{ item.itemName }}</td>
+                <td>{{ item.sku }}</td>
+                <td>{{ item.unitOfMeasure }}</td>
+                <td>{{ item.requestedQty }}</td>
+                <td>
+                  <span class="badge" [class.badge-success]="getAvailableStock(item.itemId) >= item.requestedQty"
+                        [class.badge-warning]="getAvailableStock(item.itemId) < item.requestedQty">
+                    {{ getAvailableStock(item.itemId) }} in stock
+                  </span>
+                </td>
+                <td>
+                  <button type="button" class="btn btn-sm btn-outline-primary" (click)="editItem(item)">
+                    Edit
+                  </button>
+                  <button type="button" class="btn btn-sm btn-danger" (click)="deleteItem(item)">
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="summary">
+            <strong>Total Items: {{ selectedItems.length }} | Total Quantity: {{ totalQuantity }}</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 3: Review & Submit -->
+  <div class="step-content" *ngIf="currentStep === 3">
+    <div class="card">
+      <div class="card-header">
+        <h3>Review & Submit</h3>
+      </div>
+      <div class="card-body">
+        <div class="review-section">
+          <h4>Request Information</h4>
+          <div class="review-grid">
+            <div class="review-item">
+              <label>Department:</label>
+              <span>{{ requestForm.get('department')?.value }}</span>
+            </div>
+            <div class="review-item">
+              <label>Urgency:</label>
+              <span class="badge" [class]="getUrgencyClass(requestForm.get('urgency')?.value)">
+                {{ requestForm.get('urgency')?.value }}
+              </span>
+            </div>
+            <div class="review-item">
+              <label>Purpose:</label>
+              <span>{{ requestForm.get('purpose')?.value }}</span>
+            </div>
+            <div class="review-item" *ngIf="requestForm.get('notes')?.value">
+              <label>Notes:</label>
+              <span>{{ requestForm.get('notes')?.value }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="review-section">
+          <h4>Items Summary</h4>
+          <div class="items-summary">
+            <div *ngFor="let item of selectedItems" class="summary-item">
+              <div class="item-info">
+                <strong>{{ item.itemName }}</strong>
+                <small>{{ item.sku }} | {{ item.unitOfMeasure }}</small>
+              </div>
+              <div class="item-quantity">
+                Qty: {{ item.requestedQty }}
+              </div>
+            </div>
+          </div>
+          <div class="total-summary">
+            <strong>Total Items: {{ selectedItems.length }} | Total Quantity: {{ totalQuantity }}</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Navigation Buttons -->
+  <div class="form-actions">
+    <button type="button" class="btn btn-secondary" (click)="cancel()">
+      Cancel
+    </button>
+    <button type="button" class="btn btn-outline-primary" (click)="previousStep()" *ngIf="currentStep > 1">
+      Previous
+    </button>
+    <button type="button" class="btn btn-primary" (click)="nextStep()" *ngIf="currentStep < 3">
+      Next
+    </button>
+    <button type="button" class="btn btn-success" (click)="submitRequest()" *ngIf="currentStep === 3" 
+            [disabled]="isLoading || selectedItems.length === 0">
+      <span *ngIf="!isLoading">Submit Request</span>
+      <span *ngIf="isLoading">Submitting...</span>
+    </button>
+  </div>
+
+  <!-- Add Item Modal -->
+  <div class="modal-overlay" *ngIf="showAddItemModal" (click)="closeAddItemModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h5>{{ editingItem ? 'Edit Item' : 'Add Item' }}</h5>
+        <button type="button" class="btn-close" (click)="closeAddItemModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form [formGroup]="itemsForm">
+          <div class="form-group">
+            <label for="itemId">Item Name *</label>
+            <select id="itemId" formControlName="itemId" class="form-control" (change)="itemsForm.get('requestedQty')?.setValue(1)">
+              <option value="">Select Item</option>
+              <option *ngFor="let item of availableItems" [value]="item.id">
+                {{ item.itemName }} ({{ item.stockQuantity }} in stock)
+              </option>
+            </select>
+            <div class="error-message" *ngIf="itemsForm.get('itemId')?.invalid && itemsForm.get('itemId')?.touched">
+              Please select an item
+            </div>
+          </div>
+          
+          <div *ngIf="selectedItemName" class="selected-item-info">
+            <strong>Selected:</strong> {{ selectedItemName }}
+            <br>
+            <strong>Available:</strong> {{ selectedItemStock }} in stock
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="requestedQty">Quantity Requested *</label>
+              <input type="number" id="requestedQty" formControlName="requestedQty" class="form-control" 
+                     min="1" [max]="selectedItemStock">
+              <div class="error-message" *ngIf="itemsForm.get('requestedQty')?.invalid && itemsForm.get('requestedQty')?.touched">
+                Valid quantity required
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="shelfId">Shelf Location (Optional)</label>
+              <input type="text" id="shelfId" formControlName="shelfId" class="form-control" 
+                     placeholder="e.g., A1-B2">
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeAddItemModal()">
+          Cancel
+        </button>
+        <button type="button" class="btn btn-primary" (click)="saveItem()" 
+                [disabled]="itemsForm.invalid">
+          {{ editingItem ? 'Update' : 'Add' }} Item
+        </button>
+      </div>
+    </div>
+  </div>
 </section>

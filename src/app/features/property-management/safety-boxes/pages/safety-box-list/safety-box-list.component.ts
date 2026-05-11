@@ -1,6 +1,8 @@
-﻿import { Component, signal } from '@angular/core';
+﻿import { Component, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { SafetyBoxService } from '../../services/safety-box.service';
+import { LocationService, LocationDto } from '../../../locations/services/location.service';
 
 interface SafetyBox {
   id: string;
@@ -19,11 +21,16 @@ interface SafetyBox {
   styleUrls: ['./safety-box-list.component.scss']
 })
 export class SafetyBoxListComponent {
+  readonly safetyBoxService = inject(SafetyBoxService);
+  readonly locationService = inject(LocationService);
   searchTerm = signal('');
   locationFilter = signal('All');
   showModal = signal(false);
   selectedBox = signal<SafetyBox | null>(null);
+  isLoading = signal(false);
 
+  // Loaded from backend API with actual GUIDs
+  backendLocations = signal<LocationDto[]>([]);
   locations = ['All', 'IT Department', 'HR Department', 'Finance', 'Warehouse', 'Storage', 'Sales', 'Executive'];
 
   safetyBoxes = signal<SafetyBox[]>([
@@ -38,7 +45,8 @@ export class SafetyBoxListComponent {
 
   modalFormData = signal({
     boxNumber: '',
-    location: '',
+    locationId: '',
+    locationName: '',
     totalShelves: 12,
     description: '',
     keyCardRequired: true,
@@ -53,7 +61,45 @@ export class SafetyBoxListComponent {
   filteredBoxes = signal<SafetyBox[]>([]);
 
   constructor() {
-    this.filterBoxes();
+    this.loadLocations();
+    this.loadSafetyBoxes();
+  }
+
+  loadLocations(): void {
+    this.locationService.getAll().subscribe({
+      next: (response) => {
+        if (response.success && response.data) {
+          this.backendLocations.set(response.data);
+        }
+      },
+      error: (error) => {
+        console.error('Error loading locations:', error);
+      }
+    });
+  }
+
+  loadSafetyBoxes(): void {
+    this.isLoading.set(true);
+    this.safetyBoxService.getAll().subscribe({
+      next: (response) => {
+        if (response.success && response.data) {
+          this.safetyBoxes.set(response.data.map(box => ({
+            id: box.id,
+            boxNumber: box.boxNumber,
+            location: box.locationId,
+            totalShelves: box.capacity,
+            occupiedShelves: box.currentCount,
+            status: box.currentCount === 0 ? 'Empty' : box.currentCount / box.capacity * 100 <= 30 ? 'Low' : box.currentCount / box.capacity * 100 <= 60 ? 'Moderate' : box.currentCount / box.capacity * 100 <= 80 ? 'High' : 'Full'
+          })));
+          this.filterBoxes();
+        }
+        this.isLoading.set(false);
+      },
+      error: (error) => {
+        console.error('Error loading safety boxes:', error);
+        this.isLoading.set(false);
+      }
+    });
   }
 
   filterBoxes(): void {
@@ -72,6 +118,11 @@ export class SafetyBoxListComponent {
   onSearchChange(value: string): void {
     this.searchTerm.set(value);
     this.filterBoxes();
+  }
+
+  onLocationSelect(locationId: string): void {
+    const loc = this.backendLocations().find(l => l.id === locationId);
+    this.modalFormData.update(d => ({ ...d, locationId, locationName: loc?.name || '' }));
   }
 
   onLocationFilterChange(value: string): void {
@@ -106,7 +157,8 @@ export class SafetyBoxListComponent {
     this.selectedBox.set(null);
     this.modalFormData.set({
       boxNumber: '',
-      location: '',
+      locationId: '',
+      locationName: '',
       totalShelves: 12,
       description: '',
       keyCardRequired: true,
@@ -122,9 +174,12 @@ export class SafetyBoxListComponent {
 
   openEditModal(box: SafetyBox): void {
     this.selectedBox.set(box);
+    // Find the location GUID from backend locations
+    const backendLoc = this.backendLocations().find(l => l.name === box.location);
     this.modalFormData.set({
       boxNumber: box.boxNumber,
-      location: box.location,
+      locationId: backendLoc?.id || '',
+      locationName: box.location,
       totalShelves: box.totalShelves,
       description: '',
       keyCardRequired: true,
@@ -147,39 +202,69 @@ export class SafetyBoxListComponent {
     const data = this.modalFormData();
     const editing = this.selectedBox();
 
-    const occupancy = 0;
-    let status: 'Empty' | 'Low' | 'Moderate' | 'High' | 'Full' = 'Empty';
-    const percentage = occupancy / data.totalShelves * 100;
-    if (percentage === 0) status = 'Empty';
-    else if (percentage <= 30) status = 'Low';
-    else if (percentage <= 60) status = 'Moderate';
-    else if (percentage <= 80) status = 'High';
-    else status = 'Full';
-
     if (editing) {
-      this.safetyBoxes.update(boxes =>
-        boxes.map(b => b.id === editing.id ? { ...b, boxNumber: data.boxNumber, location: data.location, totalShelves: data.totalShelves } : b)
-      );
+      this.safetyBoxService.update(editing.id, {
+        BoxNumber: data.boxNumber,
+        TotalShelves: data.totalShelves,
+        LocationId: data.locationId
+      }).subscribe({
+        next: () => {
+          this.safetyBoxes.update(boxes =>
+            boxes.map(b => b.id === editing.id ? { ...b, boxNumber: data.boxNumber, location: data.locationName, totalShelves: data.totalShelves } : b)
+          );
+          this.filterBoxes();
+          this.closeModal();
+        },
+        error: (error) => {
+          console.error('Error updating safety box:', error);
+          alert('Failed to update safety box');
+        }
+      });
     } else {
-      const newBox: SafetyBox = {
-        id: Date.now().toString(),
-        boxNumber: data.boxNumber,
-        location: data.location,
-        totalShelves: data.totalShelves,
-        occupiedShelves: 0,
-        status
-      };
-      this.safetyBoxes.update(boxes => [...boxes, newBox]);
+      this.safetyBoxService.create({
+        BoxNumber: data.boxNumber,
+        TotalShelves: data.totalShelves,
+        LocationId: data.locationId
+      }).subscribe({
+        next: (response) => {
+          if (response.success) {
+            const newBox: SafetyBox = {
+              id: response.data || Date.now().toString(),
+              boxNumber: data.boxNumber,
+              location: data.locationName || data.locationId,
+              totalShelves: data.totalShelves,
+              occupiedShelves: 0,
+              status: 'Empty'
+            };
+            this.safetyBoxes.update(boxes => [...boxes, newBox]);
+            this.filterBoxes();
+            this.closeModal();
+          } else {
+            console.error('Server returned failure:', response.message);
+            alert('Failed to create safety box: ' + (response.message || 'Unknown error'));
+          }
+        },
+        error: (error) => {
+          console.error('HTTP Error creating safety box:', error);
+          console.error('Error response body:', error.error);
+          alert('Failed to create safety box: ' + (error.error?.message || error.message || 'Server error'));
+        }
+      });
     }
-
-    this.filterBoxes();
-    this.closeModal();
   }
 
   deleteBox(id: string): void {
     if (confirm('Are you sure you want to delete this safety box?')) {
-      this.safetyBoxes.update(boxes => boxes.filter(b => b.id !== id));
-      this.filterBoxes();
+      this.safetyBoxService.delete(id).subscribe({
+        next: () => {
+          this.safetyBoxes.update(boxes => boxes.filter(b => b.id !== id));
+          this.filterBoxes();
+        },
+        error: (error) => {
+          console.error('Error deleting safety box:', error);
+          alert('Failed to delete safety box');
+        }
+      });
     }
   }
 }

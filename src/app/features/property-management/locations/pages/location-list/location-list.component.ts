@@ -1,6 +1,7 @@
-﻿import { Component, signal } from '@angular/core';
+﻿import { Component, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { LocationService } from '../../services/location.service';
 
 interface Location {
   id: string;
@@ -20,12 +21,14 @@ interface Location {
   styleUrls: ['./location-list.component.scss']
 })
 export class LocationListComponent {
+  readonly locationService = inject(LocationService);
   searchTerm = signal('');
   typeFilter = signal('All Types');
   parentFilter = signal('All');
   viewMode = signal('tree');
   showModal = signal(false);
   selectedLocation = signal<Location | null>(null);
+  isLoading = signal(false);
 
   locationTypes = ['All Types', 'Building', 'Floor', 'Department', 'Room', 'Warehouse', 'Aisle', 'Shelf'];
 
@@ -75,7 +78,42 @@ export class LocationListComponent {
   filteredLocations = signal<Location[]>([]);
 
   constructor() {
-    this.filterLocations();
+    this.loadLocations();
+  }
+
+  loadLocations(): void {
+    this.isLoading.set(true);
+    this.locationService.getAll().subscribe({
+      next: (response) => {
+        if (response.success && response.data) {
+          const icons: { [key: string]: string } = {
+            Building: '🏢',
+            Floor: '📍',
+            Department: '💻',
+            Room: '🚪',
+            Warehouse: '🏭',
+            Aisle: '📦',
+            Shelf: '🗄️'
+          };
+          const locations: Location[] = response.data.map(loc => ({
+            id: loc.id,
+            name: loc.name,
+            type: 'Department', // Default type since DTO doesn't have it
+            icon: icons['Department'] || '📍',
+            parentId: null,
+            propertiesCount: 0,
+            status: loc.isActive ? 'Active' : 'Inactive'
+          }));
+          this.locations.set(locations);
+          this.filterLocations();
+        }
+        this.isLoading.set(false);
+      },
+      error: (error) => {
+        console.error('Error loading locations:', error);
+        this.isLoading.set(false);
+      }
+    });
   }
 
   filterLocations(): void {
@@ -170,47 +208,101 @@ export class LocationListComponent {
     const editing = this.selectedLocation();
 
     if (editing) {
-      this.locations.update(locs =>
-        locs.map(l => l.id === editing.id ? { ...l, name: data.name, type: data.type, parentId: data.parentId, status: data.active ? 'Active' : 'Inactive' } : l)
-      );
-    } else {
-      const icons: { [key: string]: string } = {
-        Building: '🏢',
-        Floor: '📍',
-        Department: '💻',
-        Room: '🚪',
-        Warehouse: '🏭',
-        Aisle: '📦',
-        Shelf: '🗄️'
-      };
-      const newLocation: Location = {
-        id: Date.now().toString(),
+      // Update existing location
+      this.locationService.update(editing.id, {
         name: data.name,
-        type: data.type,
-        icon: icons[data.type] || '📍',
-        parentId: data.parentId,
-        propertiesCount: 0,
-        status: data.active ? 'Active' : 'Inactive'
-      };
-      this.locations.update(locs => [...locs, newLocation]);
+        address: data.addressLine1,
+        city: data.city,
+        isActive: data.active
+      }).subscribe({
+        next: () => {
+          this.locations.update(locs =>
+            locs.map(l => l.id === editing.id ? { ...l, name: data.name, type: data.type, parentId: data.parentId, status: data.active ? 'Active' : 'Inactive' } : l)
+          );
+          this.filterLocations();
+          this.closeModal();
+        },
+        error: (error) => {
+          console.error('Error updating location:', error);
+          alert('Failed to update location');
+        }
+      });
+    } else {
+      // Create new location
+      this.locationService.create({
+        name: data.name,
+        address: data.addressLine1,
+        city: data.city,
+        isActive: data.active
+      }).subscribe({
+        next: (response) => {
+          if (response.success) {
+            const icons: { [key: string]: string } = {
+              Building: '🏢',
+              Floor: '📍',
+              Department: '💻',
+              Room: '🚪',
+              Warehouse: '🏭',
+              Aisle: '📦',
+              Shelf: '🗄️'
+            };
+            const newLocation: Location = {
+              id: response.data || Date.now().toString(),
+              name: data.name,
+              type: data.type,
+              icon: icons[data.type] || '📍',
+              parentId: data.parentId,
+              propertiesCount: 0,
+              status: data.active ? 'Active' : 'Inactive'
+            };
+            this.locations.update(locs => [...locs, newLocation]);
+            this.filterLocations();
+            this.closeModal();
+          }
+        },
+        error: (error) => {
+          console.error('Error creating location:', error);
+          alert('Failed to create location');
+        }
+      });
     }
-
-    this.filterLocations();
-    this.closeModal();
   }
 
   deleteLocation(id: string): void {
     if (confirm('Are you sure you want to delete this location?')) {
-      this.locations.update(locs => locs.filter(l => l.id !== id));
-      this.filterLocations();
+      this.locationService.delete(id).subscribe({
+        next: () => {
+          this.locations.update(locs => locs.filter(l => l.id !== id));
+          this.filterLocations();
+        },
+        error: (error) => {
+          console.error('Error deleting location:', error);
+          alert('Failed to delete location');
+        }
+      });
     }
   }
 
   toggleStatus(id: string): void {
-    this.locations.update(locs =>
-      locs.map(l => l.id === id ? { ...l, status: l.status === 'Active' ? 'Inactive' : 'Active' } : l)
-    );
-    this.filterLocations();
+    const location = this.locations().find(l => l.id === id);
+    if (location) {
+      const newStatus = location.status === 'Active' ? false : true;
+      this.locationService.update(id, {
+        name: location.name,
+        isActive: newStatus
+      }).subscribe({
+        next: () => {
+          this.locations.update(locs =>
+            locs.map(l => l.id === id ? { ...l, status: l.status === 'Active' ? 'Inactive' : 'Active' } : l)
+          );
+          this.filterLocations();
+        },
+        error: (error) => {
+          console.error('Error updating location status:', error);
+          alert('Failed to update location status');
+        }
+      });
+    }
   }
 
   getCurrentLocation(): void {

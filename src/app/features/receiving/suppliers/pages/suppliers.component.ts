@@ -40,6 +40,18 @@ export class SuppliersComponent {
     avgQualityRating: 4.2
   });
 
+  // Bar heights for the chart - calculated once to avoid ExpressionChangedAfterItHasBeenCheckedError
+  barHeights = signal<number[]>([]);
+
+  constructor() {
+    // Calculate bar heights once to avoid ExpressionChangedAfterItHasBeenCheckedError
+    const heights: number[] = [];
+    for (let i = 0; i < 8; i++) {
+      heights.push(this.getRandomHeight(100, 60));
+    }
+    this.barHeights.set(heights);
+  }
+
   showModal = signal(false);
   showPerformanceView = signal(false);
   selectedSupplier = signal<Supplier | null>(null);

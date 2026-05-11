@@ -46,9 +46,26 @@ export class StockMovementsComponent {
     adjustment: { units: -12, value: -1200 }
   });
 
+  // Bar heights for the chart - calculated once to avoid ExpressionChangedAfterItHasBeenCheckedError
+  barHeightsInflow = signal<number[]>([]);
+  barHeightsOutflow = signal<number[]>([]);
+  barHeightsNet = signal<number[]>([]);
+
   filteredMovements = signal<Movement[]>([]);
 
   constructor() {
+    // Calculate bar heights once to avoid ExpressionChangedAfterItHasBeenCheckedError
+    const inflowHeights: number[] = [];
+    const outflowHeights: number[] = [];
+    const netHeights: number[] = [];
+    for (let i = 0; i < 8; i++) {
+      inflowHeights.push(this.getRandomHeight(80, 50));
+      outflowHeights.push(this.getRandomHeight(60, 40));
+      netHeights.push(this.getRandomHeight(40, 20));
+    }
+    this.barHeightsInflow.set(inflowHeights);
+    this.barHeightsOutflow.set(outflowHeights);
+    this.barHeightsNet.set(netHeights);
     this.filterMovements();
   }
 

@@ -1,4 +1,88 @@
-﻿<section class="page ecx-list-surface">
-  <h1>Service Request List</h1>
+﻿<section class="page">
+  <div class="page-header">
+    <h1>Service Requests</h1>
+    <p>Manage and track all service requests</p>
+    <button type="button" class="btn btn-primary" (click)="createNewRequest()">
+      <i class="bi bi-plus-circle"></i> Create New Request
+    </button>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters-section">
+    <div class="filter-row">
+      <div class="filter-group">
+        <label for="search">Search</label>
+        <input type="text" id="search" class="form-control" [(ngModel)]="searchTerm" 
+               (ngModelChange)="onSearchChange()" placeholder="Search by SR number, requester...">
+      </div>
+      <div class="filter-group">
+        <label for="status">Status</label>
+        <select id="status" class="form-control" [(ngModel)]="statusFilter" (ngModelChange)="onStatusFilterChange()">
+          @for (status of statuses; track status) {
+            <option [value]="status">{{ status }}</option>
+          }
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  @if (isLoading()) {
+    <div class="loading-state">
+      <i class="bi bi-hourglass-split"></i>
+      <p>Loading service requests...</p>
+    </div>
+  } @else {
+    <!-- Service Requests Table -->
+    <div class="table-container">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>SR Number</th>
+            <th>Requester</th>
+            <th>Department</th>
+            <th>Purpose</th>
+            <th>Status</th>
+            <th>Items</th>
+            <th>Quantity</th>
+            <th>Request Date</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (serviceRequests().length === 0) {
+            <tr>
+              <td colspan="9" class="text-center">
+                <div class="empty-state">
+                  <i class="bi bi-inbox"></i>
+                  <p>No service requests found</p>
+                </div>
+              </td>
+            </tr>
+          } @else {
+            @for (sr of serviceRequests(); track sr.id) {
+              <tr>
+                <td><strong>{{ sr.srNumber }}</strong></td>
+                <td>{{ sr.requesterName }}</td>
+                <td>{{ sr.department || '-' }}</td>
+                <td>{{ sr.purpose || '-' }}</td>
+                <td>
+                  <span class="badge" [class]="getStatusClass(sr.status)">{{ sr.status }}</span>
+                </td>
+                <td>{{ sr.totalItems }}</td>
+                <td>{{ sr.totalQuantity }}</td>
+                <td>{{ sr.requestDate | date:'shortDate' }}</td>
+                <td>
+                  <button type="button" class="btn btn-sm btn-outline-primary" (click)="viewServiceRequest(sr.id)">
+                    <i class="bi bi-eye"></i> View
+                  </button>
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+  }
 </section>
 

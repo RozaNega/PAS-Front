@@ -133,10 +133,10 @@
         <span class="legend-item"><span class="dot orange"></span> Depreciated Value</span>
       </div>
       <div class="chart-bars">
-        @for (i of [1,2,3,4,5,6,7,8,9,10,11,12]; track i) {
+        @for (height of barHeights(); track $index) {
           <div class="bar-group">
-            <div class="bar main" [style.height.px]="getRandomHeight(120, 60)"></div>
-            <div class="bar-label">{{ getMonthName(i) }}</div>
+            <div class="bar main" [style.height.px]="height"></div>
+            <div class="bar-label">{{ getMonthName($index + 1) }}</div>
           </div>
         }
       </div>

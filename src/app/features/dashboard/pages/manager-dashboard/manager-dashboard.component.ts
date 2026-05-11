@@ -1,5 +1,7 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal, OnInit } from '@angular/core';
 import { SignalRService } from '../../../../core/services/signalr.service';
+import { DashboardService, DashboardStatistics } from '../../../../core/services/dashboard.service';
+import { finalize } from 'rxjs';
 
 type RequestStatus = 'Pending' | 'Approved' | 'Rejected';
 type RequestFilter = 'All' | RequestStatus;
@@ -50,13 +52,37 @@ interface ApprovalItem {
   styleUrl: './manager-dashboard.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ManagerDashboardComponent {
+export class ManagerDashboardComponent implements OnInit {
   private readonly signalRService = inject(SignalRService);
+  private readonly dashboardService = inject(DashboardService);
+
+  readonly isLoading = signal(false);
+  readonly statistics = signal<DashboardStatistics | null>(null);
 
   readonly managerName = signal('Manager');
   readonly filters: RequestFilter[] = ['All', 'Pending', 'Approved', 'Rejected'];
   readonly selectedFilter = signal<RequestFilter>('Pending');
   readonly selectedPeriod = signal<OverviewPeriod>('This Month');
+
+  ngOnInit(): void {
+    this.loadDashboardData();
+  }
+
+  loadDashboardData(): void {
+    this.isLoading.set(true);
+    this.dashboardService.getStatistics().pipe(
+      finalize(() => this.isLoading.set(false))
+    ).subscribe({
+      next: (response) => {
+        if (response.success && response.data) {
+          this.statistics.set(response.data);
+        }
+      },
+      error: (error) => {
+        console.error('Error loading dashboard data:', error);
+      }
+    });
+  }
 
   readonly requests = signal<ManagerRequest[]>([
     {
@@ -139,7 +165,41 @@ export class ManagerDashboardComponent {
   ]);
 
   readonly summaryCards = computed<SummaryCard[]>(() => {
+    const stats = this.statistics();
     const requests = this.requests();
+
+    if (stats) {
+      return [
+        {
+          icon: 'bi bi-clock-history',
+          tone: 'warning',
+          title: 'Pending Requests',
+          value: stats.pendingRequisitions,
+          description: 'Needs your action',
+        },
+        {
+          icon: 'bi bi-check-circle',
+          tone: 'success',
+          title: 'Approved Requests',
+          value: stats.approvedRequisitions,
+          description: 'This month',
+        },
+        {
+          icon: 'bi bi-x-circle',
+          tone: 'danger',
+          title: 'Rejected Requests',
+          value: stats.rejectedRequisitions,
+          description: 'This month',
+        },
+        {
+          icon: 'bi bi-file-earmark-text',
+          tone: 'info',
+          title: 'Total Requests',
+          value: stats.approvedRequisitions + stats.rejectedRequisitions + stats.pendingRequisitions,
+          description: 'This month',
+        },
+      ];
+    }
 
     return [
       {

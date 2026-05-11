@@ -78,12 +78,12 @@
         <span class="legend-item"><span class="dot yellow"></span> Partial Rate</span>
       </div>
       <div class="chart-bars">
-        @for (i of [1,2,3,4]; track i) {
+        @for (height of barHeightsPass(); track $index) {
           <div class="bar-group">
-            <div class="bar pass" [style.height.px]="getRandomHeight(70, 20)"></div>
-            <div class="bar fail" [style.height.px]="getRandomHeight(15, 10)"></div>
-            <div class="bar partial" [style.height.px]="getRandomHeight(15, 10)"></div>
-            <div class="bar-label">Week{{ i }}</div>
+            <div class="bar pass" [style.height.px]="height"></div>
+            <div class="bar fail" [style.height.px]="barHeightsFail()[$index]"></div>
+            <div class="bar partial" [style.height.px]="barHeightsPartial()[$index]"></div>
+            <div class="bar-label">Week{{ $index + 1 }}</div>
           </div>
         }
       </div>

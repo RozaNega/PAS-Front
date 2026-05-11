@@ -124,8 +124,8 @@
                 </td>
                 <td>✅ Yes</td>
                 <td>
-                  <button class="icon-btn" (click)="removeItem(item.sku)">✏️</button>
-                  <button class="icon-btn" (click)="removeItem(item.sku)">🗑️</button>
+                  <button class="btn btn-sm btn-outline-primary" (click)="editItem(item)">Edit</button>
+                  <button class="btn btn-sm btn-outline-danger" (click)="removeItem(item.sku)">Delete</button>
                 </td>
               </tr>
             }

@@ -49,9 +49,18 @@ export class ReceivingHistoryComponent {
   avgValuePerGRN = computed(() => 3486);
   avgProcessingTime = computed(() => '1.5 days');
 
+  // Bar heights for the chart - calculated once to avoid ExpressionChangedAfterItHasBeenCheckedError
+  barHeights = signal<number[]>([]);
+
   filteredGRNs = signal<GRN[]>([]);
 
   constructor() {
+    // Calculate bar heights once to avoid ExpressionChangedAfterItHasBeenCheckedError
+    const heights: number[] = [];
+    for (let i = 0; i < 8; i++) {
+      heights.push(this.getRandomHeight(100, 60));
+    }
+    this.barHeights.set(heights);
     this.filterGRNs();
   }
 

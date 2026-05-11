@@ -1,4 +1,75 @@
 <section class="feature-card">
-  <h2>{{ title }}</h2>
-  <p>{{ description }}</p>
+  <h2>{{ title() }}</h2>
+  <form [formGroup]="form" (ngSubmit)="onSubmit()">
+    <div class="form-group">
+      <label for="warehouseId">Warehouse ID *</label>
+      <input type="text" id="warehouseId" formControlName="warehouseId" placeholder="Enter warehouse ID">
+      @if (form.controls.warehouseId.invalid && form.controls.warehouseId.touched) {
+        <p class="error">Warehouse ID is required.</p>
+      }
+    </div>
+
+    <div class="form-group">
+      <label for="aisle">Aisle *</label>
+      <input type="text" id="aisle" formControlName="aisle" placeholder="Enter aisle">
+      @if (form.controls.aisle.invalid && form.controls.aisle.touched) {
+        <p class="error">Aisle is required.</p>
+      }
+    </div>
+
+    <div class="form-group">
+      <label for="rack">Rack *</label>
+      <input type="text" id="rack" formControlName="rack" placeholder="Enter rack">
+      @if (form.controls.rack.invalid && form.controls.rack.touched) {
+        <p class="error">Rack is required.</p>
+      }
+    </div>
+
+    <div class="form-group">
+      <label for="shelfNumber">Shelf Number *</label>
+      <input type="text" id="shelfNumber" formControlName="shelfNumber" placeholder="Enter shelf number">
+      @if (form.controls.shelfNumber.invalid && form.controls.shelfNumber.touched) {
+        <p class="error">Shelf Number is required.</p>
+      }
+    </div>
+
+    <div class="form-group">
+      <label for="zone">Zone</label>
+      <input type="text" id="zone" formControlName="zone" placeholder="Enter zone">
+    </div>
+
+    <div class="form-group">
+      <label for="binType">Bin Type</label>
+      <input type="text" id="binType" formControlName="binType" placeholder="Enter bin type">
+    </div>
+
+    <div class="form-group">
+      <label for="length">Length</label>
+      <input type="number" id="length" formControlName="length" placeholder="Enter length">
+    </div>
+
+    <div class="form-group">
+      <label for="width">Width</label>
+      <input type="number" id="width" formControlName="width" placeholder="Enter width">
+    </div>
+
+    <div class="form-group">
+      <label for="height">Height</label>
+      <input type="number" id="height" formControlName="height" placeholder="Enter height">
+    </div>
+
+    <div class="form-group">
+      <label for="maxWeight">Max Weight</label>
+      <input type="number" id="maxWeight" formControlName="maxWeight" placeholder="Enter max weight">
+    </div>
+
+    <div class="form-group">
+      <label for="capacity">Capacity</label>
+      <input type="number" id="capacity" formControlName="capacity" placeholder="Enter capacity">
+    </div>
+
+    <button type="submit" class="btn btn-primary" [disabled]="loading">
+      {{ loading ? 'Saving...' : submitLabel() }}
+    </button>
+  </form>
 </section>
