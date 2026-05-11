@@ -68,6 +68,26 @@ export class StockOverviewComponent {
     { rank: 5, name: 'Server Rack', stockQty: 8, unitPrice: 2800, value: 22400 }
   ]);
 
+  // Bar heights for the chart - calculated once to avoid ExpressionChangedAfterItHasBeenCheckedError
+  barHeightsTotal = signal<number[]>([]);
+  barHeightsInflow = signal<number[]>([]);
+  barHeightsOutflow = signal<number[]>([]);
+
+  constructor() {
+    // Calculate bar heights once to avoid ExpressionChangedAfterItHasBeenCheckedError
+    const totalHeights: number[] = [];
+    const inflowHeights: number[] = [];
+    const outflowHeights: number[] = [];
+    for (let i = 0; i < 8; i++) {
+      totalHeights.push(this.getRandomHeight(80, 40));
+      inflowHeights.push(this.getRandomHeight(30, 20));
+      outflowHeights.push(this.getRandomHeight(20, 15));
+    }
+    this.barHeightsTotal.set(totalHeights);
+    this.barHeightsInflow.set(inflowHeights);
+    this.barHeightsOutflow.set(outflowHeights);
+  }
+
   refreshData(): void {
     this.lastUpdated.set('Just now');
   }

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal, OnInit } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Router } from '@angular/router';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
@@ -12,6 +12,8 @@ import {
   CatalogItem,
 } from '../../../../types/dashboard.types';
 import { CreateRequestModalComponent } from '../../components/create-request-modal/create-request-modal.component';
+import { DashboardService, DashboardStatistics } from '../../../../core/services/dashboard.service';
+import { finalize } from 'rxjs';
 
 type DashboardView =
   | 'home'
@@ -30,9 +32,14 @@ type DashboardView =
   styleUrl: './employee-dashboard.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class EmployeeDashboardComponent {
+export class EmployeeDashboardComponent implements OnInit {
   readonly router = inject(Router);
   readonly modalService = inject(NgbModal);
+  private readonly dashboardService = inject(DashboardService);
+
+  readonly isLoading = signal(false);
+  readonly statistics = signal<DashboardStatistics | null>(null);
+
   readonly userName = 'John';
   readonly currentDate = new Date().toLocaleDateString('en-US', {
     year: 'numeric',
@@ -41,28 +48,28 @@ export class EmployeeDashboardComponent {
   });
   readonly greeting = this.getGreeting();
 
-  readonly summaryCards: RequestSummaryCard[] = [
+  readonly summaryCards = signal<RequestSummaryCard[]>([
     {
       title: 'Total Requests',
-      value: 5,
+      value: 0,
       subtitle: 'This Month',
-      trend: '▲ +2 from last month',
+      trend: 'Loading...',
       icon: 'bi-clipboard2-data',
       tone: 'blue',
     },
     {
       title: 'Pending',
-      value: 2,
+      value: 0,
       subtitle: 'Approval',
-      trend: '🔴 Urgent: 1',
+      trend: 'Loading...',
       icon: 'bi-clock-history',
       tone: 'amber',
     },
     {
       title: 'Approved',
-      value: 2,
+      value: 0,
       subtitle: '',
-      trend: '🟢 Ready',
+      trend: 'Loading...',
       icon: 'bi-check-circle',
       tone: 'green',
     },
@@ -70,19 +77,85 @@ export class EmployeeDashboardComponent {
       title: 'Rejected',
       value: 0,
       subtitle: '',
-      trend: '● Same',
+      trend: 'Loading...',
       icon: 'bi-x-circle',
       tone: 'rose',
     },
     {
       title: 'Completed',
-      value: 1,
+      value: 0,
       subtitle: '',
-      trend: '✅ Done',
+      trend: 'Loading...',
       icon: 'bi-check2-all',
       tone: 'green',
     },
-  ];
+  ]);
+
+  ngOnInit(): void {
+    this.loadDashboardData();
+  }
+
+  loadDashboardData(): void {
+    this.isLoading.set(true);
+    this.dashboardService.getStatistics().pipe(
+      finalize(() => this.isLoading.set(false))
+    ).subscribe({
+      next: (response) => {
+        if (response.success && response.data) {
+          this.statistics.set(response.data);
+          this.updateSummaryCards(response.data);
+        }
+      },
+      error: (error) => {
+        console.error('Error loading dashboard data:', error);
+      }
+    });
+  }
+
+  updateSummaryCards(stats: DashboardStatistics): void {
+    this.summaryCards.set([
+      {
+        title: 'Total Requests',
+        value: stats.approvedRequisitions + stats.rejectedRequisitions + stats.pendingRequisitions,
+        subtitle: 'This Month',
+        trend: '▲ +0 from last month',
+        icon: 'bi-clipboard2-data',
+        tone: 'blue',
+      },
+      {
+        title: 'Pending',
+        value: stats.pendingRequisitions,
+        subtitle: 'Approval',
+        trend: '🔴 Urgent: 0',
+        icon: 'bi-clock-history',
+        tone: 'amber',
+      },
+      {
+        title: 'Approved',
+        value: stats.approvedRequisitions,
+        subtitle: '',
+        trend: '🟢 Ready',
+        icon: 'bi-check-circle',
+        tone: 'green',
+      },
+      {
+        title: 'Rejected',
+        value: stats.rejectedRequisitions,
+        subtitle: '',
+        trend: '● Same',
+        icon: 'bi-x-circle',
+        tone: 'rose',
+      },
+      {
+        title: 'Completed',
+        value: stats.completedRequisitions,
+        subtitle: '',
+        trend: '✅ Done',
+        icon: 'bi-check2-all',
+        tone: 'green',
+      },
+    ]);
+  }
 
   readonly pendingRequests: PendingRequest[] = [
     {

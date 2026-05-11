@@ -1,5 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { DashboardService, DashboardStatistics } from '../../../../core/services/dashboard.service';
+import { finalize } from 'rxjs';
 
 export interface KeyMetric {
   title: string;
@@ -42,48 +44,114 @@ export interface RequestTrendData {
   templateUrl: './manager-approval-dashboard.component.html',
   styleUrl: './manager-approval-dashboard.component.scss',
 })
-export class ManagerApprovalDashboardComponent {
+export class ManagerApprovalDashboardComponent implements OnInit {
+  private readonly dashboardService = inject(DashboardService);
+
+  readonly isLoading = signal(false);
+  readonly statistics = signal<DashboardStatistics | null>(null);
+
   currentDate = new Date();
   greeting = this.getGreeting();
   managerName = 'Sarah';
 
-  keyMetrics: KeyMetric[] = [
+  keyMetrics = signal<KeyMetric[]>([
     {
       title: 'Pending Approvals',
       subtitle: '',
-      value: 5,
-      trend: '🔴 Urgent: 2',
+      value: 0,
+      trend: 'Loading...',
       tone: 'red',
     },
     {
       title: 'Approved This Week',
       subtitle: '',
-      value: 8,
-      trend: '▲ +15%',
+      value: 0,
+      trend: 'Loading...',
       tone: 'green',
     },
     {
       title: 'Rejected This Week',
       subtitle: '',
-      value: 2,
-      trend: '▼ -1',
+      value: 0,
+      trend: 'Loading...',
       tone: 'red',
     },
     {
       title: 'Avg Response Time',
       subtitle: '',
-      value: 1.2,
-      trend: '▼ -0.3 days',
+      value: 0,
+      trend: 'Loading...',
       tone: 'blue',
     },
     {
       title: 'Budget Utilization',
       subtitle: '',
-      value: 65,
-      trend: '⚠️ Near Limit',
+      value: 0,
+      trend: 'Loading...',
       tone: 'yellow',
     },
-  ];
+  ]);
+
+  ngOnInit(): void {
+    this.loadDashboardData();
+  }
+
+  loadDashboardData(): void {
+    this.isLoading.set(true);
+    this.dashboardService.getStatistics().pipe(
+      finalize(() => this.isLoading.set(false))
+    ).subscribe({
+      next: (response) => {
+        if (response.success && response.data) {
+          this.statistics.set(response.data);
+          this.updateKeyMetrics(response.data);
+        }
+      },
+      error: (error) => {
+        console.error('Error loading dashboard data:', error);
+      }
+    });
+  }
+
+  updateKeyMetrics(stats: DashboardStatistics): void {
+    this.keyMetrics.set([
+      {
+        title: 'Pending Approvals',
+        subtitle: '',
+        value: stats.pendingRequisitions,
+        trend: '🔴 Urgent: 0',
+        tone: 'red',
+      },
+      {
+        title: 'Approved This Week',
+        subtitle: '',
+        value: stats.approvedRequisitions,
+        trend: '▲ +0%',
+        tone: 'green',
+      },
+      {
+        title: 'Rejected This Week',
+        subtitle: '',
+        value: stats.rejectedRequisitions,
+        trend: '▼ -0',
+        tone: 'red',
+      },
+      {
+        title: 'Avg Response Time',
+        subtitle: '',
+        value: 1.2,
+        trend: '▼ -0.3 days',
+        tone: 'blue',
+      },
+      {
+        title: 'Budget Utilization',
+        subtitle: '',
+        value: 65,
+        trend: '⚠️ Near Limit',
+        tone: 'yellow',
+      },
+    ]);
+  }
 
   pendingRequests: PendingRequest[] = [
     {

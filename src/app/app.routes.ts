@@ -476,6 +476,10 @@ export const routes: Routes = [
           import('./features/requisition/requisition.module').then((m) => m.RequisitionModule),
       },
       {
+        path: 'requisition/service-requests/new',
+        loadComponent: () => import('./features/requisition/service-requests/pages/service-request-form/service-request-form.component').then(m => m.ServiceRequestFormComponent),
+      },
+      {
         path: 'workflow',
         loadChildren: () =>
           import('./features/workflow/workflow.module').then((m) => m.WorkflowModule),
@@ -541,78 +545,6 @@ export const routes: Routes = [
           import('./features/compliance/pages/report-preview-page/report-preview-page.component').then(
             (m) => m.ReportPreviewPageComponent,
           ),
-      },
-    ],
-  },
-  {
-    path: 'dashboard',
-    loadChildren: () =>
-      import('./features/dashboard/dashboard-module').then((m) => m.DashboardModule),
-  },
-  {
-    path: 'requisition',
-    component: MainLayoutComponent,
-    children: [
-      {
-        path: '',
-        loadChildren: () =>
-          import('./features/requisition/requisition.module').then((m) => m.RequisitionModule),
-      },
-    ],
-  },
-  {
-    path: 'storage',
-    component: MainLayoutComponent,
-    children: [
-      {
-        path: '',
-        loadChildren: () =>
-          import('./features/storage/storage-module').then((m) => m.StorageModule),
-      },
-    ],
-  },
-  {
-    path: 'notifications',
-    component: MainLayoutComponent,
-    children: [
-      {
-        path: '',
-        loadComponent: () =>
-          import('./features/notifications/pages/notifications-page').then(
-            (m) => m.NotificationsPage,
-          ),
-      },
-    ],
-  },
-  {
-    path: 'reports',
-    component: MainLayoutComponent,
-    children: [
-      {
-        path: '',
-        loadChildren: () =>
-          import('./features/reports/reports.module').then((m) => m.ReportsModule),
-      },
-    ],
-  },
-  {
-    path: 'workflow',
-    component: MainLayoutComponent,
-    children: [
-      {
-        path: '',
-        loadChildren: () =>
-          import('./features/workflow/workflow.module').then((m) => m.WorkflowModule),
-      },
-    ],
-  },
-  {
-    path: 'audit-trail',
-    component: MainLayoutComponent,
-    children: [
-      {
-        path: '',
-        loadChildren: () => import('./features/common/common.module').then((m) => m.CommonModule),
       },
     ],
   },

@@ -126,10 +126,10 @@
         <span class="legend-item"><span class="dot orange"></span> Unique Requesters</span>
       </div>
       <div class="chart-bars">
-        @for (i of [1,2,3,4,5,6,7,8]; track i) {
+        @for (height of barHeights(); track $index) {
           <div class="bar-group">
-            <div class="bar main" [style.height.px]="getRandomHeight(100, 60)"></div>
-            <div class="bar-label">Week {{ i }}</div>
+            <div class="bar main" [style.height.px]="height"></div>
+            <div class="bar-label">Week {{ $index + 1 }}</div>
           </div>
         }
       </div>

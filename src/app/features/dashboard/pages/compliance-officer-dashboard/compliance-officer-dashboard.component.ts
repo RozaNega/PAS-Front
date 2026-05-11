@@ -1,4 +1,6 @@
-import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, signal, inject, OnInit } from '@angular/core';
+import { DashboardService, DashboardStatistics } from '../../../../core/services/dashboard.service';
+import { finalize } from 'rxjs';
 
 type ActivityAction = 'Created' | 'Approved' | 'Rejected' | 'Deleted';
 type ActivityStatus = 'Normal' | 'Flagged';
@@ -34,7 +36,12 @@ interface AlertItem {
   styleUrl: './compliance-officer-dashboard.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ComplianceOfficerDashboardComponent {
+export class ComplianceOfficerDashboardComponent implements OnInit {
+  private readonly dashboardService = inject(DashboardService);
+
+  readonly isLoading = signal(false);
+  readonly statistics = signal<DashboardStatistics | null>(null);
+
   readonly officerName = signal('Compliance Officer');
   readonly filters: ActivityFilter[] = [
     'All Activities',
@@ -43,6 +50,26 @@ export class ComplianceOfficerDashboardComponent {
     'Suspicious / Flagged',
   ];
   readonly selectedFilter = signal<ActivityFilter>('All Activities');
+
+  ngOnInit(): void {
+    this.loadDashboardData();
+  }
+
+  loadDashboardData(): void {
+    this.isLoading.set(true);
+    this.dashboardService.getStatistics().pipe(
+      finalize(() => this.isLoading.set(false))
+    ).subscribe({
+      next: (response) => {
+        if (response.success && response.data) {
+          this.statistics.set(response.data);
+        }
+      },
+      error: (error) => {
+        console.error('Error loading dashboard data:', error);
+      }
+    });
+  }
 
   readonly activityLogs = signal<ActivityLogEntry[]>([
     {
@@ -106,7 +133,26 @@ export class ComplianceOfficerDashboardComponent {
   ]);
 
   readonly summaryCards = computed<SummaryCard[]>(() => {
+    const stats = this.statistics();
     const logs = this.activityLogs();
+
+    if (stats) {
+      return [
+        { title: 'Total Activities', value: stats.pendingRequisitions + stats.approvedRequisitions + stats.rejectedRequisitions },
+        {
+          title: 'Suspicious Actions',
+          value: logs.filter((item) => item.status === 'Flagged').length,
+        },
+        {
+          title: 'Violations Detected',
+          value: logs.filter((item) => item.module === 'Policy').length,
+        },
+        {
+          title: 'Audit Logs Reviewed',
+          value: logs.filter((item) => item.module === 'AuditTrail').length,
+        },
+      ];
+    }
 
     return [
       { title: 'Total Activities', value: logs.length },

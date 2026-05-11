@@ -43,12 +43,29 @@ export class InspectionLogsComponent {
     avgTime: 12
   });
 
+  // Bar heights for the chart - calculated once to avoid ExpressionChangedAfterItHasBeenCheckedError
+  barHeightsPass = signal<number[]>([]);
+  barHeightsFail = signal<number[]>([]);
+  barHeightsPartial = signal<number[]>([]);
+
   showModal = signal(false);
   selectedLog = signal<InspectionLog | null>(null);
 
   filteredLogs = signal<InspectionLog[]>([]);
 
   constructor() {
+    // Calculate bar heights once to avoid ExpressionChangedAfterItHasBeenCheckedError
+    const passHeights: number[] = [];
+    const failHeights: number[] = [];
+    const partialHeights: number[] = [];
+    for (let i = 0; i < 8; i++) {
+      passHeights.push(this.getRandomHeight(70, 20));
+      failHeights.push(this.getRandomHeight(15, 10));
+      partialHeights.push(this.getRandomHeight(15, 10));
+    }
+    this.barHeightsPass.set(passHeights);
+    this.barHeightsFail.set(failHeights);
+    this.barHeightsPartial.set(partialHeights);
     this.filterLogs();
   }
 

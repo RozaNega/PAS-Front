@@ -23,10 +23,16 @@ export interface WarehouseDto {
 export interface ShelfLocationDto {
   id: string;
   warehouseId: string;
-  code: string;
-  location: string;
+  aisle: string;
+  rack: string;
+  shelfNumber: string;
+  zone: string;
+  binType: string;
+  length: number;
+  width: number;
+  height: number;
+  maxWeight: number;
   capacity: number;
-  isActive: boolean;
 }
 
 @Injectable({ providedIn: 'root' })

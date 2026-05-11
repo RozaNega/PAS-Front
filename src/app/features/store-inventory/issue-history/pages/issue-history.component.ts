@@ -57,9 +57,18 @@ export class IssueHistoryComponent {
     { name: 'A4 Paper', requests: 18, value: 450, percentage: 40 }
   ]);
 
+  // Bar heights for the chart - calculated once to avoid ExpressionChangedAfterItHasBeenCheckedError
+  barHeights = signal<number[]>([]);
+
   filteredSIVs = signal<SIV[]>([]);
 
   constructor() {
+    // Calculate bar heights once to avoid ExpressionChangedAfterItHasBeenCheckedError
+    const heights: number[] = [];
+    for (let i = 0; i < 8; i++) {
+      heights.push(this.getRandomHeight(100, 60));
+    }
+    this.barHeights.set(heights);
     this.filterSIVs();
   }
 

@@ -79,9 +79,18 @@ export class StockReportComponent {
     { name: 'IT Equipment', rate: '1.5x', percentage: 18 }
   ]);
 
+  // Bar heights for the chart - calculated once to avoid ExpressionChangedAfterItHasBeenCheckedError
+  barHeights = signal<number[]>([]);
+
   filteredItems = signal<StockItem[]>([]);
 
   constructor() {
+    // Calculate bar heights once to avoid ExpressionChangedAfterItHasBeenCheckedError
+    const heights: number[] = [];
+    for (let i = 0; i < 8; i++) {
+      heights.push(this.getRandomHeight(100, 60));
+    }
+    this.barHeights.set(heights);
     this.filterItems();
   }
 

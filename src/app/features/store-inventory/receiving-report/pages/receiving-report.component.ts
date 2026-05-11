@@ -89,9 +89,18 @@ export class ReceivingReportComponent {
     { name: 'Paper Co', onTime: '98%', quality: '96%', price: '★★★★☆', delivery: '2 days', overall: '4.7 ★', trend: '▲ Improving' }
   ]);
 
+  // Bar heights for the chart - calculated once to avoid ExpressionChangedAfterItHasBeenCheckedError
+  barHeights = signal<number[]>([]);
+
   filteredReceivings = signal<Receiving[]>([]);
 
   constructor() {
+    // Calculate bar heights once to avoid ExpressionChangedAfterItHasBeenCheckedError
+    const heights: number[] = [];
+    for (let i = 0; i < 8; i++) {
+      heights.push(this.getRandomHeight(100, 60));
+    }
+    this.barHeights.set(heights);
     this.filterReceivings();
   }
 

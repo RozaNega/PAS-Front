@@ -107,12 +107,10 @@
             </div>
             <div class="form-field full-width">
               <label>Location <span class="required">*</span></label>
-              <select [(ngModel)]="modalFormData().location">
+              <select [(ngModel)]="modalFormData().locationId" (ngModelChange)="onLocationSelect($event)">
                 <option value="">Select Location</option>
-                @for (loc of locations; track loc) {
-                  @if (loc !== 'All') {
-                    <option [value]="loc">{{ loc }}</option>
-                  }
+                @for (loc of backendLocations(); track loc.id) {
+                  <option [value]="loc.id">{{ loc.name }}</option>
                 }
               </select>
             </div>

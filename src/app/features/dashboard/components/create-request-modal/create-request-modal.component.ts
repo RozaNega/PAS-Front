@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { NewRequestForm, RequestItem } from '../../../../types/dashboard.types';
+import { ServiceRequestService } from '../../../../features/requisition/service-requests/services/service-request.service';
 
 type WizardStep = 1 | 2 | 3;
 
@@ -16,6 +17,9 @@ type WizardStep = 1 | 2 | 3;
 })
 export class CreateRequestModalComponent {
   readonly modal = inject(NgbActiveModal);
+  private serviceRequestService = inject(ServiceRequestService);
+  
+  editingItem: RequestItem | null = null;
 
   currentStep: WizardStep = 1;
   readonly form: NewRequestForm = {
@@ -93,10 +97,44 @@ export class CreateRequestModalComponent {
     }
   }
 
+  editItem(item: RequestItem): void {
+    // For now, just log the edit action
+    console.log('Editing item:', item);
+    // In a real implementation, you could open an edit modal or inline editing
+  }
+
   submit(): void {
     this.form.items = this.selectedItems;
-    console.log('Submitting request:', this.form);
-    this.modal.close(this.form);
+    
+    // Create the service request object for the backend
+    const createRequest = {
+      department: this.form.department,
+      purpose: this.form.justification,
+      urgency: this.form.priority.toLowerCase(),
+      notes: `Required by: ${this.form.requiredBy}`,
+      items: this.selectedItems.map(item => ({
+        itemId: item.sku, // Using SKU as itemId for now
+        requestedQty: item.quantity,
+        shelfId: undefined
+      }))
+    };
+
+    // Send to backend
+    this.serviceRequestService.createServiceRequest(createRequest).subscribe({
+      next: (response: any) => {
+        if (response.success) {
+          console.log('Service Request created successfully:', response);
+          alert('Service Request created successfully!');
+          this.modal.close(this.form);
+        } else {
+          alert('Error creating request: ' + response.message);
+        }
+      },
+      error: (error: any) => {
+        console.error('Error creating service request:', error);
+        alert('Error creating request. Please try again.');
+      }
+    });
   }
 
   cancel(): void {

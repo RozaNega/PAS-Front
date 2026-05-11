@@ -225,10 +225,10 @@
           <h4>📈 QUALITY TREND</h4>
           <div class="chart-placeholder">
             <div class="chart-bars">
-              @for (i of [1,2,3,4,5,6]; track i) {
+              @for (height of barHeights(); track $index) {
                 <div class="bar-group">
-                  <div class="bar quality" [style.height.px]="getRandomHeight(70, 20)"></div>
-                  <div class="bar-label">{{ ['Jan','Feb','Mar','Apr','May','Jun'][i-1] }}</div>
+                  <div class="bar quality" [style.height.px]="height"></div>
+                  <div class="bar-label">{{ ['Jan','Feb','Mar','Apr','May','Jun'][$index] }}</div>
                 </div>
               }
             </div>

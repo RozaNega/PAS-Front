@@ -14,7 +14,7 @@
   <div class="metrics-section">
     <h2>📊 KEY METRICS</h2>
     <div class="metrics-grid">
-      @for (metric of keyMetrics; track metric.title) {
+      @for (metric of keyMetrics(); track metric.title) {
         <div class="metric-card metric-{{ metric.tone }}">
           <div class="metric-title">{{ metric.title }}</div>
           @if (metric.subtitle) {

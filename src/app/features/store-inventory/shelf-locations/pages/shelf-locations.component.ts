@@ -1,6 +1,7 @@
-import { Component, signal, computed } from '@angular/core';
+import { Component, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { InventoryService } from '../../../../core/services/inventory.service';
 
 interface Shelf {
   id: string;
@@ -20,11 +21,13 @@ interface Shelf {
   styleUrls: ['./shelf-locations.component.scss']
 })
 export class ShelfLocationsComponent {
+  readonly inventoryService = inject(InventoryService);
   selectedWarehouse = signal('Warehouse A');
   searchTerm = signal('');
   aisleFilter = signal('All Aisles');
   showModal = signal(false);
   selectedShelf = signal<Shelf | null>(null);
+  isLoading = signal(false);
 
   warehouses = ['Warehouse A', 'Warehouse B', 'Warehouse C', 'Storage'];
 
@@ -78,7 +81,32 @@ export class ShelfLocationsComponent {
   filteredShelves = signal<Shelf[]>([]);
 
   constructor() {
-    this.filterShelves();
+    this.loadShelves();
+  }
+
+  loadShelves(): void {
+    this.isLoading.set(true);
+    this.inventoryService.getAllShelves().subscribe({
+      next: (response) => {
+        if (response.success && response.data) {
+          this.shelves.set(response.data.map(shelf => ({
+            id: shelf.id,
+            aisle: shelf.aisle || '',
+            rack: shelf.rack || '',
+            shelf: shelf.shelfNumber || '',
+            items: 0,
+            value: 0,
+            occupancy: 0
+          })));
+          this.filterShelves();
+        }
+        this.isLoading.set(false);
+      },
+      error: (error) => {
+        console.error('Error loading shelves:', error);
+        this.isLoading.set(false);
+      }
+    });
   }
 
   filterShelves(): void {
@@ -151,30 +179,73 @@ export class ShelfLocationsComponent {
     const editing = this.selectedShelf();
 
     if (editing) {
-      this.shelves.update(shelves =>
-        shelves.map(s => s.id === editing.id ? { ...s, aisle: data.aisle, rack: data.rack, shelf: data.shelfNumber } : s)
-      );
-    } else {
-      const newShelf: Shelf = {
-        id: Date.now().toString(),
+      this.inventoryService.updateShelf(editing.id, {
+        warehouseId: this.selectedWarehouse(),
         aisle: data.aisle,
         rack: data.rack,
-        shelf: data.shelfNumber,
-        items: 0,
-        value: 0,
-        occupancy: 0
-      };
-      this.shelves.update(shelves => [...shelves, newShelf]);
+        shelfNumber: data.shelfNumber,
+        zone: '',
+        binType: data.shelfType,
+        capacity: data.maxCapacity
+      }).subscribe({
+        next: () => {
+          this.shelves.update(shelves =>
+            shelves.map(s => s.id === editing.id ? { ...s, aisle: data.aisle, rack: data.rack, shelf: data.shelfNumber } : s)
+          );
+          this.filterShelves();
+          this.closeModal();
+        },
+        error: (error) => {
+          console.error('Error updating shelf:', error);
+          alert('Failed to update shelf');
+        }
+      });
+    } else {
+      this.inventoryService.createShelf({
+        warehouseId: this.selectedWarehouse(),
+        aisle: data.aisle,
+        rack: data.rack,
+        shelfNumber: data.shelfNumber,
+        zone: '',
+        binType: data.shelfType,
+        capacity: data.maxCapacity
+      }).subscribe({
+        next: (response) => {
+          if (response.success) {
+            const newShelf: Shelf = {
+              id: response.data || Date.now().toString(),
+              aisle: data.aisle,
+              rack: data.rack,
+              shelf: data.shelfNumber,
+              items: 0,
+              value: 0,
+              occupancy: 0
+            };
+            this.shelves.update(shelves => [...shelves, newShelf]);
+            this.filterShelves();
+            this.closeModal();
+          }
+        },
+        error: (error) => {
+          console.error('Error creating shelf:', error);
+          alert('Failed to create shelf');
+        }
+      });
     }
-
-    this.filterShelves();
-    this.closeModal();
   }
 
   deleteShelf(id: string): void {
     if (confirm('Are you sure you want to delete this shelf?')) {
-      this.shelves.update(shelves => shelves.filter(s => s.id !== id));
-      this.filterShelves();
+      this.inventoryService.deleteShelf(id).subscribe({
+        next: () => {
+          this.shelves.update(shelves => shelves.filter(s => s.id !== id));
+          this.filterShelves();
+        },
+        error: (error) => {
+          console.error('Error deleting shelf:', error);
+          alert('Failed to delete shelf');
+        }
+      });
     }
   }
 
