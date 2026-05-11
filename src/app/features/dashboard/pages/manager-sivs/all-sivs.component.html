@@ -1,0 +1,29 @@
+<div class="all-sivs-container">
+  <div class="page-header">
+    <h1>All SIVs</h1>
+    <p class="subtitle">Store Issue Vouchers</p>
+  </div>
+
+  <div class="sivs-list">
+    @for (siv of sivs(); track siv.id) {
+      <div class="siv-card">
+        <div class="siv-header">
+          <div class="siv-number">{{ siv.sivNumber }}</div>
+          <div class="status-badge" [class.issued]="siv.status === 'Issued'" [class.pending]="siv.status === 'Pending'">
+            {{ siv.status }}
+          </div>
+        </div>
+        <div class="siv-details">
+          <div class="detail-row"><span class="label">Request Number:</span><span class="value">{{ siv.requestNumber }}</span></div>
+          <div class="detail-row"><span class="label">Requester:</span><span class="value">{{ siv.requesterName }} ({{ siv.department }})</span></div>
+          <div class="detail-row"><span class="label">Total Items:</span><span class="value">{{ siv.totalItems }}</span></div>
+          <div class="detail-row"><span class="label">Total Value:</span><span class="value">${{ siv.totalValue.toLocaleString() }}</span></div>
+          <div class="detail-row"><span class="label">Issue Date:</span><span class="value">{{ siv.issueDate }}</span></div>
+          @if (siv.issuedBy) {
+            <div class="detail-row"><span class="label">Issued By:</span><span class="value">{{ siv.issuedBy }}</span></div>
+          }
+        </div>
+      </div>
+    }
+  </div>
+</div>

@@ -1,0 +1,18 @@
+<div class="documents-container">
+  <div class="page-header"><h1>Documents</h1><p class="subtitle">Compliance documents repository</p></div>
+  <div class="documents-list">
+    @for (doc of documents(); track doc.id) {
+      <div class="document-card">
+        <div class="document-header"><div class="document-name">{{ doc.documentName }}</div><div class="file-type-badge">{{ doc.fileType }}</div></div>
+        <div class="document-details">
+          <div class="detail-row"><span class="label">Entity Type:</span><span class="value">{{ doc.entityType }}</span></div>
+          <div class="detail-row"><span class="label">Entity ID:</span><span class="value">{{ doc.entityId }}</span></div>
+          <div class="detail-row"><span class="label">Uploaded By:</span><span class="value">{{ doc.uploadedBy }}</span></div>
+          <div class="detail-row"><span class="label">Uploaded Date:</span><span class="value">{{ doc.uploadedDate }}</span></div>
+          <div class="detail-row"><span class="label">File Size:</span><span class="value">{{ doc.fileSize }}</span></div>
+        </div>
+        <div class="document-actions"><button class="btn btn-secondary">Download</button><button class="btn btn-primary">View</button></div>
+      </div>
+    }
+  </div>
+</div>

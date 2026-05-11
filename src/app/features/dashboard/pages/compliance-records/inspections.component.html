@@ -1,0 +1,19 @@
+<div class="inspections-container">
+  <div class="page-header"><h1>Inspections</h1><p class="subtitle">Goods inspection records</p></div>
+  <div class="inspections-list">
+    @for (inspection of inspections(); track inspection.id) {
+      <div class="inspection-card">
+        <div class="inspection-header"><div class="inspection-number">{{ inspection.inspectionNumber }}</div><div class="status-badge" [class.pending]="inspection.status === 'Pending'" [class.passed]="inspection.status === 'Passed'" [class.failed]="inspection.status === 'Failed'">{{ inspection.status }}</div></div>
+        <div class="inspection-details">
+          <div class="detail-row"><span class="label">GRN Number:</span><span class="value">{{ inspection.receivingNoteNumber }}</span></div>
+          <div class="detail-row"><span class="label">Inspection Date:</span><span class="value">{{ inspection.inspectionDate }}</span></div>
+          <div class="detail-row"><span class="label">Inspector:</span><span class="value">{{ inspection.inspector }}</span></div>
+          <div class="detail-row"><span class="label">Items Inspected:</span><span class="value">{{ inspection.itemsInspected }}</span></div>
+          <div class="detail-row"><span class="label">Passed:</span><span class="value">{{ inspection.itemsPassed }}</span></div>
+          <div class="detail-row"><span class="label">Failed:</span><span class="value">{{ inspection.itemsFailed }}</span></div>
+        </div>
+        <div class="inspection-actions"><button class="btn btn-secondary">View Details</button></div>
+      </div>
+    }
+  </div>
+</div>

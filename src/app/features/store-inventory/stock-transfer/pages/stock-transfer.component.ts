@@ -23,7 +23,7 @@ interface TransferLog {
 @Component({
   selector: 'app-stock-transfer',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule],
   templateUrl: './stock-transfer.component.html',
   styleUrls: ['./stock-transfer.component.scss']
 })

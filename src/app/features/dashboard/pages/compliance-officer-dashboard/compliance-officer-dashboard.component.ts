@@ -1,6 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, signal, inject, OnInit } from '@angular/core';
-import { DashboardService, DashboardStatistics } from '../../../../core/services/dashboard.service';
-import { finalize } from 'rxjs';
+import { ChangeDetectionStrategy, Component, computed, signal, OnInit, OnDestroy } from '@angular/core';
 
 type ActivityAction = 'Created' | 'Approved' | 'Rejected' | 'Deleted';
 type ActivityStatus = 'Normal' | 'Flagged';
@@ -36,12 +34,7 @@ interface AlertItem {
   styleUrl: './compliance-officer-dashboard.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ComplianceOfficerDashboardComponent implements OnInit {
-  private readonly dashboardService = inject(DashboardService);
-
-  readonly isLoading = signal(false);
-  readonly statistics = signal<DashboardStatistics | null>(null);
-
+export class ComplianceOfficerDashboardComponent implements OnInit, OnDestroy {
   readonly officerName = signal('Compliance Officer');
   readonly filters: ActivityFilter[] = [
     'All Activities',
@@ -50,26 +43,14 @@ export class ComplianceOfficerDashboardComponent implements OnInit {
     'Suspicious / Flagged',
   ];
   readonly selectedFilter = signal<ActivityFilter>('All Activities');
-
-  ngOnInit(): void {
-    this.loadDashboardData();
-  }
-
-  loadDashboardData(): void {
-    this.isLoading.set(true);
-    this.dashboardService.getStatistics().pipe(
-      finalize(() => this.isLoading.set(false))
-    ).subscribe({
-      next: (response) => {
-        if (response.success && response.data) {
-          this.statistics.set(response.data);
-        }
-      },
-      error: (error) => {
-        console.error('Error loading dashboard data:', error);
-      }
-    });
-  }
+  readonly currentDate = new Date().toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+  readonly currentTime = signal<string>(this.getCurrentTime());
+  readonly currentLocation = signal<string>('Addis Ababa, Ethiopia');
+  private clockInterval?: any;
 
   readonly activityLogs = signal<ActivityLogEntry[]>([
     {
@@ -133,26 +114,7 @@ export class ComplianceOfficerDashboardComponent implements OnInit {
   ]);
 
   readonly summaryCards = computed<SummaryCard[]>(() => {
-    const stats = this.statistics();
     const logs = this.activityLogs();
-
-    if (stats) {
-      return [
-        { title: 'Total Activities', value: stats.pendingRequisitions + stats.approvedRequisitions + stats.rejectedRequisitions },
-        {
-          title: 'Suspicious Actions',
-          value: logs.filter((item) => item.status === 'Flagged').length,
-        },
-        {
-          title: 'Violations Detected',
-          value: logs.filter((item) => item.module === 'Policy').length,
-        },
-        {
-          title: 'Audit Logs Reviewed',
-          value: logs.filter((item) => item.module === 'AuditTrail').length,
-        },
-      ];
-    }
 
     return [
       { title: 'Total Activities', value: logs.length },
@@ -209,5 +171,26 @@ export class ComplianceOfficerDashboardComponent implements OnInit {
 
   setFilter(filter: ActivityFilter): void {
     this.selectedFilter.set(filter);
+  }
+
+  getCurrentTime(): string {
+    return new Date().toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true,
+    });
+  }
+
+  ngOnInit(): void {
+    this.clockInterval = setInterval(() => {
+      this.currentTime.set(this.getCurrentTime());
+    }, 1000);
+  }
+
+  ngOnDestroy(): void {
+    if (this.clockInterval) {
+      clearInterval(this.clockInterval);
+    }
   }
 }

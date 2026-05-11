@@ -17,7 +17,13 @@
   font-weight: 700;
 }
 
+.header-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
 .profile-section,
+.security-section,
 .limits-section,
 .scope-section,
 .delegation-section,
@@ -26,6 +32,7 @@
 }
 
 .profile-section h2,
+.security-section h2,
 .limits-section h2,
 .scope-section h2,
 .delegation-section h2,
@@ -33,6 +40,93 @@
   margin: 0 0 1rem 0;
   font-weight: 700;
   font-size: 1.1rem;
+}
+
+.security-card {
+  padding: 1.5rem;
+  background: var(--surface-card);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.security-status {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--surface-border);
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ef4444;
+}
+
+.status-indicator.enabled .status-dot {
+  background: #22c55e;
+}
+
+.status-text {
+  font-weight: 600;
+}
+
+.security-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.setting-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.setting-row label {
+  min-width: 120px;
+  font-weight: 600;
+}
+
+.setting-row select,
+.setting-row input {
+  flex: 1;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--surface-border);
+  border-radius: 8px;
+  background: var(--surface-section);
+  color: var(--text-color);
+  font: inherit;
+}
+
+.security-info {
+  padding: 1rem;
+  background: var(--surface-section);
+  border-radius: 8px;
+  text-align: center;
+}
+
+.security-info p {
+  margin: 0;
+  color: var(--text-color-muted);
+}
+
+.btn-danger {
+  background: #ef4444;
+  color: white;
+}
+
+.btn-danger:hover {
+  background: #dc2626;
 }
 
 .profile-card {

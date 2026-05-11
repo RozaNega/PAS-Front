@@ -1,4 +1,4 @@
-﻿import { Component, signal, inject } from '@angular/core';
+import { Component, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -35,7 +35,7 @@ interface FormData {
 @Component({
   selector: 'app-property-form',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './property-form.component.html',
   styleUrls: ['./property-form.component.scss']
 })

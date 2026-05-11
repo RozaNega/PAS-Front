@@ -1,4 +1,4 @@
-﻿import { Component, signal, inject } from '@angular/core';
+import { Component, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -21,7 +21,7 @@ interface CustomField {
 @Component({
   selector: 'app-property-type-list',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './property-type-list.component.html',
   styleUrls: ['./property-type-list.component.scss']
 })

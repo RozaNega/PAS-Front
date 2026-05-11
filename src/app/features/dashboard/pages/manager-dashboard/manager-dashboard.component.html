@@ -5,6 +5,20 @@
       <h1>Manager Dashboard</h1>
       <p class="hero-copy">Welcome back, {{ managerName() }} 👋</p>
     </div>
+    <div class="dashboard-info-widget">
+      <div class="info-item">
+        <i class="bi bi-calendar3 info-icon text-primary"></i>
+        <span class="info-text">{{ currentDate }}</span>
+      </div>
+      <div class="info-item">
+        <i class="bi bi-clock info-icon text-secondary"></i>
+        <span class="info-text">{{ currentTime() }}</span>
+      </div>
+      <div class="info-item">
+        <i class="bi bi-geo-alt-fill info-icon text-danger"></i>
+        <span class="info-text">{{ currentLocation() }}</span>
+      </div>
+    </div>
   </header>
 
   <section class="summary-grid" aria-label="Summary metrics">
@@ -102,7 +116,7 @@
         <div>
           <h2 id="overview-heading">Requests Overview</h2>
         </div>
-        <button type="button" class="select-chip" (click)="setPeriod('This Month')">
+        <button type="button" class="select-chip" (click)="togglePeriod()">
           {{ selectedPeriod() }}
           <i class="bi bi-chevron-down"></i>
         </button>
@@ -133,10 +147,61 @@
   </section>
 
   <section class="dashboard-grid dashboard-grid--bottom">
+    <section class="panel panel--profile" aria-labelledby="profile-heading">
+      <h2 id="profile-heading">👤 Manager Profile</h2>
+      <div class="profile-layout">
+        <div class="profile-photo">
+          @if (profilePhoto()) {
+            <img [src]="profilePhoto()!" alt="Profile photo" class="profile-image" />
+          } @else {
+            <div class="photo-placeholder">👤</div>
+          }
+
+          @if (!isSelectingPhoto()) {
+            <button class="change-photo-btn" (click)="changePhoto()">Change Photo</button>
+          } @else {
+            <div class="inline-upload-container">
+              @if (!isCameraActive()) {
+                <div class="method-toggles">
+                  <button class="btn-method" (click)="fileInput.click()">
+                    <i class="bi bi-cloud-arrow-up"></i> Upload
+                  </button>
+                  <button class="btn-method" (click)="startCamera()">
+                    <i class="bi bi-camera"></i> Camera
+                  </button>
+                  <input type="file" #fileInput (change)="onFileSelected($event)" accept="image/*" style="display: none;" />
+                </div>
+              } @else {
+                <div class="inline-camera-view">
+                  <video #videoElement autoplay playsinline></video>
+                  <canvas #canvasElement style="display: none;"></canvas>
+                  <button class="btn-capture" (click)="capturePhoto()">Capture</button>
+                </div>
+              }
+
+              <div class="inline-actions">
+                <button class="btn-cancel-upload" (click)="cancelUpload()">Cancel</button>
+                <button class="btn-save-inline" (click)="isSelectingPhoto.set(false)" [disabled]="!profilePhoto()">Save</button>
+              </div>
+            </div>
+          }
+        </div>
+        <div class="profile-details">
+          <div class="detail-row"><strong>Full Name:</strong> {{ userProfile().fullName }}</div>
+          <div class="detail-row"><strong>Employee Code:</strong> {{ userProfile().employeeCode }}</div>
+          <div class="detail-row"><strong>Department:</strong> {{ userProfile().department }}</div>
+          <div class="detail-row"><strong>Position:</strong> {{ userProfile().position }}</div>
+          <div class="detail-row"><strong>Email:</strong> {{ userProfile().email }}</div>
+          <div class="detail-row"><strong>Phone:</strong> {{ userProfile().phone }}</div>
+          <div class="detail-row"><strong>Join Date:</strong> {{ userProfile().joinDate }}</div>
+        </div>
+      </div>
+    </section>
+
     <section class="panel panel--activity" aria-labelledby="recent-activity-heading">
       <header class="panel__header">
         <h2 id="recent-activity-heading">Recent Activity</h2>
-        <button type="button" class="text-button">View All</button>
+        <button type="button" class="text-button" (click)="viewAllActivity()">View All</button>
       </header>
 
       <div class="activity-list" role="list">
@@ -156,7 +221,7 @@
     <aside class="panel panel--approvals" aria-labelledby="approvals-heading">
       <header class="panel__header">
         <h2 id="approvals-heading">My Approvals</h2>
-        <button type="button" class="text-button">View All</button>
+        <button type="button" class="text-button" (click)="viewAllApprovals()">View All</button>
       </header>
 
       <div class="approval-list">

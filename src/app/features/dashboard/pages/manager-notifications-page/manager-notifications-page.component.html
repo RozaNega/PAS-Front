@@ -25,25 +25,15 @@
     <h2>📬 ALL NOTIFICATIONS</h2>
     <div class="notifications-list">
       @for (notification of filteredNotifications; track notification.id) {
-        <div class="notification-card" [class.unread]="!notification.read">
+        <div class="notification-card" [class.unread]="!notification.isRead">
           <div class="notification-header">
-            <span class="notification-icon">{{ getNotificationIcon(notification.type) }}</span>
-            <span class="notification-title">{{ notification.title }}</span>
-            <span class="notification-time">{{ notification.timeAgo }}</span>
+            <span class="notification-icon">{{ getNotificationIcon(notification.message) }}</span>
+            <span class="notification-title">{{ notification.message.substring(0, 50) }}...</span>
+            <span class="notification-time">{{ formatDate(notification.sentDate) }}</span>
           </div>
           <p class="notification-message">{{ notification.message }}</p>
           <div class="notification-actions">
-            @if (notification.type === 'approval') {
-              <button class="btn btn-sm btn-primary" (click)="approveRequest(notification.srNumber)">Approve</button>
-              <button class="btn btn-sm btn-secondary" (click)="rejectRequest(notification.srNumber)">Reject</button>
-              <button class="btn btn-sm btn-outline" (click)="viewRequestDetails(notification.srNumber)">View Details</button>
-            }
-            @if (notification.type === 'department') {
-              <button class="btn btn-sm btn-secondary" (click)="viewDepartmentRequest()">View Request</button>
-            }
-            @if (notification.type === 'budget') {
-              <button class="btn btn-sm btn-secondary" (click)="viewBudget()">View Budget</button>
-            }
+            <button class="btn btn-sm btn-primary" (click)="viewRequestDetails()">View Details</button>
             <button class="btn btn-sm btn-outline" (click)="dismiss(notification.id)">Dismiss</button>
           </div>
         </div>

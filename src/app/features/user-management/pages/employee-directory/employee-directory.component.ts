@@ -1,6 +1,6 @@
 import { Component, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 
 interface Employee {
   id: string;
@@ -19,7 +19,7 @@ interface Employee {
 @Component({
   selector: 'app-employee-directory',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule],
   templateUrl: './employee-directory.component.html',
   styleUrls: ['./employee-directory.component.scss']
 })

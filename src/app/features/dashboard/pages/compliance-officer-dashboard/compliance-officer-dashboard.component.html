@@ -1,7 +1,23 @@
 <section class="compliance-dashboard" aria-label="Compliance officer dashboard">
   <header class="welcome-banner">
-    <h1>Compliance Officer Dashboard</h1>
-    <p>Welcome, {{ officerName() }}</p>
+    <div>
+      <h1>Compliance Officer Dashboard</h1>
+      <p>Welcome, {{ officerName() }}</p>
+    </div>
+    <div class="dashboard-info-widget">
+      <div class="info-item">
+        <i class="bi bi-calendar3 info-icon text-primary"></i>
+        <span class="info-text">{{ currentDate }}</span>
+      </div>
+      <div class="info-item">
+        <i class="bi bi-clock info-icon text-secondary"></i>
+        <span class="info-text">{{ currentTime() }}</span>
+      </div>
+      <div class="info-item">
+        <i class="bi bi-geo-alt-fill info-icon text-danger"></i>
+        <span class="info-text">{{ currentLocation() }}</span>
+      </div>
+    </div>
   </header>
 
   <section class="summary" aria-labelledby="summary-heading">

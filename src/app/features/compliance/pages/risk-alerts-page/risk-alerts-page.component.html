@@ -1,21 +1,36 @@
 <div class="risk-alerts-page">
   <div class="page-header">
-    <h1>Risk Alerts ({{ criticalViolations.length + highRiskItems.length + mediumRiskItems.length + lowRiskItems.length }})</h1>
+    <h1>
+      Risk Alerts ({{
+        criticalViolations.length +
+          highRiskItems.length +
+          mediumRiskItems.length +
+          lowRiskItems.length
+      }})
+    </h1>
     <button class="refresh-btn" (click)="refreshAlerts()">Refresh</button>
   </div>
 
   <!-- Filters -->
   <div class="filters-section">
     <div class="filter-row">
-      <input type="text" placeholder="Search by violation type, entity, date..." [(ngModel)]="searchQuery" />
-      <select [(ngModel)]="filterSeverity">
+      <label for="search-input">Search</label>
+      <input
+        id="search-input"
+        type="text"
+        placeholder="Search by violation type, entity, date..."
+        [(ngModel)]="searchQuery"
+      />
+      <label for="severity-select">Severity</label>
+      <select id="severity-select" [(ngModel)]="filterSeverity">
         <option value="All">Severity: [All ▼]</option>
         <option value="Critical">Critical</option>
         <option value="High">High</option>
         <option value="Medium">Medium</option>
         <option value="Low">Low</option>
       </select>
-      <select [(ngModel)]="filterStatus">
+      <label for="status-select">Status</label>
+      <select id="status-select" [(ngModel)]="filterStatus" title="Filter by status">
         <option value="All">Status: [All ▼]</option>
         <option value="Open">Open</option>
         <option value="In Progress">In Progress</option>
@@ -36,15 +51,25 @@
             <span class="violation-type">{{ violation.type }} - {{ violation.entity }}</span>
           </div>
           <div class="violation-details">
-            <p>Detected: {{ violation.detectedDate }} | Status: {{ violation.status }} | Assigned To: {{ violation.assignedTo }} @if (violation.dueDate) { | Due: {{ violation.dueDate }} }</p>
+            <p>
+              Detected: {{ violation.detectedDate }} | Status: {{ violation.status }} | Assigned To:
+              {{ violation.assignedTo }}
+              @if (violation.dueDate) {
+                | Due: {{ violation.dueDate }}
+              }
+            </p>
           </div>
           <div class="violation-actions">
             @if (violation.status !== 'Resolved') {
-              <button class="action-btn" (click)="investigateViolation(violation.id)">Investigate</button>
+              <button class="action-btn" (click)="investigateViolation(violation.id)">
+                Investigate
+              </button>
               <button class="action-btn" (click)="assignViolation(violation.id)">Assign</button>
               <button class="action-btn" (click)="resolveViolation(violation.id)">Resolve</button>
             } @else {
-              <button class="action-btn" (click)="viewViolationDetails(violation.id)">View Details</button>
+              <button class="action-btn" (click)="viewViolationDetails(violation.id)">
+                View Details
+              </button>
             }
           </div>
         </div>
@@ -63,10 +88,18 @@
             <span class="violation-type">{{ violation.type }} - {{ violation.entity }}</span>
           </div>
           <div class="violation-details">
-            <p>Detected: {{ violation.detectedDate }} | Status: {{ violation.status }} | Assigned To: {{ violation.assignedTo }} @if (violation.dueDate) { | Due: {{ violation.dueDate }} }</p>
+            <p>
+              Detected: {{ violation.detectedDate }} | Status: {{ violation.status }} | Assigned To:
+              {{ violation.assignedTo }}
+              @if (violation.dueDate) {
+                | Due: {{ violation.dueDate }}
+              }
+            </p>
           </div>
           <div class="violation-actions">
-            <button class="action-btn" (click)="investigateViolation(violation.id)">Investigate</button>
+            <button class="action-btn" (click)="investigateViolation(violation.id)">
+              Investigate
+            </button>
             <button class="action-btn" (click)="assignViolation(violation.id)">Assign</button>
             <button class="action-btn" (click)="resolveViolation(violation.id)">Resolve</button>
           </div>
@@ -86,7 +119,13 @@
             <span class="violation-type">{{ violation.type }} - {{ violation.entity }}</span>
           </div>
           <div class="violation-details">
-            <p>Detected: {{ violation.detectedDate }} | Status: {{ violation.status }} | Assigned To: {{ violation.assignedTo }} @if (violation.dueDate) { | Due: {{ violation.dueDate }} }</p>
+            <p>
+              Detected: {{ violation.detectedDate }} | Status: {{ violation.status }} | Assigned To:
+              {{ violation.assignedTo }}
+              @if (violation.dueDate) {
+                | Due: {{ violation.dueDate }}
+              }
+            </p>
           </div>
         </div>
       }
@@ -104,7 +143,12 @@
             <span class="violation-type">{{ violation.type }} - {{ violation.entity }}</span>
           </div>
           <div class="violation-details">
-            <p>Detected: {{ violation.detectedDate }} | Status: {{ violation.status }} @if (violation.dueDate) { | Due: {{ violation.dueDate }} }</p>
+            <p>
+              Detected: {{ violation.detectedDate }} | Status: {{ violation.status }}
+              @if (violation.dueDate) {
+                | Due: {{ violation.dueDate }}
+              }
+            </p>
           </div>
         </div>
       }
@@ -117,7 +161,10 @@
     <div class="investigations-list">
       @for (investigation of pendingInvestigations; track investigation.id) {
         <div class="investigation-item">
-          <span>• {{ investigation.type }} - {{ investigation.entity }} (Assigned to {{ investigation.assignedTo }})</span>
+          <span
+            >• {{ investigation.type }} - {{ investigation.entity }} (Assigned to
+            {{ investigation.assignedTo }})</span
+          >
         </div>
       }
     </div>

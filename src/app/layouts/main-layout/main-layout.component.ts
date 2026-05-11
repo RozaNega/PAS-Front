@@ -1,4 +1,4 @@
-﻿import { Component, OnInit, computed, inject } from '@angular/core';
+import { Component, OnInit, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
@@ -364,6 +364,11 @@ export class MainLayoutComponent implements OnInit {
 
     if (this.isComplianceOfficerRoute()) {
       this.menuItems = getMenuConfigForRole('compliance-officer');
+      return;
+    }
+
+    if (this.router.url.startsWith('/employee')) {
+      this.menuItems = getMenuConfigForRole('employee');
       return;
     }
 

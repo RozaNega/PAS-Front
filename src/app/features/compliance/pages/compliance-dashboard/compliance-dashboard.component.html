@@ -8,9 +8,22 @@
   <div class="overview-section">
     <div class="overview-card">
       <div class="overview-header">
-        <span class="overview-icon">🛡️</span>
+
         <span class="overview-title">Compliance Overview</span>
-        <span class="overview-date">📅 Dec 15, 2024</span>
+        <div class="dashboard-info-widget">
+          <div class="info-item">
+            <span class="info-icon">📅</span>
+            <span class="info-text">{{ currentDateStr }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-icon">🕒</span>
+            <span class="info-text">{{ currentTime() }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-icon">📍</span>
+            <span class="info-text">{{ currentLocation() }}</span>
+          </div>
+        </div>
       </div>
       <div class="overview-content">
         <p>System Status: 🟢 All Systems Operational | Last Audit: Dec 14, 2024 | Next Audit: Jan 15, 2025</p>
@@ -117,7 +130,7 @@
       }
     </div>
     <div class="activity-footer">
-      <a href="#" class="view-all-link" (click)="viewAllActivity()">View All Activity →</a>
+      <a href="#" class="view-all-link" (click)="viewAllActivity($event)">View All Activity →</a>
     </div>
   </div>
 

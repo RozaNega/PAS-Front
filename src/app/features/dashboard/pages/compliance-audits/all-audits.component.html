@@ -1,0 +1,16 @@
+<div class="all-audits-container">
+  <div class="page-header"><h1>All Audits</h1><p class="subtitle">Complete audit history</p></div>
+  <div class="audits-list">
+    @for (audit of audits(); track audit.id) {
+      <div class="audit-card">
+        <div class="audit-header"><div class="audit-id">{{ audit.auditId }}</div><div class="status-badge">{{ audit.status }}</div></div>
+        <div class="audit-details">
+          <div class="detail-row"><span class="label">Type:</span><span class="value">{{ audit.type }}</span></div>
+          <div class="detail-row"><span class="label">Audited By:</span><span class="value">{{ audit.auditedBy }}</span></div>
+          <div class="detail-row"><span class="label">Date:</span><span class="value">{{ audit.auditDate }}</span></div>
+          <div class="detail-row"><span class="label">Findings:</span><span class="value">{{ audit.findings }}</span></div>
+        </div>
+      </div>
+    }
+  </div>
+</div>

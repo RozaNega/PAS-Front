@@ -11,15 +11,36 @@
 
   <div class="filter-bar">
     <div class="search-box">
+      <label class="sr-only" for="siv-search">Search SIVs</label>
       <i class="bi bi-search"></i>
-      <input type="text" [value]="searchTerm()" placeholder="Search by SIV#, SR#, requester...">
+      <input
+        id="siv-search"
+        type="text"
+        [value]="searchTerm()"
+        placeholder="Search by SIV#, SR#, requester..."
+        aria-label="Search by SIV number, SR number, or requester"
+        title="Search by SIV number, SR number, or requester"
+      />
     </div>
     <div class="filter-group">
-      <label>📅 Date:</label>
-      <input type="date" [value]="dateRange.start">
-      <span>to</span>
-      <input type="date" [value]="dateRange.end">
-      <button class="btn btn-sm btn-secondary">Apply Filters</button>
+      <label for="siv-date-start">📅 Date:</label>
+      <input
+        id="siv-date-start"
+        type="date"
+        [value]="dateRange.start"
+        aria-label="Start date"
+        title="Start date"
+      />
+      <span aria-hidden="true">to</span>
+      <label class="sr-only" for="siv-date-end">End date</label>
+      <input
+        id="siv-date-end"
+        type="date"
+        [value]="dateRange.end"
+        aria-label="End date"
+        title="End date"
+      />
+      <button type="button" class="btn btn-sm btn-secondary">Apply Filters</button>
     </div>
   </div>
 
@@ -80,7 +101,9 @@
       </table>
     </div>
     <div class="pagination-bar">
-      <div class="pagination-info">Showing 1-{{ sivs().length }} of {{ summary().totalSIVs }} SIVs</div>
+      <div class="pagination-info">
+        Showing 1-{{ sivs().length }} of {{ summary().totalSIVs }} SIVs
+      </div>
       <div class="pagination-controls">
         <button class="page-btn" disabled>Previous</button>
         <button class="page-btn active">1</button>
@@ -98,7 +121,13 @@
     <div class="modal-content" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h3>Create Store Issue Voucher (SIV)</h3>
-        <button class="btn-close" (click)="closeModal()">
+        <button
+          type="button"
+          class="btn-close"
+          title="Close modal"
+          aria-label="Close modal"
+          (click)="closeModal()"
+        >
           <i class="bi bi-x-lg"></i>
         </button>
       </div>
@@ -107,7 +136,11 @@
           <h4>Step 1: Select Approved Requisition</h4>
           <div class="form-field">
             <label>🔍 Search approved SR:</label>
-            <select [(ngModel)]="modalFormData().selectedSR">
+            <select
+              [(ngModel)]="modalFormData().selectedSR"
+              aria-label="Search approved service request"
+              title="Search approved service request"
+            >
               <option>SR-2024-122</option>
               <option>SR-2024-115</option>
               <option>SR-2024-110</option>
@@ -142,14 +175,28 @@
                 <td>Office Chair</td>
                 <td>2</td>
                 <td>2</td>
-                <td><input type="number" value="2"></td>
+                <td>
+                  <input
+                    type="number"
+                    value="2"
+                    aria-label="Quantity to issue for Office Chair"
+                    title="Quantity to issue for Office Chair"
+                  />
+                </td>
                 <td>A-01-03</td>
               </tr>
               <tr>
                 <td>Desk</td>
                 <td>1</td>
                 <td>1</td>
-                <td><input type="number" value="1"></td>
+                <td>
+                  <input
+                    type="number"
+                    value="1"
+                    aria-label="Quantity to issue for Desk"
+                    title="Quantity to issue for Desk"
+                  />
+                </td>
                 <td>A-02-01</td>
               </tr>
             </tbody>
@@ -160,19 +207,42 @@
           <h4>Step 3: Issue Details</h4>
           <div class="form-field">
             <label>SIV Number:</label>
-            <input type="text" [value]="modalFormData().sivNumber" disabled>
+            <input
+              type="text"
+              [value]="modalFormData().sivNumber"
+              disabled
+              aria-label="SIV number"
+              title="SIV number"
+            />
           </div>
           <div class="form-field">
             <label>Issue Date:</label>
-            <input type="date" [(ngModel)]="modalFormData().issueDate">
+            <input
+              type="date"
+              [(ngModel)]="modalFormData().issueDate"
+              aria-label="Issue date"
+              title="Issue date"
+            />
           </div>
           <div class="form-field">
             <label>Issued By:</label>
-            <input type="text" [(ngModel)]="modalFormData().issuedBy" disabled>
+            <input
+              type="text"
+              [(ngModel)]="modalFormData().issuedBy"
+              disabled
+              aria-label="Issued by"
+              title="Issued by"
+            />
           </div>
           <div class="form-field">
             <label>Recipient Signature:</label>
-            <input type="text" [(ngModel)]="modalFormData().recipientSignature" placeholder="Draw or Type">
+            <input
+              type="text"
+              [(ngModel)]="modalFormData().recipientSignature"
+              placeholder="Draw or Type"
+              aria-label="Recipient signature"
+              title="Recipient signature"
+            />
           </div>
         </div>
       </div>
@@ -189,7 +259,13 @@
     <div class="print-content" (click)="$event.stopPropagation()">
       <div class="print-header">
         <h3>Store Issue Voucher - {{ selectedSIV()!.sivNumber }}</h3>
-        <button class="btn-close" (click)="closePrintView()">
+        <button
+          type="button"
+          class="btn-close"
+          title="Close print view"
+          aria-label="Close print view"
+          (click)="closePrintView()"
+        >
           <i class="bi bi-x-lg"></i>
         </button>
       </div>

@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, inject, signal, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 
 export interface ComplianceScore {
   category: string;
@@ -39,9 +40,19 @@ export interface QuickStat {
   templateUrl: './compliance-dashboard.component.html',
   styleUrl: './compliance-dashboard.component.scss',
 })
-export class ComplianceDashboardComponent {
+export class ComplianceDashboardComponent implements OnInit, OnDestroy {
+  private readonly router = inject(Router);
+
   currentScore = 92;
   scoreLabel = 'Excellent';
+  readonly currentDateStr = new Date().toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+  readonly currentTime = signal<string>(this.getCurrentTime());
+  readonly currentLocation = signal<string>('Addis Ababa, Ethiopia');
+  private clockInterval?: any;
 
   complianceScores: ComplianceScore[] = [
     { category: 'Policy Adherence', percentage: 94 },
@@ -84,8 +95,31 @@ export class ComplianceDashboardComponent {
     { label: 'Resolved This Month', value: '12', subtitle: 'Completed' },
   ];
 
-  viewAllActivity(): void {
-    console.log('Viewing all compliance activity');
-    alert('Navigating to full compliance activity log');
+  viewAllActivity(event?: Event): void {
+    if (event) {
+      event.preventDefault();
+    }
+    void this.router.navigate(['/compliance-officer/risk-alerts']);
+  }
+
+  getCurrentTime(): string {
+    return new Date().toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true,
+    });
+  }
+
+  ngOnInit(): void {
+    this.clockInterval = setInterval(() => {
+      this.currentTime.set(this.getCurrentTime());
+    }, 1000);
+  }
+
+  ngOnDestroy(): void {
+    if (this.clockInterval) {
+      clearInterval(this.clockInterval);
+    }
   }
 }

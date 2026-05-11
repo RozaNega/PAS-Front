@@ -3,10 +3,23 @@
   <div class="welcome-banner">
     <div class="banner-content">
       <div class="greeting">
-        <h1>👋 {{ greeting }}, {{ managerName }}!</h1>
+        <h1>👋 {{ greeting }}, {{ managerName() }}!</h1>
         <p>Welcome to IT Department Dashboard. You have 5 pending approvals requiring your attention.</p>
       </div>
-      <div class="banner-date">📅 {{ currentDate | date:'MMM dd, yyyy' }}</div>
+      <div class="dashboard-info-widget">
+        <div class="info-item">
+          <span class="info-icon">📅</span>
+          <span class="info-text">{{ currentDateStr }}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-icon">🕒</span>
+          <span class="info-text">{{ currentTime() }}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-icon">📍</span>
+          <span class="info-text">{{ currentLocation() }}</span>
+        </div>
+      </div>
     </div>
   </div>
 

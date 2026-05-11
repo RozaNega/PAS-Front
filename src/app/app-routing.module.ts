@@ -1,15 +1,12 @@
-﻿import { NgModule } from '@angular/core';
+import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { AuthGuard } from './core/guards/auth.guard';
 import { AuthLayoutComponent } from './layouts/auth-layout/auth-layout.component';
 import { LoginComponent } from './pages/login/login.component';
-import { WelcomeComponent } from './pages/welcome/welcome';
+
 
 const routes: Routes = [
-  {
-    path: 'welcome',
-    component: WelcomeComponent,
-  },
+
   {
     path: 'auth',
     loadChildren: () => import('./features/auth/auth-module').then((m) => m.AuthModule),
@@ -17,7 +14,7 @@ const routes: Routes = [
   // 🔐 AUTH (DEFAULT PAGE)
   {
     path: '',
-    redirectTo: 'welcome',
+    redirectTo: 'landing',
     pathMatch: 'full',
   },
 
@@ -38,7 +35,7 @@ const routes: Routes = [
   },
 
   // fallback
-  { path: '**', redirectTo: 'welcome' },
+  { path: '**', redirectTo: 'landing' },
 ];
 
 @NgModule({

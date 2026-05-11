@@ -73,4 +73,37 @@ export interface IssueItemRequest {
   shelfId?: string;
 }
 
+export interface ServiceRequestTimeline {
+  requestId: string;
+  currentStep: number;
+  totalSteps: number;
+  estimatedCompletion?: string;
+  currentApprover?: string;
+  steps: TimelineStep[];
+}
+
+export interface TimelineStep {
+  step: number;
+  name: string;
+  status: 'completed' | 'current' | 'pending';
+  completedDate?: string;
+  estimatedDate?: string;
+}
+
+export interface ServiceRequestActivity {
+  id: string;
+  requestId: string;
+  timestamp: string;
+  action: string;
+  performedBy: string;
+  details?: string;
+}
+
+export interface CancelServiceRequestRequest {
+  id: string;
+  reason?: string;
+  notifyApprover: boolean;
+  sendEmailConfirmation: boolean;
+}
+
 export type ServiceRequestModel = ServiceRequest;

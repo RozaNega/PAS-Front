@@ -1,0 +1,71 @@
+<div class="create-return-container">
+  <div class="page-header">
+    <h1>Create Return Request</h1>
+    <p class="subtitle">Submit a return material request</p>
+  </div>
+
+  <div class="form-card">
+    <form [formGroup]="returnForm" (ngSubmit)="submit()">
+      <div class="form-row">
+        <div class="form-field">
+          <label for="itemId">Item GUID *</label>
+          <input id="itemId" type="text" formControlName="itemId" placeholder="Item ID" />
+        </div>
+        <div class="form-field">
+          <label for="quantity">Quantity *</label>
+          <input id="quantity" type="number" formControlName="quantity" min="1" />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-field">
+          <label for="sourceLocationId">Location GUID *</label>
+          <input id="sourceLocationId" type="text" formControlName="sourceLocationId" placeholder="Location ID" />
+        </div>
+        <div class="form-field">
+          <label for="sourceShelfId">Shelf GUID *</label>
+          <input id="sourceShelfId" type="text" formControlName="sourceShelfId" placeholder="Shelf ID" />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-field">
+          <label for="supplierId">Supplier GUID *</label>
+          <input id="supplierId" type="text" formControlName="supplierId" placeholder="Supplier ID" />
+        </div>
+        <div class="form-field">
+          <label for="returnType">Return Type *</label>
+          <select id="returnType" formControlName="returnType">
+            <option value="CustomerReturn">Customer Return</option>
+            <option value="StoreReturn">Store Return</option>
+            <option value="DamagedReturn">Damaged Return</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-field">
+          <label for="reason">Reason *</label>
+          <input id="reason" type="text" formControlName="reason" placeholder="Reason" />
+        </div>
+        <div class="form-field">
+          <label for="batchNumber">Batch Number</label>
+          <input id="batchNumber" type="text" formControlName="batchNumber" />
+        </div>
+      </div>
+
+      <div class="form-field">
+        <label for="remarks">Remarks</label>
+        <textarea id="remarks" formControlName="remarks" rows="2" placeholder="Additional remarks..."></textarea>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn btn-secondary" (click)="cancel()" [disabled]="loading()">Cancel</button>
+        <button type="submit" class="btn btn-primary" [disabled]="loading()">
+          <span *ngIf="loading()">Submitting...</span>
+          <span *ngIf="!loading()">Submit Return</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

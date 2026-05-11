@@ -1,0 +1,17 @@
+<div class="risk-reports-container">
+  <div class="page-header"><h1>Risk Reports</h1><p class="subtitle">Risk assessment reports</p></div>
+  <div class="reports-list">
+    @for (report of reports(); track report.id) {
+      <div class="report-card">
+        <div class="report-header"><div class="report-name">{{ report.reportName }}</div><div class="risk-badge">{{ report.riskLevel }}</div></div>
+        <div class="report-details">
+          <div class="detail-row"><span class="label">Generated:</span><span class="value">{{ report.generatedDate }}</span></div>
+          <div class="detail-row"><span class="label">High Risk:</span><span class="value">{{ report.highRiskItems }}</span></div>
+          <div class="detail-row"><span class="label">Medium Risk:</span><span class="value">{{ report.mediumRiskItems }}</span></div>
+          <div class="detail-row"><span class="label">Low Risk:</span><span class="value">{{ report.lowRiskItems }}</span></div>
+        </div>
+        <div class="report-actions"><button class="btn btn-primary">Download</button></div>
+      </div>
+    }
+  </div>
+</div>

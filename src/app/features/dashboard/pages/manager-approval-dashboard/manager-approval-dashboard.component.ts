@@ -1,7 +1,7 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { DashboardService, DashboardStatistics } from '../../../../core/services/dashboard.service';
-import { finalize } from 'rxjs';
+import { Router } from '@angular/router';
+import { CurrentUserService } from '../../../../core/services/current-user.service';
 
 export interface KeyMetric {
   title: string;
@@ -44,114 +44,59 @@ export interface RequestTrendData {
   templateUrl: './manager-approval-dashboard.component.html',
   styleUrl: './manager-approval-dashboard.component.scss',
 })
-export class ManagerApprovalDashboardComponent implements OnInit {
-  private readonly dashboardService = inject(DashboardService);
-
-  readonly isLoading = signal(false);
-  readonly statistics = signal<DashboardStatistics | null>(null);
+export class ManagerApprovalDashboardComponent implements OnInit, OnDestroy {
+  private readonly router = inject(Router);
+  private readonly currentUserService = inject(CurrentUserService);
 
   currentDate = new Date();
   greeting = this.getGreeting();
-  managerName = 'Sarah';
+  managerName = signal('Manager');
+  readonly currentDateStr = new Date().toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+  readonly currentTime = signal<string>(this.getCurrentTime());
+  readonly currentLocation = signal<string>('Addis Ababa, Ethiopia');
+  private clockInterval?: any;
 
-  keyMetrics = signal<KeyMetric[]>([
+  keyMetrics: KeyMetric[] = [
     {
       title: 'Pending Approvals',
       subtitle: '',
-      value: 0,
-      trend: 'Loading...',
+      value: 5,
+      trend: '🔴 Urgent: 2',
       tone: 'red',
     },
     {
       title: 'Approved This Week',
       subtitle: '',
-      value: 0,
-      trend: 'Loading...',
+      value: 8,
+      trend: '▲ +15%',
       tone: 'green',
     },
     {
       title: 'Rejected This Week',
       subtitle: '',
-      value: 0,
-      trend: 'Loading...',
+      value: 2,
+      trend: '▼ -1',
       tone: 'red',
     },
     {
       title: 'Avg Response Time',
       subtitle: '',
-      value: 0,
-      trend: 'Loading...',
+      value: 1.2,
+      trend: '▼ -0.3 days',
       tone: 'blue',
     },
     {
       title: 'Budget Utilization',
       subtitle: '',
-      value: 0,
-      trend: 'Loading...',
+      value: 65,
+      trend: '⚠️ Near Limit',
       tone: 'yellow',
     },
-  ]);
-
-  ngOnInit(): void {
-    this.loadDashboardData();
-  }
-
-  loadDashboardData(): void {
-    this.isLoading.set(true);
-    this.dashboardService.getStatistics().pipe(
-      finalize(() => this.isLoading.set(false))
-    ).subscribe({
-      next: (response) => {
-        if (response.success && response.data) {
-          this.statistics.set(response.data);
-          this.updateKeyMetrics(response.data);
-        }
-      },
-      error: (error) => {
-        console.error('Error loading dashboard data:', error);
-      }
-    });
-  }
-
-  updateKeyMetrics(stats: DashboardStatistics): void {
-    this.keyMetrics.set([
-      {
-        title: 'Pending Approvals',
-        subtitle: '',
-        value: stats.pendingRequisitions,
-        trend: '🔴 Urgent: 0',
-        tone: 'red',
-      },
-      {
-        title: 'Approved This Week',
-        subtitle: '',
-        value: stats.approvedRequisitions,
-        trend: '▲ +0%',
-        tone: 'green',
-      },
-      {
-        title: 'Rejected This Week',
-        subtitle: '',
-        value: stats.rejectedRequisitions,
-        trend: '▼ -0',
-        tone: 'red',
-      },
-      {
-        title: 'Avg Response Time',
-        subtitle: '',
-        value: 1.2,
-        trend: '▼ -0.3 days',
-        tone: 'blue',
-      },
-      {
-        title: 'Budget Utilization',
-        subtitle: '',
-        value: 65,
-        trend: '⚠️ Near Limit',
-        tone: 'yellow',
-      },
-    ]);
-  }
+  ];
 
   pendingRequests: PendingRequest[] = [
     {
@@ -260,6 +205,33 @@ export class ManagerApprovalDashboardComponent implements OnInit {
     return 'Good Evening';
   }
 
+  getCurrentTime(): string {
+    return new Date().toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true,
+    });
+  }
+
+  ngOnInit(): void {
+    this.currentUserService.getCurrentUser().subscribe(user => {
+      if (user) {
+        this.managerName.set(user.fullName || user.username || 'Manager');
+      }
+    });
+    
+    this.clockInterval = setInterval(() => {
+      this.currentTime.set(this.getCurrentTime());
+    }, 1000);
+  }
+
+  ngOnDestroy(): void {
+    if (this.clockInterval) {
+      clearInterval(this.clockInterval);
+    }
+  }
+
   get submittedPoints(): string {
     return this.requestTrendData.map((data, i) => `${50 + i * 45},${180 - data.submitted * 10}`).join(' ');
   }
@@ -293,29 +265,48 @@ export class ManagerApprovalDashboardComponent implements OnInit {
   }
 
   approveRequest(srNumber: string): void {
-    console.log('Approving request:', srNumber);
-    alert(`Request ${srNumber} has been approved.`);
+    const request = this.pendingRequests.find((r) => r.srNumber === srNumber);
+    if (!request) return;
+
+    this.pendingRequests = this.pendingRequests.filter((r) => r.srNumber !== srNumber);
+    this.keyMetrics[0].value = this.pendingRequests.length;
+
+    this.recentActivity.unshift({
+      date: new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date()),
+      action: 'You approved',
+      srNumber: srNumber,
+      requester: request.requester,
+      value: request.value,
+    });
   }
 
   rejectRequest(srNumber: string): void {
+    const request = this.pendingRequests.find((r) => r.srNumber === srNumber);
+    if (!request) return;
+
     if (confirm(`Are you sure you want to reject request ${srNumber}?`)) {
-      console.log('Rejecting request:', srNumber);
-      alert(`Request ${srNumber} has been rejected.`);
+      this.pendingRequests = this.pendingRequests.filter((r) => r.srNumber !== srNumber);
+      this.keyMetrics[0].value = this.pendingRequests.length;
+
+      this.recentActivity.unshift({
+        date: new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date()),
+        action: 'You rejected',
+        srNumber: srNumber,
+        requester: request.requester,
+        reason: 'Manager rejected',
+      });
     }
   }
 
   viewRequestDetails(srNumber: string): void {
-    console.log('Viewing details for request:', srNumber);
-    alert(`Opening detailed view for request ${srNumber}`);
+    void this.router.navigate(['/manager/approvals/pending']);
   }
 
   viewAllRequests(): void {
-    console.log('Viewing all pending requests');
-    alert('Navigating to full pending requests list');
+    void this.router.navigate(['/manager/approvals/pending']);
   }
 
   viewAllActivity(): void {
-    console.log('Viewing all recent activity');
-    alert('Navigating to full activity log');
+    void this.router.navigate(['/manager/notifications']);
   }
 }

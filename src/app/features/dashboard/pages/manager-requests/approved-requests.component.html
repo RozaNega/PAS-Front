@@ -1,0 +1,27 @@
+<div class="approved-requests-container">
+  <div class="page-header">
+    <h1>Approved Requests</h1>
+    <p class="subtitle">Requests approved and ready for issue</p>
+  </div>
+
+  <div class="requests-list">
+    @for (req of requests(); track req.id) {
+      <div class="request-card">
+        <div class="request-header">
+          <div class="request-number">{{ req.requestNumber }}</div>
+          <div class="status-badge approved">Approved</div>
+        </div>
+        <div class="request-body">
+          <p class="description">{{ req.description }}</p>
+          <div class="request-details">
+            <div class="detail-row"><span class="label">Requester:</span><span class="value">{{ req.requesterName }} ({{ req.department }})</span></div>
+            <div class="detail-row"><span class="label">Items:</span><span class="value">{{ req.itemCount }}</span></div>
+            <div class="detail-row"><span class="label">Value:</span><span class="value">${{ req.estimatedValue.toLocaleString() }}</span></div>
+            <div class="detail-row"><span class="label">Approved By:</span><span class="value">{{ req.approvedBy }}</span></div>
+            <div class="detail-row"><span class="label">Approved Date:</span><span class="value">{{ req.approvedDate }}</span></div>
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+</div>

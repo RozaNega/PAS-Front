@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { map, Observable } from 'rxjs';
 import { ApiService } from '../../core/services/api.service';
+import { ApiServiceRequest, ApiReturnMaterialRequest } from '../../types/dashboard.types';
 
 export type PasModuleKind = 'properties' | 'users' | 'leases' | 'payments' | 'maintenance';
 export interface ApiResponse<T> {
@@ -32,7 +33,13 @@ export interface DashboardStatistics {
   stockMovementsByMonth: Array<{ label: string; value: number; color?: string }>;
   propertiesByLocationChart: Array<{ label: string; value: number; color?: string }>;
   dailyCreatedProperties: Array<{ label: string; value: number; color?: string }>;
-  recentActivities: Array<{ id: string; action: string; entityName: string; userName: string; timeAgo: string }>;
+  recentActivities: Array<{
+    id: string;
+    action: string;
+    entityName: string;
+    userName: string;
+    timeAgo: string;
+  }>;
   pendingTasks: Array<{ id: string; description: string; priority: string; status: string }>;
 }
 
@@ -101,7 +108,11 @@ export class PasApiService {
     return this.api.post(this.endpointFor(kind), payload);
   }
 
-  update(kind: PasModuleKind, id: string | number, payload: Record<string, unknown>): Observable<unknown> {
+  update(
+    kind: PasModuleKind,
+    id: string | number,
+    payload: Record<string, unknown>,
+  ): Observable<unknown> {
     if (kind === 'payments') {
       return this.api.post('inventory-stock/adjust', payload);
     }
@@ -117,15 +128,21 @@ export class PasApiService {
 
   // Properties API methods
   getProperties(): Observable<Property[]> {
-    return this.api.get<ApiResponse<Property[]>>('properties').pipe(map(response => response.data));
+    return this.api
+      .get<ApiResponse<Property[]>>('properties')
+      .pipe(map((response) => response.data));
   }
 
   createProperty(property: Omit<Property, 'id'>): Observable<Property> {
-    return this.api.post<ApiResponse<Property>>('properties', property).pipe(map(response => response.data));
+    return this.api
+      .post<ApiResponse<Property>>('properties', property)
+      .pipe(map((response) => response.data));
   }
 
   updateProperty(id: string, property: Partial<Property>): Observable<Property> {
-    return this.api.put<ApiResponse<Property>>(`properties/${id}`, property).pipe(map(response => response.data));
+    return this.api
+      .put<ApiResponse<Property>>(`properties/${id}`, property)
+      .pipe(map((response) => response.data));
   }
 
   deleteProperty(id: string): Observable<unknown> {
@@ -134,32 +151,44 @@ export class PasApiService {
 
   // Users API methods
   getUsers(): Observable<User[]> {
-    return this.api.get<ApiResponse<User[]>>('users').pipe(map(response => response.data));
+    return this.api.get<ApiResponse<User[]>>('users').pipe(map((response) => response.data));
   }
 
   createUser(user: Omit<User, 'id'>): Observable<User> {
-    return this.api.post<ApiResponse<User>>('users', user).pipe(map(response => response.data));
+    return this.api.post<ApiResponse<User>>('users', user).pipe(map((response) => response.data));
   }
 
   updateUser(id: string, user: Partial<User>): Observable<User> {
-    return this.api.put<ApiResponse<User>>(`users/${id}`, user).pipe(map(response => response.data));
+    return this.api
+      .put<ApiResponse<User>>(`users/${id}`, user)
+      .pipe(map((response) => response.data));
   }
 
   deleteUser(id: string): Observable<unknown> {
     return this.api.delete(`users/${id}`);
   }
 
+  updateProfile(id: string, profile: any): Observable<unknown> {
+    return this.api.put(`users/${id}`, profile);
+  }
+
   // Inventory API methods
   getStockItems(): Observable<StockItem[]> {
-    return this.api.get<ApiResponse<StockItem[]>>('inventory/stock').pipe(map(response => response.data));
+    return this.api
+      .get<ApiResponse<StockItem[]>>('inventory/stock')
+      .pipe(map((response) => response.data));
   }
 
   createStockItem(item: Omit<StockItem, 'id'>): Observable<StockItem> {
-    return this.api.post<ApiResponse<StockItem>>('inventory/stock', item).pipe(map(response => response.data));
+    return this.api
+      .post<ApiResponse<StockItem>>('inventory/stock', item)
+      .pipe(map((response) => response.data));
   }
 
   updateStockItem(id: string, item: Partial<StockItem>): Observable<StockItem> {
-    return this.api.put<ApiResponse<StockItem>>(`inventory/stock/${id}`, item).pipe(map(response => response.data));
+    return this.api
+      .put<ApiResponse<StockItem>>(`inventory/stock/${id}`, item)
+      .pipe(map((response) => response.data));
   }
 
   deleteStockItem(id: string): Observable<unknown> {
@@ -176,11 +205,15 @@ export class PasApiService {
 
   // Notifications API methods
   getNotifications(): Observable<Notification[]> {
-    return this.api.get<ApiResponse<Notification[]>>('notifications').pipe(map(response => response.data));
+    return this.api
+      .get<ApiResponse<Notification[]>>('notifications')
+      .pipe(map((response) => response.data));
   }
 
   createNotification(notification: Omit<Notification, 'id'>): Observable<Notification> {
-    return this.api.post<ApiResponse<Notification>>('notifications', notification).pipe(map(response => response.data));
+    return this.api
+      .post<ApiResponse<Notification>>('notifications', notification)
+      .pipe(map((response) => response.data));
   }
 
   markNotificationAsRead(id: string): Observable<unknown> {
@@ -189,6 +222,23 @@ export class PasApiService {
 
   deleteNotification(id: string): Observable<unknown> {
     return this.api.delete(`notifications/${id}`);
+  }
+
+  // Download SIV PDF as Blob. Backend endpoint expected at `sivs/{sivId}/pdf` or `requisitions/sivs/{sivId}/pdf`.
+  downloadSivPdf(sivId: string) {
+    // Use responseType blob via ApiService options forwarding
+    return this.api.get<any>(`requisitions/sivs/${sivId}/pdf`, undefined, {
+      responseType: 'blob' as 'json',
+    });
+  }
+
+  // Service Requests API
+  createServiceRequest(request: ApiServiceRequest): Observable<unknown> {
+    return this.api.post('service-requests', request);
+  }
+
+  createReturnMaterialRequest(request: ApiReturnMaterialRequest): Observable<unknown> {
+    return this.api.post('ReturnMaterialRequests', request);
   }
 
   private endpointFor(kind: PasModuleKind): string {

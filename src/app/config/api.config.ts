@@ -144,7 +144,9 @@ export const API_ENDPOINTS = {
     DELETE: (id: string) => `ServiceRequests/${id}`,
     APPROVE: (id: string) => `ServiceRequests/${id}/approve`,
     REJECT: (id: string) => `ServiceRequests/${id}/reject`,
-    ISSUE: (id: string) => `ServiceRequests/${id}/issue`
+    ISSUE: (id: string) => `ServiceRequests/${id}/issue`,
+    TIMELINE: (id: string) => `ServiceRequests/${id}/timeline`,
+    CANCEL: (id: string) => `ServiceRequests/${id}/cancel`
   },
 
   STORE_ISSUE_VOUCHERS: {
@@ -208,7 +210,8 @@ export const API_ENDPOINTS = {
     GET_ALL: 'Notifications',
     UNREAD_COUNT: 'Notifications/unread-count',
     MARK_AS_READ: (id: string) => `Notifications/${id}/read`,
-    MARK_ALL_READ: 'Notifications/read-all'
+    MARK_ALL_READ: 'Notifications/read-all',
+    DELETE: (id: string) => `Notifications/${id}`
   },
 
   DOCUMENTS: {

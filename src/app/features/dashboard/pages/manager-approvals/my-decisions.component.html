@@ -1,0 +1,29 @@
+<div class="my-decisions-container">
+  <div class="page-header">
+    <h1>My Decisions</h1>
+    <p class="subtitle">Your approval decisions history</p>
+  </div>
+
+  <div class="decisions-list">
+    @for (decision of decisions(); track decision.id) {
+      <div class="decision-card">
+        <div class="decision-header">
+          <div class="request-number">{{ decision.requestNumber }}</div>
+          <div class="decision-badge" [class.approved]="decision.decision === 'Approved'" [class.rejected]="decision.decision === 'Rejected'">
+            {{ decision.decision }}
+          </div>
+        </div>
+        <div class="decision-details">
+          <div class="detail-row"><span class="label">Requester:</span><span class="value">{{ decision.requesterName }} ({{ decision.department }})</span></div>
+          <div class="detail-row"><span class="label">Items:</span><span class="value">{{ decision.itemCount }}</span></div>
+          <div class="detail-row"><span class="label">Value:</span><span class="value">${{ decision.estimatedValue.toLocaleString() }}</span></div>
+          <div class="detail-row"><span class="label">Response Time:</span><span class="value">{{ decision.responseTime }}</span></div>
+          <div class="detail-row"><span class="label">Decision Date:</span><span class="value">{{ decision.decisionDate }}</span></div>
+          @if (decision.reason) {
+            <div class="detail-row"><span class="label">Reason:</span><span class="value">{{ decision.reason }}</span></div>
+          }
+        </div>
+      </div>
+    }
+  </div>
+</div>
