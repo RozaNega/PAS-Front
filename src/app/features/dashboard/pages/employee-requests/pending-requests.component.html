@@ -1,0 +1,36 @@
+<div class="pending-requests-container">
+  <div class="page-header">
+    <h1>Pending Approval</h1>
+    <p class="subtitle">Requests waiting for approval</p>
+  </div>
+
+  <div class="requests-list">
+    @for (request of requests(); track request.id) {
+      <div class="request-card">
+        <div class="request-header">
+          <div class="request-id">{{ request.id }}</div>
+          <div class="request-badge pending">Pending</div>
+        </div>
+        
+        <h3 class="request-title">{{ request.title }}</h3>
+        <p class="request-description">{{ request.description }}</p>
+        
+        <div class="request-meta">
+          <div class="meta-item">
+            <i class="bi bi-flag"></i>
+            <span>Priority: {{ request.priority }}</span>
+          </div>
+          <div class="meta-item">
+            <i class="bi bi-calendar"></i>
+            <span>Submitted: {{ request.submittedDate }}</span>
+          </div>
+        </div>
+      </div>
+    } @empty {
+      <div class="empty-state">
+        <i class="bi bi-inbox"></i>
+        <p>No pending requests</p>
+      </div>
+    }
+  </div>
+</div>

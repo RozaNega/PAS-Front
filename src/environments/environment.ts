@@ -1,7 +1,7 @@
 export const environment = {
   production: false,
-  apiUrl: 'http://localhost:5028/api',
-  hubUrl: 'http://localhost:5028/hubs',
+  apiUrl: '/api',
+  hubUrl: '/hubs',
   appTitle: 'Asset Management Platform',
   version: '1.0.0',
   tokenKey: 'pas_token',

@@ -1,4 +1,4 @@
-﻿import { Injectable } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import { BehaviorSubject, Observable, map, tap } from 'rxjs';
 import { ApiService } from './api.service';
@@ -105,6 +105,52 @@ export class AuthService {
           }
         }),
       );
+  }
+
+  forgotPassword(email: string): Observable<{ succeeded: boolean; message: string; token?: string }> {
+    return this.apiService.post<ApiResponseModel<any>>('Auth/forgot-password', { email }).pipe(
+      map((response) => ({
+        succeeded: response.success,
+        message: response.message || (response.success ? 'Success' : 'Failed'),
+        token: response.data?.token || (typeof response.data === 'string' ? response.data : undefined),
+      }))
+    );
+  }
+
+  resetPassword(request: any): Observable<{ succeeded: boolean; message: string }> {
+    return this.apiService.post<ApiResponseModel<any>>('Auth/reset-password', request).pipe(
+      map((response) => ({
+        succeeded: response.success,
+        message: response.message || (response.success ? 'Success' : 'Failed'),
+      }))
+    );
+  }
+
+  changePassword(request: { currentPassword: string; newPassword: string }): Observable<{ succeeded: boolean; message: string }> {
+    return this.apiService.post<ApiResponseModel<any>>('Auth/change-password', request).pipe(
+      map((response) => ({
+        succeeded: response.success,
+        message: response.message || (response.success ? 'Success' : 'Failed'),
+      }))
+    );
+  }
+
+  enable2FA(method: 'sms' | 'email' | 'app', contactInfo?: string): Observable<{ succeeded: boolean; message: string }> {
+    return this.apiService.post<ApiResponseModel<any>>('Auth/enable-2fa', { method, contactInfo }).pipe(
+      map((response) => ({
+        succeeded: response.success,
+        message: response.message || (response.success ? '2FA enabled successfully' : 'Failed to enable 2FA'),
+      }))
+    );
+  }
+
+  disable2FA(): Observable<{ succeeded: boolean; message: string }> {
+    return this.apiService.post<ApiResponseModel<any>>('Auth/disable-2fa', {}).pipe(
+      map((response) => ({
+        succeeded: response.success,
+        message: response.message || (response.success ? '2FA disabled successfully' : 'Failed to disable 2FA'),
+      }))
+    );
   }
 
   logout(): void {

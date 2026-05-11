@@ -1,0 +1,41 @@
+<div class="completed-requests-container">
+  <div class="page-header">
+    <h1>Completed Requests</h1>
+    <p class="subtitle">Requests that have been fulfilled</p>
+  </div>
+
+  <div class="requests-list">
+    @for (request of requests(); track request.id) {
+      <div class="request-card">
+        <div class="request-header">
+          <div class="request-id">{{ request.id }}</div>
+          <div class="request-badge completed">Completed</div>
+        </div>
+        
+        <h3 class="request-title">{{ request.title }}</h3>
+        <p class="request-description">{{ request.description }}</p>
+        
+        <div class="siv-info">
+          <i class="bi bi-file-text"></i>
+          <span><strong>SIV:</strong> {{ request.sivNumber }}</span>
+        </div>
+        
+        <div class="request-meta">
+          <div class="meta-item">
+            <i class="bi bi-flag"></i>
+            <span>Priority: {{ request.priority }}</span>
+          </div>
+          <div class="meta-item">
+            <i class="bi bi-check2-all"></i>
+            <span>Completed: {{ request.completedDate }}</span>
+          </div>
+        </div>
+      </div>
+    } @empty {
+      <div class="empty-state">
+        <i class="bi bi-check2-all"></i>
+        <p>No completed requests</p>
+      </div>
+    }
+  </div>
+</div>

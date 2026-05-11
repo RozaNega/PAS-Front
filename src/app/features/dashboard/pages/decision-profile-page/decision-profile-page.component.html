@@ -1,7 +1,10 @@
 <div class="decision-profile-page">
   <div class="page-header">
     <h1>Decision Profile</h1>
-    <button class="btn btn-secondary" (click)="editProfile()">Edit</button>
+    <div class="header-actions">
+      <button class="btn btn-secondary" (click)="changePassword()">Change Password</button>
+      <button class="btn btn-secondary" (click)="editProfile()">Edit Profile</button>
+    </div>
   </div>
 
   <!-- My Profile -->
@@ -9,10 +12,40 @@
     <h2>👤 MY PROFILE</h2>
     <div class="profile-card">
       <div class="profile-photo">
-        <div class="photo-placeholder">
-          <span>👤</span>
-          <button class="btn-link" (click)="changePhoto()">[Change Photo]</button>
-        </div>
+        @if (profilePhoto()) {
+          <img [src]="profilePhoto()!" alt="Profile photo" class="profile-image" />
+        } @else {
+          <div class="photo-placeholder">👤</div>
+        }
+
+        @if (!isSelectingPhoto()) {
+          <button class="change-photo-btn" (click)="changePhoto()">Change Photo</button>
+        } @else {
+          <div class="inline-upload-container">
+            @if (!isCameraActive()) {
+              <div class="method-toggles">
+                <button class="btn-method" (click)="fileInput.click()">
+                  <i class="bi bi-cloud-arrow-up"></i> Upload
+                </button>
+                <button class="btn-method" (click)="startCamera()">
+                  <i class="bi bi-camera"></i> Camera
+                </button>
+                <input type="file" #fileInput (change)="onFileSelected($event)" accept="image/*" style="display: none;" />
+              </div>
+            } @else {
+              <div class="inline-camera-view">
+                <video #videoElement autoplay playsinline></video>
+                <canvas #canvasElement style="display: none;"></canvas>
+                <button class="btn-capture" (click)="capturePhoto()">Capture</button>
+              </div>
+            }
+
+            <div class="inline-actions">
+              <button class="btn-cancel-upload" (click)="cancelUpload()">Cancel</button>
+              <button class="btn-save-inline" (click)="isSelectingPhoto.set(false)" [disabled]="!profilePhoto()">Save</button>
+            </div>
+          </div>
+        }
       </div>
       <div class="profile-info">
         <div class="info-item">
@@ -37,6 +70,45 @@
           <strong>Join Date:</strong> {{ profile.joinDate }}
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- Two-Factor Authentication -->
+  <div class="security-section">
+    <h2>🔐 TWO-FACTOR AUTHENTICATION</h2>
+    <div class="security-card">
+      <div class="security-status">
+        <div class="status-indicator" [class.enabled]="twoFactorEnabled()">
+          <span class="status-dot"></span>
+          <span class="status-text">{{ twoFactorEnabled() ? 'Enabled' : 'Disabled' }}</span>
+        </div>
+        <button class="btn" [class.btn-primary]="!twoFactorEnabled()" [class.btn-danger]="twoFactorEnabled()" (click)="toggle2FA()">
+          {{ twoFactorEnabled() ? 'Disable 2FA' : 'Enable 2FA' }}
+        </button>
+      </div>
+      
+      @if (!twoFactorEnabled()) {
+        <div class="security-settings">
+          <div class="setting-row">
+            <label>2FA Method:</label>
+            <select [ngModel]="twoFactorMethod()" (ngModelChange)="twoFactorMethod.set($event)">
+              <option value="sms">SMS</option>
+              <option value="email">Email</option>
+              <option value="app">Authenticator App</option>
+            </select>
+          </div>
+          @if (twoFactorMethod() === 'sms') {
+            <div class="setting-row">
+              <label>Phone Number:</label>
+              <input type="tel" [ngModel]="phoneNumber()" (ngModelChange)="phoneNumber.set($event)" placeholder="+251-XXX-XXXXXXX" />
+            </div>
+          }
+        </div>
+      } @else {
+        <div class="security-info">
+          <p>Your account is protected with {{ twoFactorMethod() === 'sms' ? 'SMS' : twoFactorMethod() === 'email' ? 'Email' : 'Authenticator App' }} 2FA.</p>
+        </div>
+      }
     </div>
   </div>
 

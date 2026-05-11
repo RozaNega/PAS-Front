@@ -1,6 +1,8 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
+import { TrackRequestModalComponent } from '../../components/track-request-modal/track-request-modal.component';
 
 export interface Activity {
   dateTime: string;
@@ -25,12 +27,14 @@ export interface LoginHistory {
   styleUrl: './activity-page.component.scss',
 })
 export class ActivityPageComponent {
+  private modalService = inject(NgbModal);
+
   dateFrom = 'Dec 01, 2024';
   dateTo = 'Dec 15, 2024';
-  activityType = 'All';
-  entityType = 'All';
+  activityType = 'All ▼';
+  entityType = 'All ▼';
 
-  activities: Activity[] = [
+  allActivities: Activity[] = [
     {
       dateTime: 'Dec 15, 09:30 AM',
       activity: 'Created new request',
@@ -63,6 +67,8 @@ export class ActivityPageComponent {
     },
   ];
 
+  activities: Activity[] = [...this.allActivities];
+
   loginHistory: LoginHistory[] = [
     {
       dateTime: 'Dec 15, 09:30 AM',
@@ -88,15 +94,49 @@ export class ActivityPageComponent {
   ];
 
   applyFilters(): void {
-    console.log('Applying filters:', {
-      dateFrom: this.dateFrom,
-      dateTo: this.dateTo,
-      activityType: this.activityType,
-      entityType: this.entityType,
-    });
+    let filtered = [...this.allActivities];
+    
+    // Filter by Activity Type
+    if (this.activityType && !this.activityType.includes('All')) {
+      filtered = filtered.filter(a => a.activity.includes(this.activityType) || a.activity.startsWith(this.activityType));
+    }
+
+    // Filter by Entity Type
+    if (this.entityType && !this.entityType.includes('All')) {
+      filtered = filtered.filter(a => a.entity.startsWith(this.entityType));
+    }
+
+    this.activities = filtered;
   }
 
   export(): void {
-    console.log('Exporting activity data');
+    const headers = ['Date/Time', 'Activity', 'Entity', 'Status'];
+    const csvContent = [
+      headers.join(','),
+      ...this.activities.map(a => `"${a.dateTime}","${a.activity}","${a.entity}","${a.status}"`)
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'my_activity_export.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  viewActivity(activity: Activity): void {
+    if (activity.entity.startsWith('SR-')) {
+      const modalRef = this.modalService.open(TrackRequestModalComponent, {
+        fullscreen: true,
+        backdrop: 'static',
+        windowClass: 'track-request-fullscreen-modal'
+      });
+      modalRef.componentInstance.srNumber = activity.entity;
+      modalRef.componentInstance.status = 'Pending Approval';
+    } else {
+      alert(`Viewing details for ${activity.entity}`);
+    }
   }
 }

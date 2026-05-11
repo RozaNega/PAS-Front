@@ -3,15 +3,25 @@
     <header class="hero-banner">
       <div class="hero-copy">
         <p class="hero-eyebrow">Employee Dashboard</p>
-        <h1>{{ greeting }}, {{ userName }}!</h1>
+        <h1>{{ greeting }}, {{ userName() }}!</h1>
         <p>
           Welcome back to AFROCOM Asset Management System. You have
           {{ pendingRequests.length }} pending requests awaiting approval.
         </p>
       </div>
-      <div class="hero-date">
-        <span class="hero-date__icon">📅</span>
-        {{ currentDate }}
+      <div class="dashboard-info-widget">
+        <div class="info-item">
+          <i class="bi bi-calendar3 info-icon text-primary"></i>
+          <span class="info-text">{{ currentDate }}</span>
+        </div>
+        <div class="info-item">
+          <i class="bi bi-clock info-icon text-secondary"></i>
+          <span class="info-text">{{ currentTime() }}</span>
+        </div>
+        <div class="info-item">
+          <i class="bi bi-geo-alt-fill info-icon text-danger"></i>
+          <span class="info-text">{{ currentLocation() }}</span>
+        </div>
       </div>
     </header>
   } @else {
@@ -26,7 +36,9 @@
         <a class="action-btn primary" (click)="openCreateRequestModal()">+ New Request</a>
       }
       @if (currentView === 'profile') {
-        <a class="action-btn secondary" (click)="editProfile()">[Edit]</a>
+        <button class="edit-profile-btn" (click)="editProfile()">
+          <i class="bi bi-pencil-square"></i> Edit Profile
+        </button>
       }
     </header>
   }
@@ -64,7 +76,8 @@
           <article class="pending-request-card">
             <div class="pending-request-header">
               <strong>
-                {{ getPriorityIcon(request.priority) }} {{ request.srNumber }} - {{ request.priority }}
+                {{ getPriorityIcon(request.priority) }} {{ request.srNumber }} -
+                {{ request.priority }}
               </strong>
               <span class="required-date">Required: {{ request.requiredDate }}</span>
             </div>
@@ -72,8 +85,12 @@
             <p>Items: {{ request.items.join(', ') }}</p>
             <p class="status-text">Status: {{ getStatusIcon(request.status) }} Pending Approval</p>
             <div class="pending-request-actions">
-              <button class="action-btn secondary" (click)="trackRequest(request.srNumber)">[Track Request]</button>
-              <button class="action-btn secondary" (click)="cancelRequest(request.srNumber)">[Cancel Request]</button>
+              <button class="action-btn secondary" (click)="trackRequest(request.srNumber)">
+                [Track Request]
+              </button>
+              <button class="action-btn secondary" (click)="cancelRequest(request.srNumber)">
+                [Cancel Request]
+              </button>
             </div>
           </article>
         }
@@ -200,11 +217,21 @@
           </label>
           <label>
             🏷️ Status:
-            <select><option>All</option><option>Pending</option><option>Approved</option><option>Rejected</option></select>
+            <select>
+              <option>All</option>
+              <option>Pending</option>
+              <option>Approved</option>
+              <option>Rejected</option>
+            </select>
           </label>
           <label>
             ⭐ Priority:
-            <select><option>All</option><option>Urgent</option><option>Medium</option><option>Normal</option></select>
+            <select>
+              <option>All</option>
+              <option>Urgent</option>
+              <option>Medium</option>
+              <option>Normal</option>
+            </select>
           </label>
         </div>
       </div>
@@ -265,12 +292,14 @@
                 </td>
                 <td>{{ request.requiredBy }}</td>
                 <td>
-                  <button class="icon-btn" title="View">👁️</button>
-                  <button class="icon-btn" title="Edit">📝</button>
+                  <button class="icon-btn" title="View" (click)="viewRequest(request.srNumber)">
+                    👁️
+                  </button>
                   @if (request.status === 'Pending') {
-                    <button class="icon-btn" title="Cancel">❌</button>
+                    <button class="icon-btn" title="Edit" (click)="editRequest(request.srNumber)">📝</button>
+                    <button class="icon-btn" title="Cancel" (click)="cancelRequest(request.srNumber)">❌</button>
                   }
-                  <button class="icon-btn" title="Track">🔄</button>
+                  <button class="icon-btn" title="Track" (click)="trackRequest(request.srNumber)">🔄</button>
                 </td>
               </tr>
             }
@@ -282,13 +311,56 @@
   }
 
   @if (currentView === 'my-activity') {
-    <section class="panel" aria-labelledby="my-activity-heading">
-      <h2 id="my-activity-heading">My Activity</h2>
-      <div class="recent-activity-list">
-        @for (activity of recentActivity; track activity.date + activity.description) {
-          <div class="activity-item">
-            <span>{{ getActivityIcon(activity.type) }}</span>
-            <span>{{ activity.date }} - {{ activity.description }}</span>
+    <section class="notifications-page" aria-labelledby="notif-heading">
+      <div class="notifications-header">
+        <h2 id="notif-heading">Notifications ({{ notifications().length }})</h2>
+        <button class="fancy-btn outline-success" (click)="markAllAsRead()">Mark All Read</button>
+      </div>
+
+      <div class="notifications-filters">
+        <div class="search-box">
+          <input type="text" placeholder="Search notifications..." />
+        </div>
+        <div class="filter-actions">
+          <select class="type-select">
+            <option>All Types</option>
+            <option>Approvals</option>
+            <option>Completions</option>
+          </select>
+          <button class="fancy-btn outline-success small" (click)="markAllAsRead()">Mark Read</button>
+        </div>
+      </div>
+
+      <div class="sub-section-header">
+        <i class="bi bi-bell-fill"></i> ALL NOTIFICATIONS
+      </div>
+
+      <div class="notifications-feed">
+        @for (notification of notifications(); track notification.id) {
+          <div class="fancy-notification-card" [class.unread]="!notification.read">
+            <div class="card-content">
+              <div class="card-top">
+                <div class="title-group">
+                  <span class="status-dot" [class]="notification.type"></span>
+                  <h3 class="notif-title">
+                    @if (notification.type === 'approved') { Request Approved - }
+                    @if (notification.type === 'completed') { Request Completed - }
+                    @if (notification.type === 'submitted') { Request Submitted - }
+                    {{ notification.requestId }}
+                  </h3>
+                </div>
+                <span class="notif-time">{{ notification.date }}</span>
+              </div>
+              <p class="notif-message">{{ notification.message }}</p>
+              <div class="notif-actions">
+                <button class="fancy-btn primary small" (click)="viewRequest(notification.requestId)">View Request</button>
+                @if (notification.type === 'completed') {
+                  <button class="fancy-btn outline-primary small" (click)="viewSIV(notification.sivId!)">View SIV</button>
+                  <button class="fancy-btn outline-primary small" (click)="downloadPDF(notification.sivId!)">Download PDF</button>
+                }
+                <button class="fancy-btn secondary small" (click)="dismissNotification(notification.id)">Dismiss</button>
+              </div>
+            </div>
           </div>
         }
       </div>
@@ -301,34 +373,49 @@
         <h2 id="profile-info-heading" class="section-title">👤 PROFILE INFORMATION</h2>
         <div class="profile-layout">
           <div class="profile-photo">
-            <div class="photo-placeholder">👤</div>
-            <button class="action-btn secondary">[Change Photo]</button>
+            @if (profilePhoto()) {
+              <img [src]="profilePhoto()!" alt="Profile photo" class="profile-image" />
+            } @else {
+              <div class="photo-placeholder">👤</div>
+            }
+            
+            @if (!isSelectingPhoto()) {
+              <button class="change-photo-btn" (click)="changePhoto()">Change Photo</button>
+            } @else {
+              <div class="inline-upload-container">
+                @if (!isCameraActive()) {
+                  <div class="method-toggles">
+                    <button class="btn-method" (click)="fileInput.click()">
+                      <i class="bi bi-cloud-arrow-up"></i> Upload
+                    </button>
+                    <button class="btn-method" (click)="startCamera()">
+                      <i class="bi bi-camera"></i> Camera
+                    </button>
+                    <input type="file" #fileInput (change)="onFileSelected($event)" accept="image/*" style="display: none;" />
+                  </div>
+                } @else {
+                  <div class="inline-camera-view">
+                    <video #videoElement autoplay playsinline></video>
+                    <canvas #canvasElement style="display: none;"></canvas>
+                    <button class="btn-capture" (click)="capturePhoto()">Capture</button>
+                  </div>
+                }
+
+                <div class="inline-actions">
+                  <button class="btn-cancel-upload" (click)="cancelUpload()">Cancel</button>
+                  <button class="btn-save-inline" (click)="isSelectingPhoto.set(false)" [disabled]="!profilePhoto()">Save</button>
+                </div>
+              </div>
+            }
           </div>
           <div class="profile-details">
-            <div class="detail-row">
-              <strong>Full Name:</strong> John Doe
-            </div>
-            <div class="detail-row">
-              <strong>Employee Code:</strong> EMP-001
-            </div>
-            <div class="detail-row">
-              <strong>Department:</strong> IT Department
-            </div>
-            <div class="detail-row">
-              <strong>Position:</strong> Senior Developer
-            </div>
-            <div class="detail-row">
-              <strong>Email:</strong> john.doe@afrocom.com
-            </div>
-            <div class="detail-row">
-              <strong>Phone:</strong> +251-911-234567
-            </div>
-            <div class="detail-row">
-              <strong>Join Date:</strong> Jan 15, 2020
-            </div>
-            <div class="detail-row">
-              <strong>Manager:</strong> Sarah Smith
-            </div>
+            <div class="detail-row"><strong>Full Name:</strong> {{ userProfile().fullName }}</div>
+            <div class="detail-row"><strong>Employee Code:</strong> {{ userProfile().employeeCode }}</div>
+            <div class="detail-row"><strong>Department:</strong> {{ userProfile().department }}</div>
+            <div class="detail-row"><strong>Position:</strong> {{ userProfile().position }}</div>
+            <div class="detail-row"><strong>Email:</strong> {{ userProfile().email }}</div>
+            <div class="detail-row"><strong>Phone:</strong> {{ userProfile().phone }}</div>
+            <div class="detail-row"><strong>Join Date:</strong> {{ userProfile().joinDate }}</div>
           </div>
         </div>
       </section>
@@ -397,9 +484,9 @@
                 <td>Laptop (2)</td>
                 <td>✅ Issued</td>
                 <td>
-                  <button class="icon-btn">👁️ View</button>
-                  <button class="icon-btn">🖨️ Print</button>
-                  <button class="icon-btn">📧 Email</button>
+                  <button class="icon-btn" (click)="viewSIV('SIV-045')">👁️ View</button>
+                  <button class="icon-btn" (click)="downloadPDF('SIV-045')">🖨️ Print</button>
+                  <button class="icon-btn" (click)="emailSIV('SIV-045')">📧 Email</button>
                 </td>
               </tr>
               <tr>
@@ -408,9 +495,9 @@
                 <td>Monitor (1)</td>
                 <td>✅ Issued</td>
                 <td>
-                  <button class="icon-btn">👁️ View</button>
-                  <button class="icon-btn">🖨️ Print</button>
-                  <button class="icon-btn">📧 Email</button>
+                  <button class="icon-btn" (click)="viewSIV('SIV-044')">👁️ View</button>
+                  <button class="icon-btn" (click)="downloadPDF('SIV-044')">🖨️ Print</button>
+                  <button class="icon-btn" (click)="emailSIV('SIV-044')">📧 Email</button>
                 </td>
               </tr>
               <tr>
@@ -419,9 +506,9 @@
                 <td>Chair (2)</td>
                 <td>✅ Issued</td>
                 <td>
-                  <button class="icon-btn">👁️ View</button>
-                  <button class="icon-btn">🖨️ Print</button>
-                  <button class="icon-btn">📧 Email</button>
+                  <button class="icon-btn" (click)="viewSIV('SIV-042')">👁️ View</button>
+                  <button class="icon-btn" (click)="downloadPDF('SIV-042')">🖨️ Print</button>
+                  <button class="icon-btn" (click)="emailSIV('SIV-042')">📧 Email</button>
                 </td>
               </tr>
             </tbody>
@@ -433,11 +520,46 @@
       <section class="notification-settings panel" aria-labelledby="notif-settings-heading">
         <h2 id="notif-settings-heading" class="section-title">🔔 NOTIFICATION SETTINGS</h2>
         <div class="checkbox-list">
-          <label><input type="checkbox" checked /> Email me when my request is approved</label>
-          <label><input type="checkbox" checked /> Email me when my request is rejected</label>
-          <label><input type="checkbox" checked /> Email me when items are ready for pickup</label>
-          <label><input type="checkbox" /> Weekly request summary</label>
-          <label><input type="checkbox" /> Monthly request digest</label>
+          <label>
+            <input
+              type="checkbox"
+              [(ngModel)]="notificationSettings().emailOnApproval"
+              (change)="saveNotificationSettings()"
+            />
+            Email me when my request is approved
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              [(ngModel)]="notificationSettings().emailOnRejection"
+              (change)="saveNotificationSettings()"
+            />
+            Email me when my request is rejected
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              [(ngModel)]="notificationSettings().emailOnReady"
+              (change)="saveNotificationSettings()"
+            />
+            Email me when items are ready for pickup
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              [(ngModel)]="notificationSettings().weeklySummary"
+              (change)="saveNotificationSettings()"
+            />
+            Weekly request summary
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              [(ngModel)]="notificationSettings().monthlyDigest"
+              (change)="saveNotificationSettings()"
+            />
+            Monthly request digest
+          </label>
         </div>
       </section>
 
@@ -447,8 +569,10 @@
           <p><strong>Last Password Change:</strong> Nov 15, 2024</p>
           <p><strong>Last Login:</strong> Dec 15, 2024 09:30 AM</p>
           <div class="security-actions">
-            <button class="action-btn secondary">[Change Password]</button>
-            <button class="action-btn secondary">[Enable 2FA]</button>
+            <button class="action-btn secondary" (click)="changePassword()">
+              [Change Password]
+            </button>
+            <button class="action-btn secondary" (click)="enable2FA()">[Enable 2FA]</button>
           </div>
         </div>
       </section>
@@ -462,11 +586,21 @@
         <div class="filter-row">
           <label>
             📂 Category:
-            <select><option>All</option><option>Electronics</option><option>Furniture</option><option>Supplies</option></select>
+            <select>
+              <option>All</option>
+              <option>Electronics</option>
+              <option>Furniture</option>
+              <option>Supplies</option>
+            </select>
           </label>
           <label>
             📊 Status:
-            <select><option>All</option><option>Good</option><option>Low</option><option>Out of Stock</option></select>
+            <select>
+              <option>All</option>
+              <option>Good</option>
+              <option>Low</option>
+              <option>Out of Stock</option>
+            </select>
           </label>
         </div>
       </div>
@@ -499,13 +633,14 @@
                     [class.status-pending]="item.status === 'Low'"
                     [class.status-rejected]="item.status === 'Out of Stock'"
                   >
-                    {{ item.status === 'Good' ? '🟢' : item.status === 'Low' ? '🟡' : '🔴' }} {{ item.status }}
+                    {{ item.status === 'Good' ? '🟢' : item.status === 'Low' ? '🟡' : '🔴' }}
+                    {{ item.status }}
                   </span>
                 </td>
                 <td>{{ item.lastRestocked }}</td>
                 <td>
-                  <button class="icon-btn" title="Edit">📝</button>
-                  <button class="icon-btn" title="View">👁️</button>
+                  <button class="icon-btn" title="Request Item" (click)="openCreateRequestModal()">📝 Request</button>
+                  <button class="icon-btn" title="View Details" (click)="viewCatalogItem(item.sku)">👁️ View</button>
                 </td>
               </tr>
             }

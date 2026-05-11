@@ -1,4 +1,4 @@
-﻿import { Injectable } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { environment } from '../../../environments/environment';
 
 export interface DecodedToken {
@@ -10,6 +10,11 @@ export interface DecodedToken {
   iat: number;
   iss: string;
   aud: string;
+  fullName?: string;
+  FullName?: string;
+  name?: string;
+  given_name?: string;
+  [key: string]: any;
 }
 
 @Injectable({

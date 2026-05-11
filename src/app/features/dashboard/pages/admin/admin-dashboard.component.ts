@@ -1,4 +1,4 @@
-﻿import { ChangeDetectionStrategy, Component, inject, signal, DestroyRef } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal, DestroyRef } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { CalendarWidgetComponent } from '../../../../shared/components/calendar-widget/calendar-widget.component';
 
@@ -42,7 +42,7 @@ interface LowStockAlert {
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
-  imports: [RouterLink, CalendarWidgetComponent],
+  imports: [],
   templateUrl: './admin-dashboard.component.html',
   styleUrl: './admin-dashboard.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

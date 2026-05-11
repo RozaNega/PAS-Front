@@ -22,7 +22,7 @@ interface Category {
 @Component({
   selector: 'app-property-category-list',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule, ReactiveFormsModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule],
   templateUrl: './property-category-list.component.html',
   styleUrls: ['./property-category-list.component.scss']
 })

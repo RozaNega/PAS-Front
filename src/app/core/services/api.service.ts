@@ -1,4 +1,4 @@
-﻿import { Injectable } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
@@ -7,7 +7,7 @@ import { environment } from '../../../environments/environment';
 export class ApiService {
   private baseUrl = environment.apiUrl;
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) { }
 
   get<T>(endpoint: string, params?: any, options?: any): Observable<T> {
     let httpParams = new HttpParams();
@@ -38,6 +38,22 @@ export class ApiService {
 
   patch<T>(endpoint: string, data: any): Observable<T> {
     return this.http.patch<T>(`${this.baseUrl}/${endpoint}`, data);
+  }
+
+  uploadFile<T>(endpoint: string, file: File): Observable<T> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<T>(`${this.baseUrl}/${endpoint}`, formData);
+  }
+
+  uploadProfilePhoto<T>(userId: string, file: File): Observable<T> {
+    const formData = new FormData();
+    formData.append('photo', file, file.name);
+    return this.http.post<T>(`${this.baseUrl}/Users/${userId}/upload-photo`, formData);
+  }
+
+  deleteProfilePhoto<T>(userId: string): Observable<T> {
+    return this.http.delete<T>(`${this.baseUrl}/Users/${userId}/photo`);
   }
 }
 

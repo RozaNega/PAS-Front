@@ -1,10 +1,9 @@
-﻿import { NgModule } from '@angular/core';
+import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { NgxPaginationModule } from 'ngx-pagination';
 import { HeaderComponent } from './components/header/header.component';
-import { SidebarComponent } from './components/sidebar/sidebar.component';
 import { FooterComponent } from './components/footer/footer.component';
 import { LoadingSpinnerComponent } from './components/loading-spinner/loading-spinner.component';
 import { ConfirmationModalComponent } from './components/confirmation-modal/confirmation-modal.component';
@@ -16,7 +15,11 @@ import { HasRoleDirective } from './directives/has-role.directive';
 import { ClickOutsideDirective } from './directives/click-outside.directive';
 
 import { DateFormatPipe, DateTimeFormatPipe, TimeAgoPipe } from './pipes/date-format.pipe';
-import { CurrencyFormatPipe, NumberFormatPipe, PercentageFormatPipe } from './pipes/currency-format.pipe';
+import {
+  CurrencyFormatPipe,
+  NumberFormatPipe,
+  PercentageFormatPipe,
+} from './pipes/currency-format.pipe';
 import { TruncatePipe } from './pipes/truncate.pipe';
 
 @NgModule({
@@ -27,12 +30,7 @@ import { TruncatePipe } from './pipes/truncate.pipe';
     RouterModule,
     NgxPaginationModule,
     HeaderComponent,
-    SidebarComponent,
     FooterComponent,
-    DateTimeFormatPipe,
-    TimeAgoPipe,
-    NumberFormatPipe,
-    PercentageFormatPipe,
   ],
   declarations: [
     LoadingSpinnerComponent,
@@ -43,6 +41,10 @@ import { TruncatePipe } from './pipes/truncate.pipe';
     HasRoleDirective,
     ClickOutsideDirective,
     DateFormatPipe,
+    DateTimeFormatPipe,
+    TimeAgoPipe,
+    NumberFormatPipe,
+    PercentageFormatPipe,
     CurrencyFormatPipe,
     TruncatePipe,
   ],
@@ -53,7 +55,6 @@ import { TruncatePipe } from './pipes/truncate.pipe';
     RouterModule,
     NgxPaginationModule,
     HeaderComponent,
-    SidebarComponent,
     FooterComponent,
     LoadingSpinnerComponent,
     ConfirmationModalComponent,

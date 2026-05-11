@@ -1,0 +1,241 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+.modal-header {
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid #f1f5f9;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  .modal-title {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #1e293b;
+  }
+
+  .btn-close {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    color: #94a3b8;
+    cursor: pointer;
+    &:hover { color: #64748b; }
+  }
+}
+
+.modal-body {
+  padding: 1.5rem;
+  min-height: 350px;
+}
+
+.guide-text {
+  font-size: 0.95rem;
+  color: #64748b;
+  margin-bottom: 1.5rem;
+}
+
+.method-options {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.method-card {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 1rem;
+  border: 2px solid #f1f5f9;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+
+  input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+  }
+
+  &:hover {
+    border-color: #e2e8f0;
+    background: #f8fafc;
+  }
+
+  &.active {
+    border-color: #4f46e5;
+    background: #f5f3ff;
+    
+    .method-icon {
+      background: #4f46e5;
+      color: white;
+    }
+  }
+
+  .method-icon {
+    width: 48px;
+    height: 48px;
+    background: #f1f5f9;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: #64748b;
+    transition: all 0.2s;
+  }
+
+  .method-info {
+    display: flex;
+    flex-direction: column;
+    
+    strong {
+      font-size: 1rem;
+      color: #1e293b;
+    }
+    
+    span {
+      font-size: 0.85rem;
+      color: #64748b;
+    }
+  }
+}
+
+.contact-input {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+
+  label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #1e293b;
+  }
+
+  input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 1rem;
+    &:focus {
+      outline: none;
+      border-color: #4f46e5;
+      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    }
+  }
+}
+
+.qr-placeholder {
+  text-align: center;
+  padding: 1.5rem;
+  background: #f8fafc;
+  border: 2px dashed #cbd5e1;
+  border-radius: 12px;
+  
+  i {
+    font-size: 4rem;
+    color: #94a3b8;
+  }
+  
+  p {
+    margin-top: 1rem;
+    font-size: 0.9rem;
+    color: #64748b;
+  }
+}
+
+.verification-step {
+  text-align: center;
+  padding: 1rem 0;
+
+  .verify-icon {
+    font-size: 3.5rem;
+    color: #4f46e5;
+    margin-bottom: 1rem;
+  }
+
+  h3 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 0.5rem;
+  }
+
+  p {
+    color: #64748b;
+    margin-bottom: 2rem;
+  }
+}
+
+.code-input {
+  max-width: 200px;
+  margin: 0 auto 1.5rem;
+  
+  input {
+    width: 100%;
+    padding: 1rem;
+    text-align: center;
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: 0.5rem;
+    border: 2px solid #cbd5e1;
+    border-radius: 12px;
+    &:focus {
+      outline: none;
+      border-color: #4f46e5;
+      box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+    }
+  }
+}
+
+.resend-text {
+  font-size: 0.9rem;
+  color: #64748b;
+  
+  a {
+    color: #4f46e5;
+    text-decoration: none;
+    font-weight: 600;
+    &:hover { text-decoration: underline; }
+  }
+}
+
+.modal-footer {
+  padding: 1.25rem 1.5rem;
+  border-top: 1px solid #f1f5f9;
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+
+  .btn-cancel {
+    padding: 0.625rem 1.25rem;
+    background: white;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    color: #475569;
+    font-weight: 600;
+    cursor: pointer;
+    &:hover { background: #f8fafc; }
+  }
+
+  .btn-primary {
+    padding: 0.625rem 1.5rem;
+    background: #4f46e5;
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    &:hover { background: #4338ca; }
+    &:disabled { opacity: 0.7; cursor: not-allowed; }
+  }
+}

@@ -3,7 +3,7 @@ import { Observable } from 'rxjs';
 import { ApiService } from '../../../../core/services/api.service';
 import { API_ENDPOINTS } from '../../../../config/api.config';
 import { ApiResponse, PaginatedResult } from '../../../../types/api-response.type';
-import { ServiceRequest, ServiceRequestDetail, CreateServiceRequestRequest, ApproveServiceRequestRequest, RejectServiceRequestRequest, IssueServiceRequestRequest } from '../models/service-request.model';
+import { ServiceRequest, ServiceRequestDetail, CreateServiceRequestRequest, ApproveServiceRequestRequest, RejectServiceRequestRequest, IssueServiceRequestRequest, ServiceRequestTimeline, ServiceRequestActivity, CancelServiceRequestRequest } from '../models/service-request.model';
 
 @Injectable({
   providedIn: 'root'
@@ -37,5 +37,21 @@ export class ServiceRequestService {
 
   deleteServiceRequest(id: string): Observable<ApiResponse<object>> {
     return this.apiService.delete<ApiResponse<object>>(API_ENDPOINTS.SERVICE_REQUESTS.DELETE(id));
+  }
+
+  getServiceRequestTimeline(id: string): Observable<ApiResponse<ServiceRequestTimeline>> {
+    return this.apiService.get<ApiResponse<ServiceRequestTimeline>>(API_ENDPOINTS.SERVICE_REQUESTS.TIMELINE(id));
+  }
+
+  getServiceRequestActivity(id: string): Observable<ApiResponse<ServiceRequestActivity[]>> {
+    return this.apiService.get<ApiResponse<ServiceRequestActivity[]>>(`ServiceRequests/${id}/activity`);
+  }
+
+  cancelServiceRequest(request: CancelServiceRequestRequest): Observable<ApiResponse<object>> {
+    return this.apiService.post<ApiResponse<object>>(API_ENDPOINTS.SERVICE_REQUESTS.CANCEL(request.id), request);
+  }
+
+  addServiceRequestComment(id: string, comment: string): Observable<ApiResponse<object>> {
+    return this.apiService.post<ApiResponse<object>>(`ServiceRequests/${id}/comments`, { comment });
   }
 }

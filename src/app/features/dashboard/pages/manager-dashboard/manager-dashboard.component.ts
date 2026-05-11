@@ -1,4 +1,8 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal, OnInit, OnDestroy, ViewChild, ElementRef } from '@angular/core';
+import { CurrentUserService } from '../../../../core/services/current-user.service';
+import { UserProfile } from '../../../../types/dashboard.types';
+import { Router } from '@angular/router';
+import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { SignalRService } from '../../../../core/services/signalr.service';
 
 type RequestStatus = 'Pending' | 'Approved' | 'Rejected';
@@ -50,13 +54,61 @@ interface ApprovalItem {
   styleUrl: './manager-dashboard.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ManagerDashboardComponent {
+export class ManagerDashboardComponent implements OnInit, OnDestroy {
   private readonly signalRService = inject(SignalRService);
+  private readonly router = inject(Router);
+  private readonly sanitizer = inject(DomSanitizer);
+  private readonly currentUserService = inject(CurrentUserService);
 
-  readonly managerName = signal('Manager');
+  readonly managerName = computed(() => this.userProfile().fullName);
+  readonly userProfile = signal<UserProfile>({
+    fullName: '',
+    employeeCode: '',
+    department: '',
+    position: '',
+    email: '',
+    phone: '',
+    joinDate: '',
+  });
+
+  private setupProfileSubscription(): void {
+    this.currentUserService.getCurrentUser().subscribe(user => {
+      if (user) {
+        this.userProfile.set({
+          fullName: user.fullName || user.username || 'N/A',
+          employeeCode: user.employeeCode || 'N/A',
+          department: user.department || 'N/A',
+          position: user.position || 'N/A',
+          email: user.email || 'N/A',
+          phone: user.phone || 'N/A',
+          joinDate: user.joinDate || 'N/A',
+        });
+        if (user.photoUrl) {
+          this.profilePhoto.set(this.sanitizer.bypassSecurityTrustUrl(user.photoUrl));
+        }
+      }
+    });
+  }
   readonly filters: RequestFilter[] = ['All', 'Pending', 'Approved', 'Rejected'];
   readonly selectedFilter = signal<RequestFilter>('Pending');
   readonly selectedPeriod = signal<OverviewPeriod>('This Month');
+  readonly currentDate = new Date().toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+  readonly currentTime = signal<string>(this.getCurrentTime());
+  readonly currentLocation = signal<string>('Addis Ababa, Ethiopia');
+  private clockInterval?: any;
+
+  // Profile photo
+  readonly profilePhoto = signal<SafeUrl | string | null>(null);
+  readonly isSelectingPhoto = signal(false);
+  readonly isCameraActive = signal(false);
+  readonly cameraStream = signal<MediaStream | null>(null);
+
+  @ViewChild('videoElement') videoElement!: ElementRef<HTMLVideoElement>;
+  @ViewChild('canvasElement') canvasElement!: ElementRef<HTMLCanvasElement>;
 
   readonly requests = signal<ManagerRequest[]>([
     {
@@ -236,12 +288,27 @@ export class ManagerDashboardComponent {
     this.selectedPeriod.set(period);
   }
 
+  togglePeriod(): void {
+    const periods: OverviewPeriod[] = ['This Month', 'This Week', 'Today'];
+    const current = this.selectedPeriod();
+    const nextIndex = (periods.indexOf(current) + 1) % periods.length;
+    this.selectedPeriod.set(periods[nextIndex]);
+  }
+
   refresh(): void {
     this.prependActivity('You refreshed the approval queue', 'Queue refreshed', 'YM');
   }
 
   viewAllRequests(): void {
-    this.selectedFilter.set('All');
+    void this.router.navigate(['/manager/requests/all']);
+  }
+
+  viewAllActivity(): void {
+    void this.router.navigate(['/manager/notifications']);
+  }
+
+  viewAllApprovals(): void {
+    void this.router.navigate(['/manager/approvals/pending']);
   }
 
   approveRequest(id: number): void {
@@ -251,6 +318,7 @@ export class ManagerDashboardComponent {
       id: crypto.randomUUID(),
       message: `Request #${id} was approved`,
       type: 'success',
+      isRead: false,
       sentDate: new Date(),
     });
   }
@@ -262,6 +330,7 @@ export class ManagerDashboardComponent {
       id: crypto.randomUUID(),
       message: `Request #${id} was rejected`,
       type: 'error',
+      isRead: false,
       sentDate: new Date(),
     });
   }
@@ -292,5 +361,104 @@ export class ManagerDashboardComponent {
       hour: '2-digit',
       minute: '2-digit',
     }).format(new Date());
+  }
+
+  getCurrentTime(): string {
+    return new Date().toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true,
+    });
+  }
+
+  ngOnInit(): void {
+    this.setupProfileSubscription();
+    this.clockInterval = setInterval(() => {
+      this.currentTime.set(this.getCurrentTime());
+    }, 1000);
+  }
+
+  ngOnDestroy(): void {
+    if (this.clockInterval) {
+      clearInterval(this.clockInterval);
+    }
+    this.stopCamera();
+  }
+
+  // Photo upload methods
+  onFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files[0]) {
+      this.handleFile(input.files[0]);
+    }
+  }
+
+  private handleFile(file: File): void {
+    if (file.size > 2 * 1024 * 1024) {
+      alert('File too large. Max 2MB.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e: ProgressEvent<FileReader>) => {
+      const base64 = e.target?.result as string;
+      this.profilePhoto.set(this.sanitizer.bypassSecurityTrustUrl(base64));
+      this.isSelectingPhoto.set(false);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  async startCamera(): Promise<void> {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'user', width: 400, height: 400 }
+      });
+      this.cameraStream.set(stream);
+      this.isCameraActive.set(true);
+
+      setTimeout(() => {
+        if (this.videoElement?.nativeElement) {
+          this.videoElement.nativeElement.srcObject = stream;
+        }
+      }, 100);
+    } catch (err) {
+      console.error('Camera error:', err);
+      alert('Could not access camera.');
+    }
+  }
+
+  capturePhoto(): void {
+    const video = this.videoElement.nativeElement;
+    const canvas = this.canvasElement.nativeElement;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.drawImage(video, 0, 0);
+      canvas.toBlob((blob) => {
+        if (blob) {
+          const file = new File([blob], 'photo.jpg', { type: 'image/jpeg' });
+          const photoUrl = URL.createObjectURL(file);
+          this.profilePhoto.set(this.sanitizer.bypassSecurityTrustUrl(photoUrl));
+          this.stopCamera();
+        }
+      }, 'image/jpeg');
+    }
+  }
+
+  stopCamera(): void {
+    this.cameraStream()?.getTracks().forEach(t => t.stop());
+    this.cameraStream.set(null);
+    this.isCameraActive.set(false);
+  }
+
+  cancelUpload(): void {
+    this.stopCamera();
+    this.isSelectingPhoto.set(false);
+  }
+
+  changePhoto(): void {
+    this.isSelectingPhoto.set(true);
   }
 }

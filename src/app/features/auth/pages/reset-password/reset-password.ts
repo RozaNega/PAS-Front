@@ -8,8 +8,9 @@ import {
   Validators,
 } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { finalize } from 'rxjs';
 
-import { AuthApi } from '../../services/auth-api';
+import { AuthService } from '../../../../core/services/auth.service';
 
 @Component({
   selector: 'app-reset-password',
@@ -21,7 +22,7 @@ import { AuthApi } from '../../services/auth-api';
 export class ResetPassword {
   private readonly formBuilder = inject(FormBuilder);
   private readonly route = inject(ActivatedRoute);
-  private readonly authApi = inject(AuthApi);
+  private readonly authService = inject(AuthService);
 
   protected readonly submitted = signal(false);
   protected readonly loading = signal(false);
@@ -53,23 +54,33 @@ export class ResetPassword {
     }
 
     this.loading.set(true);
-    const result = this.authApi.resetPassword({
-      token: this.resetForm.controls.token.value,
-      password: this.resetForm.controls.password.value,
-    });
-    this.loading.set(false);
-    this.statusTone.set(result.success ? 'success' : 'error');
-    this.statusMessage.set(result.message);
-
-    if (result.success) {
-      const token = this.resetForm.controls.token.value;
-      this.resetForm.reset({
-        token,
-        password: '',
-        confirmPassword: '',
+    
+    this.authService
+      .resetPassword({
+        token: this.resetForm.controls.token.value,
+        password: this.resetForm.controls.password.value,
+      })
+      .pipe(finalize(() => this.loading.set(false)))
+      .subscribe({
+        next: (result) => {
+          this.statusTone.set(result.succeeded ? 'success' : 'error');
+          this.statusMessage.set(result.message || (result.succeeded ? 'Password successfully reset.' : 'Failed to reset password.'));
+          
+          if (result.succeeded) {
+            const token = this.resetForm.controls.token.value;
+            this.resetForm.reset({
+              token,
+              password: '',
+              confirmPassword: '',
+            });
+            this.submitted.set(false);
+          }
+        },
+        error: () => {
+          this.statusTone.set('error');
+          this.statusMessage.set('Unable to process request. Please try again later.');
+        },
       });
-      this.submitted.set(false);
-    }
   }
 
   protected togglePasswordVisibility(): void {

@@ -1,0 +1,253 @@
+<div class="approved-requests-container">
+  <div class="page-header">
+    <h1>Approved Requests</h1>
+    <p class="subtitle">Requests approved and ready for issue</p>
+  </div>
+
+  <div class="requests-list">
+    @for (request of requests(); track request.id) {
+      <div class="request-card">
+        <div class="request-header">
+          <div class="request-id">{{ request.id }}</div>
+          <div class="request-badge" [ngClass]="request.status.toLowerCase()">{{ request.status }}</div>
+        </div>
+        
+        <h3 class="request-title">{{ request.title }}</h3>
+        <p class="request-description">{{ request.description }}</p>
+        
+        <div class="request-meta">
+          <div class="meta-item">
+            <i class="bi bi-flag"></i>
+            <span>Priority: {{ request.priority }}</span>
+          </div>
+          @if (request.approvedDate) {
+            <div class="meta-item">
+              <i class="bi bi-check-circle"></i>
+              <span>Approved: {{ request.approvedDate }}</span>
+            </div>
+          }
+        </div>
+
+        <div class="request-actions">
+          <button class="btn btn-secondary" (click)="toggleTracking(request.id)">
+            <i class="bi bi-geo-alt"></i>
+            Track Request
+          </button>
+          @if (canCancelRequest(request.status)) {
+            <button class="btn btn-danger" (click)="showCancelConfirmation(request.id)">
+              <i class="bi bi-x-circle"></i>
+              Cancel Request
+            </button>
+          }
+        </div>
+
+        @if (isTrackingExpanded(request.id)) {
+          <div class="tracking-modal">
+            <div class="tracking-modal-header">
+              <h3>Track Request - {{ request.id }}</h3>
+              <button class="close-btn" (click)="toggleTracking(request.id)">
+                <i class="bi bi-x-lg"></i>
+              </button>
+            </div>
+
+            <div class="tracking-content">
+              @if (isLoadingTracking() === request.id) {
+                <div class="loading-state">Loading tracking data...</div>
+              } @else if (trackingError()) {
+                <div class="error-state">{{ trackingError() }}</div>
+              } @else {
+                @let tracking = getTrackingData(request.id);
+                @if (tracking && tracking.timeline) {
+                  <!-- Status Timeline -->
+                  <div class="timeline-section">
+                    <h4>📊 Request Status Timeline</h4>
+                    <div class="timeline-progress">
+                      <div class="timeline-bar">
+                        @for (step of tracking.timeline.steps; track step.step) {
+                          <div class="timeline-segment" 
+                               [ngClass]="step?.status || 'step-pending'">
+                          </div>
+                        }
+                      </div>
+                      <div class="timeline-labels">
+                        @for (step of tracking.timeline.steps; track step.step) {
+                          <span [class.current]="step?.status !== 'pending'">{{ step?.name }}</span>
+                        }
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Request Details -->
+                  <div class="details-section">
+                    <h4>📋 Request Details</h4>
+                    <div class="details-grid">
+                      <div class="detail-item">
+                        <strong>SR Number:</strong> {{ request.id }}
+                      </div>
+                      <div class="detail-item">
+                        <strong>Status:</strong> {{ request.status }} (Step {{ tracking.timeline.currentStep }} of {{ tracking.timeline.totalSteps }})
+                      </div>
+                      @if (tracking.timeline.estimatedCompletion) {
+                        <div class="detail-item">
+                          <strong>Estimated completion:</strong> {{ tracking.timeline.estimatedCompletion }}
+                        </div>
+                      }
+                      @if (tracking.timeline.currentApprover) {
+                        <div class="detail-item">
+                          <strong>Current Approver:</strong> {{ tracking.timeline.currentApprover }}
+                        </div>
+                      }
+                    </div>
+                  </div>
+                } @else {
+                  <div class="no-timeline-data">No timeline data available</div>
+                }
+
+                <!-- Items Requested -->
+                <div class="items-section">
+                  <h4>📦 Items Requested</h4>
+                  <table class="items-table">
+                    <thead>
+                      <tr>
+                        <th>Item</th>
+                        <th>Qty</th>
+                        <th>Status</th>
+                        <th>Expected Date</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (item of request.items; track item.name) {
+                        <tr>
+                          <td>{{ item.name }}</td>
+                          <td>{{ item.quantity }}</td>
+                          <td>{{ item.status }}</td>
+                          <td>{{ item.expectedDate }}</td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+
+                <!-- Activity Log -->
+                <div class="activity-section">
+                  <h4>📜 Activity Log</h4>
+                  <div class="activity-log">
+                    @if (tracking && tracking.activity && tracking.activity.length > 0) {
+                      @for (log of tracking.activity; track log.id) {
+                        <div class="activity-entry">
+                          <div class="activity-time">{{ log.timestamp }}</div>
+                          <div class="activity-action">{{ log.action }}</div>
+                          @if (log.details) {
+                            <div class="activity-details">{{ log.details }}</div>
+                          }
+                        </div>
+                      }
+                    } @else {
+                      <div class="no-activity">No activity log available</div>
+                    }
+                  </div>
+                </div>
+
+                <!-- Add Comment -->
+                <div class="comment-section">
+                  <h4>💬 Add Comment</h4>
+                  <div class="comment-input">
+                    <input type="text" 
+                           [ngModel]="newComment()" 
+                           (ngModelChange)="newComment.set($event)"
+                           placeholder="Add a note for the approver or storekeeper..." />
+                    <button class="btn btn-primary" (click)="addComment(request.id)">Send</button>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        @if (isCancelConfirmShown(request.id)) {
+          <div class="cancel-confirmation">
+            <div class="confirmation-header">
+              <h4>Cancel Request - {{ request.id }}</h4>
+              <button class="close-btn" (click)="hideCancelConfirmation()">
+                <i class="bi bi-x-lg"></i>
+              </button>
+            </div>
+            
+            <div class="confirmation-body">
+              <div class="warning-message">
+                <i class="bi bi-exclamation-triangle"></i>
+                <h5>⚠️ ARE YOU SURE YOU WANT TO CANCEL THIS REQUEST?</h5>
+              </div>
+
+              <div class="request-summary">
+                <strong>Request Details:</strong>
+                <ul>
+                  <li>• SR Number: {{ request.id }}</li>
+                  <li>• Items: {{ request.items.map(i => `${i.name} (${i.quantity})`).join(', ') }}</li>
+                  <li>• Status: {{ request.status }}</li>
+                </ul>
+              </div>
+
+              <div class="warning-text">
+                ⚠️ Warning: This action cannot be undone!
+              </div>
+
+              <div class="cancel-reason">
+                <label>Reason for cancellation (Optional):</label>
+                <textarea [ngModel]="cancelReason()" 
+                          (ngModelChange)="cancelReason.set($event)"
+                          placeholder="e.g., Item no longer needed"></textarea>
+              </div>
+
+              <div class="cancel-options">
+                <label class="checkbox-label">
+                  <input type="checkbox" [ngModel]="notifyApprover()" (ngModelChange)="notifyApprover.set($event)" />
+                  <span>☑️ Notify approver about cancellation</span>
+                </label>
+                <label class="checkbox-label">
+                  <input type="checkbox" [ngModel]="sendEmailConfirmation()" (ngModelChange)="sendEmailConfirmation.set($event)" />
+                  <span>☑️ Send me email confirmation</span>
+                </label>
+              </div>
+
+              <div class="confirmation-actions">
+                <button class="btn btn-secondary" (click)="hideCancelConfirmation()">
+                  Keep Request
+                </button>
+                <button class="btn btn-danger" (click)="cancelRequest(request.id)">
+                  Cancel Request
+                </button>
+              </div>
+            </div>
+          </div>
+        }
+
+        @if (isCancelSuccessShown(request.id)) {
+          <div class="cancel-success">
+            <div class="success-content">
+              <i class="bi bi-check-circle-fill"></i>
+              <h4>✅ REQUEST CANCELLED SUCCESSFULLY</h4>
+              <p>Your request {{ request.id }} has been cancelled.</p>
+              <p>📧 Confirmation email has been sent to your email address</p>
+              
+              <p class="next-action">What would you like to do next?</p>
+              
+              <div class="success-actions">
+                <button class="btn btn-primary">Create New Request</button>
+                <button class="btn btn-secondary">View My Requests</button>
+                <button class="btn btn-secondary">Go to Dashboard</button>
+              </div>
+              
+              <button class="close-success-btn" (click)="hideCancelSuccess()">Close</button>
+            </div>
+          </div>
+        }
+      </div>
+    } @empty {
+      <div class="empty-state">
+        <i class="bi bi-check-circle"></i>
+        <p>No approved requests</p>
+      </div>
+    }
+  </div>
+</div>

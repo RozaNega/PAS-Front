@@ -45,6 +45,7 @@ export class Register {
       email: ['', [Validators.required, Validators.email]],
       department: ['', [Validators.required]],
       employeeCode: ['', [Validators.required]],
+      position: ['', [Validators.required]],
       roleName: ['Employee', [Validators.required]],
       password: ['', [Validators.required, Validators.minLength(8)]],
       confirmPassword: ['', [Validators.required]],
@@ -77,6 +78,7 @@ export class Register {
       roleName: raw.roleName,
       department: raw.department,
       employeeCode: raw.employeeCode,
+      position: raw.position,
       phoneNumber: raw.phoneNumber || undefined,
     };
     console.log('Sending registration data:', registerData);
@@ -96,6 +98,7 @@ export class Register {
             email: '',
             department: '',
             employeeCode: '',
+            position: '',
             roleName: 'Employee',
             password: '',
             confirmPassword: '',
@@ -169,6 +172,7 @@ export class Register {
       | 'email'
       | 'department'
       | 'employeeCode'
+      | 'position'
       | 'roleName'
       | 'password'
       | 'confirmPassword'

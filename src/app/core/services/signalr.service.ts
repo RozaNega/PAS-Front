@@ -1,12 +1,17 @@
-﻿import { Injectable } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 import { NotificationService } from './notification.service';
 
 export interface Notification {
   id: string;
+  userId?: string;
   message: string;
-  type: string;
+  isRead: boolean;
   sentDate: Date;
+  type?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+  isDeleted?: boolean;
 }
 
 @Injectable({ providedIn: 'root' })

@@ -6,10 +6,14 @@ import { ApiResponse } from '../../../../types/api-response.type';
 
 export interface Notification {
   id: string;
+  userId?: string;
   message: string;
   isRead: boolean;
   sentDate: string;
-  timeAgo: string;
+  type?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  isDeleted: boolean;
 }
 
 export interface NotificationList {
@@ -38,5 +42,9 @@ export class NotificationService {
 
   markAllAsRead(): Observable<ApiResponse<object>> {
     return this.apiService.post<ApiResponse<object>>(API_ENDPOINTS.NOTIFICATIONS.MARK_ALL_READ, {});
+  }
+
+  deleteNotification(id: string): Observable<ApiResponse<object>> {
+    return this.apiService.delete<ApiResponse<object>>(API_ENDPOINTS.NOTIFICATIONS.DELETE(id));
   }
 }

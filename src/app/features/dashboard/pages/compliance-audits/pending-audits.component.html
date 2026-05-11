@@ -1,0 +1,15 @@
+<div class="pending-audits-container">
+  <div class="page-header"><h1>Pending Reviews</h1><p class="subtitle">Audits awaiting review</p></div>
+  <div class="audits-list">
+    @for (audit of audits(); track audit.id) {
+      <div class="audit-card">
+        <div class="audit-header"><div class="audit-id">{{ audit.auditId }}</div><div class="priority-badge">{{ audit.priority }}</div></div>
+        <div class="audit-details">
+          <div class="detail-row"><span class="label">Type:</span><span class="value">{{ audit.type }}</span></div>
+          <div class="detail-row"><span class="label">Assigned To:</span><span class="value">{{ audit.assignedTo }}</span></div>
+          <div class="detail-row"><span class="label">Due Date:</span><span class="value">{{ audit.dueDate }}</span></div>
+        </div>
+      </div>
+    }
+  </div>
+</div>

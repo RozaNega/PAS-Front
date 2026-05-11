@@ -1,0 +1,82 @@
+<div class="modal-header">
+  <h4 class="modal-title">Enable Two-Factor Authentication</h4>
+  <button type="button" class="btn-close" aria-label="Close" (click)="cancel()">✕</button>
+</div>
+
+<div class="modal-body">
+  @if (step() === 1) {
+    <div class="setup-guide">
+      <p class="guide-text">Choose how you want to receive your security codes:</p>
+      
+      <div class="method-options">
+        <label class="method-card" [class.active]="method() === 'sms'">
+          <input type="radio" name="2faMethod" (click)="method.set('sms')" [checked]="method() === 'sms'" />
+          <div class="method-icon"><i class="bi bi-chat-left-text"></i></div>
+          <div class="method-info">
+            <strong>SMS / Text Message</strong>
+            <span>Get codes sent to your phone</span>
+          </div>
+        </label>
+
+        <label class="method-card" [class.active]="method() === 'email'">
+          <input type="radio" name="2faMethod" (click)="method.set('email')" [checked]="method() === 'email'" />
+          <div class="method-icon"><i class="bi bi-envelope"></i></div>
+          <div class="method-info">
+            <strong>Email Address</strong>
+            <span>Get codes sent to your inbox</span>
+          </div>
+        </label>
+
+        <label class="method-card" [class.active]="method() === 'app'">
+          <input type="radio" name="2faMethod" (click)="method.set('app')" [checked]="method() === 'app'" />
+          <div class="method-icon"><i class="bi bi-shield-lock"></i></div>
+          <div class="method-info">
+            <strong>Authenticator App</strong>
+            <span>Use Google Authenticator or Authy</span>
+          </div>
+        </label>
+      </div>
+
+      @if (method() === 'sms') {
+        <div class="contact-input">
+          <label>Phone Number</label>
+          <input type="tel" [(ngModel)]="contactInfo" placeholder="+251-XXX-XXXXXX" />
+        </div>
+      } @else if (method() === 'email') {
+        <div class="contact-input">
+          <label>Email Address</label>
+          <input type="email" [(ngModel)]="contactInfo" placeholder="your.email@example.com" />
+        </div>
+      } @else {
+        <div class="qr-placeholder">
+          <i class="bi bi-qr-code"></i>
+          <p>Scan this QR code with your authenticator app</p>
+        </div>
+      }
+    </div>
+  } @else {
+    <div class="verification-step">
+      <div class="verify-icon"><i class="bi bi-patch-check"></i></div>
+      <h3>Verify Identity</h3>
+      <p>Please enter the 6-digit code sent to your {{ method() === 'app' ? 'authenticator app' : method() }}</p>
+      
+      <div class="code-input">
+        <input type="text" maxlength="6" [(ngModel)]="verificationCode" placeholder="000000" />
+      </div>
+      
+      <p class="resend-text">Didn't receive a code? <a href="javascript:void(0)">Resend</a></p>
+    </div>
+  }
+</div>
+
+<div class="modal-footer">
+  @if (step() === 1) {
+    <button class="btn-cancel" (click)="cancel()">Cancel</button>
+    <button class="btn-primary" (click)="nextStep()">Continue</button>
+  } @else {
+    <button class="btn-cancel" (click)="step.set(1)">Back</button>
+    <button class="btn-primary" (click)="submit()" [disabled]="loading()">
+      {{ loading() ? 'Verifying...' : 'Enable 2FA' }}
+    </button>
+  }
+</div>

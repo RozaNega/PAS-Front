@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, signal, OnInit, OnDestroy } from '@angular/core';
 
 type ActivityAction = 'Created' | 'Approved' | 'Rejected' | 'Deleted';
 type ActivityStatus = 'Normal' | 'Flagged';
@@ -34,7 +34,7 @@ interface AlertItem {
   styleUrl: './compliance-officer-dashboard.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ComplianceOfficerDashboardComponent {
+export class ComplianceOfficerDashboardComponent implements OnInit, OnDestroy {
   readonly officerName = signal('Compliance Officer');
   readonly filters: ActivityFilter[] = [
     'All Activities',
@@ -43,6 +43,14 @@ export class ComplianceOfficerDashboardComponent {
     'Suspicious / Flagged',
   ];
   readonly selectedFilter = signal<ActivityFilter>('All Activities');
+  readonly currentDate = new Date().toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+  readonly currentTime = signal<string>(this.getCurrentTime());
+  readonly currentLocation = signal<string>('Addis Ababa, Ethiopia');
+  private clockInterval?: any;
 
   readonly activityLogs = signal<ActivityLogEntry[]>([
     {
@@ -163,5 +171,26 @@ export class ComplianceOfficerDashboardComponent {
 
   setFilter(filter: ActivityFilter): void {
     this.selectedFilter.set(filter);
+  }
+
+  getCurrentTime(): string {
+    return new Date().toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true,
+    });
+  }
+
+  ngOnInit(): void {
+    this.clockInterval = setInterval(() => {
+      this.currentTime.set(this.getCurrentTime());
+    }, 1000);
+  }
+
+  ngOnDestroy(): void {
+    if (this.clockInterval) {
+      clearInterval(this.clockInterval);
+    }
   }
 }

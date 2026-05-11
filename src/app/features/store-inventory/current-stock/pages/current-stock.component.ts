@@ -33,7 +33,7 @@ interface StockMovement {
 @Component({
   selector: 'app-current-stock',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule],
   templateUrl: './current-stock.component.html',
   styleUrls: ['./current-stock.component.scss']
 })

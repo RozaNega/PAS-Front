@@ -1,0 +1,17 @@
+<div class="status-reports-container">
+  <div class="page-header"><h1>Compliance Status</h1><p class="subtitle">Overall compliance status reports</p></div>
+  <div class="reports-list">
+    @for (report of reports(); track report.id) {
+      <div class="report-card">
+        <div class="report-header"><div class="report-name">{{ report.reportName }}</div><div class="score-badge">{{ report.complianceScore }}%</div></div>
+        <div class="report-details">
+          <div class="detail-row"><span class="label">Generated:</span><span class="value">{{ report.generatedDate }}</span></div>
+          <div class="detail-row"><span class="label">Total Items:</span><span class="value">{{ report.totalItems }}</span></div>
+          <div class="detail-row"><span class="label">Compliant:</span><span class="value">{{ report.compliantItems }}</span></div>
+          <div class="detail-row"><span class="label">Non-Compliant:</span><span class="value">{{ report.nonCompliantItems }}</span></div>
+        </div>
+        <div class="report-actions"><button class="btn btn-secondary">View</button><button class="btn btn-primary">Download</button></div>
+      </div>
+    }
+  </div>
+</div>

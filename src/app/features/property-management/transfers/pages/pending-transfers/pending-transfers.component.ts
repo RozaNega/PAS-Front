@@ -28,7 +28,7 @@ interface Transfer {
 @Component({
   selector: 'app-pending-transfers',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule],
   templateUrl: './pending-transfers.component.html',
   styleUrls: ['./pending-transfers.component.scss']
 })

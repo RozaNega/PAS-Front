@@ -1,0 +1,17 @@
+<div class="disposal-records-container">
+  <div class="page-header"><h1>Disposal Records</h1><p class="subtitle">Asset disposal records</p></div>
+  <div class="records-list">
+    @for (record of records(); track record.id) {
+      <div class="record-card">
+        <div class="record-header"><div class="disposal-number">{{ record.disposalNumber }}</div><div class="status-badge" [class.pending]="record.status === 'Pending'" [class.approved]="record.status === 'Approved'" [class.rejected]="record.status === 'Rejected'">{{ record.status }}</div></div>
+        <div class="record-details">
+          <div class="detail-row"><span class="label">Property Code:</span><span class="value">{{ record.propertyCode }}</span></div>
+          <div class="detail-row"><span class="label">Disposal Date:</span><span class="value">{{ record.disposalDate }}</span></div>
+          <div class="detail-row"><span class="label">Reason:</span><span class="value">{{ record.disposalReason }}</span></div>
+          <div class="detail-row"><span class="label">Estimated Value:</span><span class="value">${{ record.estimatedValue.toLocaleString() }}</span></div>
+        </div>
+        <div class="record-actions"><button class="btn btn-secondary">View Details</button><button class="btn btn-primary">Approve</button></div>
+      </div>
+    }
+  </div>
+</div>

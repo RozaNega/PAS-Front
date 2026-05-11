@@ -39,8 +39,8 @@
     </div>
 
     <div class="form-section">
-      <label>Justification / Reason *</label>
-      <textarea [(ngModel)]="form.justification" rows="3" placeholder="Enter justification..."></textarea>
+      <label>Remarks / Justification *</label>
+      <textarea [(ngModel)]="form.remarks" rows="3" placeholder="Enter remarks or justification..."></textarea>
     </div>
 
     <div class="form-section">
@@ -101,32 +101,39 @@
         <table class="selected-table">
           <thead>
             <tr>
-              <th>Item Name</th>
-              <th>SKU</th>
-              <th>Requested</th>
-              <th>Available</th>
-              <th>Actions</th>
+               <th>Item Name</th>
+               <th>Item GUID</th>
+               <th>Shelf GUID</th>
+               <th>Requested</th>
+               <th>Notes</th>
+               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
             @for (item of selectedItems; track item.sku) {
               <tr>
-                <td>{{ item.name }}</td>
-                <td>{{ item.sku }}</td>
-                <td>
-                  <input
-                    type="number"
-                    [(ngModel)]="item.quantity"
-                    (ngModelChange)="updateItemQuantity(item.sku, $event)"
-                    min="1"
-                    class="quantity-input"
-                  />
-                </td>
-                <td>✅ Yes</td>
-                <td>
-                  <button class="icon-btn" (click)="removeItem(item.sku)">✏️</button>
-                  <button class="icon-btn" (click)="removeItem(item.sku)">🗑️</button>
-                </td>
+                 <td>{{ item.name }}</td>
+                 <td>
+                   <input type="text" [(ngModel)]="item.itemId" placeholder="Item ID" class="guid-input" />
+                 </td>
+                 <td>
+                   <input type="text" [(ngModel)]="item.preferredShelfId" placeholder="Shelf ID" class="guid-input" />
+                 </td>
+                 <td>
+                   <input
+                     type="number"
+                     [(ngModel)]="item.quantity"
+                     (ngModelChange)="updateItemQuantity(item.sku, $event)"
+                     min="1"
+                     class="quantity-input"
+                   />
+                 </td>
+                 <td>
+                   <input type="text" [(ngModel)]="item.notes" placeholder="Notes" class="notes-input" />
+                 </td>
+                 <td>
+                   <button class="icon-btn" (click)="removeItem(item.sku)">🗑️</button>
+                 </td>
               </tr>
             }
           </tbody>
@@ -148,6 +155,7 @@
         <p><strong>• Total Items:</strong> {{ totalItems }} | <strong>Total Quantity:</strong> {{ totalQuantity }}</p>
         <p><strong>• Required By:</strong> {{ form.requiredBy }}</p>
         <p><strong>• Priority:</strong> {{ form.priority }}</p>
+        <p><strong>• Remarks:</strong> {{ form.remarks }}</p>
       </div>
       <div class="warning-box">
         ⚠️ Please review all information before submitting
@@ -170,7 +178,7 @@
   @if (currentStep === 1) {
     <button class="btn btn-secondary" (click)="cancel()">Cancel</button>
     <button class="btn btn-secondary" (click)="submit()">Save Draft</button>
-    <button class="btn btn-primary" (click)="nextStep()" [disabled]="!form.requiredBy || !form.justification">
+    <button class="btn btn-primary" (click)="nextStep()" [disabled]="!form.requiredBy || !form.remarks">
       Next
     </button>
   }

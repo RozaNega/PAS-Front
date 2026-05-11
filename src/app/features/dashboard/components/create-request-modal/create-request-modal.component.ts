@@ -2,7 +2,9 @@ import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
-import { NewRequestForm, RequestItem } from '../../../../types/dashboard.types';
+import { NewRequestForm, RequestItem, ApiServiceRequest } from '../../../../types/dashboard.types';
+import { CurrentUserService } from '../../../../core/services/current-user.service';
+import { PasApiService } from '../../../../shared/services/pas-api.service';
 
 type WizardStep = 1 | 2 | 3;
 
@@ -16,23 +18,26 @@ type WizardStep = 1 | 2 | 3;
 })
 export class CreateRequestModalComponent {
   readonly modal = inject(NgbActiveModal);
+  private currentUserService = inject(CurrentUserService);
+  private pasApi = inject(PasApiService);
 
   currentStep: WizardStep = 1;
   readonly form: NewRequestForm = {
     requester: 'John Doe',
     department: 'IT Department',
     requiredBy: '',
+    remarks: '',
     justification: '',
     priority: 'Medium',
     items: [],
   };
 
   readonly availableItems = [
-    { name: 'Dell XPS Laptop', sku: 'LAP-001', available: 45, uom: 'PCS' },
-    { name: 'HP 27" Monitor', sku: 'MON-002', available: 67, uom: 'PCS' },
-    { name: 'Office Chair', sku: 'CHR-003', available: 23, uom: 'PCS' },
-    { name: 'USB Cables (10-pack)', sku: 'CAB-004', available: 55, uom: 'PCS' },
-    { name: 'A4 Paper', sku: 'PAP-005', available: 120, uom: 'PCS' },
+    { name: 'Dell XPS Laptop', sku: 'LAP-001', available: 45, uom: 'PCS', itemId: '3fa85f64-5717-4562-b3fc-2c963f66afa6', preferredShelfId: '7a215f64-5717-4562-b3fc-2c963f66afa6' },
+    { name: 'HP 27" Monitor', sku: 'MON-002', available: 67, uom: 'PCS', itemId: '4ba85f64-5717-4562-b3fc-2c963f66afa6', preferredShelfId: '8b215f64-5717-4562-b3fc-2c963f66afa6' },
+    { name: 'Office Chair', sku: 'CHR-003', available: 23, uom: 'PCS', itemId: '5ca85f64-5717-4562-b3fc-2c963f66afa6', preferredShelfId: '9c215f64-5717-4562-b3fc-2c963f66afa6' },
+    { name: 'USB Cables (10-pack)', sku: 'CAB-004', available: 55, uom: 'PCS', itemId: '6da85f64-5717-4562-b3fc-2c963f66afa6', preferredShelfId: '0d215f64-5717-4562-b3fc-2c963f66afa6' },
+    { name: 'A4 Paper', sku: 'PAP-005', available: 120, uom: 'PCS', itemId: '1ea85f64-5717-4562-b3fc-2c963f66afa6', preferredShelfId: '1e215f64-5717-4562-b3fc-2c963f66afa6' },
   ];
 
   searchQuery = '';
@@ -73,12 +78,22 @@ export class CreateRequestModalComponent {
     }
   }
 
-  addItem(item: { name: string; sku: string; available: number; uom: string }): void {
+  addItem(item: any): void {
     const existingItem = this.selectedItems.find((i) => i.sku === item.sku);
     if (existingItem) {
       existingItem.quantity++;
+      existingItem.requestedQty = existingItem.quantity;
     } else {
-      this.selectedItems.push({ name: item.name, sku: item.sku, quantity: 1 });
+      this.selectedItems.push({ 
+        name: item.name, 
+        sku: item.sku, 
+        quantity: 1,
+        itemId: '', 
+        srDetailId: '3fa85f64-5717-4562-b3fc-2c963f66afa6', // Template GUID
+        requestedQty: 1,
+        preferredShelfId: '', 
+        notes: ''
+      });
     }
   }
 
@@ -90,13 +105,36 @@ export class CreateRequestModalComponent {
     const item = this.selectedItems.find((i) => i.sku === sku);
     if (item) {
       item.quantity = Math.max(1, quantity);
+      item.requestedQty = item.quantity;
     }
   }
 
   submit(): void {
     this.form.items = this.selectedItems;
-    console.log('Submitting request:', this.form);
-    this.modal.close(this.form);
+    
+    const apiPayload: ApiServiceRequest = {
+      items: this.selectedItems.map(item => ({
+        itemId: item.itemId,
+        srDetailId: item.srDetailId,
+        requestedQty: item.requestedQty,
+        preferredShelfId: item.preferredShelfId,
+        notes: item.notes
+      })),
+      remarks: this.form.remarks || this.form.justification
+    };
+
+    console.log('Submitting request payload:', apiPayload);
+    
+    this.pasApi.createServiceRequest(apiPayload).subscribe({
+      next: (response) => {
+        console.log('Request saved successfully:', response);
+        this.modal.close(apiPayload);
+      },
+      error: (err) => {
+        console.error('Error saving request:', err);
+        alert('Failed to save request to database. Please try again.');
+      }
+    });
   }
 
   cancel(): void {

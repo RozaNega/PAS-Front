@@ -1,0 +1,17 @@
+<div class="audit-reports-container">
+  <div class="page-header"><h1>Audit Reports</h1><p class="subtitle">Compliance audit reports</p></div>
+  <div class="reports-list">
+    @for (report of reports(); track report.id) {
+      <div class="report-card">
+        <div class="report-header"><div class="report-name">{{ report.reportName }}</div></div>
+        <div class="report-details">
+          <div class="detail-row"><span class="label">Generated:</span><span class="value">{{ report.generatedDate }}</span></div>
+          <div class="detail-row"><span class="label">Total Audits:</span><span class="value">{{ report.totalAudits }}</span></div>
+          <div class="detail-row"><span class="label">Completed:</span><span class="value">{{ report.completedAudits }}</span></div>
+          <div class="detail-row"><span class="label">Findings:</span><span class="value">{{ report.findings }}</span></div>
+        </div>
+        <div class="report-actions"><button class="btn btn-secondary">View</button><button class="btn btn-primary">Download</button></div>
+      </div>
+    }
+  </div>
+</div>

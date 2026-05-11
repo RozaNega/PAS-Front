@@ -7,7 +7,7 @@ export const routes: Routes = [
   {
     path: '',
     pathMatch: 'full',
-    redirectTo: 'employee/dashboard',
+    redirectTo: 'auth/login',
   },
   {
     path: 'admin',
@@ -326,10 +326,7 @@ export const routes: Routes = [
       },
     ],
   },
-  {
-    path: 'landing',
-    loadComponent: () => import('./pages/landing/landing').then((m) => m.Landing),
-  },
+
   {
     path: 'auth',
     loadChildren: () => import('./features/auth/auth-module').then((m) => m.AuthModule),
@@ -403,6 +400,62 @@ export const routes: Routes = [
             (m) => m.EmployeeDashboardComponent,
           ),
       },
+      {
+        path: 'requests/create',
+        loadComponent: () =>
+          import('./features/dashboard/pages/employee-requests/create-request.component').then(
+            (m) => m.CreateRequestComponent,
+          ),
+      },
+      {
+        path: 'requests/pending',
+        loadComponent: () =>
+          import('./features/dashboard/pages/employee-requests/pending-requests.component').then(
+            (m) => m.PendingRequestsComponent,
+          ),
+      },
+      {
+        path: 'requests/approved',
+        loadComponent: () =>
+          import('./features/dashboard/pages/employee-requests/approved-requests.component').then(
+            (m) => m.ApprovedRequestsComponent,
+          ),
+      },
+      {
+        path: 'requests/rejected',
+        loadComponent: () =>
+          import('./features/dashboard/pages/employee-requests/rejected-requests.component').then(
+            (m) => m.RejectedRequestsComponent,
+          ),
+      },
+      {
+        path: 'requests/completed',
+        loadComponent: () =>
+          import('./features/dashboard/pages/employee-requests/completed-requests.component').then(
+            (m) => m.CompletedRequestsComponent,
+          ),
+      },
+      {
+        path: 'requests/sivs',
+        loadComponent: () =>
+          import('./features/dashboard/pages/employee-requests/my-sivs.component').then(
+            (m) => m.MySIVsComponent,
+          ),
+      },
+      {
+        path: 'returns',
+        loadComponent: () =>
+          import('./features/dashboard/pages/employee-returns/my-returns.component').then(
+            (m) => m.MyReturnsComponent,
+          ),
+      },
+      {
+        path: 'returns/create',
+        loadComponent: () =>
+          import('./features/dashboard/pages/employee-returns/create-return.component').then(
+            (m) => m.CreateReturnComponent,
+          ),
+      },
     ],
   },
   {
@@ -429,10 +482,136 @@ export const routes: Routes = [
           ),
       },
       {
-        path: 'decision-profile',
+        path: 'profile',
         loadComponent: () =>
           import('./features/dashboard/pages/decision-profile-page/decision-profile-page.component').then(
             (m) => m.DecisionProfilePageComponent,
+          ),
+      },
+      {
+        path: 'approvals/pending',
+        loadComponent: () =>
+          import('./features/dashboard/pages/manager-approvals/pending-approvals.component').then(
+            (m) => m.PendingApprovalsComponent,
+          ),
+      },
+      {
+        path: 'approvals/decisions',
+        loadComponent: () =>
+          import('./features/dashboard/pages/manager-approvals/my-decisions.component').then(
+            (m) => m.MyDecisionsComponent,
+          ),
+      },
+      {
+        path: 'approvals/history',
+        loadComponent: () =>
+          import('./features/dashboard/pages/manager-approvals/approval-history.component').then(
+            (m) => m.ApprovalHistoryComponent,
+          ),
+      },
+      {
+        path: 'requests/all',
+        loadComponent: () =>
+          import('./features/dashboard/pages/manager-requests/all-requests.component').then(
+            (m) => m.AllRequestsComponent,
+          ),
+      },
+      {
+        path: 'requests/pending',
+        loadComponent: () =>
+          import('./features/dashboard/pages/manager-requests/pending-requests.component').then(
+            (m) => m.PendingRequestsComponent,
+          ),
+      },
+      {
+        path: 'requests/approved',
+        loadComponent: () =>
+          import('./features/dashboard/pages/manager-requests/approved-requests.component').then(
+            (m) => m.ApprovedRequestsComponent,
+          ),
+      },
+      {
+        path: 'requests/rejected',
+        loadComponent: () =>
+          import('./features/dashboard/pages/manager-requests/rejected-requests.component').then(
+            (m) => m.RejectedRequestsComponent,
+          ),
+      },
+      {
+        path: 'requests/issued',
+        loadComponent: () =>
+          import('./features/dashboard/pages/manager-requests/issued-requests.component').then(
+            (m) => m.IssuedRequestsComponent,
+          ),
+      },
+      {
+        path: 'sivs/all',
+        loadComponent: () =>
+          import('./features/dashboard/pages/manager-sivs/all-sivs.component').then(
+            (m) => m.AllSIVsComponent,
+          ),
+      },
+      {
+        path: 'sivs/pending',
+        loadComponent: () =>
+          import('./features/dashboard/pages/manager-sivs/pending-sivs.component').then(
+            (m) => m.PendingSIVsComponent,
+          ),
+      },
+      {
+        path: 'sivs/issued',
+        loadComponent: () =>
+          import('./features/dashboard/pages/manager-sivs/issued-sivs.component').then(
+            (m) => m.IssuedSIVsComponent,
+          ),
+      },
+      {
+        path: 'workflows/all',
+        loadComponent: () =>
+          import('./features/dashboard/pages/manager-approvals/all-workflows.component').then(
+            (m) => m.AllWorkflowsComponent,
+          ),
+      },
+      {
+        path: 'workflows/create',
+        loadComponent: () =>
+          import('./features/dashboard/pages/manager-approvals/create-workflow.component').then(
+            (m) => m.CreateWorkflowComponent,
+          ),
+      },
+      {
+        path: 'workflows/approvers',
+        loadComponent: () =>
+          import('./features/dashboard/pages/approver-matrix-page/approver-matrix-page.component').then(
+            (m) => m.ApproverMatrixPageComponent,
+          ),
+      },
+      {
+        path: 'reports/approval',
+        loadComponent: () =>
+          import('./features/dashboard/pages/manager-reports/approval-reports.component').then(
+            (m) => m.ApprovalReportsComponent,
+          ),
+      },
+      {
+        path: 'reports/requests',
+        loadComponent: () =>
+          import('./features/dashboard/pages/manager-reports/request-reports.component').then(
+            (m) => m.RequestReportsComponent,
+          ),
+      },
+      {
+        path: 'reports/sivs',
+        loadComponent: () =>
+          import('./features/dashboard/pages/manager-reports/siv-reports.component').then(
+            (m) => m.SIVReportsComponent,
+          ),
+      },
+      {
+        path: 'audit-trail',
+        loadComponent: () =>
+          import('./features/dashboard/pages/audit-reference-page/audit-reference-page.component').then(
+            (m) => m.AuditReferencePageComponent,
           ),
       },
       {
@@ -515,10 +694,108 @@ export const routes: Routes = [
           ),
       },
       {
-        path: 'officer-profile',
+        path: 'profile',
         loadComponent: () =>
           import('./features/compliance/pages/officer-profile-page/officer-profile-page.component').then(
             (m) => m.OfficerProfilePageComponent,
+          ),
+      },
+      {
+        path: 'audits/all',
+        loadComponent: () =>
+          import('./features/dashboard/pages/compliance-audits/all-audits.component').then(
+            (m) => m.AllAuditsComponent,
+          ),
+      },
+      {
+        path: 'audits/pending',
+        loadComponent: () =>
+          import('./features/dashboard/pages/compliance-audits/pending-audits.component').then(
+            (m) => m.PendingAuditsComponent,
+          ),
+      },
+      {
+        path: 'audits/completed',
+        loadComponent: () =>
+          import('./features/dashboard/pages/compliance-audits/completed-audits.component').then(
+            (m) => m.CompletedAuditsComponent,
+          ),
+      },
+      {
+        path: 'reports/risk',
+        loadComponent: () =>
+          import('./features/dashboard/pages/compliance-reports/risk-reports.component').then(
+            (m) => m.RiskReportsComponent,
+          ),
+      },
+      {
+        path: 'reports/audit',
+        loadComponent: () =>
+          import('./features/dashboard/pages/compliance-reports/audit-reports.component').then(
+            (m) => m.AuditReportsComponent,
+          ),
+      },
+      {
+        path: 'reports/status',
+        loadComponent: () =>
+          import('./features/dashboard/pages/compliance-reports/status-reports.component').then(
+            (m) => m.StatusReportsComponent,
+          ),
+      },
+      {
+        path: 'reports/disposal',
+        loadComponent: () =>
+          import('./features/dashboard/pages/compliance-reports/disposal-reports.component').then(
+            (m) => m.DisposalReportsComponent,
+          ),
+      },
+      {
+        path: 'reports/inspection',
+        loadComponent: () =>
+          import('./features/dashboard/pages/compliance-reports/inspection-reports.component').then(
+            (m) => m.InspectionReportsComponent,
+          ),
+      },
+      {
+        path: 'decisions/approvals',
+        loadComponent: () =>
+          import('./features/dashboard/pages/compliance-decisions/approval-decisions.component').then(
+            (m) => m.ApprovalDecisionsComponent,
+          ),
+      },
+      {
+        path: 'decisions/rejections',
+        loadComponent: () =>
+          import('./features/dashboard/pages/compliance-decisions/rejection-analysis.component').then(
+            (m) => m.RejectionAnalysisComponent,
+          ),
+      },
+      {
+        path: 'decisions/response-times',
+        loadComponent: () =>
+          import('./features/dashboard/pages/compliance-decisions/response-times.component').then(
+            (m) => m.ResponseTimesComponent,
+          ),
+      },
+      {
+        path: 'disposal',
+        loadComponent: () =>
+          import('./features/dashboard/pages/compliance-records/disposal-records.component').then(
+            (m) => m.DisposalRecordsComponent,
+          ),
+      },
+      {
+        path: 'inspections',
+        loadComponent: () =>
+          import('./features/dashboard/pages/compliance-records/inspections.component').then(
+            (m) => m.InspectionsComponent,
+          ),
+      },
+      {
+        path: 'documents',
+        loadComponent: () =>
+          import('./features/dashboard/pages/compliance-records/documents.component').then(
+            (m) => m.DocumentsComponent,
           ),
       },
       {
@@ -528,27 +805,9 @@ export const routes: Routes = [
             (m) => m.AuditTrailPageComponent,
           ),
       },
-      {
-        path: 'compliance-reports',
-        loadComponent: () =>
-          import('./features/compliance/pages/compliance-reports-page/compliance-reports-page.component').then(
-            (m) => m.ComplianceReportsPageComponent,
-          ),
-      },
-      {
-        path: 'report-preview',
-        loadComponent: () =>
-          import('./features/compliance/pages/report-preview-page/report-preview-page.component').then(
-            (m) => m.ReportPreviewPageComponent,
-          ),
-      },
     ],
   },
-  {
-    path: 'dashboard',
-    loadChildren: () =>
-      import('./features/dashboard/dashboard-module').then((m) => m.DashboardModule),
-  },
+
   {
     path: 'requisition',
     component: MainLayoutComponent,

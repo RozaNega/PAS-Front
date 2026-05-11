@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
@@ -17,6 +17,23 @@ export class ChangePasswordModalComponent {
   currentPassword = '';
   newPassword = '';
   confirmPassword = '';
+
+  // Password visibility signals
+  readonly showCurrentPassword = signal(false);
+  readonly showNewPassword = signal(false);
+  readonly showConfirmPassword = signal(false);
+
+  toggleCurrentPasswordVisibility(): void {
+    this.showCurrentPassword.update(v => !v);
+  }
+
+  toggleNewPasswordVisibility(): void {
+    this.showNewPassword.update(v => !v);
+  }
+
+  toggleConfirmPasswordVisibility(): void {
+    this.showConfirmPassword.update(v => !v);
+  }
 
   save(): void {
     if (this.newPassword !== this.confirmPassword) {

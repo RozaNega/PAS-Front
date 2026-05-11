@@ -8,7 +8,7 @@ import { Models } from './models/models';
 import { Register } from './pages/register/register';
 import { ResetPassword } from './pages/reset-password/reset-password';
 import { Services } from './services/services';
-import { Welcome } from './pages/welcome/welcome';
+
 
 const routes: Routes = [
   {
@@ -18,13 +18,9 @@ const routes: Routes = [
       {
         path: '',
         pathMatch: 'full',
-        redirectTo: 'welcome',
+        redirectTo: 'login',
       },
-      {
-        path: 'welcome',
-        component: Welcome,
-        data: { animation: 'welcome' },
-      },
+
       {
         path: 'login',
         component: Login,

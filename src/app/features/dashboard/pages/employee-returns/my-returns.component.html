@@ -1,0 +1,25 @@
+<div class="my-returns-container">
+  <div class="page-header">
+    <h1>My Returns</h1>
+    <p class="subtitle">View your return material requests</p>
+  </div>
+
+  <div class="returns-list">
+    @for (ret of returns(); track ret.id) {
+      <div class="return-card">
+        <div class="return-header">
+          <div class="return-number">{{ ret.returnNumber }}</div>
+          <div class="status-badge" [class.pending]="ret.status === 'Pending'" [class.approved]="ret.status === 'Approved'" [class.rejected]="ret.status === 'Rejected'" [class.processed]="ret.status === 'Processed'">
+            {{ ret.status }}
+          </div>
+        </div>
+        <div class="return-details">
+          <div class="detail-row"><span class="label">SIV Number:</span><span class="value">{{ ret.sivNumber }}</span></div>
+          <div class="detail-row"><span class="label">Request Date:</span><span class="value">{{ ret.requestDate }}</span></div>
+          <div class="detail-row"><span class="label">Items:</span><span class="value">{{ ret.itemCount }}</span></div>
+          <div class="detail-row"><span class="label">Reason:</span><span class="value">{{ ret.returnReason }}</span></div>
+        </div>
+      </div>
+    }
+  </div>
+</div>

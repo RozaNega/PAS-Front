@@ -1,0 +1,104 @@
+<div class="create-request-container">
+  <div class="page-header">
+    <h1>Create New Request</h1>
+    <p class="subtitle">Submit a new requisition request</p>
+  </div>
+
+  <div class="form-card">
+    <form [formGroup]="requestForm" (ngSubmit)="submit()">
+      <div class="form-section">
+        <h3>Request Details</h3>
+        
+        <div class="form-field">
+          <label for="title">Request Title *</label>
+          <input
+            id="title"
+            type="text"
+            formControlName="title"
+            placeholder="Enter request title"
+          />
+          <div class="error-message" *ngIf="submitted() && requestForm.get('title')?.errors?.['required']">
+            Title is required
+          </div>
+        </div>
+
+        <div class="form-field">
+          <label for="description">Description *</label>
+          <textarea
+            id="description"
+            formControlName="description"
+            rows="4"
+            placeholder="Describe your request in detail"
+          ></textarea>
+          <div class="error-message" *ngIf="submitted() && requestForm.get('description')?.errors?.['required']">
+            Description is required
+          </div>
+        </div>
+
+        <div class="form-field">
+          <label for="priority">Priority *</label>
+          <select id="priority" formControlName="priority">
+            <option value="Low">Low</option>
+            <option value="Medium">Medium</option>
+            <option value="High">High</option>
+            <option value="Urgent">Urgent</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <h3>Item Details</h3>
+        
+        <div class="form-field">
+          <label for="itemId">Item *</label>
+          <select id="itemId" formControlName="itemId">
+            <option value="">Select an item</option>
+            <option value="1">Laptop - Dell Latitude 5420</option>
+            <option value="2">Office Chair - Ergonomic</option>
+            <option value="3">Printer - HP LaserJet Pro</option>
+            <option value="4">Desk - Adjustable Height</option>
+          </select>
+          <div class="error-message" *ngIf="submitted() && requestForm.get('itemId')?.errors?.['required']">
+            Please select an item
+          </div>
+        </div>
+
+        <div class="form-field">
+          <label for="quantity">Quantity *</label>
+          <input
+            id="quantity"
+            type="number"
+            formControlName="quantity"
+            min="1"
+            placeholder="Enter quantity"
+          />
+          <div class="error-message" *ngIf="submitted() && requestForm.get('quantity')?.errors?.['required']">
+            Quantity is required
+          </div>
+        </div>
+
+        <div class="form-field">
+          <label for="urgencyDate">Required By Date *</label>
+          <input
+            id="urgencyDate"
+            type="date"
+            formControlName="urgencyDate"
+          />
+          <div class="error-message" *ngIf="submitted() && requestForm.get('urgencyDate')?.errors?.['required']">
+            Required date is required
+          </div>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn btn-secondary" (click)="cancel()" [disabled]="loading()">
+          Cancel
+        </button>
+        <button type="submit" class="btn btn-primary" [disabled]="loading()">
+          <span *ngIf="loading()">Submitting...</span>
+          <span *ngIf="!loading()">Submit Request</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

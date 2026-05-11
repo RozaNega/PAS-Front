@@ -18,6 +18,7 @@ export class DateFormatPipe implements PipeTransform {
 
 @Pipe({
   name: 'dateTimeFormat',
+  standalone: false,
 })
 export class DateTimeFormatPipe implements PipeTransform {
   private datePipe = new DatePipe('en-US');
@@ -32,6 +33,7 @@ export class DateTimeFormatPipe implements PipeTransform {
 
 @Pipe({
   name: 'timeAgo',
+  standalone: false,
 })
 export class TimeAgoPipe implements PipeTransform {
   transform(value: string | Date): string {

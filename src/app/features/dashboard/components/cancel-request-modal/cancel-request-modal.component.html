@@ -1,0 +1,31 @@
+<div class="cancel-modal">
+  <div class="modal-body text-center">
+    <div class="warning-icon">⚠️</div>
+    <h2 class="modal-title">Cancel Request?</h2>
+    <p class="modal-desc">
+      Are you sure you want to cancel request <strong>{{ srNumber }}</strong>? 
+      This action cannot be undone.
+    </p>
+    
+    <div class="request-preview">
+      <p class="items-label">Items in this request:</p>
+      <p class="items-list">{{ items.join(', ') }}</p>
+    </div>
+
+    <div class="reason-section">
+      <label for="reason" class="reason-label">Reason for cancellation (optional)</label>
+      <textarea 
+        id="reason" 
+        [(ngModel)]="cancelReason" 
+        class="reason-input" 
+        placeholder="E.g. No longer needed, wrong quantity..."
+        rows="3"
+      ></textarea>
+    </div>
+  </div>
+
+  <div class="modal-footer">
+    <button type="button" class="btn-secondary" (click)="dismiss()">Keep Request</button>
+    <button type="button" class="btn-danger" (click)="confirm()">Yes, Cancel Request</button>
+  </div>
+</div>
