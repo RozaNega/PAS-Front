@@ -21,8 +21,8 @@ const routes: Routes = [
 ];
 
 @NgModule({
-  declarations: [DocumentListComponent, AuditTrailComponent],
-  imports: [SharedModule, RouterModule.forChild(routes), NotificationListComponent],
+  declarations: [NotificationListComponent, DocumentListComponent, AuditTrailComponent],
+  imports: [SharedModule, RouterModule.forChild(routes)],
   providers: [NotificationService, DocumentService, AuditTrailService],
 })
 export class CommonModule {}

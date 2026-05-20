@@ -1,4 +1,10 @@
-export type RequestStatus = 'Draft' | 'Submitted' | 'Pending' | 'Approved' | 'Rejected' | 'Completed';
+export type RequestStatus =
+  | 'Draft'
+  | 'Submitted'
+  | 'Pending'
+  | 'Approved'
+  | 'Rejected'
+  | 'Completed';
 export type RequestPriority = 'Normal' | 'Medium' | 'Urgent';
 
 export interface RequestSummaryCard {
@@ -53,12 +59,44 @@ export interface ServiceRequest {
 }
 
 export interface RequestItem {
+  itemId: string;
+  srDetailId: string;
   name: string;
   sku: string;
   quantity: number;
+  requestedQty: number;
+  preferredShelfId: string;
+  notes: string;
   approved?: number;
   issued?: number;
   status?: string;
+}
+
+export interface ApiRequestItem {
+  itemId: string;
+  srDetailId: string;
+  requestedQty: number;
+  preferredShelfId: string;
+  notes: string;
+}
+
+export interface ApiServiceRequest {
+  items: ApiRequestItem[];
+  remarks: string;
+}
+
+export interface ApiReturnMaterialRequest {
+  itemId: string;
+  quantity: number;
+  reason: string;
+  returnType: string;
+  sourceLocationId: string;
+  sourceShelfId: string;
+  supplierId: string;
+  batchNumber: string;
+  expiryDate: string;
+  reference: string;
+  remarks: string;
 }
 
 export interface RequestDetails {
@@ -123,8 +161,9 @@ export interface UserProfile {
   email: string;
   phone: string;
   joinDate: string;
-  manager: string;
   profilePicture?: string;
+  username?: string;
+  password?: string;
 }
 
 export interface RequestHistory {
@@ -184,6 +223,7 @@ export interface NewRequestForm {
   requester: string;
   department: string;
   requiredBy: string;
+  remarks: string;
   justification: string;
   priority: RequestPriority;
   items: RequestItem[];

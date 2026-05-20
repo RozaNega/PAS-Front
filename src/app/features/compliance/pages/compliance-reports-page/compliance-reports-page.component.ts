@@ -73,10 +73,34 @@ export class ComplianceReportsPageComponent {
     alert('Report scheduled successfully!');
   }
 
-  deleteReport(reportId: string): void {
-    if (confirm(`Are you sure you want to delete report ${reportId}?`)) {
-      console.log(`Deleting report ${reportId}`);
-      alert(`Report ${reportId} deleted successfully!`);
+  viewReport(report: SavedReport): void {
+    console.log('Viewing report:', report.name);
+    this.router.navigate(['/compliance-officer/report-preview'], {
+      queryParams: { reportName: report.name, date: report.date, type: report.type }
+    });
+  }
+
+  downloadReport(report: SavedReport): void {
+    console.log('Downloading report:', report.name);
+    const filename = `${report.name}.pdf`;
+    const blob = new Blob([
+      `AFROCOM COMPLIANCE REPORT\n=========================\nReport Name: ${report.name}\nDate: ${report.date}\nType: ${report.type}\nStatus: Certified\nSize: ${report.size}\nThis is a certified compliance audit artifact.`
+    ], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+    alert(`Report "${filename}" downloaded successfully!`);
+  }
+
+  deleteReport(reportName: string): void {
+    if (confirm(`Are you sure you want to delete report "${reportName}"?`)) {
+      this.savedReports = this.savedReports.filter((r) => r.name !== reportName);
+      alert(`Report "${reportName}" deleted successfully!`);
     }
   }
 }

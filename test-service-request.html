@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Service Request API</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .info { background-color: #d1ecf1; border-color: #bee5eb; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; }
+        input, textarea { width: 100%; padding: 8px; margin: 5px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Service Request API Test</h1>
+        
+        <div class="section info">
+            <h3>Authentication Status</h3>
+            <div id="authStatus">Checking...</div>
+            <button onclick="checkAuth()">Check Authentication</button>
+        </div>
+
+        <div class="section">
+            <h3>Test Service Request Creation</h3>
+            <button onclick="testServiceRequest()">Test Create Service Request</button>
+            <div id="testResult"></div>
+        </div>
+
+        <div class="section">
+            <h3>Manual Test</h3>
+            <label>Remarks:</label>
+            <textarea id="remarks" placeholder="Enter remarks for the service request">Test service request from manual testing - need office supplies for new employee setup.</textarea>
+            <br>
+            <button onclick="createManualRequest()">Create Manual Request</button>
+            <div id="manualResult"></div>
+        </div>
+
+        <div class="section">
+            <h3>Debug Information</h3>
+            <div id="debugInfo"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/api';
+        
+        function getToken() {
+            return localStorage.getItem('pas_token');
+        }
+        
+        function checkAuth() {
+            const token = getToken();
+            const authDiv = document.getElementById('authStatus');
+            
+            if (!token) {
+                authDiv.innerHTML = '<div class="error">❌ No authentication token found. Please login first.</div>';
+                return false;
+            }
+            
+            try {
+                // Decode JWT token to check expiration
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                const exp = new Date(payload.exp * 1000);
+                const now = new Date();
+                
+                if (exp < now) {
+                    authDiv.innerHTML = '<div class="error">❌ Token expired. Please login again.</div>';
+                    return false;
+                } else {
+                    authDiv.innerHTML = `<div class="success">✅ Token valid until: ${exp.toLocaleString()}<br>User: ${payload.unique_name || payload.sub}</div>`;
+                    return true;
+                }
+            } catch (e) {
+                authDiv.innerHTML = '<div class="error">❌ Invalid token format.</div>';
+                return false;
+            }
+        }
+        
+        async function makeRequest(url, options = {}) {
+            const token = getToken();
+            const headers = {
+                'Content-Type': 'application/json',
+                ...(token && { 'Authorization': `Bearer ${token}` }),
+                ...options.headers
+            };
+            
+            console.log('Making request:', { url, headers: Object.keys(headers), body: options.body });
+            
+            try {
+                const response = await fetch(url, {
+                    ...options,
+                    headers
+                });
+                
+                console.log('Response status:', response.status);
+                console.log('Response headers:', [...response.headers.entries()]);
+                
+                const text = await response.text();
+                console.log('Response text:', text);
+                
+                let data;
+                try {
+                    data = JSON.parse(text);
+                } catch {
+                    data = text;
+                }
+                
+                return { status: response.status, data, ok: response.ok };
+            } catch (error) {
+                console.error('Request error:', error);
+                return { status: 0, data: error.message, ok: false };
+            }
+        }
+        
+        async function testServiceRequest() {
+            if (!checkAuth()) return;
+            
+            const resultDiv = document.getElementById('testResult');
+            resultDiv.innerHTML = '<div class="info">Testing service request creation...</div>';
+            
+            // Generate sample GUIDs
+            function generateGuid() {
+                return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                    const r = Math.random() * 16 | 0;
+                    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+                    return v.toString(16);
+                });
+            }
+            
+            const testPayload = {
+                items: [
+                    {
+                        itemId: generateGuid(),
+                        srDetailId: null,
+                        requestedQty: 2,
+                        preferredShelfId: generateGuid(),
+                        notes: "Test item for API validation"
+                    }
+                ],
+                remarks: "Test service request created from API testing tool to verify backend integration and database connectivity."
+            };
+            
+            console.log('Test payload:', testPayload);
+            
+            const result = await makeRequest(`${API_BASE}/ServiceRequests`, {
+                method: 'POST',
+                body: JSON.stringify(testPayload)
+            });
+            
+            if (result.ok) {
+                resultDiv.innerHTML = `<div class="success">✅ Success! Service request created.<pre>${JSON.stringify(result.data, null, 2)}</pre></div>`;
+            } else {
+                resultDiv.innerHTML = `<div class="error">❌ Failed (${result.status})<pre>${JSON.stringify(result.data, null, 2)}</pre></div>`;
+            }
+        }
+        
+        async function createManualRequest() {
+            if (!checkAuth()) return;
+            
+            const remarks = document.getElementById('remarks').value;
+            if (!remarks || remarks.length < 10) {
+                alert('Please enter remarks with at least 10 characters');
+                return;
+            }
+            
+            const resultDiv = document.getElementById('manualResult');
+            resultDiv.innerHTML = '<div class="info">Creating manual service request...</div>';
+            
+            // Generate sample GUIDs
+            function generateGuid() {
+                return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                    const r = Math.random() * 16 | 0;
+                    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+                    return v.toString(16);
+                });
+            }
+            
+            const payload = {
+                items: [
+                    {
+                        itemId: generateGuid(),
+                        srDetailId: null,
+                        requestedQty: 1,
+                        preferredShelfId: generateGuid(),
+                        notes: "Manual test item"
+                    }
+                ],
+                remarks: remarks
+            };
+            
+            const result = await makeRequest(`${API_BASE}/ServiceRequests`, {
+                method: 'POST',
+                body: JSON.stringify(payload)
+            });
+            
+            if (result.ok) {
+                resultDiv.innerHTML = `<div class="success">✅ Manual request created successfully!<pre>${JSON.stringify(result.data, null, 2)}</pre></div>`;
+            } else {
+                resultDiv.innerHTML = `<div class="error">❌ Manual request failed (${result.status})<pre>${JSON.stringify(result.data, null, 2)}</pre></div>`;
+            }
+        }
+        
+        // Update debug info
+        function updateDebugInfo() {
+            const debugDiv = document.getElementById('debugInfo');
+            debugDiv.innerHTML = `
+                <strong>Current URL:</strong> ${window.location.href}<br>
+                <strong>API Base:</strong> ${API_BASE}<br>
+                <strong>Token Present:</strong> ${!!getToken()}<br>
+                <strong>Local Storage Keys:</strong> ${Object.keys(localStorage).join(', ')}<br>
+                <strong>Timestamp:</strong> ${new Date().toISOString()}
+            `;
+        }
+        
+        // Initialize
+        checkAuth();
+        updateDebugInfo();
+        setInterval(updateDebugInfo, 5000);
+    </script>
+</body>
+</html>

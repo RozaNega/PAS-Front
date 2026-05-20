@@ -1,19 +1,21 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
-import { RequestDetailsModalComponent } from '../../components/request-details-modal/request-details-modal.component';
+import { PasApiService } from '../../../../shared/services/pas-api.service';
+import { CurrentUserService } from '../../../../core/services/current-user.service';
+import { AuthService } from '../../../../core/services/auth.service';
 
-export interface Notification {
-  id: string;
-  type: 'approved' | 'completed' | 'submitted' | 'rejected';
-  title: string;
-  message: string;
-  srNumber?: string;
-  sivNumber?: string;
-  timeAgo: string;
-  read: boolean;
-}
+import {
+  NotificationService,
+  Notification,
+} from '../../../common/notifications/services/notification-feature.service';
+import {
+  WorkflowService,
+  ServiceRequest,
+  NotificationMessage,
+} from '../../../../core/services/workflow.service';
 
 export interface RequestUpdate {
   srNumber: string;
@@ -28,151 +30,191 @@ export interface SystemAlert {
   date: string;
 }
 
+export interface ExtendedNotification extends Notification {
+  requestId?: string;
+}
+
 @Component({
   selector: 'app-notifications-page',
   standalone: true,
   imports: [CommonModule, FormsModule],
+  providers: [NotificationService],
   templateUrl: './notifications-page.component.html',
   styleUrl: './notifications-page.component.scss',
 })
 export class NotificationsPageComponent {
+  private router = inject(Router);
   private modal = inject(NgbModal);
+  private readonly pasApi = inject(PasApiService);
+  private readonly notificationService = inject(NotificationService);
+  private readonly workflowService = inject(WorkflowService);
+  private readonly currentUserService = inject(CurrentUserService);
+  private readonly authService = inject(AuthService);
 
   searchQuery = '';
   filterType = 'all';
-  notifications: Notification[] = [
-    {
-      id: '1',
-      type: 'approved',
-      title: 'Request Approved - SR-2024-121',
-      message: 'Your request for Dell XPS Laptop has been approved. It has been forwarded to store for issue.',
-      srNumber: 'SR-2024-121',
-      timeAgo: '2 hours ago',
-      read: false,
-    },
-    {
-      id: '2',
-      type: 'completed',
-      title: 'Request Completed - SR-2024-120',
-      message: 'Your request has been completed. Store Issue Voucher SIV-045 has been issued.',
-      srNumber: 'SR-2024-120',
-      sivNumber: 'SIV-045',
-      timeAgo: '1 day ago',
-      read: false,
-    },
-    {
-      id: '3',
-      type: 'submitted',
-      title: 'Request Submitted - SR-2024-123',
-      message: 'Your request has been submitted for approval. You will be notified once reviewed.',
-      srNumber: 'SR-2024-123',
-      timeAgo: '2 days ago',
-      read: false,
-    },
-    {
-      id: '4',
-      type: 'approved',
-      title: 'Request Approved - SR-2024-118',
-      message: 'Your request for Office Chair has been approved.',
-      srNumber: 'SR-2024-118',
-      timeAgo: '3 days ago',
-      read: true,
-    },
-    {
-      id: '5',
-      type: 'rejected',
-      title: 'Request Rejected - SR-2024-117',
-      message: 'Your request was rejected. Reason: Budget constraints for Q4.',
-      srNumber: 'SR-2024-117',
-      timeAgo: '5 days ago',
-      read: true,
-    },
-  ];
+  notifications: ExtendedNotification[] = [];
+  workflowNotifications: ExtendedNotification[] = [];
 
-  requestUpdates: RequestUpdate[] = [
-    {
-      srNumber: 'SR-2024-123',
-      status: 'Pending Approval',
-      submittedDate: 'Dec 15',
-    },
-    {
-      srNumber: 'SR-2024-122',
-      status: 'Pending Approval',
-      submittedDate: 'Dec 14',
-    },
-  ];
+  constructor() {
+    this.loadNotifications();
+  }
 
+  requestUpdates: RequestUpdate[] = [];
   systemAlerts: SystemAlert[] = [];
 
-  get filteredNotifications(): Notification[] {
-    let filtered = this.notifications;
+  loadNotifications(): void {
+    // API
+    this.notificationService.getNotifications().subscribe({
+      next: (response) => {
+        if (response.success && response.data) {
+          this.notifications = response.data.notifications;
+        }
+      },
+      error: (err) => console.error('Error loading notifications:', err),
+    });
+
+    // Workflow
+    const currentUser = this.currentUserService.getCurrentUserValue();
+    if (currentUser?.id) {
+      const role = this.authService.mapUserToDashboardRole(currentUser);
+      const wfNotifs = this.workflowService.getNotificationsForUser(
+        currentUser.id,
+        this.mapRoleToWfRole(role),
+      );
+      this.workflowNotifications = wfNotifs.map((n: NotificationMessage) => ({
+        id: n.id,
+        message: n.message,
+        isRead: n.isRead,
+        sentDate: n.createdDate.toISOString(),
+        isDeleted: false,
+        type: n.type,
+        requestId: n.requestId, // Add requestId here
+      }));
+
+      // Populate Request Updates
+      const requests = this.workflowService.getRequestsForEmployee(currentUser.id);
+      this.requestUpdates = requests.slice(0, 5).map((r: ServiceRequest) => ({
+        srNumber: r.srNumber,
+        status: r.status,
+        submittedDate: r.submittedDate.toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+        }),
+      }));
+    }
+  }
+
+  private mapRoleToWfRole(role: string | null): any {
+    if (role === 'manager') return 'Manager';
+    if (role === 'admin') return 'Admin';
+    if (role === 'compliance-officer') return 'Compliance';
+    return 'Employee';
+  }
+
+  get filteredNotifications(): ExtendedNotification[] {
+    let combined = [...this.notifications, ...this.workflowNotifications];
+
+    // Sort by date descending
+    combined.sort((a, b) => new Date(b.sentDate).getTime() - new Date(a.sentDate).getTime());
 
     if (this.searchQuery) {
-      filtered = filtered.filter((n) =>
-        n.title.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-        n.message.toLowerCase().includes(this.searchQuery.toLowerCase())
+      combined = combined.filter((n: Notification) =>
+        n.message.toLowerCase().includes(this.searchQuery.toLowerCase()),
       );
     }
 
     if (this.filterType !== 'all') {
-      filtered = filtered.filter((n) => n.type === this.filterType);
+      // Optional: Filter by type if available in the model
     }
 
-    return filtered;
+    return combined;
   }
 
   get unreadCount(): number {
-    return this.notifications.filter((n) => !n.read).length;
+    return this.notifications.filter((n) => !n.isRead).length;
   }
 
   markAllAsRead(): void {
-    this.notifications.forEach((n) => (n.read = true));
+    // API
+    this.notificationService.markAllAsRead().subscribe(() => {
+      this.notifications.forEach((n) => (n.isRead = true));
+    });
+
+    // Workflow
+    const currentUser = this.currentUserService.getCurrentUserValue();
+    if (currentUser?.id) {
+      const role = this.mapRoleToWfRole(this.authService.mapUserToDashboardRole(currentUser));
+      this.workflowService.markAllNotificationsAsRead(currentUser.id, role);
+      this.workflowNotifications.forEach((n) => (n.isRead = true));
+    }
   }
 
   markAsRead(id: string): void {
-    const notification = this.notifications.find((n) => n.id === id);
-    if (notification) {
-      notification.read = true;
+    // Check if it's a workflow notification (workflow IDs start with req_)
+    if (id.startsWith('req_')) {
+      this.workflowService.markNotificationAsRead(id);
+      const notification = this.workflowNotifications.find((n) => n.id === id);
+      if (notification) {
+        notification.isRead = true;
+      }
+    } else {
+      // API
+      this.notificationService.markAsRead(id).subscribe(() => {
+        const notification = this.notifications.find((n) => n.id === id);
+        if (notification) {
+          notification.isRead = true;
+        }
+      });
     }
   }
 
   dismiss(id: string): void {
-    this.notifications = this.notifications.filter((n) => n.id !== id);
-  }
-
-  viewRequest(srNumber: string): void {
-    const modalRef = this.modal.open(RequestDetailsModalComponent);
-    // Note: In a real implementation, you would pass data to the modal
-    // modalRef.componentInstance.requestDetails = { ... };
-  }
-
-  getNotificationIcon(type: string): string {
-    switch (type) {
-      case 'approved':
-        return '🟢';
-      case 'completed':
-        return '🔵';
-      case 'submitted':
-        return '🟡';
-      case 'rejected':
-        return '🔴';
-      default:
-        return '🔔';
+    if (id.startsWith('req_')) {
+      this.workflowService.dismissNotification(id);
+      this.workflowNotifications = this.workflowNotifications.filter((n) => n.id !== id);
+    } else {
+      this.notificationService.deleteNotification(id).subscribe(() => {
+        this.notifications = this.notifications.filter((n) => n.id !== id);
+      });
     }
   }
 
-  getNotificationColor(type: string): string {
-    switch (type) {
-      case 'approved':
-        return 'green';
-      case 'completed':
-        return 'blue';
-      case 'submitted':
-        return 'yellow';
-      case 'rejected':
-        return 'red';
-      default:
-        return 'gray';
-    }
+  viewRequest(srNumber?: string): void {
+    if (!srNumber) return;
+    this.router.navigate(['/employee/dashboard/my-requests'], {
+      queryParams: { search: srNumber },
+    });
+  }
+
+  viewAllRequestUpdates(): void {
+    this.router.navigate(['/employee/dashboard/my-requests']);
+  }
+
+  viewAllSystemAlerts(): void {
+    // Navigate to a section or stay here and just show filter
+    this.searchQuery = 'Alert';
+  }
+
+  formatDate(date: string): string {
+    return new Date(date).toLocaleString();
+  }
+
+  getNotificationIcon(message: string): string {
+    const msg = message.toLowerCase();
+    if (msg.includes('approved')) return '🟢';
+    if (msg.includes('completed')) return '🔵';
+    if (msg.includes('submitted')) return '🟡';
+    if (msg.includes('rejected')) return '🔴';
+    return '🔔';
+  }
+
+  getNotificationColor(message: string): string {
+    const msg = message.toLowerCase();
+    if (msg.includes('approved')) return 'green';
+    if (msg.includes('completed')) return 'blue';
+    if (msg.includes('submitted')) return 'yellow';
+    if (msg.includes('rejected')) return 'red';
+    return 'gray';
   }
 }

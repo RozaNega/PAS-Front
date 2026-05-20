@@ -1,0 +1,49 @@
+<div class="my-sivs-container">
+  <div class="page-header">
+    <h1>My SIVs</h1>
+    <p class="subtitle">Store Issue Vouchers for your fulfilled requests</p>
+  </div>
+
+  <div class="sivs-list">
+    @for (siv of sivs(); track siv.id) {
+      <div class="siv-card">
+        <div class="siv-header">
+          <div class="siv-number">
+            <i class="bi bi-file-text"></i>
+            {{ siv.sivNumber }}
+          </div>
+          <div class="siv-badge issued">Issued</div>
+        </div>
+
+        <div class="siv-details">
+          <div class="detail-row">
+            <span class="label">Request:</span>
+            <span class="value">{{ siv.requestTitle }} ({{ siv.requestId }})</span>
+          </div>
+          <div class="detail-row">
+            <span class="label">Issue Date:</span>
+            <span class="value">{{ siv.issueDate }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="label">Status:</span>
+            <span class="value">{{ siv.status }}</span>
+          </div>
+        </div>
+
+        <div class="siv-actions">
+          <button type="button" class="btn btn-secondary" (click)="viewDetails(siv.requestId)">
+            <i class="bi bi-eye"></i> View Details
+          </button>
+          <button type="button" class="btn btn-primary" (click)="downloadPDF(siv)">
+            <i class="bi bi-download"></i> Download PDF
+          </button>
+        </div>
+      </div>
+    } @empty {
+      <div class="empty-state">
+        <i class="bi bi-file-text"></i>
+        <p>No SIVs available yet</p>
+      </div>
+    }
+  </div>
+</div>

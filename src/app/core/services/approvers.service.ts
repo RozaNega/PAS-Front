@@ -6,15 +6,17 @@ import { ApiResponseModel } from '../models/api-response.model';
 export interface ApproverDto {
   id: string;
   workflowId: string;
+  workflowName?: string;
   userId: string;
   userName?: string;
-  sequence: number;
+  approvalLevel: number;
+  createdAt: string;
 }
 
 export interface AssignApproverCommand {
   workflowId: string;
   userId: string;
-  sequence: number;
+  approvalLevel: number;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -29,7 +31,7 @@ export class ApproversService {
     return this.apiService.post<ApiResponseModel<string>>('Approvers/assign', data);
   }
 
-  delete(id: string): Observable<ApiResponseModel<any>> {
+  remove(id: string): Observable<ApiResponseModel<any>> {
     return this.apiService.delete<ApiResponseModel<any>>(`Approvers/${id}`);
   }
 }

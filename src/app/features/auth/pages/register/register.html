@@ -1,9 +1,25 @@
-<section class="auth-page auth-sakai" aria-labelledby="register-title">
-  <div class="auth-video-layer" aria-hidden="true">
-    <video class="auth-video" autoplay muted loop>
-      <source src="/assets/videos/" type="video/mp4" />
-    </video>
-    <div class="auth-video-brand-tint"></div>
+<section class="auth-page auth-glass" aria-labelledby="register-title">
+  <div class="auth-background">
+    <img src="/assets/images/afr.jpg" alt="Background" class="bg-image" />
+    <div class="bg-overlay"></div>
+    <div class="bg-text-watermark">
+      <div class="watermark-scroll">
+        <span class="watermark-text">AFRICOM TECHNOLOGIES</span>
+        <span class="watermark-text">AFRICOM TECHNOLOGIES</span>
+        <span class="watermark-text">AFRICOM TECHNOLOGIES</span>
+        <span class="watermark-text">AFRICOM TECHNOLOGIES</span>
+        <span class="watermark-text">AFRICOM TECHNOLOGIES</span>
+      </div>
+    </div>
+    <div class="bg-text-watermark bg-text-watermark--bottom">
+      <div class="watermark-scroll watermark-scroll--reverse">
+        <span class="watermark-text">AFRICOM TECHNOLOGIES</span>
+        <span class="watermark-text">AFRICOM TECHNOLOGIES</span>
+        <span class="watermark-text">AFRICOM TECHNOLOGIES</span>
+        <span class="watermark-text">AFRICOM TECHNOLOGIES</span>
+        <span class="watermark-text">AFRICOM TECHNOLOGIES</span>
+      </div>
+    </div>
   </div>
 
   <header class="auth-toolbar" aria-label="Theme controls">
@@ -68,6 +84,7 @@
     <form class="auth-form" [formGroup]="registerForm" (ngSubmit)="submit()" novalidate>
       <label class="auth-label" for="register-full-name">Full name</label>
       <div class="input-shell">
+        <i class="bi bi-person input-icon"></i>
         <input
           id="register-full-name"
           type="text"
@@ -82,6 +99,7 @@
 
       <label class="auth-label" for="register-username">Username</label>
       <div class="input-shell">
+        <i class="bi bi-at input-icon"></i>
         <input
           id="register-username"
           type="text"
@@ -93,9 +111,16 @@
       @if (showControlError('username') && registerForm.controls.username.hasError('required')) {
         <p class="field-error">Username is required.</p>
       }
+      @if (showControlError('username') && registerForm.controls.username.hasError('minlength')) {
+        <p class="field-error">Username must be at least 3 characters.</p>
+      }
+      @if (showControlError('username') && registerForm.controls.username.hasError('pattern')) {
+        <p class="field-error">Username can only contain letters, numbers, and underscores.</p>
+      }
 
       <label class="auth-label" for="register-phone">Phone number</label>
       <div class="input-shell">
+        <i class="bi bi-telephone input-icon"></i>
         <input
           id="register-phone"
           type="tel"
@@ -117,6 +142,7 @@
 
       <label class="auth-label" for="register-email">Email</label>
       <div class="input-shell">
+        <i class="bi bi-envelope input-icon"></i>
         <input
           id="register-email"
           type="email"
@@ -134,6 +160,7 @@
 
       <label class="auth-label" for="register-department">Department</label>
       <div class="input-shell">
+        <i class="bi bi-building input-icon"></i>
         <input
           id="register-department"
           type="text"
@@ -142,26 +169,46 @@
           autocomplete="organization-title"
         />
       </div>
-      @if (showControlError('department') && registerForm.controls.department.hasError('required')) {
+      @if (
+        showControlError('department') && registerForm.controls.department.hasError('required')
+      ) {
         <p class="field-error">Department is required.</p>
       }
 
-      <label class="auth-label" for="register-employee-code">Employee Code</label>
+      <label class="auth-label" for="register-employee-code">Employee code</label>
       <div class="input-shell">
+        <i class="bi bi-hash input-icon"></i>
         <input
           id="register-employee-code"
           type="text"
           formControlName="employeeCode"
-          placeholder="Employee Code"
-          autocomplete="organization"
+          placeholder="EMP1234"
+          autocomplete="off"
         />
       </div>
-      @if (showControlError('employeeCode') && registerForm.controls.employeeCode.hasError('required')) {
+      @if (
+        showControlError('employeeCode') && registerForm.controls.employeeCode.hasError('required')
+      ) {
         <p class="field-error">Employee code is required.</p>
+      }
+      @if (
+        showControlError('employeeCode') &&
+        registerForm.controls.employeeCode.hasError('invalidFormat')
+      ) {
+        <p class="field-error">
+          Employee code must be in format EMP followed by numbers (e.g., EMP1234).
+        </p>
+      }
+      @if (
+        showControlError('employeeCode') &&
+        registerForm.controls.employeeCode.hasError('invalidLength')
+      ) {
+        <p class="field-error">Employee code must be between 4-15 characters long.</p>
       }
 
       <label class="auth-label" for="register-password">Password</label>
       <div class="input-shell input-shell--with-action">
+        <i class="bi bi-lock input-icon"></i>
         <input
           id="register-password"
           [type]="showPassword() ? 'text' : 'password'"
@@ -185,9 +232,17 @@
       @if (showControlError('password') && registerForm.controls.password.hasError('minlength')) {
         <p class="field-error">Password must be at least 8 characters.</p>
       }
+      @if (
+        showControlError('password') && registerForm.controls.password.hasError('passwordStrength')
+      ) {
+        <p class="field-error">
+          Password must contain at least one uppercase letter, one lowercase letter, and one number.
+        </p>
+      }
 
       <label class="auth-label" for="register-confirm-password">Confirm password</label>
       <div class="input-shell input-shell--with-action">
+        <i class="bi bi-lock-fill input-icon"></i>
         <input
           id="register-confirm-password"
           [type]="showConfirmPassword() ? 'text' : 'password'"
@@ -223,6 +278,7 @@
 
       <label class="auth-label" for="register-role">Role</label>
       <div class="input-shell input-shell--select">
+        <i class="bi bi-shield-lock input-icon"></i>
         <select id="register-role" formControlName="roleName" class="select-field">
           @for (role of roleOptions; track role.value) {
             <option [value]="role.value">{{ role.label }}</option>

@@ -164,4 +164,65 @@ export class AllRequestsComponent {
     };
     return icons[status] || '⚪';
   }
+
+  // Item Management Methods
+  openAddItemModal(): void {
+    const itemName = prompt('Enter item name:');
+    if (itemName && itemName.trim()) {
+      const quantity = parseInt(prompt('Enter quantity:') || '0');
+      if (quantity > 0) {
+        const available = Math.floor(Math.random() * 100) + 10; // Random available stock
+        const newItem: RequestItem = {
+          id: Date.now().toString(),
+          name: itemName,
+          qtyRequested: quantity,
+          available: available
+        };
+        
+        this.modalFormData.update(data => ({
+          ...data,
+          items: [...data.items, newItem]
+        }));
+        
+        alert(`Added ${quantity} x ${itemName} to request`);
+      }
+    }
+  }
+
+  editItem(item: RequestItem | string): void {
+    let itemName: string;
+    if (typeof item === 'string') {
+      itemName = item;
+    } else {
+      itemName = item.name;
+    }
+    
+    const newQuantity = parseInt(prompt(`Edit quantity for ${itemName}:`, '2') || '0');
+    if (newQuantity > 0) {
+      this.modalFormData.update(data => ({
+        ...data,
+        items: data.items.map(i => 
+          i.name === itemName ? { ...i, qtyRequested: newQuantity } : i
+        )
+      }));
+      alert(`Updated ${itemName} quantity to ${newQuantity}`);
+    }
+  }
+
+  deleteItem(item: RequestItem | string): void {
+    let itemName: string;
+    if (typeof item === 'string') {
+      itemName = item;
+    } else {
+      itemName = item.name;
+    }
+    
+    if (confirm(`Remove ${itemName} from request?`)) {
+      this.modalFormData.update(data => ({
+        ...data,
+        items: data.items.filter(i => i.name !== itemName)
+      }));
+      alert(`Removed ${itemName} from request`);
+    }
+  }
 }

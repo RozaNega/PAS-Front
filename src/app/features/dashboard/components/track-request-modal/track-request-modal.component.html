@@ -1,0 +1,103 @@
+<div class="track-modal">
+  <!-- Header -->
+  <div class="modal-header-bar">
+    <h2 class="modal-title">Track Request: {{ srNumber }}</h2>
+    <button type="button" class="close-btn" (click)="close()" aria-label="Close">✕</button>
+  </div>
+
+  <div class="modal-body-content">
+    <!-- 📋 REQUEST DETAILS -->
+    <section class="info-section">
+      <h3 class="section-title">📋 REQUEST DETAILS</h3>
+      <div class="info-box">
+        <div class="info-grid">
+          <div class="info-row"><span class="info-label">SR Number:</span> <span class="info-value">{{ srNumber }}</span></div>
+          <div class="info-row"><span class="info-label">Request Date:</span> <span class="info-value">{{ requestedDate }}</span></div>
+          <div class="info-row"><span class="info-label">Required By:</span> <span class="info-value">{{ requiredDate }}</span></div>
+          <div class="info-row">
+            <span class="info-label">Priority:</span> 
+            <span class="info-value priority-badge" [class]="priorityClass">{{ priorityIcon }} {{ priority }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Status:</span> 
+            <span class="info-value status-badge" [class]="status.toLowerCase()">{{ getStatusDisplay }}</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 📦 REQUESTED ITEMS -->
+    <section class="info-section">
+      <h3 class="section-title">📦 REQUESTED ITEMS</h3>
+      <div class="table-container">
+        <table class="items-table">
+          <thead>
+            <tr>
+              <th>Item Name</th>
+              <th>Quantity</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of parsedItems; track $index) {
+              <tr>
+                <td>{{ item.name }}</td>
+                <td>{{ item.quantity }}</td>
+                <td><span class="item-status">{{ getStatusDisplay }}</span></td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 📅 TIMELINE -->
+    <section class="info-section">
+      <h3 class="section-title">📅 TIMELINE</h3>
+      <div class="timeline-box">
+        <ul class="timeline-list">
+          @for (step of trackingSteps; track step.label) {
+            <li class="timeline-row" [class]="step.status">
+              <span class="timeline-icon">
+                @if (step.status === 'completed') { ✅ }
+                @else if (step.status === 'active') { ⏳ }
+                @else { ○ }
+              </span>
+              <span class="timeline-text">
+                @if (step.date) { <strong>{{ step.date }}</strong> - }
+                {{ step.description }}
+              </span>
+            </li>
+          }
+        </ul>
+      </div>
+    </section>
+
+    <!-- 📍 CURRENT LOCATION -->
+    <section class="info-section">
+      <h3 class="section-title">📍 CURRENT LOCATION (If issued)</h3>
+      <div class="info-box location-box">
+        @if (status === 'Completed' || status === 'Issued') {
+          <p>Ready at: <strong>Main Store, Counter 2</strong></p>
+        } @else {
+          <p class="text-muted">Not applicable - request still pending approval</p>
+        }
+      </div>
+    </section>
+
+    <!-- 📞 NEED HELP? -->
+    <section class="info-section">
+      <h3 class="section-title">📞 NEED HELP?</h3>
+      <div class="info-box help-box">
+        <p>Contact: Store Department - ext. 1234</p>
+        <p>Or email: store@afrocom.com</p>
+      </div>
+    </section>
+  </div>
+
+  <!-- Footer -->
+  <div class="modal-footer-bar center-footer">
+    <button type="button" class="action-btn primary" (click)="refreshStatus()">Refresh Status</button>
+    <button type="button" class="action-btn secondary" (click)="close()">Close</button>
+  </div>
+</div>

@@ -1,0 +1,41 @@
+<div class="rejected-requests-container">
+  <div class="page-header">
+    <h1>Rejected Requests</h1>
+    <p class="subtitle">Requests that were not approved</p>
+  </div>
+
+  <div class="requests-list">
+    @for (request of requests(); track request.id) {
+      <div class="request-card">
+        <div class="request-header">
+          <div class="request-id">{{ request.id }}</div>
+          <div class="request-badge rejected">Rejected</div>
+        </div>
+        
+        <h3 class="request-title">{{ request.title }}</h3>
+        <p class="request-description">{{ request.description }}</p>
+        
+        <div class="rejection-reason">
+          <i class="bi bi-exclamation-triangle"></i>
+          <span><strong>Reason:</strong> {{ request.rejectionReason }}</span>
+        </div>
+        
+        <div class="request-meta">
+          <div class="meta-item">
+            <i class="bi bi-flag"></i>
+            <span>Priority: {{ request.priority }}</span>
+          </div>
+          <div class="meta-item">
+            <i class="bi bi-x-circle"></i>
+            <span>Rejected: {{ request.rejectedDate }}</span>
+          </div>
+        </div>
+      </div>
+    } @empty {
+      <div class="empty-state">
+        <i class="bi bi-x-circle"></i>
+        <p>No rejected requests</p>
+      </div>
+    }
+  </div>
+</div>

@@ -1,7 +1,10 @@
 <div class="decision-profile-page">
   <div class="page-header">
     <h1>Decision Profile</h1>
-    <button class="btn btn-secondary" (click)="editProfile()">Edit</button>
+    <div class="header-actions">
+      <button class="btn btn-secondary" (click)="changePassword()">Change Password</button>
+      <button class="btn btn-secondary" (click)="editProfile()">Edit Profile</button>
+    </div>
   </div>
 
   <!-- My Profile -->
@@ -9,34 +12,172 @@
     <h2>👤 MY PROFILE</h2>
     <div class="profile-card">
       <div class="profile-photo">
-        <div class="photo-placeholder">
-          <span>👤</span>
-          <button class="btn-link" (click)="changePhoto()">[Change Photo]</button>
+        <div class="photo-scan-container" [class.scanning]="isValidatingPhoto()">
+          @if (profilePhoto()) {
+            <img [src]="profilePhoto()!" alt="Profile photo" class="profile-image" />
+          } @else {
+            <div class="photo-placeholder">👤</div>
+          }
+
+          @if (isValidatingPhoto()) {
+            <div class="scan-overlay">
+              <div class="scan-line"></div>
+              <span class="scan-label">Scanning Face...</span>
+            </div>
+          }
         </div>
+
+        @if (!isSelectingPhoto()) {
+          <button class="change-photo-btn" (click)="changePhoto()">Change Photo</button>
+        } @else {
+          <div class="inline-upload-container">
+            @if (!isCameraActive()) {
+              <div class="method-toggles">
+                <button class="btn-method" (click)="fileInput.click()">
+                  <i class="bi bi-cloud-arrow-up"></i> Upload
+                </button>
+                <button class="btn-method" (click)="startCamera()">
+                  <i class="bi bi-camera"></i> Camera
+                </button>
+                <input
+                  type="file"
+                  #fileInput
+                  (change)="onFileSelected($event)"
+                  accept="image/*"
+                  title="Upload Profile Photo"
+                  class="hidden-file-input"
+                />
+              </div>
+            } @else {
+              <div class="inline-camera-view">
+                <video #videoElement autoplay></video>
+                <canvas #canvasElement class="hidden-canvas"></canvas>
+                <button class="btn-capture" (click)="capturePhoto()">Capture</button>
+              </div>
+            }
+
+            <div class="inline-actions">
+              <button class="btn-cancel-upload" (click)="cancelUpload()">Cancel</button>
+            </div>
+          </div>
+        }
       </div>
       <div class="profile-info">
-        <div class="info-item">
-          <strong>Name:</strong> {{ profile.name }}
-        </div>
-        <div class="info-item">
-          <strong>Title:</strong> {{ profile.title }}
-        </div>
-        <div class="info-item">
-          <strong>Employee Code:</strong> {{ profile.employeeCode }}
-        </div>
-        <div class="info-item">
-          <strong>Department:</strong> {{ profile.department }}
-        </div>
-        <div class="info-item">
-          <strong>Email:</strong> {{ profile.email }}
-        </div>
-        <div class="info-item">
-          <strong>Phone:</strong> {{ profile.phone }}
-        </div>
-        <div class="info-item">
-          <strong>Join Date:</strong> {{ profile.joinDate }}
-        </div>
+        <div class="info-item"><strong>Name:</strong> {{ profile.name }}</div>
+        <div class="info-item"><strong>Title:</strong> {{ profile.title }}</div>
+        <div class="info-item"><strong>Employee Code:</strong> {{ profile.employeeCode }}</div>
+        <div class="info-item"><strong>Department:</strong> {{ profile.department }}</div>
+        <div class="info-item"><strong>Email:</strong> {{ profile.email }}</div>
+        <div class="info-item"><strong>Phone:</strong> {{ profile.phone }}</div>
+        <div class="info-item"><strong>Join Date:</strong> {{ profile.joinDate }}</div>
       </div>
+    </div>
+  </div>
+
+  <!-- Two-Factor Authentication -->
+  <div class="security-section">
+    <h2>🔐 TWO-FACTOR AUTHENTICATION</h2>
+    <div class="security-card">
+      <div class="security-status">
+        <div
+          class="status-indicator"
+          [class.enabled]="twoFactorEnabled() && twoFactorSetupComplete()"
+        >
+          <span
+            class="status-dot"
+            [style.background-color]="
+              twoFactorEnabled() && twoFactorSetupComplete() ? '#22c55e' : '#94a3b8'
+            "
+          ></span>
+          <span
+            class="status-text"
+            [style.color]="twoFactorEnabled() && twoFactorSetupComplete() ? '#1e293b' : '#94a3b8'"
+            >Status:
+            <strong>{{
+              twoFactorEnabled() && twoFactorSetupComplete() ? 'Enabled' : 'Disabled'
+            }}</strong></span
+          >
+        </div>
+        @if (!twoFactorEnabled()) {
+          <button class="btn btn-primary btn-no-margin" (click)="enable2FA()">Enable 2FA</button>
+        } @else {
+          <button class="btn btn-danger btn-no-margin" (click)="disable2FA()">Disable 2FA</button>
+        }
+      </div>
+
+      @if (twoFactorEnabled() && !twoFactorSetupComplete()) {
+        <div class="security-settings">
+          <div class="setting-row setting-row-vertical">
+            <label class="setting-label" for="two-factor-method">Verification Method:</label>
+            <select
+              id="two-factor-method"
+              title="Verification Method"
+              [ngModel]="twoFactorMethod()"
+              (change)="updateTwoFactorMethod($event)"
+              class="form-control-lite"
+            >
+              <option value="sms">SMS</option>
+              <option value="email">Email</option>
+              <option value="app">Authenticator App</option>
+            </select>
+          </div>
+
+          @if (twoFactorMethod() === 'sms') {
+            <div class="setting-row setting-row-vertical">
+              <label class="setting-label">Phone Number:</label>
+              <div class="input-group setting-input-group">
+                <input
+                  type="tel"
+                  [value]="twoFactorPhone()"
+                  (input)="updateTwoFactorPhone($event)"
+                  placeholder="+251-XXX-XXXXXXX"
+                  class="form-control-lite"
+                />
+                <button
+                  class="btn btn-primary btn-no-margin setting-action-button"
+                  (click)="saveTwoFactorPhone()"
+                >
+                  Send Code
+                </button>
+              </div>
+            </div>
+          }
+
+          @if (twoFactorVerificationSent() && !twoFactorSetupComplete()) {
+            <div class="setting-row setting-row-vertical">
+              <label class="setting-label">Verification Code:</label>
+              <div class="input-group setting-input-group">
+                <input
+                  type="text"
+                  (input)="updateTwoFactorVerificationCode($event)"
+                  placeholder="Enter 6-digit code"
+                  class="form-control-lite"
+                />
+                <button
+                  class="btn btn-success btn-no-margin setting-action-button"
+                  (click)="verifyTwoFactorCode()"
+                >
+                  Verify
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+      } @else if (twoFactorEnabled() && twoFactorSetupComplete()) {
+        <div class="security-info security-info-separated">
+          <p class="security-info-text">
+            Your account is protected with
+            {{
+              twoFactorMethod() === 'sms'
+                ? 'SMS'
+                : twoFactorMethod() === 'email'
+                  ? 'Email'
+                  : 'Authenticator App'
+            }}
+            2FA.
+          </p>
+        </div>
+      }
     </div>
   </div>
 
@@ -63,9 +204,7 @@
   <div class="scope-section">
     <h2>🏢 DEPARTMENT SCOPE</h2>
     <div class="scope-card">
-      <div class="scope-item">
-        <strong>Department:</strong> {{ departmentScope.department }}
-      </div>
+      <div class="scope-item"><strong>Department:</strong> {{ departmentScope.department }}</div>
       <div class="scope-item">
         <strong>Staff Count:</strong> {{ departmentScope.staffCount }} employees
       </div>
@@ -83,8 +222,8 @@
     <h2>🔄 DELEGATION SETTINGS</h2>
     <div class="delegation-card">
       <div class="delegation-row">
-        <label>Delegate To:</label>
-        <select [(ngModel)]="delegation.delegateTo">
+        <label for="delegate-to">Delegate To:</label>
+        <select id="delegate-to" title="Delegate To" [(ngModel)]="delegation.delegateTo">
           <option value="">Select Delegate ▼</option>
         </select>
       </div>
@@ -98,7 +237,11 @@
       </div>
       <div class="delegation-row">
         <label>Reason:</label>
-        <input type="text" [(ngModel)]="delegation.reason" placeholder="Vacation / Leave / Training" />
+        <input
+          type="text"
+          [(ngModel)]="delegation.reason"
+          placeholder="Vacation / Leave / Training"
+        />
       </div>
       <button class="btn btn-primary" (click)="setDelegation()">Set Delegation</button>
     </div>

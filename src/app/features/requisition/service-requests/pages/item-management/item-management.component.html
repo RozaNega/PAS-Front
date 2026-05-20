@@ -1,0 +1,170 @@
+<section class="page">
+  <div class="page-header">
+    <div class="header-info">
+      <button class="btn btn-secondary" (click)="backToRequest()">
+        <i class="bi bi-arrow-left"></i> Back to Request
+      </button>
+      <div>
+        <h1>Item Management</h1>
+        <p>Add and manage items for your service request</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <div class="summary-badge">
+        <span class="badge-count">{{ selectedItems.length }}</span>
+        <span class="badge-text">Items</span>
+      </div>
+      <div class="summary-badge">
+        <span class="badge-count">{{ totalQuantity }}</span>
+        <span class="badge-text">Total Qty</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="content-grid">
+    <!-- Add Item Form -->
+    <div class="form-section">
+      <div class="card">
+        <div class="card-header">
+          <h3>{{ editingItem ? 'Edit Item' : 'Add New Item' }}</h3>
+        </div>
+        <div class="card-body">
+          <form [formGroup]="itemForm" (ngSubmit)="addItem()">
+            <div class="form-group">
+              <label for="itemId">Select Item *</label>
+              <select id="itemId" formControlName="itemId" class="form-control" (change)="itemForm.get('requestedQty')?.setValue(1)">
+                <option value="">Choose an item...</option>
+                <option *ngFor="let item of availableItems" [value]="item.id">
+                  {{ item.itemName }} ({{ item.stockQuantity }} in stock)
+                </option>
+              </select>
+              <div class="error-message" *ngIf="itemForm.get('itemId')?.invalid && itemForm.get('itemId')?.touched">
+                Please select an item
+              </div>
+            </div>
+            
+            <div *ngIf="selectedItemName" class="selected-item-info">
+              <div class="info-row">
+                <strong>Selected:</strong> {{ selectedItemName }}
+              </div>
+              <div class="info-row">
+                <strong>Available:</strong> 
+                <span [class.text-success]="selectedItemStock >= 10" 
+                      [class.text-warning]="selectedItemStock < 10 && selectedItemStock > 0"
+                      [class.text-danger]="selectedItemStock === 0">
+                  {{ selectedItemStock }} in stock
+                </span>
+              </div>
+              <div class="info-row">
+                <strong>SKU:</strong> {{ availableItems.find(i => i.id === itemForm.get('itemId')?.value)?.sku }}
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="requestedQty">Quantity Requested *</label>
+                <input type="number" id="requestedQty" formControlName="requestedQty" class="form-control" 
+                       min="1" [max]="selectedItemStock">
+                <div class="error-message" *ngIf="itemForm.get('requestedQty')?.invalid && itemForm.get('requestedQty')?.touched">
+                  Valid quantity required (max: {{ selectedItemStock }})
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="shelfId">Shelf Location (Optional)</label>
+                <input type="text" id="shelfId" formControlName="shelfId" class="form-control" 
+                       placeholder="e.g., A1-B2">
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button type="button" class="btn btn-secondary" (click)="resetForm()" *ngIf="editingItem">
+                Cancel Edit
+              </button>
+              <button type="submit" class="btn btn-primary" [disabled]="itemForm.invalid || isLoading">
+                <i class="bi bi-plus-circle"></i>
+                {{ editingItem ? 'Update Item' : 'Add Item' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Items List -->
+    <div class="list-section">
+      <div class="card">
+        <div class="card-header">
+          <h3>Selected Items ({{ selectedItems.length }})</h3>
+          <button class="btn btn-sm btn-outline-secondary" (click)="selectedItems = []; saveItemsToSession();" 
+                  [disabled]="selectedItems.length === 0">
+            <i class="bi bi-trash"></i> Clear All
+          </button>
+        </div>
+        <div class="card-body">
+          <div *ngIf="selectedItems.length === 0" class="empty-state">
+            <i class="bi bi-inbox"></i>
+            <h4>No items added yet</h4>
+            <p>Add items using the form on the left to build your service request.</p>
+          </div>
+          
+          <div *ngIf="selectedItems.length > 0" class="items-list">
+            <div class="item-card" *ngFor="let item of selectedItems">
+              <div class="item-info">
+                <h4>{{ item.itemName }}</h4>
+                <div class="item-details">
+                  <span class="detail-item">
+                    <i class="bi bi-upc"></i> {{ item.sku }}
+                  </span>
+                  <span class="detail-item">
+                    <i class="bi bi-box"></i> {{ item.unitOfMeasure }}
+                  </span>
+                  <span class="detail-item" *ngIf="item.shelfLocation">
+                    <i class="bi bi-geo-alt"></i> {{ item.shelfLocation }}
+                  </span>
+                </div>
+              </div>
+              <div class="item-quantity">
+                <div class="quantity-display">
+                  <span class="quantity-number">{{ item.requestedQty }}</span>
+                  <span class="quantity-label">Qty</span>
+                </div>
+                <div class="stock-status">
+                  <span class="badge" 
+                        [class.badge-success]="getAvailableStock(item.itemId) >= item.requestedQty"
+                        [class.badge-warning]="getAvailableStock(item.itemId) < item.requestedQty && getAvailableStock(item.itemId) > 0"
+                        [class.badge-danger]="getAvailableStock(item.itemId) === 0">
+                    {{ getAvailableStock(item.itemId) }} available
+                  </span>
+                </div>
+              </div>
+              <div class="item-actions">
+                <button class="btn btn-sm btn-warning" (click)="editItem(item)" title="Edit">
+                  <i class="bi bi-pencil"></i> Edit
+                </button>
+                <button class="btn btn-sm btn-danger" (click)="deleteItem(item)" title="Delete">
+                  <i class="bi bi-trash"></i> Delete
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div *ngIf="selectedItems.length > 0" class="section-footer">
+            <div class="totals-summary">
+              <div class="total-item">
+                <span class="total-label">Total Items:</span>
+                <span class="total-value">{{ selectedItems.length }}</span>
+              </div>
+              <div class="total-item">
+                <span class="total-label">Total Quantity:</span>
+                <span class="total-value">{{ totalQuantity }}</span>
+              </div>
+            </div>
+            <button class="btn btn-success btn-lg" (click)="continueToReview()">
+              <i class="bi bi-check-circle"></i> Continue to Review
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

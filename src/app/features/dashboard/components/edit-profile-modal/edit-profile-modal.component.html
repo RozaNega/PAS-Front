@@ -1,59 +1,198 @@
-<div class="modal-header">
-  <h4 class="modal-title">Edit Profile</h4>
-  <button type="button" class="btn-close" aria-label="Close" (click)="cancel()"></button>
-</div>
+<div class="full-page-editor">
+  <!-- Breadcrumbs -->
+  <nav class="breadcrumb-nav">
+    <i class="bi bi-house-door-fill home-icon"></i>
+    <span class="separator">/</span>
+    <span class="breadcrumb-item">Profile</span>
+    <span class="separator">/</span>
+    <span class="breadcrumb-item active">Edit Profile</span>
+  </nav>
 
-<div class="modal-body">
-  <div class="form-section">
-    <label>
-      Full Name *
-      <input type="text" [(ngModel)]="profile.fullName" />
-    </label>
+  <!-- Main Content Card -->
+  <div class="editor-card">
+    <div class="card-header">
+      <div class="header-icon">
+        <i class="bi bi-person-fill"></i>
+      </div>
+      <div class="header-text">
+        <h2>EDIT PROFILE</h2>
+        <p>Update your personal and professional information.</p>
+      </div>
+    </div>
+
+    <div class="card-divider"></div>
+
+    <div class="editor-body">
+      <div class="editor-grid">
+        <!-- Left: Photo Section -->
+        <div class="photo-section">
+          <label class="section-label">Profile Photo</label>
+          <div class="photo-preview-wrapper">
+            <div class="photo-scan-container" [class.scanning]="isValidatingPhoto()">
+              @if (photoPreview()) {
+                <img [src]="photoPreview()!" alt="Profile preview" class="preview-img" />
+              } @else {
+                <div class="placeholder-img">
+                  <i class="bi bi-person-fill"></i>
+                </div>
+              }
+
+              @if (isValidatingPhoto()) {
+                <div class="scan-overlay">
+                  <div class="scan-line"></div>
+                  <span class="scan-label">Scanning Face...</span>
+                </div>
+              }
+
+              @if (isUploadingPhoto()) {
+                <div class="scan-overlay upload-overlay">
+                  <div class="upload-spinner"></div>
+                  <span class="scan-label">Saving to server...</span>
+                </div>
+              }
+            </div>
+          </div>
+
+          @if (!isSelectingPhoto()) {
+            <button class="btn-change-photo" (click)="isSelectingPhoto.set(true)">
+              <i class="bi bi-upload"></i> Change Photo
+            </button>
+            <p class="photo-hint">JPG, PNG or GIF. Max size 20MB.</p>
+          } @else {
+            <div class="inline-upload-container">
+              @if (!isCameraActive()) {
+                <div class="method-toggles">
+                  <button class="btn-method" (click)="fileInput.click()">
+                    <i class="bi bi-cloud-arrow-up"></i> Upload
+                  </button>
+                  <button class="btn-method" (click)="startCamera()">
+                    <i class="bi bi-camera"></i> Camera
+                  </button>
+                  <input
+                    type="file"
+                    #fileInput
+                    class="hidden-file-input"
+                    title="Upload profile photo"
+                    aria-label="Upload profile photo"
+                    (change)="onFileSelected($event)"
+                    accept="image/*"
+                  />
+                </div>
+              } @else {
+                <div class="inline-camera-view">
+                  <video #videoElement autoplay></video>
+                  <canvas #canvasElement class="hidden-canvas"></canvas>
+                  <button class="btn-capture" (click)="capturePhoto()">Capture</button>
+                </div>
+              }
+
+              <div class="inline-actions">
+                <button class="btn-cancel-upload" (click)="cancelUpload()">Cancel</button>
+                <button
+                  class="btn-save-inline"
+                  (click)="isSelectingPhoto.set(false)"
+                  [disabled]="!selectedFile()"
+                >
+                  Save
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+
+        <!-- Right: Form Section -->
+        <div class="form-section">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Full Name <span>*</span></label>
+              <input type="text" [(ngModel)]="profile.fullName" placeholder="John Doe" />
+            </div>
+            <div class="form-group">
+              <label>Employee Code <span>*</span></label>
+              <input type="text" [(ngModel)]="profile.employeeCode" placeholder="EMP-001" />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="department-select">Department <span>*</span></label>
+              <div class="select-wrapper">
+                <select
+                  id="department-select"
+                  [(ngModel)]="profile.department"
+                  aria-label="Department"
+                >
+                  <option>IT Department</option>
+                  <option>HR Department</option>
+                  <option>Finance Department</option>
+                </select>
+                <i class="bi bi-chevron-down"></i>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Email <span>*</span></label>
+              <input type="email" [(ngModel)]="profile.email" placeholder="john.doe@afrocom.com" />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Phone <span>*</span></label>
+              <input type="tel" [(ngModel)]="profile.phone" placeholder="+251-911-234567" />
+            </div>
+            <div class="form-group">
+              <label>Username <span>*</span></label>
+              <input type="text" [(ngModel)]="profile.username" placeholder="Username" />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>New Password</label>
+              <div class="input-shell">
+                <input
+                  [type]="showPassword() ? 'text' : 'password'"
+                  [(ngModel)]="profile.password"
+                  placeholder="••••••••"
+                />
+                <button
+                  type="button"
+                  class="input-action"
+                  title="Toggle password visibility"
+                  aria-label="Toggle password visibility"
+                  (click)="togglePasswordVisibility()"
+                >
+                  <i
+                    class="bi"
+                    [class.bi-eye-slash]="showPassword()"
+                    [class.bi-eye]="!showPassword()"
+                  ></i>
+                </button>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Current Password</label>
+              <div class="input-shell">
+                <input
+                  type="password"
+                  [(ngModel)]="currentPassword"
+                  placeholder="Enter current password"
+                  autocomplete="current-password"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card Footer -->
+      <div class="card-footer-actions">
+        <button class="btn-cancel" (click)="cancel()" [disabled]="loading()">Cancel</button>
+        <button class="btn-save" (click)="save()" [disabled]="loading()">
+          <i class="bi" [class.bi-floppy]="!loading()" [class.bi-hourglass-split]="loading()"></i>
+          {{ loading() ? 'Updating...' : 'Save Changes' }}
+        </button>
+      </div>
+    </div>
   </div>
-
-  <div class="form-row">
-    <label>
-      Employee Code
-      <input type="text" [(ngModel)]="profile.employeeCode" readonly />
-    </label>
-    <label>
-      Department *
-      <select [(ngModel)]="profile.department">
-        <option>IT Department</option>
-        <option>HR Department</option>
-        <option>Finance Department</option>
-        <option>Operations</option>
-      </select>
-    </label>
-  </div>
-
-  <div class="form-row">
-    <label>
-      Position *
-      <input type="text" [(ngModel)]="profile.position" />
-    </label>
-    <label>
-      Manager *
-      <input type="text" [(ngModel)]="profile.manager" />
-    </label>
-  </div>
-
-  <div class="form-section">
-    <label>
-      Email *
-      <input type="email" [(ngModel)]="profile.email" />
-    </label>
-  </div>
-
-  <div class="form-section">
-    <label>
-      Phone *
-      <input type="tel" [(ngModel)]="profile.phone" />
-    </label>
-  </div>
-</div>
-
-<div class="modal-footer">
-  <button class="btn btn-secondary" (click)="cancel()">Cancel</button>
-  <button class="btn btn-primary" (click)="save()">Save Changes</button>
 </div>

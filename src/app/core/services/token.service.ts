@@ -1,4 +1,4 @@
-﻿import { Injectable } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { environment } from '../../../environments/environment';
 
 export interface DecodedToken {
@@ -10,6 +10,11 @@ export interface DecodedToken {
   iat: number;
   iss: string;
   aud: string;
+  fullName?: string;
+  FullName?: string;
+  name?: string;
+  given_name?: string;
+  [key: string]: any;
 }
 
 @Injectable({
@@ -105,7 +110,9 @@ export class TokenService {
       if (!decoded) return true;
       
       const expirationDate = new Date(decoded.exp * 1000);
-      return expirationDate < new Date();
+      // Add 5 minute buffer for clock drift
+      const now = new Date();
+      return expirationDate.getTime() < (now.getTime() - 300000);
     } catch {
       return true;
     }
@@ -142,6 +149,10 @@ export class TokenService {
   isTokenValid(): boolean {
     const token = this.getToken();
     if (!token) return false;
+    
+    // If it's not a JWT (doesn't have dots), consider it valid if present
+    if (!token.includes('.')) return true;
+    
     return !this.isTokenExpired();
   }
 

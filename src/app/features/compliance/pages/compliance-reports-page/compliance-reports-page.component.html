@@ -330,9 +330,9 @@
               <td>{{ report.type }}</td>
               <td>{{ report.size }}</td>
               <td>
-                <button class="table-action-btn">👁️</button>
-                <button class="table-action-btn">📥</button>
-                <button class="table-action-btn">🗑️</button>
+                <button class="table-action-btn" (click)="viewReport(report)">👁️</button>
+                <button class="table-action-btn" (click)="downloadReport(report)">📥</button>
+                <button class="btn btn-sm" style="background-color: #dc3545; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-weight: bold; cursor: pointer; transition: all 0.2s;" (click)="deleteReport(report.name)">Delete</button>
               </td>
             </tr>
           }

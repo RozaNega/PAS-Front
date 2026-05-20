@@ -19,6 +19,17 @@ export interface ServiceRequestDto {
   approvedDate?: string;
 }
 
+export interface CreateServiceRequestDto {
+  items: {
+    itemId: string;
+    srDetailId?: string | null;
+    requestedQty: number;
+    preferredShelfId: string;
+    notes?: string;
+  }[];
+  remarks: string;
+}
+
 export interface StoreIssueVoucherDto {
   id: string;
   voucherNumber: string;
@@ -42,7 +53,7 @@ export class RequisitionsService {
     return this.apiService.get<ApiResponseModel<ServiceRequestDto>>(`ServiceRequests/${id}`);
   }
 
-  createServiceRequest(data: any): Observable<ApiResponseModel<string>> {
+  createServiceRequest(data: CreateServiceRequestDto): Observable<ApiResponseModel<string>> {
     return this.apiService.post<ApiResponseModel<string>>('ServiceRequests', data);
   }
 

@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ServiceRequestService } from '../../services/service-request.service';
-import { ItemMasterService, ItemMasterListDto } from '../../../../../../app/core/services/item-master.service';
+import { ItemMasterService, ItemMasterListDto } from '../../../../../core/services/item-master.service';
 import { ServiceRequestItem, CreateServiceRequestRequest } from '../../models/service-request.model';
 
 @Component({
@@ -19,17 +19,12 @@ export class ServiceRequestFormComponent implements OnInit {
   
   // Forms
   requestForm!: FormGroup;
-  itemsForm!: FormGroup;
   
   // Data
   availableItems: ItemMasterListDto[] = [];
   selectedItems: ServiceRequestItem[] = [];
   isLoading = false;
-  
-  // UI State
-  showAddItemModal = false;
-  editingItem: ServiceRequestItem | null = null;
-  
+
   constructor(
     private fb: FormBuilder,
     private serviceRequestService: ServiceRequestService,
@@ -40,6 +35,7 @@ export class ServiceRequestFormComponent implements OnInit {
   ngOnInit(): void {
     this.initializeForms();
     this.loadAvailableItems();
+    this.loadItemsFromSession();
   }
 
   private initializeForms(): void {
@@ -49,17 +45,13 @@ export class ServiceRequestFormComponent implements OnInit {
       urgency: ['normal', Validators.required],
       notes: ['']
     });
-
-    this.itemsForm = this.fb.group({
-      itemId: ['', Validators.required],
-      requestedQty: [1, [Validators.required, Validators.min(1)]],
-      shelfId: ['']
-    });
   }
 
   private loadAvailableItems(): void {
     console.log('Loading available items...');
     this.isLoading = true;
+    
+    // Try to load from API first
     this.itemMasterService.getItemMasters().subscribe({
       next: (response: any) => {
         console.log('Items response:', response);
@@ -69,6 +61,54 @@ export class ServiceRequestFormComponent implements OnInit {
       },
       error: (error: any) => {
         console.error('Error loading items:', error);
+        // Load sample items if API fails
+        this.availableItems = [
+          {
+            id: '1',
+            itemName: 'Dell XPS Laptop',
+            sku: 'DELL-XPS-15',
+            description: 'High-performance laptop',
+            unitOfMeasure: 'Units',
+            stockQuantity: 45,
+            categoryId: '1',
+            categoryName: 'Electronics',
+            isActive: true
+          },
+          {
+            id: '2',
+            itemName: 'HP 27" Monitor',
+            sku: 'HP-MON-27',
+            description: '27-inch LED monitor',
+            unitOfMeasure: 'Units',
+            stockQuantity: 67,
+            categoryId: '1',
+            categoryName: 'Electronics',
+            isActive: true
+          },
+          {
+            id: '3',
+            itemName: 'Logitech Mouse',
+            sku: 'LOG-MOUSE-01',
+            description: 'Wireless optical mouse',
+            unitOfMeasure: 'Units',
+            stockQuantity: 120,
+            categoryId: '1',
+            categoryName: 'Electronics',
+            isActive: true
+          },
+          {
+            id: '4',
+            itemName: 'USB-C Cable',
+            sku: 'USB-C-2M',
+            description: '2-meter USB-C charging cable',
+            unitOfMeasure: 'Units',
+            stockQuantity: 200,
+            categoryId: '1',
+            categoryName: 'Electronics',
+            isActive: true
+          }
+        ];
+        console.log('Sample items loaded:', this.availableItems.length);
         this.isLoading = false;
       }
     });
@@ -101,75 +141,14 @@ export class ServiceRequestFormComponent implements OnInit {
   }
 
   // Item Management
-  openAddItemModal(): void {
-    console.log('Opening Add Item Modal');
-    console.log('Available items:', this.availableItems.length);
-    this.editingItem = null;
-    this.itemsForm.reset({
-      itemId: '',
-      requestedQty: 1,
-      shelfId: ''
-    });
-    this.showAddItemModal = true;
-    console.log('Modal should be visible:', this.showAddItemModal);
-  }
-
-  editItem(item: ServiceRequestItem): void {
-    this.editingItem = item;
-    this.itemsForm.patchValue({
-      itemId: item.itemId,
-      requestedQty: item.requestedQty,
-      shelfId: item.shelfId || ''
-    });
-    this.showAddItemModal = true;
-  }
-
-  deleteItem(item: ServiceRequestItem): void {
-    if (confirm(`Are you sure you want to remove ${item.itemName} from the request?`)) {
-      const index = this.selectedItems.findIndex(i => i.id === item.id);
-      if (index > -1) {
-        this.selectedItems.splice(index, 1);
-      }
-    }
-  }
-
-  saveItem(): void {
-    if (this.itemsForm.invalid) return;
-
-    const formValue = this.itemsForm.value;
-    const selectedItem = this.availableItems.find(item => item.id === formValue.itemId);
+  goToItemManagement(): void {
+    // Save current items to session storage
+    const requestId = 'sr_' + Date.now();
+    sessionStorage.setItem(`sr_items_${requestId}`, JSON.stringify(this.selectedItems));
+    sessionStorage.setItem('sr_request_data', JSON.stringify(this.requestForm.value));
     
-    if (!selectedItem) return;
-
-    const itemData: ServiceRequestItem = {
-      id: this.editingItem?.id || this.generateId(),
-      itemId: selectedItem.id,
-      itemName: selectedItem.itemName,
-      sku: selectedItem.sku,
-      unitOfMeasure: selectedItem.unitOfMeasure,
-      requestedQty: formValue.requestedQty,
-      issuedQty: 0,
-      pendingQty: formValue.requestedQty,
-      shelfId: formValue.shelfId,
-      shelfLocation: this.getShelfLocation(formValue.shelfId)
-    };
-
-    if (this.editingItem) {
-      const index = this.selectedItems.findIndex(i => i.id === this.editingItem!.id);
-      if (index > -1) {
-        this.selectedItems[index] = itemData;
-      }
-    } else {
-      this.selectedItems.push(itemData);
-    }
-
-    this.closeAddItemModal();
-  }
-
-  closeAddItemModal(): void {
-    this.showAddItemModal = false;
-    this.editingItem = null;
-    this.itemsForm.reset();
+    // Navigate to item management page
+    this.router.navigate(['/requisitions/service-requests/item-management', requestId]);
   }
 
   private generateId(): string {
@@ -179,6 +158,24 @@ export class ServiceRequestFormComponent implements OnInit {
   private getShelfLocation(shelfId: string): string {
     // This would typically come from a service call
     return shelfId ? `Shelf ${shelfId}` : '';
+  }
+
+  private loadItemsFromSession(): void {
+    // Try to load items from session storage (when returning from item management page)
+    const sessionKeys = Object.keys(sessionStorage).filter(key => key.startsWith('sr_items_'));
+    if (sessionKeys.length > 0) {
+      const latestKey = sessionKeys[sessionKeys.length - 1];
+      const items = sessionStorage.getItem(latestKey);
+      if (items) {
+        this.selectedItems = JSON.parse(items);
+      }
+    }
+
+    // Load request data if available
+    const requestData = sessionStorage.getItem('sr_request_data');
+    if (requestData) {
+      this.requestForm.patchValue(JSON.parse(requestData));
+    }
   }
 
   // Form Submission
@@ -232,19 +229,6 @@ export class ServiceRequestFormComponent implements OnInit {
     if (confirm('Are you sure you want to cancel? All unsaved data will be lost.')) {
       this.router.navigate(['/requisitions/service-requests']);
     }
-  }
-
-  // Getters for template
-  get selectedItemName(): string {
-    const itemId = this.itemsForm.get('itemId')?.value;
-    const item = this.availableItems.find(i => i.id === itemId);
-    return item?.itemName || '';
-  }
-
-  get selectedItemStock(): number {
-    const itemId = this.itemsForm.get('itemId')?.value;
-    const item = this.availableItems.find(i => i.id === itemId);
-    return item?.stockQuantity || 0;
   }
 
   get totalQuantity(): number {

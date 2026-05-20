@@ -1,0 +1,17 @@
+<div class="completed-audits-container">
+  <div class="page-header"><h1>Completed Audits</h1><p class="subtitle">Finished compliance audits</p></div>
+  <div class="audits-list">
+    @for (audit of audits(); track audit.id) {
+      <div class="audit-card">
+        <div class="audit-header"><div class="audit-id">{{ audit.auditId }}</div><div class="status-badge completed">Completed</div></div>
+        <div class="audit-details">
+          <div class="detail-row"><span class="label">Type:</span><span class="value">{{ audit.type }}</span></div>
+          <div class="detail-row"><span class="label">Completed By:</span><span class="value">{{ audit.completedBy }}</span></div>
+          <div class="detail-row"><span class="label">Date:</span><span class="value">{{ audit.completedDate }}</span></div>
+          <div class="detail-row"><span class="label">Findings:</span><span class="value">{{ audit.findings }}</span></div>
+          <div class="detail-row"><span class="label">Risk Level:</span><span class="value">{{ audit.riskLevel }}</span></div>
+        </div>
+      </div>
+    }
+  </div>
+</div>

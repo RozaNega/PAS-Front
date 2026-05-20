@@ -5,8 +5,13 @@ import {
   computed,
   inject,
   signal,
+  OnInit,
+  Inject,
+  PLATFORM_ID
 } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { RouterLink, Router } from '@angular/router';
+import { isPlatformBrowser } from '@angular/common';
+import { AuthService } from '../../core/services/auth.service';
 
 type ModuleId = 'property' | 'storage' | 'workflow';
 
@@ -36,13 +41,17 @@ interface ModuleItem {
 
 @Component({
   selector: 'app-landing',
+  standalone: true,
   imports: [RouterLink],
   templateUrl: './landing.html',
   styleUrl: './landing.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class Landing {
+export class Landing implements OnInit {
   private readonly hostElement = inject<ElementRef<HTMLElement>>(ElementRef);
+  protected readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
+  private readonly platformId = inject(PLATFORM_ID);
 
   protected readonly menuOpen = signal(false);
 
@@ -147,9 +156,25 @@ export class Landing {
     },
   ];
 
+  protected readonly dashboardRoute = computed(() => {
+    if (this.authService.isAuthenticated()) {
+      const user = this.authService.getCurrentUser();
+      return this.authService.getDashboardRouteForUser(user);
+    }
+    return '/auth/login';
+  });
+
   constructor() {
     this.restoreTheme();
     this.applyTheme();
+  }
+
+  ngOnInit(): void {
+    // Keep landing page visible - don't auto-redirect
+    // Users can click login button if they want to authenticate
+    if (isPlatformBrowser(this.platformId)) {
+      console.log('📄 Landing page loaded - waiting for user action');
+    }
   }
 
   protected toggleMenu(): void {
@@ -249,6 +274,14 @@ export class Landing {
     const toHex = (value: number) => value.toString(16).padStart(2, '0');
 
     return `#${toHex(mix(r))}${toHex(mix(g))}${toHex(mix(b))}`;
+  }
+
+  protected resetFirstVisit(): void {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem('pas_has_visited');
+      console.log('🔄 First visit flag reset. Refresh the page to see the landing page again.');
+      alert('First visit flag has been reset. Refresh the page to test the first-time experience.');
+    }
   }
 
   private hexToStrong(hex: string): string {

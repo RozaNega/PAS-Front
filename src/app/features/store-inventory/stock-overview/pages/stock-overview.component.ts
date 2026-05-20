@@ -25,7 +25,7 @@ interface CategoryStock {
 @Component({
   selector: 'app-stock-overview',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule],
   templateUrl: './stock-overview.component.html',
   styleUrls: ['./stock-overview.component.scss']
 })

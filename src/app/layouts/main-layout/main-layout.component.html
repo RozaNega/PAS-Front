@@ -45,32 +45,73 @@
           <section class="topbar-popover notifications-popover" aria-label="Recent notifications">
             <header class="popover-header">
               <div class="popover-header-content">
-                <h2>Notifications</h2>
+                <h2>{{ notificationsPopoverTitle() }}</h2>
                 <span class="notification-count">{{ quickNotifications().length }} new</span>
               </div>
-              <button
-                type="button"
-                class="popover-close"
-                aria-label="Close notifications"
-                title="Close notifications"
-                (click)="closeNotifications($event)"
-              >
-                <i class="bi bi-x-lg"></i>
-              </button>
+              <div class="popover-header-actions">
+                @if (quickNotifications().length > 0) {
+                  <button
+                    type="button"
+                    class="popover-mark-all-btn"
+                    title="Mark all as read"
+                    aria-label="Mark all notifications as read"
+                    (click)="markAllWorkflowNotificationsAsRead(); $event.stopPropagation()"
+                  >
+                    <i class="bi bi-check2-all"></i> Mark all read
+                  </button>
+                }
+                <button
+                  type="button"
+                  class="popover-close"
+                  aria-label="Close notifications"
+                  title="Close notifications"
+                  (click)="closeNotifications($event)"
+                >
+                  <i class="bi bi-x-lg"></i>
+                </button>
+              </div>
             </header>
 
             <div class="popover-list">
-              @for (item of quickNotifications(); track item.title + item.time) {
+              @for (item of quickNotifications(); track item.title + item.time; let i = $index) {
                 <article class="popover-item">
-                  <div class="popover-item-icon">
-                    <i class="bi bi-info-circle"></i>
+                  <div class="popover-item-icon" [class]="'popover-item-icon--' + (item.type || 'info')">
+                    <i class="bi" [class.bi-check-circle-fill]="item.type === 'approved' || item.type === 'completed'"
+                                  [class.bi-x-circle-fill]="item.type === 'rejected'"
+                                  [class.bi-clock-fill]="item.type === 'submitted'"
+                                  [class.bi-info-circle-fill]="!item.type || item.type === 'info'"></i>
                   </div>
                   <div class="popover-item-content">
                     <p class="popover-item-title">{{ item.title }}</p>
                     <p class="popover-item-text">{{ item.message }}</p>
                     <span class="popover-item-time">{{ item.time }}</span>
                   </div>
+                  <div class="popover-item-actions">
+                    <button
+                      type="button"
+                      class="popover-item-action-btn"
+                      title="Mark as read"
+                      aria-label="Mark notification as read"
+                      (click)="markWorkflowNotificationAsRead(item.id || ''); $event.stopPropagation()"
+                    >
+                      <i class="bi bi-check2"></i>
+                    </button>
+                    <button
+                      type="button"
+                      class="popover-item-action-btn popover-item-action-btn--dismiss"
+                      title="Dismiss"
+                      aria-label="Dismiss notification"
+                      (click)="dismissWorkflowNotification(item.id || ''); $event.stopPropagation()"
+                    >
+                      <i class="bi bi-x"></i>
+                    </button>
+                  </div>
                 </article>
+              } @empty {
+                <div class="popover-empty">
+                  <i class="bi bi-bell-slash"></i>
+                  <p>No new notifications</p>
+                </div>
               }
             </div>
 
@@ -79,7 +120,7 @@
               [routerLink]="notificationsRoute()"
               (click)="closeNotifications($event)"
             >
-              View all notifications
+              {{ viewAllNotificationsLabel() }}
               <i class="bi bi-arrow-right"></i>
             </a>
           </section>
@@ -96,6 +137,19 @@
       >
         <i class="bi bi-palette2"></i>
       </button>
+      <a
+        class="topbar-profile"
+        [routerLink]="profileRoute()"
+        [attr.aria-label]="(user?.fullName || user?.username || 'User') + ' profile'"
+      >
+        <img
+          class="topbar-profile__img"
+          [src]="profileImageUrl()"
+          [alt]="user?.fullName || 'Profile'"
+          (error)="$any($event.target).src = defaultAvatar"
+        />
+        <span class="topbar-profile__name">{{ user?.fullName || user?.username || 'User' }}</span>
+      </a>
       <button type="button" class="logout-btn" (click)="logout()">
         <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
         Sign out

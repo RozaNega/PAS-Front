@@ -1,5 +1,5 @@
 ﻿import { APP_BASE_HREF } from '@angular/common';
-import { CommonEngine } from '@angular/ssr';
+import { CommonEngine } from '@angular/ssr/node';
 import express from 'express';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve } from 'node:path';
@@ -70,6 +70,57 @@ export function app(): express.Express {
     res.status(200).json(dashboardStatisticsResponse);
   });
 
+  // Mock Auth/login endpoint for development
+  server.post('/api/Auth/login', (req, res) => {
+    const { username, password } = req.body;
+    
+    // Mock authentication - accept any username with minimum 8 character password
+    if (username && password && password.length >= 8) {
+      // Determine role based on username
+      let role = 'employee';
+      if (username.toLowerCase().includes('admin')) {
+        role = 'admin';
+      } else if (username.toLowerCase().includes('store') || username.toLowerCase().includes('keeper')) {
+        role = 'storekeeper';
+      } else if (username.toLowerCase().includes('manager')) {
+        role = 'manager';
+      } else if (username.toLowerCase().includes('compliance') || username.toLowerCase().includes('auditor')) {
+        role = 'compliance-officer';
+      }
+
+      const mockUser = {
+        id: 'user-' + Date.now(),
+        username: username,
+        fullName: username.charAt(0).toUpperCase() + username.slice(1),
+        email: `${username}@afrocom.com`,
+        roles: [role],
+        permissions: [],
+        isActive: true
+      };
+
+      const mockToken = 'mock-jwt-token-' + Date.now();
+      
+      res.status(200).json({
+        success: true,
+        succeeded: true,
+        message: 'Login successful',
+        data: {
+          token: mockToken,
+          refreshToken: 'mock-refresh-token',
+          expiresAt: new Date(Date.now() + 3600000).toISOString(),
+          user: mockUser
+        }
+      });
+    } else {
+      res.status(401).json({
+        success: false,
+        succeeded: false,
+        message: 'Invalid username or password',
+        errors: ['Invalid username or password']
+      });
+    }
+  });
+
   server.use(
     '/assets',
     express.static(workspaceAssetsFolder, {
@@ -108,8 +159,8 @@ export function app(): express.Express {
         publicPath: browserDistFolder,
         providers: [{ provide: APP_BASE_HREF, useValue: baseUrl }],
       })
-      .then((html) => res.send(html))
-      .catch((err) => next(err));
+      .then((html: string) => res.send(html))
+      .catch((err: Error) => next(err));
   });
 
   return server;

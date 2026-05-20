@@ -1,0 +1,29 @@
+<div class="issued-sivs-container">
+  <div class="page-header">
+    <h1>Issued SIVs</h1>
+    <p class="subtitle">SIVs that have been issued</p>
+  </div>
+
+  <div class="sivs-list">
+    @for (siv of sivs(); track siv.id) {
+      <div class="siv-card">
+        <div class="siv-header">
+          <div class="siv-number">{{ siv.sivNumber }}</div>
+          <div class="status-badge issued">Issued</div>
+        </div>
+        <div class="siv-details">
+          <div class="detail-row"><span class="label">Request Number:</span><span class="value">{{ siv.requestNumber }}</span></div>
+          <div class="detail-row"><span class="label">Requester:</span><span class="value">{{ siv.requesterName }} ({{ siv.department }})</span></div>
+          <div class="detail-row"><span class="label">Total Items:</span><span class="value">{{ siv.totalItems }}</span></div>
+          <div class="detail-row"><span class="label">Total Value:</span><span class="value">${{ siv.totalValue.toLocaleString() }}</span></div>
+          <div class="detail-row"><span class="label">Issue Date:</span><span class="value">{{ siv.issueDate }}</span></div>
+          <div class="detail-row"><span class="label">Issued By:</span><span class="value">{{ siv.issuedBy }}</span></div>
+        </div>
+        <div class="siv-actions">
+          <button class="btn btn-secondary" (click)="viewDetails(siv.id)">View Details</button>
+          <button class="btn btn-primary" (click)="downloadPdf(siv.sivNumber)">Download PDF</button>
+        </div>
+      </div>
+    }
+  </div>
+</div>

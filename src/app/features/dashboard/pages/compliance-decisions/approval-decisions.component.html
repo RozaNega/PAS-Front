@@ -1,0 +1,15 @@
+<div class="approval-decisions-container">
+  <div class="page-header"><h1>Approval Decisions</h1><p class="subtitle">Monitor approval decisions</p></div>
+  <div class="decisions-list">
+    @for (decision of decisions(); track decision.id) {
+      <div class="decision-card">
+        <div class="decision-header"><div class="request-number">{{ decision.requestNumber }}</div><div class="status-badge approved">Approved</div></div>
+        <div class="decision-details">
+          <div class="detail-row"><span class="label">Approver:</span><span class="value">{{ decision.approver }} ({{ decision.department }})</span></div>
+          <div class="detail-row"><span class="label">Approved Date:</span><span class="value">{{ decision.approvedDate }}</span></div>
+          <div class="detail-row"><span class="label">Value:</span><span class="value">${{ decision.value.toLocaleString() }}</span></div>
+        </div>
+      </div>
+    }
+  </div>
+</div>

@@ -1,0 +1,79 @@
+<div class="photo-modal-container">
+  <div class="modal-header">
+    <h4 class="modal-title">Change Profile Photo</h4>
+    <button type="button" class="btn-close" (click)="cancel()" aria-label="Close"></button>
+  </div>
+
+  <div class="modal-body">
+    <div class="selection-section">
+      <label class="section-label">Choose a method</label>
+      <div class="method-grid">
+        <!-- Upload Card -->
+        <div class="method-card" (click)="fileInput.click()">
+          <div class="method-icon upload">
+            <i class="bi bi-cloud-arrow-up"></i>
+          </div>
+          <div class="method-content">
+            <span class="method-title">Upload from device</span>
+            <span class="method-hint">JPG, PNG or GIF.<br>Max size 2MB.</span>
+          </div>
+          <input type="file" #fileInput (change)="onFileSelected($event)" accept="image/*" style="display: none;" />
+        </div>
+
+        <!-- Camera Card -->
+        <div class="method-card" (click)="startCamera()">
+          <div class="method-icon camera">
+            <i class="bi bi-camera"></i>
+          </div>
+          <div class="method-content">
+            <span class="method-title">Take a photo</span>
+            <span class="method-hint">Use your camera<br>to take a new photo.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Row: Preview & Actions -->
+    <div class="bottom-row">
+      <div class="preview-section">
+        <label class="section-label">Preview</label>
+        <div class="preview-avatar-wrapper" [class.analyzing]="isAnalyzing()">
+          @if (photoPreview()) {
+            <img [src]="photoPreview()" alt="Preview" />
+            
+            @if (isAnalyzing()) {
+              <div class="analysis-overlay">
+                <div class="scanning-line"></div>
+                <div class="analysis-text">
+                  <span class="spinner-border spinner-border-sm me-2"></span>
+                  Analyzing Face...
+                </div>
+              </div>
+            }
+
+            @if (faceDetected() === true) {
+              <div class="success-badge">
+                <i class="bi bi-check-circle-fill"></i> Face Verified
+              </div>
+            }
+          } @else {
+            <div class="placeholder-preview">
+              <i class="bi bi-person-fill"></i>
+            </div>
+          }
+        </div>
+      </div>
+      
+      <div class="action-buttons">
+        <button class="btn-cancel" (click)="cancel()">Cancel</button>
+        <button class="btn-save" (click)="uploadPhoto()" 
+                [disabled]="(!selectedFile() && !photoPreview()) || faceDetected() !== true || isAnalyzing() || isUploading()">
+          @if (isUploading()) {
+            <span class="spinner-border spinner-border-sm me-2"></span>
+          }
+          Save Photo
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

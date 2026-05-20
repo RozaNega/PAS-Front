@@ -1,0 +1,119 @@
+<div class="status-reports-container">
+  <div class="page-header">
+    <h1>Compliance Status</h1>
+    <p class="subtitle">Compliance system status logs &amp; performance indicators</p>
+  </div>
+
+  <div class="reports-list">
+    @for (report of reports(); track report.id) {
+      <div class="report-card">
+        <div class="report-header">
+          <div class="report-name">
+            <i class="bi bi-shield-check-fill file-icon"></i>
+            {{ report.reportName }}
+          </div>
+          <span class="badge" style="background: #d1fae5; color: #065f46;">
+            Score: {{ report.complianceScore }}%
+          </span>
+        </div>
+        <div class="report-details">
+          <div class="detail-row"><span class="label">Generated:</span><span class="value">{{ report.generatedDate }}</span></div>
+          <div class="detail-row"><span class="label">Total Items:</span><span class="value">{{ report.totalItems }}</span></div>
+          <div class="detail-row"><span class="label">Compliant:</span><span class="value text-success">{{ report.compliantItems }}</span></div>
+          <div class="detail-row"><span class="label">Non-Compliant:</span><span class="value text-danger">{{ report.nonCompliantItems }}</span></div>
+        </div>
+        <div class="report-actions">
+          <button type="button" class="btn btn-secondary" (click)="downloadReport(report)" [disabled]="downloadingReportId() !== null">
+            @if (downloadingReportId() === report.id) {
+              <span class="spinner"></span> Downloading {{ downloadProgress() }}%
+            } @else {
+              <i class="bi bi-file-pdf"></i> Download PDF
+            }
+          </button>
+          <button type="button" class="btn btn-primary" (click)="viewReport(report)">
+            <i class="bi bi-eye"></i> View
+          </button>
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- Merged View Modal -->
+  @if (activeViewReport(); as rep) {
+    <div class="modal-backdrop" (click)="closeModal()">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h2>
+            <i class="bi bi-shield-check-fill text-primary"></i> 
+            Compliance Status Details
+          </h2>
+          <button class="btn-close-modal" (click)="closeModal()" aria-label="Close modal">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="section-title">General Information</div>
+          <div class="metadata-grid">
+            <div class="grid-item">
+              <label>Report Name</label>
+              <span>{{ rep.reportName }}</span>
+            </div>
+            <div class="grid-item">
+              <label>Generated Date</label>
+              <span>{{ rep.generatedDate }}</span>
+            </div>
+            <div class="grid-item">
+              <label>Assigned Compliance Officer</label>
+              <span>{{ rep.complianceAuditor }}</span>
+            </div>
+            <div class="grid-item">
+              <label>Historical Audit Reference</label>
+              <span class="mono-text" style="font-size: 0.8rem;">{{ rep.lastAuditRef }}</span>
+            </div>
+          </div>
+
+          <div class="section-title">Compliance Evaluation Metrics</div>
+          <div class="metadata-grid">
+            <div class="grid-item">
+              <label>Overall Compliance Score</label>
+              <span class="text-success" style="font-weight: 800; font-size: 1.1rem;">{{ rep.complianceScore }}% score</span>
+            </div>
+            <div class="grid-item">
+              <label>Total Assets Evaluated</label>
+              <span>{{ rep.totalItems }} devices</span>
+            </div>
+            <div class="grid-item">
+              <label>Perfectly Compliant Assets</label>
+              <span class="text-success" style="font-weight: 700;">{{ rep.compliantItems }} devices</span>
+            </div>
+            <div class="grid-item">
+              <label>Non-Compliant Items</label>
+              <span class="text-danger" style="font-weight: 700;">{{ rep.nonCompliantItems }} devices</span>
+            </div>
+          </div>
+
+          <div class="section-title">General Summary &amp; Corrective Steps</div>
+          <div style="background: var(--surface-section); border-left: 4px solid var(--primary-color); padding: 1rem; border-radius: 0 8px 8px 0; margin-bottom: 1.25rem;">
+            <p style="margin: 0; font-size: 0.9rem; line-height: 1.5; color: var(--text-color);">
+              <strong>Auditor Analysis: </strong>{{ rep.generalSummary }}
+            </p>
+            <div style="margin-top: 0.6rem; font-size: 0.85rem; color: #b91c1c; font-weight: 600;">
+              <strong>Corrective Action Plan: </strong>{{ rep.actionsRequired }}
+            </div>
+          </div>
+
+          <div class="info-note">
+            <i class="bi bi-shield-fill-check text-success"></i>
+            <span>This status check satisfies international asset verification protocol compliance criteria.</span>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" (click)="closeModal()">Close</button>
+          <button class="btn btn-primary" (click)="downloadReport(rep)">
+            <i class="bi bi-file-pdf"></i> Download PDF
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

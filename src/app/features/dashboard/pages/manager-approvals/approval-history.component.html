@@ -1,0 +1,21 @@
+<div class="approval-history-container">
+  <div class="page-header">
+    <h1>Approval History</h1>
+    <p class="subtitle">Complete approval history log</p>
+  </div>
+
+  <div class="history-list">
+    @for (item of history(); track item.id) {
+      <div class="history-card">
+        <div class="history-header">
+          <div class="sr-number">{{ item.srNumber }}</div>
+          <div class="date">{{ item.date }}</div>
+        </div>
+        <div class="history-details">
+          <div class="detail-row"><span class="label">Requester:</span><span class="value">{{ item.requester }}</span></div>
+          <div class="detail-row"><span class="label">Decision:</span><span class="value">{{ item.decision }}</span></div>
+        </div>
+      </div>
+    }
+  </div>
+</div>

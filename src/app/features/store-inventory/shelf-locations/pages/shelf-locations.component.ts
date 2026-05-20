@@ -1,7 +1,8 @@
-import { Component, signal, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { InventoryService } from '../../../../core/services/inventory.service';
+import { SafetyBoxService } from '../../../property-management/safety-boxes/services/safety-box.service';
 
 interface Shelf {
   id: string;
@@ -16,12 +17,19 @@ interface Shelf {
 @Component({
   selector: 'app-shelf-locations',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule],
   templateUrl: './shelf-locations.component.html',
-  styleUrls: ['./shelf-locations.component.scss']
+  styleUrls: ['./shelf-locations.component.scss', './shelf-locations-dialog-styles.scss']
 })
 export class ShelfLocationsComponent {
   readonly inventoryService = inject(InventoryService);
+  readonly safetyBoxService = inject(SafetyBoxService);
+  private readonly formBuilder = inject(FormBuilder);
+
+  // Add Item Dialog
+  showAddItemDialog = false;
+  selectedShelfForItem: Shelf | null = null;
+  addItemForm!: FormGroup;
   selectedWarehouse = signal('Warehouse A');
   searchTerm = signal('');
   aisleFilter = signal('All Aisles');
@@ -30,6 +38,15 @@ export class ShelfLocationsComponent {
   isLoading = signal(false);
 
   warehouses = ['Warehouse A', 'Warehouse B', 'Warehouse C', 'Storage'];
+
+  constructor() {
+    this.addItemForm = this.formBuilder.group({
+      itemName: ['', Validators.required],
+      quantity: [1, [Validators.required, Validators.min(1)]],
+      unitPrice: [100, [Validators.required, Validators.min(1)]]
+    });
+    this.loadShelves();
+  }
 
   shelves = signal<Shelf[]>([
     { id: '1', aisle: 'A-01', rack: 'R-01', shelf: 'S-01', items: 234, value: 45678, occupancy: 80 },
@@ -80,10 +97,7 @@ export class ShelfLocationsComponent {
 
   filteredShelves = signal<Shelf[]>([]);
 
-  constructor() {
-    this.loadShelves();
-  }
-
+  
   loadShelves(): void {
     this.isLoading.set(true);
     this.inventoryService.getAllShelves().subscribe({
@@ -179,14 +193,15 @@ export class ShelfLocationsComponent {
     const editing = this.selectedShelf();
 
     if (editing) {
-      this.inventoryService.updateShelf(editing.id, {
-        warehouseId: this.selectedWarehouse(),
-        aisle: data.aisle,
-        rack: data.rack,
-        shelfNumber: data.shelfNumber,
-        zone: '',
-        binType: data.shelfType,
-        capacity: data.maxCapacity
+      // Update existing shelf in SafetyBoxShelves
+      this.safetyBoxService.update(editing.id, {
+        boxNumber: `${data.aisle}-${data.rack}-${data.shelfNumber}`,
+        locationId: this.selectedWarehouse(),
+        shelfId: editing.id,
+        description: `${data.shelfType} shelf in ${data.aisle}-${data.rack}`,
+        capacity: data.maxCapacity,
+        currentCount: 0,
+        isActive: true
       }).subscribe({
         next: () => {
           this.shelves.update(shelves =>
@@ -196,19 +211,20 @@ export class ShelfLocationsComponent {
           this.closeModal();
         },
         error: (error) => {
-          console.error('Error updating shelf:', error);
+          console.error('Error updating safety box shelf:', error);
           alert('Failed to update shelf');
         }
       });
     } else {
-      this.inventoryService.createShelf({
-        warehouseId: this.selectedWarehouse(),
-        aisle: data.aisle,
-        rack: data.rack,
-        shelfNumber: data.shelfNumber,
-        zone: '',
-        binType: data.shelfType,
-        capacity: data.maxCapacity
+      // Create new shelf in SafetyBoxShelves
+      this.safetyBoxService.create({
+        boxNumber: `${data.aisle}-${data.rack}-${data.shelfNumber}`,
+        locationId: this.selectedWarehouse(),
+        shelfId: '', // Will be set by backend
+        description: `${data.shelfType} shelf in ${data.aisle}-${data.rack}`,
+        capacity: data.maxCapacity,
+        currentCount: 0,
+        isActive: true
       }).subscribe({
         next: (response) => {
           if (response.success) {
@@ -224,11 +240,12 @@ export class ShelfLocationsComponent {
             this.shelves.update(shelves => [...shelves, newShelf]);
             this.filterShelves();
             this.closeModal();
+            alert('Shelf created successfully in Safety Box Shelves!');
           }
         },
         error: (error) => {
-          console.error('Error creating shelf:', error);
-          alert('Failed to create shelf');
+          console.error('Error creating safety box shelf:', error);
+          alert('Failed to create shelf in Safety Box Shelves');
         }
       });
     }
@@ -236,14 +253,14 @@ export class ShelfLocationsComponent {
 
   deleteShelf(id: string): void {
     if (confirm('Are you sure you want to delete this shelf?')) {
-      this.inventoryService.deleteShelf(id).subscribe({
+      this.safetyBoxService.delete(id).subscribe({
         next: () => {
           this.shelves.update(shelves => shelves.filter(s => s.id !== id));
           this.filterShelves();
         },
         error: (error) => {
-          console.error('Error deleting shelf:', error);
-          alert('Failed to delete shelf');
+          console.error('Error deleting safety box shelf:', error);
+          alert('Failed to delete shelf from Safety Box Shelves');
         }
       });
     }
@@ -254,5 +271,125 @@ export class ShelfLocationsComponent {
       return '$' + (value / 1000).toFixed(0) + 'K';
     }
     return '$' + value.toString();
+  }
+
+  viewShelf(shelf: Shelf): void {
+    alert(`Viewing shelf: ${shelf.aisle}-${shelf.rack}-${shelf.shelf}\nItems: ${shelf.items}\nValue: ${this.formatValue(shelf.value)}\nOccupancy: ${shelf.occupancy}%`);
+  }
+
+  addItemToShelf(shelf: Shelf): void {
+    console.log('addItemToShelf called with shelf:', shelf);
+    this.selectedShelfForItem = shelf;
+    this.addItemForm.reset({
+      itemName: '',
+      quantity: 1,
+      unitPrice: 100
+    });
+    this.showAddItemDialog = true;
+    console.log('showAddItemDialog set to:', this.showAddItemDialog);
+  }
+
+  closeAddItemDialog(): void {
+    this.showAddItemDialog = false;
+    this.selectedShelfForItem = null;
+    this.addItemForm.reset();
+  }
+
+  saveItemToShelf(): void {
+    if (this.addItemForm.invalid) {
+      this.addItemForm.markAllAsTouched();
+      return;
+    }
+
+    const shelf = this.selectedShelfForItem;
+    if (!shelf) return;
+
+    const formValue = this.addItemForm.value;
+    const quantity = formValue.quantity;
+    const unitPrice = formValue.unitPrice;
+    const itemName = formValue.itemName;
+
+    // Store in database using API
+    const itemData = {
+      shelfId: shelf.id,
+      itemName: itemName,
+      quantity: quantity,
+      unitPrice: unitPrice,
+      totalValue: quantity * unitPrice,
+      aisle: shelf.aisle,
+      rack: shelf.rack,
+      shelfNumber: shelf.shelf,
+      warehouseId: this.selectedWarehouse().split(' ')[1], // Extract warehouse number
+      addedDate: new Date().toISOString(),
+      status: 'Active'
+    };
+
+    console.log('Sending data to database:', itemData);
+
+    // Use direct API call to ensure it reaches the backend
+    this.inventoryService['apiService'].post('ShelfItems/add', itemData).subscribe({
+      next: (response: any) => {
+        console.log('Item successfully added to database:', response);
+        
+        // Update local shelf data immediately
+        this.shelves.update(shelves =>
+          shelves.map(s => {
+            if (s.id === shelf.id) {
+              return {
+                ...s,
+                items: s.items + quantity,
+                value: s.value + (quantity * unitPrice),
+                occupancy: Math.min(100, s.occupancy + (quantity * 2))
+              };
+            }
+            return s;
+          })
+        );
+        
+        this.filterShelves();
+        this.closeAddItemDialog();
+        
+        // Show success message with database confirmation
+        alert(`✅ SUCCESS: ${quantity} x ${itemName} added to shelf ${shelf.aisle}-${shelf.rack}-${shelf.shelf} and saved to database!`);
+      },
+      error: (error: any) => {
+        console.error('Database error details:', error);
+        console.error('Error status:', error.status);
+        console.error('Error message:', error.message);
+        
+        // Still update local UI even if database fails
+        this.shelves.update(shelves =>
+          shelves.map(s => {
+            if (s.id === shelf.id) {
+              return {
+                ...s,
+                items: s.items + quantity,
+                value: s.value + (quantity * unitPrice),
+                occupancy: Math.min(100, s.occupancy + (quantity * 2))
+              };
+            }
+            return s;
+          })
+        );
+        
+        this.filterShelves();
+        this.closeAddItemDialog();
+        
+        alert(`⚠️ Item added locally but database error occurred. Check console for details. Status: ${error.status || 'Unknown'}`);
+      }
+    });
+  }
+
+  generateQR(): void {
+    const data = this.modalFormData();
+    const qrCode = `${this.selectedWarehouse().split(' ')[1]}-${data.aisle}-${data.rack}-${data.shelfNumber}`;
+    
+    // Update the QR value in the form
+    this.modalFormData.update(formData => ({
+      ...formData,
+      qrValue: qrCode
+    }));
+    
+    alert(`QR Code Generated: ${qrCode}\nThis QR code can be used to identify the shelf location.`);
   }
 }

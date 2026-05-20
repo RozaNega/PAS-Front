@@ -1,0 +1,15 @@
+<div class="response-times-container">
+  <div class="page-header"><h1>Response Times</h1><p class="subtitle">Approver response time metrics</p></div>
+  <div class="response-times-list">
+    @for (rt of responseTimes(); track rt.id) {
+      <div class="response-time-card">
+        <div class="rt-header"><div class="approver">{{ rt.approver }} ({{ rt.department }})</div><div class="rate-badge">{{ rt.onTimeRate }}%</div></div>
+        <div class="rt-details">
+          <div class="detail-row"><span class="label">Avg Response:</span><span class="value">{{ rt.avgResponseTime }}</span></div>
+          <div class="detail-row"><span class="label">Total Decisions:</span><span class="value">{{ rt.totalDecisions }}</span></div>
+          <div class="detail-row"><span class="label">On-Time Rate:</span><span class="value">{{ rt.onTimeRate }}%</span></div>
+        </div>
+      </div>
+    }
+  </div>
+</div>

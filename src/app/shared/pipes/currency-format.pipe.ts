@@ -20,6 +20,7 @@ export class CurrencyFormatPipe implements PipeTransform {
 
 @Pipe({
   name: 'numberFormat',
+  standalone: false,
 })
 export class NumberFormatPipe implements PipeTransform {
   transform(value: number, digits = 0): string {
@@ -35,6 +36,7 @@ export class NumberFormatPipe implements PipeTransform {
 
 @Pipe({
   name: 'percentageFormat',
+  standalone: false,
 })
 export class PercentageFormatPipe implements PipeTransform {
   transform(value: number, digits = 2): string {

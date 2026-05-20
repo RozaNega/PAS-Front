@@ -1,14 +1,51 @@
 <div class="manager-approval-dashboard">
-  <!-- Welcome Banner -->
-  <div class="welcome-banner">
-    <div class="banner-content">
-      <div class="greeting">
-        <h1>👋 {{ greeting }}, {{ managerName }}!</h1>
-        <p>Welcome to IT Department Dashboard. You have 5 pending approvals requiring your attention.</p>
+  <!-- Hero Banner -->
+  <header class="hero-banner">
+    <div class="hero-copy">
+      <p class="hero-eyebrow">Manager Dashboard</p>
+      <div class="hero-header-content">
+        <div class="hero-avatar">
+          <div class="photo-scan-container" [class.scanning]="isValidatingPhoto()">
+            @if (profilePhoto()) {
+              <img [src]="profilePhoto()" alt="Profile photo" class="avatar-img shadow-lg" />
+            } @else {
+              <div class="avatar-placeholder shadow-lg">
+                <i class="bi bi-person-fill"></i>
+              </div>
+            }
+
+            @if (isValidatingPhoto()) {
+              <div class="scan-overlay">
+                <div class="scan-line"></div>
+                <span class="scan-label">Scanning Face...</span>
+              </div>
+            }
+          </div>
+        </div>
+        <div class="hero-text">
+          <h1>👋 {{ greeting }}, {{ managerName() }}!</h1>
+          <p>
+            You have <strong>{{ pendingRequests().length }}</strong> pending approval(s). New
+            employee requests appear here after they are saved and synced.
+          </p>
+        </div>
       </div>
-      <div class="banner-date">📅 {{ currentDate | date:'MMM dd, yyyy' }}</div>
     </div>
-  </div>
+    <div class="dashboard-info-widget">
+      <div class="info-item">
+        <i class="bi bi-calendar3 info-icon text-primary"></i>
+        <span class="info-text">{{ currentDateStr }}</span>
+      </div>
+      <div class="info-item">
+        <i class="bi bi-clock info-icon text-secondary"></i>
+        <span class="info-text">{{ currentTime() }}</span>
+      </div>
+      <div class="info-item">
+        <i class="bi bi-geo-alt-fill info-icon text-danger"></i>
+        <span class="info-text">{{ currentLocation() }}</span>
+      </div>
+    </div>
+  </header>
 
   <!-- Key Metrics -->
   <div class="metrics-section">
@@ -31,75 +68,62 @@
 
   <!-- Pending Summary -->
   <div class="pending-summary-section">
-    <h2>⏳ PENDING SUMMARY (5)</h2>
+    <h2>⏳ PENDING SUMMARY ({{ pendingRequests().length }})</h2>
     <div class="pending-summary-card">
       <div class="summary-item">
-        <span>🔴 Urgent: 2 requests</span>
-        <span>🟡 Medium: 2 requests</span>
-        <span>🟢 Normal: 1 request</span>
+        <span>🔴 Urgent / High: {{ pendingSummary().urgent }} requests</span>
+        <span>🟡 Medium: {{ pendingSummary().medium }} requests</span>
+        <span>🟢 Other: {{ pendingSummary().normal }} requests</span>
       </div>
       <div class="summary-item">
-        <span>Total Value: $12,450</span>
-        <span>Avg Wait Time: 1.5 days</span>
+        <span>Total value (est.): {{ pendingSummary().totalValue | currency }}</span>
+        <span>Avg wait: {{ pendingSummary().avgWaitDays | number: '1.1-1' }} days</span>
       </div>
     </div>
   </div>
 
   <!-- Pending Requests -->
   <div class="pending-requests-section">
-    <h2>⏳ PENDING REQUESTS (5) <button class="btn btn-link" (click)="viewAllRequests()">View All →</button></h2>
+    <h2>
+      ⏳ PENDING REQUESTS ({{ pendingRequests().length }})
+      <button class="btn btn-link" (click)="viewAllRequests()">View All →</button>
+    </h2>
     <div class="pending-requests-list">
-      @for (request of pendingRequests; track request.srNumber) {
+      @for (request of pendingRequests(); track request.id) {
         <div class="request-card">
           <div class="request-header">
             <span class="request-icon">{{ getPriorityIcon(request.priority) }}</span>
             <span class="request-sr">{{ request.srNumber }}</span>
-            <span class="request-requester">{{ request.requester }}</span>
+            <span class="request-requester">{{ request.employeeName }}</span>
             <span class="request-priority">({{ request.priority }})</span>
           </div>
           <div class="request-details">
-            <span>Requested: {{ request.requestedDate }}</span>
-            <span>Items: {{ request.items }}</span>
-            <span>Value: {{ request.value }}</span>
-            <span>Required: {{ request.requiredDate }}</span>
+            <span>Requested: {{ request.submittedDate | date: 'mediumDate' }}</span>
+            <span
+              >Items: {{ request.items.length > 0 ? request.items[0].name : 'None' }}
+              {{
+                request.items.length > 1 ? '(+' + (request.items.length - 1) + ' more)' : ''
+              }}</span
+            >
+            <span>Value: {{ request.estimatedCost || 0 | currency }}</span>
+            <span>Required: {{ request.requiredDate | date: 'shortDate' }}</span>
           </div>
           <div class="request-actions">
-            <button class="btn btn-sm btn-primary" (click)="approveRequest(request.srNumber)">Approve</button>
-            <button class="btn btn-sm btn-secondary" (click)="rejectRequest(request.srNumber)">Reject</button>
-            <button class="btn btn-sm btn-outline" (click)="viewRequestDetails(request.srNumber)">View Details</button>
+            <button class="btn btn-sm btn-primary" (click)="approveRequest(request.id)">
+              Approve
+            </button>
+            <button class="btn btn-sm btn-secondary" (click)="rejectRequest(request.id)">
+              Reject
+            </button>
+            <button class="btn btn-sm btn-outline" (click)="viewRequestDetails(request.id)">
+              View Details
+            </button>
           </div>
         </div>
       }
     </div>
   </div>
 
-  <!-- Recent Activity -->
-  <div class="recent-activity-section">
-    <h2>🔔 RECENT ACTIVITY <button class="btn btn-link" (click)="viewAllActivity()">View All Activity →</button></h2>
-    <div class="activity-list">
-      @for (activity of recentActivity; track activity.date) {
-        <div class="activity-item">
-          <span class="activity-icon">{{ getActivityIcon(activity.action) }}</span>
-          <span class="activity-date">{{ activity.date }}</span>
-          <span class="activity-action">{{ activity.action }}</span>
-          @if (activity.srNumber) {
-            <span class="activity-sr">{{ activity.srNumber }}</span>
-          }
-          @if (activity.requester) {
-            <span class="activity-requester">({{ activity.requester }})</span>
-          }
-          @if (activity.value) {
-            <span class="activity-value">- {{ activity.value }}</span>
-          }
-          @if (activity.reason) {
-            <span class="activity-reason">- {{ activity.reason }}</span>
-          }
-        </div>
-      }
-    </div>
-  </div>
-
-  <!-- Request Trend -->
   <div class="request-trend-section">
     <h2>📈 REQUEST TREND - IT Department</h2>
     <div class="trend-chart">
@@ -133,33 +157,24 @@
         <text x="545" y="195" text-anchor="middle" font-size="10">Dec</text>
 
         <!-- Submitted line -->
-        <polyline
-          fill="none"
-          stroke="#3b82f6"
-          stroke-width="2"
-          [attr.points]="submittedPoints"
-        />
+        <polyline fill="none" stroke="#3b82f6" stroke-width="2" [attr.points]="submittedPoints()" />
 
         <!-- Approved line -->
-        <polyline
-          fill="none"
-          stroke="#22c55e"
-          stroke-width="2"
-          [attr.points]="approvedPoints"
-        />
+        <polyline fill="none" stroke="#22c55e" stroke-width="2" [attr.points]="approvedPoints()" />
 
         <!-- Rejected line -->
-        <polyline
-          fill="none"
-          stroke="#ef4444"
-          stroke-width="2"
-          [attr.points]="rejectedPoints"
-        />
+        <polyline fill="none" stroke="#ef4444" stroke-width="2" [attr.points]="rejectedPoints()" />
       </svg>
       <div class="legend">
-        <span class="legend-item"><span class="legend-dot" style="background: #3b82f6;"></span> Submitted</span>
-        <span class="legend-item"><span class="legend-dot" style="background: #22c55e;"></span> Approved</span>
-        <span class="legend-item"><span class="legend-dot" style="background: #ef4444;"></span> Rejected</span>
+        <span class="legend-item"
+          ><span class="legend-dot" style="background: #3b82f6"></span> Submitted</span
+        >
+        <span class="legend-item"
+          ><span class="legend-dot" style="background: #22c55e"></span> Approved</span
+        >
+        <span class="legend-item"
+          ><span class="legend-dot" style="background: #ef4444"></span> Rejected</span
+        >
       </div>
     </div>
   </div>

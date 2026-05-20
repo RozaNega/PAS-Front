@@ -1,0 +1,129 @@
+<div class="inspections-container">
+  <div class="page-header">
+    <h1>Inspections</h1>
+    <p class="subtitle">Goods inspection records &amp; QA compliance tracking</p>
+  </div>
+
+  <div class="inspections-list">
+    @for (inspection of inspections(); track inspection.id) {
+      <div class="inspection-card">
+        <div class="inspection-header">
+          <div class="inspection-number">
+            <i class="bi bi-shield-check file-icon"></i>
+            {{ inspection.inspectionNumber }}
+          </div>
+          <div class="status-badge" [class.pending]="inspection.status === 'Pending'" [class.passed]="inspection.status === 'Passed'" [class.failed]="inspection.status === 'Failed'">
+            {{ inspection.status }}
+          </div>
+        </div>
+        <div class="inspection-details">
+          <div class="detail-row"><span class="label">GRN Number:</span><span class="value">{{ inspection.receivingNoteNumber }}</span></div>
+          <div class="detail-row"><span class="label">Inspection Date:</span><span class="value">{{ inspection.inspectionDate }}</span></div>
+          <div class="detail-row"><span class="label">Inspector:</span><span class="value">{{ inspection.inspector }}</span></div>
+          <div class="detail-row"><span class="label">Items Inspected:</span><span class="value">{{ inspection.itemsInspected }}</span></div>
+          <div class="detail-row"><span class="label">Passed:</span><span class="value">{{ inspection.itemsPassed }}</span></div>
+          <div class="detail-row"><span class="label">Failed:</span><span class="value">{{ inspection.itemsFailed }}</span></div>
+        </div>
+        <div class="inspection-actions">
+          <button class="btn btn-secondary" (click)="onDownload(inspection)" [disabled]="downloadingInspectionId() !== null">
+            @if (downloadingInspectionId() === inspection.id) {
+              <span class="spinner"></span> Downloading {{ downloadProgress() }}%
+            } @else {
+              <i class="bi bi-file-pdf"></i> Download PDF
+            }
+          </button>
+          <button class="btn btn-primary" (click)="onView(inspection)">
+            <i class="bi bi-eye"></i> View
+          </button>
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- Merged View Checklist & Deep QA Parameters Modal Overlay -->
+  @if (activeViewInspection(); as insp) {
+    <div class="modal-backdrop" (click)="closeModal()">
+      <div class="modal-card view-insp-modal" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h2>
+            <i class="bi bi-clipboard2-pulse-fill text-primary"></i> 
+            QA Inspection File: {{ insp.inspectionNumber }}
+          </h2>
+          <button class="btn-close-modal" (click)="closeModal()" aria-label="Close modal">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="insp-status-strip" [class.passed]="insp.status === 'Passed'">
+            <div class="strip-text">
+              <strong>Status:</strong> {{ insp.status }} | Passed {{ insp.itemsPassed }}/{{ insp.itemsInspected }} items checked
+            </div>
+          </div>
+          
+          <div class="section-title">Standard Operating QA Checklist</div>
+          <div class="checklist-section">
+            <ul class="checklist-ul">
+              @for (item of insp.checklist; track item.task) {
+                <li class="checklist-li" [class.passed]="item.passed">
+                  <span class="chk-icon">
+                    <i class="bi" [class.bi-check-circle-fill]="item.passed" [class.bi-x-circle-fill]="!item.passed"></i>
+                  </span>
+                  <span class="chk-task">{{ item.task }}</span>
+                </li>
+              }
+            </ul>
+          </div>
+
+          <div class="section-title">Inspector Findings</div>
+          <div class="notes-section">
+            <p class="notes-para">{{ insp.notes }}</p>
+          </div>
+
+          <!-- Deep QA Parameters Section merged here -->
+          <div class="section-title">Deep QA Audit Parameters</div>
+          <div class="metadata-grid">
+            <div class="grid-item">
+              <label>Associated Supplier</label>
+              <span>{{ insp.supplierName }}</span>
+            </div>
+            <div class="grid-item">
+              <label>Receiving GRN Reference</label>
+              <span class="mono-text">{{ insp.receivingNoteNumber }}</span>
+            </div>
+            <div class="grid-item">
+              <label>QA Standard Reference</label>
+              <span>{{ insp.referenceStandard }}</span>
+            </div>
+            <div class="grid-item">
+              <label>Physical Storage Depot</label>
+              <span>{{ insp.warehouseLocation }}</span>
+            </div>
+            <div class="grid-item">
+              <label>Calibration Log</label>
+              <span>{{ insp.calibrationDate }}</span>
+            </div>
+            <div class="grid-item">
+              <label>Environmental Temp Log</label>
+              <span>{{ insp.temperatureLog }}</span>
+            </div>
+            <div class="grid-item">
+              <label>Actions for Failed Units</label>
+              <span class="quarantine-action">{{ insp.quarantineAction }}</span>
+            </div>
+          </div>
+
+          <div class="info-note">
+            <i class="bi bi-shield-fill-check text-success"></i>
+            <span>This log meets the compliance requirements set by the internal asset management framework.</span>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" (click)="closeModal()">Close</button>
+          <button class="btn btn-primary" (click)="onDownload(insp)">
+            <i class="bi bi-file-pdf"></i> Download PDF
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

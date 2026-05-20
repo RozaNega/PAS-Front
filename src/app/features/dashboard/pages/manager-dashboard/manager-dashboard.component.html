@@ -1,181 +1,283 @@
 <section class="manager-dashboard" aria-label="Manager dashboard">
-  <header class="hero">
-    <div>
-      <p class="eyebrow">Manager Dashboard</p>
-      <h1>Manager Dashboard</h1>
-      <p class="hero-copy">Welcome back, {{ managerName() }} 👋</p>
+  <header class="hero-banner">
+    <div class="hero-copy">
+      <p class="hero-eyebrow">Manager Dashboard</p>
+      <div class="hero-header-content">
+        <div class="hero-avatar">
+          <div class="photo-scan-container" [class.scanning]="isValidatingPhoto()">
+            @if (profilePhoto()) {
+              <img [src]="profilePhoto()" alt="Profile photo" class="avatar-img shadow-lg" />
+            } @else {
+              <div class="avatar-placeholder shadow-lg">
+                <i class="bi bi-person-fill"></i>
+              </div>
+            }
+
+            @if (isValidatingPhoto()) {
+              <div class="scan-overlay">
+                <div class="scan-line"></div>
+                <span class="scan-label">Scanning Face...</span>
+              </div>
+            }
+          </div>
+        </div>
+        <div class="hero-text">
+          <h1>👋 {{ greeting }}, {{ managerName() }}!</h1>
+          <p>Welcome</p>
+        </div>
+      </div>
     </div>
+    <div class="dashboard-info-widget">
+      <div class="info-item">
+        <i class="bi bi-calendar3 info-icon text-primary"></i>
+        <span class="info-text">{{ currentDate }}</span>
+      </div>
+      <div class="info-item">
+        <i class="bi bi-clock info-icon text-secondary"></i>
+        <span class="info-text">{{ currentTime() }}</span>
+      </div>
+      <div class="info-item">
+        <i class="bi bi-geo-alt-fill info-icon text-danger"></i>
+        <span class="info-text">{{ currentLocation() }}</span>
+      </div>
+      @if (currentView() === 'home') {
+        <button
+          type="button"
+          class="profile-btn"
+          (click)="showProfile()"
+          title="View profile and settings"
+        >
+          <i class="bi bi-gear"></i> Settings
+        </button>
+      }
+    </div>
+    @if (currentView() === 'profile') {
+      <button class="btn-close-profile" (click)="hideProfile()" title="Close profile">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    }
   </header>
 
-  <section class="summary-grid" aria-label="Summary metrics">
-    @for (card of summaryCards(); track card.title) {
-      <article class="summary-card summary-card--{{ card.tone }}">
-        <div class="summary-card__icon">
-          <i class="bi {{ card.icon }}"></i>
-        </div>
-        <div class="summary-card__content">
-          <p class="summary-card__value">{{ card.value }}</p>
-          <h2>{{ card.title }}</h2>
-          <p>{{ card.description }}</p>
-        </div>
-      </article>
-    }
-  </section>
+  @if (currentView() === 'home') {
+    <section class="summary-grid" aria-label="Summary metrics">
+      @for (card of summaryCards(); track card.title) {
+        <article class="summary-card summary-card--{{ card.tone }}">
+          <div class="summary-card__icon">
+            <i class="bi {{ card.icon }}"></i>
+          </div>
+          <div class="summary-card__content">
+            <p class="summary-card__value">{{ card.value }}</p>
+            <h2>{{ card.title }}</h2>
+            <p>{{ card.description }}</p>
+          </div>
+        </article>
+      }
+    </section>
 
-  <section class="dashboard-grid">
-    <section class="panel panel--requests" aria-labelledby="pending-requests-heading">
-      <header class="panel__header">
-        <div>
-          <h2 id="pending-requests-heading">Pending Requests</h2>
-        </div>
-        <button type="button" class="text-button" (click)="viewAllRequests()">View All</button>
-      </header>
+    <section class="dashboard-grid">
+      <section class="panel panel--requests" aria-labelledby="pending-requests-heading">
+        <header class="panel__header">
+          <div>
+            <h2 id="pending-requests-heading">Pending Requests</h2>
+          </div>
+          <button type="button" class="text-button" (click)="viewAllRequests()">View All</button>
+        </header>
 
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th scope="col">Request ID</th>
-              <th scope="col">Employee</th>
-              <th scope="col">Item</th>
-              <th scope="col">Quantity</th>
-              <th scope="col">Date</th>
-              <th scope="col">Priority</th>
-              <th scope="col">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (request of filteredRequests(); track request.id) {
+        <div class="table-wrap">
+          <table>
+            <thead>
               <tr>
-                <td>{{ 'REQ-' + request.id }}</td>
-                <td>{{ request.employeeName }}</td>
-                <td>{{ request.itemName }}</td>
-                <td>{{ request.quantity }}</td>
-                <td>{{ request.date }}</td>
-                <td>
-                  <span
-                    class="priority-pill"
-                    [class.priority-pill--medium]="request.itemName === 'Laptop'"
-                    [class.priority-pill--high]="request.itemName === 'Office Chair'"
-                    [class.priority-pill--low]="
-                      request.itemName !== 'Laptop' && request.itemName !== 'Office Chair'
-                    "
-                  >
-                    {{
-                      request.itemName === 'Office Chair'
-                        ? 'High'
-                        : request.itemName === 'Laptop'
-                          ? 'Medium'
-                          : 'Low'
-                    }}
-                  </span>
-                </td>
-                <td>
-                  <div class="table-actions">
-                    <button
-                      type="button"
-                      class="action-icon action-icon--approve"
-                      (click)="approveRequest(request.id)"
+                <th scope="col">Request ID</th>
+                <th scope="col">Employee</th>
+                <th scope="col">Item</th>
+                <th scope="col">Quantity</th>
+                <th scope="col">Date</th>
+                <th scope="col">Priority</th>
+                <th scope="col">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (request of filteredRequests(); track request.id) {
+                <tr>
+                  <td>{{ request.requestNumber }}</td>
+                  <td>{{ request.employeeName }}</td>
+                  <td>{{ request.itemName }}</td>
+                  <td>{{ request.quantity }}</td>
+                  <td>{{ request.date }}</td>
+                  <td>
+                    <span
+                      class="priority-pill"
+                      [class.priority-pill--urgent]="request.priority === 'Urgent'"
+                      [class.priority-pill--high]="request.priority === 'High'"
+                      [class.priority-pill--medium]="request.priority === 'Medium'"
+                      [class.priority-pill--low]="request.priority === 'Low' || !request.priority"
                     >
-                      <span class="sr-only">Approve request {{ 'REQ-' + request.id }}</span>
-                      <i class="bi bi-check-lg"></i>
+                      {{ request.priority || 'Low' }}
+                    </span>
+                  </td>
+                  <td>
+                    <div class="table-actions">
+                      <button
+                        type="button"
+                        class="action-icon action-icon--approve"
+                        (click)="approveRequest(request.id)"
+                      >
+                        <span class="sr-only">Approve request {{ request.requestNumber }}</span>
+                        <i class="bi bi-check-lg"></i>
+                      </button>
+                      <button
+                        type="button"
+                        class="action-icon action-icon--reject"
+                        (click)="rejectRequest(request.id)"
+                      >
+                        <span class="sr-only">Reject request {{ request.requestNumber }}</span>
+                        <i class="bi bi-x-lg"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </section>
+  }
+
+  @if (currentView() === 'profile') {
+    <section class="profile-section" aria-labelledby="profile-heading">
+      <section class="profile-info panel" aria-labelledby="profile-info-heading">
+        <h2 id="profile-info-heading" class="section-title">👤 PROFILE INFORMATION</h2>
+        <div class="profile-details">
+          <div class="detail-row"><strong>Full Name:</strong> {{ userProfile().fullName }}</div>
+          <div class="detail-row">
+            <strong>Employee Code:</strong> {{ userProfile().employeeCode }}
+          </div>
+          <div class="detail-row"><strong>Department:</strong> {{ userProfile().department }}</div>
+          <div class="detail-row"><strong>Email:</strong> {{ userProfile().email }}</div>
+          <div class="detail-row"><strong>Phone:</strong> {{ userProfile().phone }}</div>
+        </div>
+      </section>
+
+      <section class="two-factor-auth panel" aria-labelledby="2fa-heading">
+        <div class="twofa-header">
+          <div class="twofa-title">
+            <i class="bi bi-shield-lock twofa-icon"></i>
+            <h2 id="2fa-heading">TWO-FACTOR AUTHENTICATION</h2>
+          </div>
+          @if (!twoFactorEnabled()) {
+            <button class="btn-enable-2fa" (click)="enable2FA()">Enable 2FA</button>
+          }
+        </div>
+
+        <div class="twofa-status">
+          <div class="status-indicator">
+            <span
+              class="status-dot"
+              [class.enabled]="twoFactorEnabled()"
+              [class.disabled]="!twoFactorEnabled()"
+            ></span>
+            <span class="status-text">{{ twoFactorEnabled() ? 'Enabled' : 'Disabled' }}</span>
+          </div>
+        </div>
+
+        @if (twoFactorEnabled()) {
+          <div class="twofa-settings">
+            <div class="setting-row">
+              <label for="twofa-method">2FA Method:</label>
+              <select
+                id="twofa-method"
+                class="twofa-select"
+                [value]="twoFactorMethod()"
+                (change)="updateTwoFactorMethod($event)"
+              >
+                <option value="sms">SMS</option>
+                <option value="email">Email</option>
+                <option value="app">Authenticator App</option>
+              </select>
+            </div>
+
+            @if (twoFactorMethod() === 'sms') {
+              <div class="setting-row">
+                <label for="phone-number">Phone Number:</label>
+                <div class="phone-input-group">
+                  <input
+                    id="phone-number"
+                    type="tel"
+                    class="twofa-input"
+                    [value]="twoFactorPhone()"
+                    (input)="updateTwoFactorPhone($event)"
+                    placeholder="+251-XXX-XXXXXXX"
+                    [disabled]="twoFactorVerificationSent() || twoFactorSetupComplete()"
+                  />
+                  @if (!twoFactorVerificationSent() && !twoFactorSetupComplete()) {
+                    <button
+                      class="btn-save-phone"
+                      (click)="saveTwoFactorPhone()"
+                      [disabled]="!twoFactorPhone()"
+                      title="Send verification code"
+                    >
+                      Send Code
                     </button>
+                  }
+                  @if (twoFactorSetupComplete()) {
+                    <span class="verification-status verified">✓ Verified</span>
+                  }
+                </div>
+              </div>
+
+              @if (twoFactorVerificationSent() && !twoFactorSetupComplete()) {
+                <div class="setting-row verification-row">
+                  <label for="verification-code">Verification Code:</label>
+                  <div class="verification-input-group">
+                    <input
+                      id="verification-code"
+                      type="text"
+                      class="twofa-input verification-input"
+                      [value]="twoFactorVerificationCode()"
+                      (input)="updateTwoFactorVerificationCode($event)"
+                      placeholder="Enter 6-digit code"
+                      maxlength="6"
+                    />
                     <button
-                      type="button"
-                      class="action-icon action-icon--reject"
-                      (click)="rejectRequest(request.id)"
+                      class="btn-verify-code"
+                      (click)="verifyTwoFactorCode()"
+                      [disabled]="twoFactorVerificationCode().length !== 6"
+                      title="Verify code"
                     >
-                      <span class="sr-only">Reject request {{ 'REQ-' + request.id }}</span>
-                      <i class="bi bi-x-lg"></i>
+                      Verify
                     </button>
                   </div>
-                </td>
-              </tr>
+                  <div class="verification-help">
+                    <p>Enter the 6-digit code sent to {{ twoFactorPhone() }}</p>
+                    <button class="btn-resend" (click)="resendVerificationCode()">
+                      Resend Code
+                    </button>
+                  </div>
+                </div>
+              }
             }
-          </tbody>
-        </table>
-      </div>
-    </section>
 
-    <aside class="panel panel--overview" aria-labelledby="overview-heading">
-      <header class="panel__header panel__header--stacked">
-        <div>
-          <h2 id="overview-heading">Requests Overview</h2>
-        </div>
-        <button type="button" class="select-chip" (click)="setPeriod('This Month')">
-          {{ selectedPeriod() }}
-          <i class="bi bi-chevron-down"></i>
-        </button>
-      </header>
+            @if (twoFactorMethod() === 'email') {
+              <div class="setting-row">
+                <label>Email Address:</label>
+                <span class="readonly-value">{{ userProfile().email }}</span>
+              </div>
+            }
 
-      <div
-        class="overview-chart"
-        [style.background]="'conic-gradient(' + overviewConicGradient() + ')'"
-      >
-        <div class="overview-chart__inner">
-          <span>Queue</span>
-          <strong>{{
-            summaryCards()[0].value + summaryCards()[1].value + summaryCards()[2].value
-          }}</strong>
-          <small>Total</small>
-        </div>
-      </div>
+            @if (twoFactorMethod() === 'app') {
+              <div class="setting-row">
+                <label>Authenticator App:</label>
+                <span class="readonly-value">Google Authenticator / Microsoft Authenticator</span>
+              </div>
+            }
 
-      <div class="overview-legend">
-        @for (slice of overviewSlices(); track slice.label) {
-          <div class="legend-row">
-            <span class="legend-dot" [style.background]="slice.color"></span>
-            <span>{{ slice.label }} ({{ slice.percent }}%)</span>
+            <div class="twofa-actions">
+              <button class="btn-disable-2fa" (click)="disable2FA()">Disable 2FA</button>
+            </div>
           </div>
         }
-      </div>
-    </aside>
-  </section>
-
-  <section class="dashboard-grid dashboard-grid--bottom">
-    <section class="panel panel--activity" aria-labelledby="recent-activity-heading">
-      <header class="panel__header">
-        <h2 id="recent-activity-heading">Recent Activity</h2>
-        <button type="button" class="text-button">View All</button>
-      </header>
-
-      <div class="activity-list" role="list">
-        @for (entry of recentActivity(); track entry.title) {
-          <article class="activity-item" role="listitem">
-            <span class="activity-avatar">{{ entry.avatar }}</span>
-            <div class="activity-copy">
-              <strong>{{ entry.title }}</strong>
-              <p>{{ entry.detail }}</p>
-            </div>
-            <time>{{ entry.time }}</time>
-          </article>
-        }
-      </div>
+      </section>
     </section>
-
-    <aside class="panel panel--approvals" aria-labelledby="approvals-heading">
-      <header class="panel__header">
-        <h2 id="approvals-heading">My Approvals</h2>
-        <button type="button" class="text-button">View All</button>
-      </header>
-
-      <div class="approval-list">
-        @for (item of approvals(); track item.id) {
-          <article class="approval-item">
-            <div class="approval-item__meta">
-              <strong>{{ item.id }}</strong>
-              <span>Approval</span>
-            </div>
-            <div class="approval-item__body">
-              <p>{{ item.employeeName }} • {{ item.itemName }}</p>
-              <time>{{ item.date }}</time>
-            </div>
-            <span class="approval-badge approval-badge--{{ item.status.toLowerCase() }}">{{
-              item.status
-            }}</span>
-          </article>
-        }
-      </div>
-    </aside>
-  </section>
+  }
 </section>

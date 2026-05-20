@@ -1,9 +1,25 @@
-<section class="auth-page auth-sakai" aria-labelledby="login-title">
-  <div class="auth-video-layer" aria-hidden="true">
-    <video class="auth-video" autoplay muted loop>
-      <source src="/assets/videos/Storyboard.mp4" type="video/mp4" />
-    </video>
-    <div class="auth-video-brand-tint"></div>
+<section class="auth-page auth-glass" aria-labelledby="login-title">
+  <div class="auth-background">
+    <img src="/assets/images/afr.jpg" alt="Background" class="bg-image" />
+    <div class="bg-overlay"></div>
+    <div class="bg-text-watermark">
+      <div class="watermark-scroll">
+        <span class="watermark-text">AFRICOM TECHNOLOGIES</span>
+        <span class="watermark-text">AFRICOM TECHNOLOGIES</span>
+        <span class="watermark-text">AFRICOM TECHNOLOGIES</span>
+        <span class="watermark-text">AFRICOM TECHNOLOGIES</span>
+        <span class="watermark-text">AFRICOM TECHNOLOGIES</span>
+      </div>
+    </div>
+    <div class="bg-text-watermark bg-text-watermark--bottom">
+      <div class="watermark-scroll watermark-scroll--reverse">
+        <span class="watermark-text">AFRICOM TECHNOLOGIES</span>
+        <span class="watermark-text">AFRICOM TECHNOLOGIES</span>
+        <span class="watermark-text">AFRICOM TECHNOLOGIES</span>
+        <span class="watermark-text">AFRICOM TECHNOLOGIES</span>
+        <span class="watermark-text">AFRICOM TECHNOLOGIES</span>
+      </div>
+    </div>
   </div>
 
   <header class="auth-toolbar" aria-label="Theme controls">
@@ -53,7 +69,7 @@
     }
   </header>
 
-  <article class="auth-card auth-card--wide">
+  <article class="auth-card">
     <img
       class="auth-logo auth-logo--wordmark"
       ngSrc="/assets/images/africom-logo.png"
@@ -68,6 +84,7 @@
     <form class="auth-form" [formGroup]="loginForm" (ngSubmit)="submit()" novalidate>
       <label class="auth-label" for="login-username">Username</label>
       <div class="input-shell">
+        <i class="bi bi-person input-icon"></i>
         <input
           id="login-username"
           type="text"
@@ -82,6 +99,7 @@
 
       <label class="auth-label" for="login-password">Password</label>
       <div class="input-shell input-shell--with-action">
+        <i class="bi bi-lock input-icon"></i>
         <input
           id="login-password"
           [type]="showPassword() ? 'text' : 'password'"
@@ -126,11 +144,27 @@
         >
           {{ statusMessage() }}
         </p>
+
+        @if (statusTone() === 'error' && isDevelopment && statusMessage().includes('allowed')) {
+          <div class="activation-helper">
+            <button
+              type="button"
+              (click)="forceActivate()"
+              class="btn-secondary activation-helper__button"
+              [disabled]="activating()"
+            >
+              {{ activating() ? 'Activating...' : '🔧 Force Activate Account (DEV)' }}
+            </button>
+            <p class="activation-helper__note">
+              Account might be inactive in DB. Use this to bypass in development.
+            </p>
+          </div>
+        }
       }
     </form>
 
     <p class="auth-switch-row">
-      Don’t have an account?
+      Don't have an account?
       <a routerLink="/auth/register">Create Account</a>
     </p>
   </article>
