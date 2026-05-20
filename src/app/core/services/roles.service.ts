@@ -5,41 +5,53 @@ import { ApiResponseModel } from '../models/api-response.model';
 
 export interface RoleDto {
   id: string;
-  name: string;
+  roleName: string;
   description?: string;
+  userCount: number;
   permissions?: string[];
 }
 
-export interface CreateRoleRequest {
-  name: string;
-  description?: string;
-  permissions?: string[];
+export interface UserRoleDto {
+  userId: string;
+  username: string;
+  employeeName: string;
+  roles: RoleAssignmentDto[];
 }
 
-export interface UpdateRoleRequest {
+export interface RoleAssignmentDto {
+  roleId: string;
+  roleName: string;
+  isAssigned: boolean;
+}
+
+export interface CreateRoleCommand {
+  roleName: string;
+  description?: string;
+}
+
+export interface UpdateRoleCommand {
   id: string;
-  name?: string;
+  roleName?: string;
   description?: string;
-  permissions?: string[];
 }
 
 @Injectable({ providedIn: 'root' })
 export class RolesService {
   constructor(private apiService: ApiService) {}
 
-  getAll(params?: any): Observable<ApiResponseModel<RoleDto[]>> {
+  getAll(params?: { searchTerm?: string }): Observable<ApiResponseModel<RoleDto[]>> {
     return this.apiService.get<ApiResponseModel<RoleDto[]>>('Roles', params);
   }
 
-  getById(id: string): Observable<ApiResponseModel<RoleDto>> {
-    return this.apiService.get<ApiResponseModel<RoleDto>>(`Roles/${id}`);
+  getUserRoles(userId: string): Observable<ApiResponseModel<UserRoleDto>> {
+    return this.apiService.get<ApiResponseModel<UserRoleDto>>(`Roles/user/${userId}`);
   }
 
-  create(data: CreateRoleRequest): Observable<ApiResponseModel<string>> {
+  create(data: CreateRoleCommand): Observable<ApiResponseModel<string>> {
     return this.apiService.post<ApiResponseModel<string>>('Roles', data);
   }
 
-  update(data: UpdateRoleRequest): Observable<ApiResponseModel<any>> {
+  update(data: UpdateRoleCommand): Observable<ApiResponseModel<any>> {
     return this.apiService.put<ApiResponseModel<any>>(`Roles/${data.id}`, data);
   }
 

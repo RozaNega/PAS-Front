@@ -1,19 +1,6 @@
-import { Component, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-
-interface ServiceRequest {
-  id: string;
-  requestNumber: string;
-  requesterName: string;
-  department: string;
-  status: 'Pending' | 'Approved' | 'Rejected' | 'Issued';
-  priority: 'Low' | 'Medium' | 'High' | 'Urgent';
-  requestedDate: string;
-  requiredDate: string;
-  itemCount: number;
-  estimatedValue: number;
-  description: string;
-}
+import { WorkflowService } from '../../../../core/services/workflow.service';
 
 @Component({
   selector: 'app-all-requests',
@@ -22,59 +9,30 @@ interface ServiceRequest {
   templateUrl: './all-requests.component.html',
   styleUrls: ['./all-requests.component.scss']
 })
-export class AllRequestsComponent {
-  protected readonly requests = signal<ServiceRequest[]>([
-    {
-      id: '1',
-      requestNumber: 'SR-2024-001',
-      requesterName: 'John Doe',
-      department: 'IT',
-      status: 'Pending',
-      priority: 'Urgent',
-      requestedDate: '2024-01-15',
-      requiredDate: '2024-01-18',
-      itemCount: 3,
-      estimatedValue: 5348,
-      description: 'Laptop and accessories for new developer'
-    },
-    {
-      id: '2',
-      requestNumber: 'SR-2024-002',
-      requesterName: 'Peter Chen',
-      department: 'Operations',
-      status: 'Approved',
-      priority: 'High',
-      requestedDate: '2024-01-16',
-      requiredDate: '2024-01-20',
-      itemCount: 1,
-      estimatedValue: 2800,
-      description: 'Office chair replacement'
-    },
-    {
-      id: '3',
-      requestNumber: 'SR-2024-003',
-      requesterName: 'Lisa Wong',
-      department: 'HR',
-      status: 'Rejected',
-      priority: 'Medium',
-      requestedDate: '2024-01-17',
-      requiredDate: '2024-01-22',
-      itemCount: 2,
-      estimatedValue: 900,
-      description: 'Desk accessories'
-    },
-    {
-      id: '4',
-      requestNumber: 'SR-2024-004',
-      requesterName: 'Mike Johnson',
-      department: 'Finance',
-      status: 'Issued',
-      priority: 'Low',
-      requestedDate: '2024-01-10',
-      requiredDate: '2024-01-15',
-      itemCount: 5,
-      estimatedValue: 1200,
-      description: 'Stationery supplies'
-    }
-  ]);
+export class AllRequestsComponent implements OnInit {
+  private readonly workflowService = inject(WorkflowService);
+
+  protected readonly requests = signal<any[]>([]);
+
+  ngOnInit(): void {
+    this.loadRequests();
+  }
+
+  loadRequests(): void {
+    const mgr = this.workflowService.getDefaultManagerQueueId();
+    const allRequests = this.workflowService.getAllRequests().filter(req => req.managerId === mgr);
+    this.requests.set(allRequests.map(req => ({
+      id: req.id,
+      requestNumber: req.srNumber,
+      requesterName: req.employeeName,
+      department: req.department,
+      status: req.status,
+      priority: req.priority,
+      requestedDate: req.submittedDate.toLocaleDateString(),
+      requiredDate: req.requiredDate.toLocaleDateString(),
+      itemCount: req.items.length,
+      estimatedValue: req.estimatedCost || 0,
+      description: req.justification
+    })));
+  }
 }

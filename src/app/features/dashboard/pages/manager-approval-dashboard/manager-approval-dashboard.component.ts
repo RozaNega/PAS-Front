@@ -1,7 +1,26 @@
-import { Component, inject, signal, OnInit, OnDestroy } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  ChangeDetectorRef,
+  Component,
+  computed,
+  inject,
+  OnDestroy,
+  OnInit,
+  signal,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { CurrentUserService } from '../../../../core/services/current-user.service';
+import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
+import { Subscription } from 'rxjs';
+import { take } from 'rxjs';
+import { CurrentUserService, CurrentUser } from '../../../../core/services/current-user.service';
+import { initDashboardProfilePhoto } from '../../../../core/utils/dashboard-profile-photo.util';
+import {
+  WorkflowService,
+  ServiceRequest,
+  ApiServiceRequestRow,
+} from '../../../../core/services/workflow.service';
+import { ServiceRequestService } from '../../../requisition/service-requests/services/service-request.service';
 
 export interface KeyMetric {
   title: string;
@@ -9,25 +28,6 @@ export interface KeyMetric {
   value: number;
   trend: string;
   tone: 'red' | 'green' | 'blue' | 'yellow';
-}
-
-export interface PendingRequest {
-  srNumber: string;
-  requester: string;
-  priority: 'Urgent' | 'Medium' | 'Normal';
-  requestedDate: string;
-  requiredDate: string;
-  items: string;
-  value: string;
-}
-
-export interface RecentActivity {
-  date: string;
-  action: string;
-  srNumber: string;
-  requester: string;
-  value?: string;
-  reason?: string;
 }
 
 export interface RequestTrendData {
@@ -43,10 +43,18 @@ export interface RequestTrendData {
   imports: [CommonModule],
   templateUrl: './manager-approval-dashboard.component.html',
   styleUrl: './manager-approval-dashboard.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ManagerApprovalDashboardComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
+  private readonly workflowService = inject(WorkflowService);
   private readonly currentUserService = inject(CurrentUserService);
+  private readonly serviceRequestService = inject(ServiceRequestService);
+  private readonly sanitizer = inject(DomSanitizer);
+  private readonly cdr = inject(ChangeDetectorRef);
+
+  private readonly subs: Subscription[] = [];
+  private clockInterval?: ReturnType<typeof setInterval>;
 
   currentDate = new Date();
   greeting = this.getGreeting();
@@ -58,145 +66,124 @@ export class ManagerApprovalDashboardComponent implements OnInit, OnDestroy {
   });
   readonly currentTime = signal<string>(this.getCurrentTime());
   readonly currentLocation = signal<string>('Addis Ababa, Ethiopia');
-  private clockInterval?: any;
+  
+  readonly profilePhoto = signal<SafeUrl | string | null>(null);
+  readonly isValidatingPhoto = signal(false);
 
-  keyMetrics: KeyMetric[] = [
-    {
-      title: 'Pending Approvals',
-      subtitle: '',
-      value: 5,
-      trend: '🔴 Urgent: 2',
-      tone: 'red',
-    },
-    {
-      title: 'Approved This Week',
-      subtitle: '',
-      value: 8,
-      trend: '▲ +15%',
-      tone: 'green',
-    },
-    {
-      title: 'Rejected This Week',
-      subtitle: '',
-      value: 2,
-      trend: '▼ -1',
-      tone: 'red',
-    },
-    {
-      title: 'Avg Response Time',
-      subtitle: '',
-      value: 1.2,
-      trend: '▼ -0.3 days',
-      tone: 'blue',
-    },
-    {
-      title: 'Budget Utilization',
-      subtitle: '',
-      value: 65,
-      trend: '⚠️ Near Limit',
-      tone: 'yellow',
-    },
-  ];
+  readonly managerQueueId = computed(() => this.workflowService.getManagerQueueIdForCurrentUser());
 
-  pendingRequests: PendingRequest[] = [
-    {
-      srNumber: 'SR-2024-123',
-      requester: 'John Doe',
-      priority: 'Urgent',
-      requestedDate: 'Dec 15, 2024',
-      requiredDate: 'Dec 18',
-      items: 'Laptop (2), Monitor (1)',
-      value: '$5,348',
-    },
-    {
-      srNumber: 'SR-2024-122',
-      requester: 'Peter Chen',
-      priority: 'Urgent',
-      requestedDate: 'Dec 14, 2024',
-      requiredDate: 'Dec 17',
-      items: 'Server Rack (1)',
-      value: '$2,800',
-    },
-    {
-      srNumber: 'SR-2024-121',
-      requester: 'Lisa Wong',
-      priority: 'Medium',
-      requestedDate: 'Dec 13, 2024',
-      requiredDate: 'Dec 20',
-      items: 'Office Chair (2)',
-      value: '$900',
-    },
-    {
-      srNumber: 'SR-2024-120',
-      requester: 'Mike Johnson',
-      priority: 'Medium',
-      requestedDate: 'Dec 12, 2024',
-      requiredDate: 'Dec 21',
-      items: 'USB Cables (50)',
-      value: '$250',
-    },
-    {
-      srNumber: 'SR-2024-119',
-      requester: 'Anna Lee',
-      priority: 'Normal',
-      requestedDate: 'Dec 11, 2024',
-      requiredDate: 'Dec 22',
-      items: 'A4 Paper (10)',
-      value: '$250',
-    },
-  ];
+  readonly pendingRequests = computed(() =>
+    this.workflowService.getRequestsForManager(this.managerQueueId()),
+  );
 
-  recentActivity: RecentActivity[] = [
-    {
-      date: 'Dec 14, 2024',
-      action: 'You approved',
-      srNumber: 'SR-2024-118',
-      requester: 'John Doe',
-      value: '$450',
-    },
-    {
-      date: 'Dec 13, 2024',
-      action: 'You rejected',
-      srNumber: 'SR-2024-117',
-      requester: 'Lisa Wong',
-      reason: 'Budget issue',
-    },
-    {
-      date: 'Dec 12, 2024',
-      action: 'You approved',
-      srNumber: 'SR-2024-116',
-      requester: 'Peter Chen',
-      value: '$2,499',
-    },
-    {
-      date: 'Dec 11, 2024',
-      action: 'New urgent request from',
-      srNumber: '',
-      requester: 'John Doe',
-    },
-    {
-      date: 'Dec 10, 2024',
-      action: 'You approved',
-      srNumber: 'SR-2024-115',
-      requester: 'Mike Johnson',
-      value: '$350',
-    },
-  ];
+  readonly pendingSummary = computed(() => {
+    const pr = this.pendingRequests();
+    let urgent = 0;
+    let medium = 0;
+    let normal = 0;
+    let totalValue = 0;
+    let waitSumDays = 0;
+    const now = Date.now();
+    for (const r of pr) {
+      if (r.priority === 'Urgent' || r.priority === 'High') urgent++;
+      else if (r.priority === 'Medium') medium++;
+      else normal++;
+      totalValue += r.estimatedCost || 0;
+      waitSumDays += (now - new Date(r.submittedDate).getTime()) / 86400000;
+    }
+    return {
+      urgent,
+      medium,
+      normal,
+      totalValue,
+      avgWaitDays: pr.length ? waitSumDays / pr.length : 0,
+    };
+  });
 
-  requestTrendData: RequestTrendData[] = [
-    { month: 'Jan', submitted: 8, approved: 7, rejected: 1 },
-    { month: 'Feb', submitted: 6, approved: 5, rejected: 1 },
-    { month: 'Mar', submitted: 10, approved: 9, rejected: 1 },
-    { month: 'Apr', submitted: 8, approved: 7, rejected: 1 },
-    { month: 'May', submitted: 6, approved: 5, rejected: 1 },
-    { month: 'Jun', submitted: 12, approved: 10, rejected: 2 },
-    { month: 'Jul', submitted: 10, approved: 9, rejected: 1 },
-    { month: 'Aug', submitted: 8, approved: 7, rejected: 1 },
-    { month: 'Sep', submitted: 6, approved: 5, rejected: 1 },
-    { month: 'Oct', submitted: 8, approved: 7, rejected: 1 },
-    { month: 'Nov', submitted: 6, approved: 5, rejected: 1 },
-    { month: 'Dec', submitted: 8, approved: 7, rejected: 1 },
-  ];
+  readonly keyMetrics = computed<KeyMetric[]>(() => {
+    const mgr = this.managerQueueId();
+    const pending = this.pendingRequests();
+    const all = this.workflowService.getRequestsForManagerAll(mgr);
+    const urgentCount = pending.filter((r) => r.priority === 'Urgent' || r.priority === 'High').length;
+
+    const weekAgo = Date.now() - 7 * 86400000;
+    const approvedWeek = all.filter(
+      (r) =>
+        r.status === 'Manager Approved' &&
+        r.managerReviewDate &&
+        new Date(r.managerReviewDate).getTime() >= weekAgo,
+    ).length;
+    const rejectedWeek = all.filter(
+      (r) =>
+        r.status === 'Manager Rejected' &&
+        r.managerReviewDate &&
+        new Date(r.managerReviewDate).getTime() >= weekAgo,
+    ).length;
+
+    return [
+      {
+        title: 'Pending Approvals',
+        subtitle: '',
+        value: pending.length,
+        trend: `🔴 Urgent / High: ${urgentCount}`,
+        tone: urgentCount > 0 ? 'red' : 'blue',
+      },
+      {
+        title: 'Approved (7 days)',
+        subtitle: '',
+        value: approvedWeek,
+        trend: 'From workflow',
+        tone: 'green',
+      },
+      {
+        title: 'Rejected (7 days)',
+        subtitle: '',
+        value: rejectedWeek,
+        trend: 'From workflow',
+        tone: 'red',
+      },
+      {
+        title: 'Total in queue (all statuses)',
+        subtitle: '',
+        value: all.length,
+        trend: 'Assigned to this manager id',
+        tone: 'blue',
+      },
+      {
+        title: 'Pending value (est.)',
+        subtitle: '',
+        value: Math.round(this.pendingSummary().totalValue),
+        trend: 'Sum of pending estimates',
+        tone: 'yellow',
+      },
+    ];
+  });
+
+  readonly requestTrendData = computed<RequestTrendData[]>(() => {
+    const mgr = this.managerQueueId();
+    const all = this.workflowService.getRequestsForManagerAll(mgr);
+    const now = new Date();
+    const rows: RequestTrendData[] = [];
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const label = d.toLocaleString('en-US', { month: 'short' });
+      const inMonth = (r: ServiceRequest) => {
+        const sd = new Date(r.submittedDate);
+        return sd.getFullYear() === d.getFullYear() && sd.getMonth() === d.getMonth();
+      };
+      rows.push({
+        month: label,
+        submitted: all.filter((r) => inMonth(r)).length,
+        approved: all.filter(
+          (r) => inMonth(r) && r.status === 'Manager Approved',
+        ).length,
+        rejected: all.filter(
+          (r) => inMonth(r) && r.status === 'Manager Rejected',
+        ).length,
+      });
+    }
+    return rows;
+  });
 
   getGreeting(): string {
     const hour = this.currentDate.getHours();
@@ -214,99 +201,139 @@ export class ManagerApprovalDashboardComponent implements OnInit, OnDestroy {
     });
   }
 
+  submittedPoints(): string {
+    const list = this.requestTrendData();
+    return list.map((data, i) => `${50 + i * 45},${180 - Math.min(data.submitted * 10, 160)}`).join(' ');
+  }
+
+  approvedPoints(): string {
+    const list = this.requestTrendData();
+    return list.map((data, i) => `${50 + i * 45},${180 - Math.min(data.approved * 10, 160)}`).join(' ');
+  }
+
+  rejectedPoints(): string {
+    const list = this.requestTrendData();
+    return list.map((data, i) => `${50 + i * 45},${180 - Math.min(data.rejected * 10, 160)}`).join(' ');
+  }
+
   ngOnInit(): void {
-    this.currentUserService.getCurrentUser().subscribe(user => {
-      if (user) {
-        this.managerName.set(user.fullName || user.username || 'Manager');
-      }
-    });
-    
+    this.subs.push(
+      initDashboardProfilePhoto(this.currentUserService, this.sanitizer, this.profilePhoto),
+    );
+
+    this.subs.push(
+      this.currentUserService.getCurrentUser().subscribe((user: CurrentUser | null) => {
+        if (user) {
+          this.managerName.set(user.fullName || user.username || 'Manager');
+        }
+        this.cdr.markForCheck();
+      }),
+    );
+
+    this.pullPendingFromApi();
+
+    this.subs.push(
+      this.workflowService.getRequestUpdates().subscribe(() => {
+        this.cdr.markForCheck();
+      }),
+      this.workflowService.getNotificationUpdates().subscribe(() => {
+        this.cdr.markForCheck();
+      }),
+    );
+
     this.clockInterval = setInterval(() => {
       this.currentTime.set(this.getCurrentTime());
+      this.cdr.markForCheck();
     }, 1000);
   }
 
   ngOnDestroy(): void {
+    this.subs.forEach((s) => s.unsubscribe());
     if (this.clockInterval) {
       clearInterval(this.clockInterval);
     }
   }
 
-  get submittedPoints(): string {
-    return this.requestTrendData.map((data, i) => `${50 + i * 45},${180 - data.submitted * 10}`).join(' ');
-  }
-
-  get approvedPoints(): string {
-    return this.requestTrendData.map((data, i) => `${50 + i * 45},${180 - data.approved * 10}`).join(' ');
-  }
-
-  get rejectedPoints(): string {
-    return this.requestTrendData.map((data, i) => `${50 + i * 45},${180 - data.rejected * 10}`).join(' ');
+  private pullPendingFromApi(): void {
+    this.serviceRequestService
+      .getServiceRequests()
+      .pipe(take(1))
+      .subscribe({
+        next: (res) => {
+          const items = (res as { data?: { items?: ApiServiceRequestRow[] } })?.data?.items ?? [];
+          const pending = items.filter(
+            (r) => (r.status || '').toLowerCase() === 'pending',
+          );
+          this.workflowService.mergeApiServiceRequests(pending, {
+            managerQueueId: this.workflowService.getManagerQueueIdForCurrentUser(),
+          });
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.cdr.markForCheck();
+        },
+      });
   }
 
   getPriorityIcon(priority: string): string {
     switch (priority) {
       case 'Urgent':
         return '🔴';
+      case 'High':
+        return '🔴';
       case 'Medium':
         return '🟡';
       case 'Normal':
+      case 'Low':
         return '🟢';
       default:
         return '⚪';
     }
   }
 
-  getActivityIcon(action: string): string {
-    if (action.includes('approved')) return '🟢';
-    if (action.includes('rejected')) return '🔴';
-    if (action.includes('New')) return '🟡';
-    return '🔵';
+  approveRequest(requestId: string): void {
+    const managerId = this.workflowService.getDefaultManagerQueueId();
+    const managerName = this.managerName();
+
+    this.workflowService.managerReviewRequest(
+      requestId,
+      'approve',
+      'Approved via dashboard quick action',
+      managerId,
+      managerName,
+    );
+
+    this.serviceRequestService
+      .approveServiceRequest({ id: requestId, remarks: 'Approved via manager dashboard' })
+      .pipe(take(1))
+      .subscribe({ error: () => {} });
   }
 
-  approveRequest(srNumber: string): void {
-    const request = this.pendingRequests.find((r) => r.srNumber === srNumber);
-    if (!request) return;
+  rejectRequest(requestId: string): void {
+    const managerId = this.workflowService.getDefaultManagerQueueId();
+    const managerName = this.managerName();
+    const reason = prompt('Please enter a reason for rejection:');
+    if (reason === null) return;
 
-    this.pendingRequests = this.pendingRequests.filter((r) => r.srNumber !== srNumber);
-    this.keyMetrics[0].value = this.pendingRequests.length;
+    this.workflowService.managerReviewRequest(
+      requestId,
+      'reject',
+      reason || 'Rejected via dashboard',
+      managerId,
+      managerName,
+    );
 
-    this.recentActivity.unshift({
-      date: new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date()),
-      action: 'You approved',
-      srNumber: srNumber,
-      requester: request.requester,
-      value: request.value,
-    });
+    this.serviceRequestService
+      .rejectServiceRequest({ id: requestId, reason: reason || 'Rejected via manager dashboard' })
+      .pipe(take(1))
+      .subscribe({ error: () => {} });
   }
 
-  rejectRequest(srNumber: string): void {
-    const request = this.pendingRequests.find((r) => r.srNumber === srNumber);
-    if (!request) return;
-
-    if (confirm(`Are you sure you want to reject request ${srNumber}?`)) {
-      this.pendingRequests = this.pendingRequests.filter((r) => r.srNumber !== srNumber);
-      this.keyMetrics[0].value = this.pendingRequests.length;
-
-      this.recentActivity.unshift({
-        date: new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date()),
-        action: 'You rejected',
-        srNumber: srNumber,
-        requester: request.requester,
-        reason: 'Manager rejected',
-      });
-    }
-  }
-
-  viewRequestDetails(srNumber: string): void {
+  viewRequestDetails(requestId: string): void {
     void this.router.navigate(['/manager/approvals/pending']);
   }
 
   viewAllRequests(): void {
     void this.router.navigate(['/manager/approvals/pending']);
-  }
-
-  viewAllActivity(): void {
-    void this.router.navigate(['/manager/notifications']);
   }
 }

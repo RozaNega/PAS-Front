@@ -3,11 +3,21 @@
     <header class="hero-banner">
       <div class="hero-copy">
         <p class="hero-eyebrow">Employee Dashboard</p>
-        <h1>{{ greeting }}, {{ userName() }}!</h1>
-        <p>
-          Welcome back to AFROCOM Asset Management System. You have
-          {{ pendingRequests.length }} pending requests awaiting approval.
-        </p>
+        <div class="hero-header-content">
+          <div class="hero-avatar">
+            @if (profilePhoto()) {
+              <img [src]="profilePhoto()" alt="Profile photo" class="avatar-img shadow-lg" />
+            } @else {
+              <div class="avatar-placeholder shadow-lg">
+                <i class="bi bi-person-fill"></i>
+              </div>
+            }
+          </div>
+          <div class="hero-text">
+            <h1>👋 {{ greeting }}, {{ userName() }}!</h1>
+            <p>Welcome</p>
+          </div>
+        </div>
       </div>
       <div class="dashboard-info-widget">
         <div class="info-item">
@@ -32,9 +42,6 @@
           <p>{{ pageSubtitle }}</p>
         }
       </div>
-      @if (currentView === 'my-requests') {
-        <a class="action-btn primary" (click)="openCreateRequestModal()">+ New Request</a>
-      }
       @if (currentView === 'profile') {
         <button class="edit-profile-btn" (click)="editProfile()">
           <i class="bi bi-pencil-square"></i> Edit Profile
@@ -46,6 +53,7 @@
   @if (currentView === 'home') {
     <section class="summary-section" aria-labelledby="summary-heading">
       <h2 id="summary-heading" class="section-title">📊 MY REQUEST SUMMARY</h2>
+      <p class="summary-caption">{{ requestSummaryLabel() }}</p>
       <div class="card-grid-5">
         @for (card of summaryCards(); track card.title) {
           <article class="summary-card summary-card--{{ card.tone }}">
@@ -67,12 +75,12 @@
     <section class="pending-requests-section" aria-labelledby="pending-heading">
       <header class="panel-header panel-header--split">
         <h2 id="pending-heading" class="section-title">
-          ⏳ PENDING REQUESTS ({{ pendingRequests.length }})
+          ⏳ PENDING REQUESTS ({{ pendingRequests().length }})
         </h2>
         <a routerLink="/employee/dashboard/my-requests">[View All →]</a>
       </header>
       <div class="pending-requests-list">
-        @for (request of pendingRequests; track request.srNumber) {
+        @for (request of pendingRequests(); track request.srNumber) {
           <article class="pending-request-card">
             <div class="pending-request-header">
               <strong>
@@ -93,21 +101,6 @@
               </button>
             </div>
           </article>
-        }
-      </div>
-    </section>
-
-    <section class="recent-activity-section" aria-labelledby="activity-heading">
-      <header class="panel-header panel-header--split">
-        <h2 id="activity-heading" class="section-title">✅ RECENT ACTIVITY</h2>
-        <a routerLink="/employee/dashboard/my-activity">[View All Activity →]</a>
-      </header>
-      <div class="recent-activity-list">
-        @for (activity of recentActivity; track activity.date + activity.description) {
-          <div class="activity-item">
-            <span>{{ getActivityIcon(activity.type) }}</span>
-            <span>{{ activity.date }} - {{ activity.description }}</span>
-          </div>
         }
       </div>
     </section>
@@ -165,12 +158,12 @@
       <h2 id="quick-links-heading" class="section-title">🔔 QUICK LINKS</h2>
       <div class="quick-links-grid">
         @for (link of quickLinks; track link.label) {
-          @if (link.label === 'Create New Request') {
-            <a class="quick-link-card" [routerLink]="link.route">
-              <span class="quick-link-icon">{{ link.icon }}</span>
-              <span class="quick-link-label">{{ link.label }}</span>
-            </a>
-          } @else {
+          @if (
+            link.label !== 'Create New Request' &&
+            link.label !== 'My Profile' &&
+            link.label !== 'My Requests' &&
+            link.label !== 'Return Materials'
+          ) {
             <a class="quick-link-card" [routerLink]="link.route">
               <span class="quick-link-icon">{{ link.icon }}</span>
               <span class="quick-link-label">{{ link.label }}</span>
@@ -239,23 +232,31 @@
       <div class="my-requests-summary">
         <div class="summary-stat">
           <p>Total Requests (All Time)</p>
-          <strong>23</strong>
+          <strong>{{ workflowRequests().length }}</strong>
         </div>
         <div class="summary-stat">
           <p>Pending Approval</p>
-          <strong>2 🔴 Urgent: 1</strong>
+          <strong>{{ pendingRequests().length }}</strong>
         </div>
         <div class="summary-stat">
           <p>Approved</p>
-          <strong>12 🟢 Ready</strong>
+          <strong
+            >{{ workflowRequests().filter(r => ['Manager Approved', 'Admin Approved'].includes(r.status)).length }}
+            🟢 Ready</strong
+          >
         </div>
         <div class="summary-stat">
           <p>Rejected</p>
-          <strong>3 🔴 Rejected</strong>
+          <strong
+            >{{ workflowRequests().filter(r => ['Manager Rejected', 'Admin Rejected'].includes(r.status)).length }}
+            🔴 Rejected</strong
+          >
         </div>
         <div class="summary-stat">
           <p>Completed</p>
-          <strong>6 ✅ Done</strong>
+          <strong
+            >{{ workflowRequests().filter(r => r.status === 'Completed').length }} ✅ Done</strong
+          >
         </div>
       </div>
 
@@ -274,32 +275,48 @@
             </tr>
           </thead>
           <tbody>
-            @for (request of myRequests; track request.srNumber) {
+            @for (request of workflowRequests(); track request.id) {
               <tr>
                 <td>{{ request.srNumber }}</td>
-                <td>{{ request.date }}</td>
-                <td>{{ request.items }}</td>
+                <td>{{ request.submittedDate | date: 'shortDate' }}</td>
+                <td>{{ request.items.length }}</td>
                 <td>{{ getPriorityIcon(request.priority) }} {{ request.priority }}</td>
                 <td>
                   <span
                     class="status-pill"
-                    [class.status-pending]="request.status === 'Pending'"
-                    [class.status-approved]="request.status === 'Approved'"
-                    [class.status-rejected]="request.status === 'Rejected'"
+                    [class.status-pending]="['Submitted', 'Under Review'].includes(request.status)"
+                    [class.status-approved]="
+                      ['Manager Approved', 'Admin Approved', 'Compliance Review'].includes(
+                        request.status
+                      )
+                    "
+                    [class.status-rejected]="
+                      ['Manager Rejected', 'Admin Rejected'].includes(request.status)
+                    "
                   >
                     {{ getStatusIcon(request.status) }} {{ request.status }}
                   </span>
                 </td>
-                <td>{{ request.requiredBy }}</td>
+                <td>{{ request.requiredDate | date: 'shortDate' }}</td>
                 <td>
                   <button class="icon-btn" title="View" (click)="viewRequest(request.srNumber)">
                     👁️
                   </button>
-                  @if (request.status === 'Pending') {
-                    <button class="icon-btn" title="Edit" (click)="editRequest(request.srNumber)">📝</button>
-                    <button class="icon-btn" title="Cancel" (click)="cancelRequest(request.srNumber)">❌</button>
+                  @if (['Submitted', 'Under Review'].includes(request.status)) {
+                    <button class="icon-btn" title="Edit" (click)="editRequest(request.srNumber)">
+                      📝
+                    </button>
+                    <button
+                      class="icon-btn"
+                      title="Cancel"
+                      (click)="cancelRequest(request.srNumber)"
+                    >
+                      ❌
+                    </button>
                   }
-                  <button class="icon-btn" title="Track" (click)="trackRequest(request.srNumber)">🔄</button>
+                  <button class="icon-btn" title="Track" (click)="trackRequest(request.srNumber)">
+                    🔄
+                  </button>
                 </td>
               </tr>
             }
@@ -322,18 +339,18 @@
           <input type="text" placeholder="Search notifications..." />
         </div>
         <div class="filter-actions">
-          <select class="type-select">
+          <select class="type-select" aria-label="Filter notifications by type">
             <option>All Types</option>
             <option>Approvals</option>
             <option>Completions</option>
           </select>
-          <button class="fancy-btn outline-success small" (click)="markAllAsRead()">Mark Read</button>
+          <button class="fancy-btn outline-success small" (click)="markAllAsRead()">
+            Mark Read
+          </button>
         </div>
       </div>
 
-      <div class="sub-section-header">
-        <i class="bi bi-bell-fill"></i> ALL NOTIFICATIONS
-      </div>
+      <div class="sub-section-header"><i class="bi bi-bell-fill"></i> ALL NOTIFICATIONS</div>
 
       <div class="notifications-feed">
         @for (notification of notifications(); track notification.id) {
@@ -343,9 +360,15 @@
                 <div class="title-group">
                   <span class="status-dot" [class]="notification.type"></span>
                   <h3 class="notif-title">
-                    @if (notification.type === 'approved') { Request Approved - }
-                    @if (notification.type === 'completed') { Request Completed - }
-                    @if (notification.type === 'submitted') { Request Submitted - }
+                    @if (notification.type === 'approved') {
+                      Request Approved -
+                    }
+                    @if (notification.type === 'completed') {
+                      Request Completed -
+                    }
+                    @if (notification.type === 'submitted') {
+                      Request Submitted -
+                    }
                     {{ notification.requestId }}
                   </h3>
                 </div>
@@ -353,12 +376,32 @@
               </div>
               <p class="notif-message">{{ notification.message }}</p>
               <div class="notif-actions">
-                <button class="fancy-btn primary small" (click)="viewRequest(notification.requestId)">View Request</button>
+                <button
+                  class="fancy-btn primary small"
+                  (click)="viewRequest(notification.requestId)"
+                >
+                  View Request
+                </button>
                 @if (notification.type === 'completed') {
-                  <button class="fancy-btn outline-primary small" (click)="viewSIV(notification.sivId!)">View SIV</button>
-                  <button class="fancy-btn outline-primary small" (click)="downloadPDF(notification.sivId!)">Download PDF</button>
+                  <button
+                    class="fancy-btn outline-primary small"
+                    (click)="viewSIV(notification.sivId!)"
+                  >
+                    View SIV
+                  </button>
+                  <button
+                    class="fancy-btn outline-primary small"
+                    (click)="downloadPDF(notification.sivId!)"
+                  >
+                    Download PDF
+                  </button>
                 }
-                <button class="fancy-btn secondary small" (click)="dismissNotification(notification.id)">Dismiss</button>
+                <button
+                  class="fancy-btn secondary small"
+                  (click)="dismissNotification(notification.id)"
+                >
+                  Dismiss
+                </button>
               </div>
             </div>
           </div>
@@ -373,12 +416,28 @@
         <h2 id="profile-info-heading" class="section-title">👤 PROFILE INFORMATION</h2>
         <div class="profile-layout">
           <div class="profile-photo">
-            @if (profilePhoto()) {
-              <img [src]="profilePhoto()!" alt="Profile photo" class="profile-image" />
-            } @else {
-              <div class="photo-placeholder">👤</div>
-            }
-            
+            <div class="photo-scan-container" [class.scanning]="isValidatingPhoto()">
+              @if (profilePhoto()) {
+                <img [src]="profilePhoto()!" alt="Profile photo" class="profile-image" />
+              } @else {
+                <div class="photo-placeholder">👤</div>
+              }
+
+              @if (isValidatingPhoto()) {
+                <div class="scan-overlay">
+                  <div class="scan-line"></div>
+                  <span class="scan-label">Scanning Face...</span>
+                </div>
+              }
+
+              @if (isUploadingPhoto()) {
+                <div class="scan-overlay upload-overlay">
+                  <div class="upload-spinner"></div>
+                  <span class="scan-label">Saving to server...</span>
+                </div>
+              }
+            </div>
+
             @if (!isSelectingPhoto()) {
               <button class="change-photo-btn" (click)="changePhoto()">Change Photo</button>
             } @else {
@@ -391,31 +450,47 @@
                     <button class="btn-method" (click)="startCamera()">
                       <i class="bi bi-camera"></i> Camera
                     </button>
-                    <input type="file" #fileInput (change)="onFileSelected($event)" accept="image/*" style="display: none;" />
+                    <input
+                      type="file"
+                      #fileInput
+                      class="file-input-hidden"
+                      (change)="onFileSelected($event)"
+                      accept="image/*"
+                      aria-label="Upload a profile photo"
+                      title="Upload a profile photo"
+                    />
                   </div>
                 } @else {
                   <div class="inline-camera-view">
-                    <video #videoElement autoplay playsinline></video>
-                    <canvas #canvasElement style="display: none;"></canvas>
+                    <video #videoElement autoplay muted></video>
+                    <canvas #canvasElement class="camera-canvas"></canvas>
                     <button class="btn-capture" (click)="capturePhoto()">Capture</button>
                   </div>
                 }
 
                 <div class="inline-actions">
                   <button class="btn-cancel-upload" (click)="cancelUpload()">Cancel</button>
-                  <button class="btn-save-inline" (click)="isSelectingPhoto.set(false)" [disabled]="!profilePhoto()">Save</button>
+                  <button
+                    class="btn-save-inline"
+                    (click)="isSelectingPhoto.set(false)"
+                    [disabled]="!profilePhoto()"
+                  >
+                    Save
+                  </button>
                 </div>
               </div>
             }
           </div>
           <div class="profile-details">
             <div class="detail-row"><strong>Full Name:</strong> {{ userProfile().fullName }}</div>
-            <div class="detail-row"><strong>Employee Code:</strong> {{ userProfile().employeeCode }}</div>
-            <div class="detail-row"><strong>Department:</strong> {{ userProfile().department }}</div>
-            <div class="detail-row"><strong>Position:</strong> {{ userProfile().position }}</div>
+            <div class="detail-row">
+              <strong>Employee Code:</strong> {{ userProfile().employeeCode }}
+            </div>
+            <div class="detail-row">
+              <strong>Department:</strong> {{ userProfile().department }}
+            </div>
             <div class="detail-row"><strong>Email:</strong> {{ userProfile().email }}</div>
             <div class="detail-row"><strong>Phone:</strong> {{ userProfile().phone }}</div>
-            <div class="detail-row"><strong>Join Date:</strong> {{ userProfile().joinDate }}</div>
           </div>
         </div>
       </section>
@@ -519,6 +594,9 @@
 
       <section class="notification-settings panel" aria-labelledby="notif-settings-heading">
         <h2 id="notif-settings-heading" class="section-title">🔔 NOTIFICATION SETTINGS</h2>
+        <p class="section-description">
+          Manage how and when you receive notifications about your requests
+        </p>
         <div class="checkbox-list">
           <label>
             <input
@@ -526,7 +604,7 @@
               [(ngModel)]="notificationSettings().emailOnApproval"
               (change)="saveNotificationSettings()"
             />
-            Email me when my request is approved
+            <span>Email me when my request is approved</span>
           </label>
           <label>
             <input
@@ -534,7 +612,7 @@
               [(ngModel)]="notificationSettings().emailOnRejection"
               (change)="saveNotificationSettings()"
             />
-            Email me when my request is rejected
+            <span>Email me when my request is rejected</span>
           </label>
           <label>
             <input
@@ -542,7 +620,7 @@
               [(ngModel)]="notificationSettings().emailOnReady"
               (change)="saveNotificationSettings()"
             />
-            Email me when items are ready for pickup
+            <span>Email me when items are ready for pickup</span>
           </label>
           <label>
             <input
@@ -550,7 +628,7 @@
               [(ngModel)]="notificationSettings().weeklySummary"
               (change)="saveNotificationSettings()"
             />
-            Weekly request summary
+            <span>Weekly request summary</span>
           </label>
           <label>
             <input
@@ -558,7 +636,7 @@
               [(ngModel)]="notificationSettings().monthlyDigest"
               (change)="saveNotificationSettings()"
             />
-            Monthly request digest
+            <span>Monthly request digest</span>
           </label>
         </div>
       </section>
@@ -572,9 +650,128 @@
             <button class="action-btn secondary" (click)="changePassword()">
               [Change Password]
             </button>
-            <button class="action-btn secondary" (click)="enable2FA()">[Enable 2FA]</button>
           </div>
         </div>
+      </section>
+
+      <section class="two-factor-auth panel" aria-labelledby="2fa-heading">
+        <div class="twofa-header">
+          <div class="twofa-title">
+            <i class="bi bi-shield-lock twofa-icon"></i>
+            <h2 id="2fa-heading">TWO-FACTOR AUTHENTICATION</h2>
+          </div>
+          @if (!twoFactorEnabled()) {
+            <button class="btn-enable-2fa" (click)="enable2FA()">Enable 2FA</button>
+          }
+        </div>
+
+        <div class="twofa-status">
+          <div class="status-indicator">
+            <span
+              class="status-dot"
+              [class.enabled]="twoFactorEnabled()"
+              [class.disabled]="!twoFactorEnabled()"
+            ></span>
+            <span class="status-text">{{ twoFactorEnabled() ? 'Enabled' : 'Disabled' }}</span>
+          </div>
+        </div>
+
+        @if (twoFactorEnabled()) {
+          <div class="twofa-settings">
+            <div class="setting-row">
+              <label for="twofa-method">2FA Method:</label>
+              <select
+                id="twofa-method"
+                class="twofa-select"
+                [value]="twoFactorMethod()"
+                (change)="updateTwoFactorMethod($event)"
+              >
+                <option value="sms">SMS</option>
+                <option value="email">Email</option>
+                <option value="app">Authenticator App</option>
+              </select>
+            </div>
+
+            @if (twoFactorMethod() === 'sms') {
+              <div class="setting-row">
+                <label for="phone-number">Phone Number:</label>
+                <div class="phone-input-group">
+                  <input
+                    id="phone-number"
+                    type="tel"
+                    class="twofa-input"
+                    [value]="twoFactorPhone()"
+                    (input)="updateTwoFactorPhone($event)"
+                    placeholder="+251-XXX-XXXXXXX"
+                    [disabled]="twoFactorVerificationSent() || twoFactorSetupComplete()"
+                  />
+                  @if (!twoFactorVerificationSent() && !twoFactorSetupComplete()) {
+                    <button
+                      class="btn-save-phone"
+                      (click)="saveTwoFactorPhone()"
+                      [disabled]="!twoFactorPhone()"
+                      title="Send verification code"
+                    >
+                      Send Code
+                    </button>
+                  }
+                  @if (twoFactorSetupComplete()) {
+                    <span class="verification-status verified">✓ Verified</span>
+                  }
+                </div>
+              </div>
+
+              @if (twoFactorVerificationSent() && !twoFactorSetupComplete()) {
+                <div class="setting-row verification-row">
+                  <label for="verification-code">Verification Code:</label>
+                  <div class="verification-input-group">
+                    <input
+                      id="verification-code"
+                      type="text"
+                      class="twofa-input verification-input"
+                      [value]="twoFactorVerificationCode()"
+                      (input)="updateTwoFactorVerificationCode($event)"
+                      placeholder="Enter 6-digit code"
+                      maxlength="6"
+                    />
+                    <button
+                      class="btn-verify-code"
+                      (click)="verifyTwoFactorCode()"
+                      [disabled]="twoFactorVerificationCode().length !== 6"
+                      title="Verify code"
+                    >
+                      Verify
+                    </button>
+                  </div>
+                  <div class="verification-help">
+                    <p>Enter the 6-digit code sent to {{ twoFactorPhone() }}</p>
+                    <button class="btn-resend" (click)="resendVerificationCode()">
+                      Resend Code
+                    </button>
+                  </div>
+                </div>
+              }
+            }
+
+            @if (twoFactorMethod() === 'email') {
+              <div class="setting-row">
+                <label>Email Address:</label>
+                <span class="readonly-value">{{ userProfile().email }}</span>
+              </div>
+            }
+
+            @if (twoFactorMethod() === 'app') {
+              <div class="setting-row">
+                <label>Authenticator App:</label>
+                <span class="readonly-value">Google Authenticator / Microsoft Authenticator</span>
+              </div>
+            }
+
+            <div class="twofa-actions">
+              <button class="btn-disable-2fa" (click)="disable2FA()">Disable 2FA</button>
+            </div>
+          </div>
+        }
       </section>
     </section>
   }
@@ -620,7 +817,7 @@
             </tr>
           </thead>
           <tbody>
-            @for (item of catalogItems; track item.sku) {
+            @for (item of catalogItems(); track item.sku) {
               <tr>
                 <td>{{ item.sku }}</td>
                 <td>{{ item.name }}</td>
@@ -639,8 +836,12 @@
                 </td>
                 <td>{{ item.lastRestocked }}</td>
                 <td>
-                  <button class="icon-btn" title="Request Item" (click)="openCreateRequestModal()">📝 Request</button>
-                  <button class="icon-btn" title="View Details" (click)="viewCatalogItem(item.sku)">👁️ View</button>
+                  <button class="icon-btn" title="Request Item" (click)="openCreateRequestModal()">
+                    📝 Request
+                  </button>
+                  <button class="icon-btn" title="View Details" (click)="viewCatalogItem(item.sku)">
+                    👁️ View
+                  </button>
                 </td>
               </tr>
             }

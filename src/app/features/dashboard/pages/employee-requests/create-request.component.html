@@ -1,107 +1,202 @@
-<div class="create-request-container">
-  <div class="page-header">
-    <h1>Create New Service Request</h1>
-    <p class="subtitle">Submit a new requisition request for items</p>
-  </div>
+<div class="create-request-wrapper">
+  <div class="create-request-container">
+    <div class="page-header">
+      <h1>Create Service Request (SR)</h1>
+    </div>
 
-  <div class="form-card">
-    <form [formGroup]="requestForm" (ngSubmit)="submit()">
-      <div class="form-section">
-        <div class="section-header">
-          <h3>Request Items</h3>
-          <button type="button" class="btn-add" (click)="addItem()">
-            <i class="bi bi-plus-lg"></i> Add Item
-          </button>
+    <div class="form-card">
+      <!-- Step 1: Basic Information -->
+      @if (currentStep === 1) {
+        <div class="step-indicator">Step 1 of 3: Basic Information</div>
+
+        <div class="form-section">
+          <label>SR NUMBER *</label>
+          <input type="text" [(ngModel)]="form.srNumber" placeholder="Enter SR Number" />
         </div>
 
-        <div formArrayName="items">
-          <div *ngFor="let item of itemsArray.controls; let i = index" [formGroupName]="i" class="item-row">
-            <div class="item-grid">
-              <div class="form-field">
-                <label [for]="'itemId-' + i">Item *</label>
-                <select [id]="'itemId-' + i" formControlName="itemId">
-                  <option value="">Select an item</option>
-                  <option *ngFor="let option of items()" [value]="option.id">
-                    {{ option.name }} ({{ option.sku }})
-                  </option>
-                </select>
-                <div class="error-message" *ngIf="submitted() && itemsArray.at(i).get('itemId')?.errors?.['required']">
-                  Item is required
-                </div>
-              </div>
+        <div class="form-row">
+          <label>
+            Requester *
+            <input type="text" [(ngModel)]="form.requester" placeholder="Enter your name" />
+          </label>
+          <label>
+            Department *
+            <select [(ngModel)]="form.department">
+              <option>IT Department</option>
+              <option>HR Department</option>
+              <option>Finance Department</option>
+            </select>
+          </label>
+        </div>
 
-              <div class="form-field">
-                <label [for]="'quantity-' + i">Quantity *</label>
-                <input
-                  [id]="'quantity-' + i"
-                  type="number"
-                  formControlName="requestedQty"
-                  min="1"
-                  placeholder="Qty"
-                />
-                <div class="error-message" *ngIf="submitted() && itemsArray.at(i).get('requestedQty')?.errors?.['required']">
-                  Qty is required
-                </div>
-              </div>
+        <div class="form-row">
+          <label>
+            Required By Date *
+            <input type="date" [(ngModel)]="form.requiredBy" />
+          </label>
+        </div>
 
-              <div class="form-field">
-                <label [for]="'shelf-' + i">Preferred Shelf *</label>
-                <select [id]="'shelf-' + i" formControlName="preferredShelfId">
-                  <option value="">Select shelf</option>
-                  <option *ngFor="let shelf of shelves()" [value]="shelf.id">
-                    {{ shelf.code }} - {{ shelf.location }}
-                  </option>
-                </select>
-                <div class="error-message" *ngIf="submitted() && itemsArray.at(i).get('preferredShelfId')?.errors?.['required']">
-                  Shelf is required
-                </div>
-              </div>
+        <div class="form-section">
+          <label>Remarks / Justification *</label>
+          <textarea [(ngModel)]="form.remarks" rows="3" placeholder="Enter remarks or justification..."></textarea>
+        </div>
 
-              <div class="form-field full-width">
-                <label [for]="'notes-' + i">Notes</label>
-                <input
-                  [id]="'notes-' + i"
-                  type="text"
-                  formControlName="notes"
-                  placeholder="Additional notes for this item"
-                />
-              </div>
+        <div class="form-section">
+          <label>Priority *</label>
+          <select [(ngModel)]="form.priority">
+            <option value="Normal">🟢 Normal (3-5 days)</option>
+            <option value="Medium">🟡 Medium (1-3 days)</option>
+            <option value="Urgent">🔴 Urgent (Same day)</option>
+          </select>
+        </div>
+      }
+
+      <!-- Step 2: Items Requested -->
+      @if (currentStep === 2) {
+        <div class="step-indicator">Step 2 of 3: Items Requested</div>
+
+        @if (isLoadingItems) {
+          <div class="loading-message">
+            <p>Loading available items...</p>
+          </div>
+        } @else {
+          <div class="search-section">
+            <input
+              type="text"
+              [(ngModel)]="searchQuery"
+              placeholder="🔍 Search Items..."
+              class="search-input"
+            />
+          </div>
+
+          <div class="items-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>Item Name</th>
+                  <th>SKU</th>
+                  <th>Available</th>
+                  <th>UOM</th>
+                  <th>Requested</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (item of filteredItems; track item.id) {
+                  <tr>
+                    <td>{{ item.name }}</td>
+                    <td>{{ item.sku }}</td>
+                    <td>{{ item.available }}</td>
+                    <td>{{ item.uom }}</td>
+                    <td><input type="number" min="1" value="1" class="quantity-input" /></td>
+                    <td><button class="btn-add" (click)="addItem(item)">➕ Add</button></td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+
+        <div class="selected-items-section">
+          <h5>SELECTED ITEMS</h5>
+          @if (selectedItems.length === 0) {
+            <p class="no-items">No items selected</p>
+          } @else {
+            <table class="selected-table">
+              <thead>
+                <tr>
+                   <th>Item Name</th>
+                   <th>Item ID</th>
+                   <th>Shelf ID</th>
+                   <th>Requested</th>
+                   <th>Notes</th>
+                   <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (item of selectedItems; track item.sku) {
+                  <tr>
+                     <td>{{ item.name }}</td>
+                     <td>
+                       <input type="text" [(ngModel)]="item.itemId" placeholder="Item ID" class="guid-input" />
+                     </td>
+                     <td>
+                       <input type="text" [(ngModel)]="item.preferredShelfId" placeholder="Shelf ID" class="guid-input" />
+                     </td>
+                     <td>
+                       <input
+                         type="number"
+                         [(ngModel)]="item.quantity"
+                         (ngModelChange)="updateItemQuantity(item.sku, $event)"
+                         min="1"
+                         class="quantity-input"
+                       />
+                     </td>
+                     <td>
+                       <input type="text" [(ngModel)]="item.notes" placeholder="Notes" class="notes-input" />
+                     </td>
+                     <td>
+                       <button class="icon-btn" (click)="removeItem(item.sku)">🗑️</button>
+                     </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+            <p class="items-summary">Total Items: {{ totalItems }} | Total Quantity: {{ totalQuantity }}</p>
+          }
+        </div>
+      }
+
+      <!-- Step 3: Review & Submit -->
+      @if (currentStep === 3) {
+        <div class="step-indicator">Step 3 of 3: Review & Submit</div>
+
+        <div class="summary-section">
+          <h5>SUMMARY</h5>
+          <div class="summary-details">
+            <p><strong>• SR Number:</strong> {{ form.srNumber }}</p>
+            <p><strong>• Requester:</strong> {{ form.requester }} ({{ form.department }})</p>
+            <p><strong>• Total Items:</strong> {{ totalItems }} | <strong>Total Quantity:</strong> {{ totalQuantity }}</p>
+            <p><strong>• Required By:</strong> {{ form.requiredBy }}</p>
+            <p><strong>• Priority:</strong> {{ form.priority }}</p>
+            <p><strong>• Remarks:</strong> {{ form.remarks }}</p>
+          </div>
+          <div class="warning-box">
+            ⚠️ Please review all information before submitting
+          </div>
+        </div>
+
+        <div class="items-summary-section">
+          <h5>ITEMS TO BE REQUESTED</h5>
+          @for (item of selectedItems; track item.sku) {
+            <div class="item-summary-row">
+              <span>{{ item.name }} ({{ item.sku }})</span>
+              <span>Quantity: {{ item.quantity }}</span>
             </div>
-
-            <button type="button" class="btn-remove" (click)="removeItem(i)" [disabled]="itemsArray.length === 1" title="Remove Item">
-              <i class="bi bi-trash"></i>
-            </button>
-          </div>
+          }
         </div>
-      </div>
+      }
+    </div>
 
-      <div class="form-section">
-        <h3>General Remarks</h3>
-        <div class="form-field">
-          <label for="remarks">Remarks *</label>
-          <textarea
-            id="remarks"
-            formControlName="remarks"
-            rows="3"
-            placeholder="Enter any general remarks for this service request"
-          ></textarea>
-          <div class="error-message" *ngIf="submitted() && requestForm.get('remarks')?.errors?.['required']">
-            Remarks are required
-          </div>
-        </div>
-      </div>
+    <div class="form-actions">
+      @if (currentStep === 1) {
+        <button type="button" class="btn btn-secondary" (click)="cancel()">Cancel</button>
+        <button type="button" class="btn btn-secondary" (click)="saveDraft()">Save Draft</button>
+        <button type="button" class="btn btn-primary" (click)="nextStep()">
+          Next
+        </button>
+      }
 
-      <div class="form-actions">
-        <button type="button" class="btn btn-secondary" (click)="cancel()" [disabled]="loading()">
-          Cancel
-        </button>
-        <button type="submit" class="btn btn-primary" [disabled]="loading()">
-          <span *ngIf="loading()">
-            <i class="bi bi-arrow-repeat spin"></i> Submitting...
-          </span>
-          <span *ngIf="!loading()">Submit Service Request</span>
-        </button>
-      </div>
-    </form>
+      @if (currentStep === 2) {
+        <button type="button" class="btn btn-secondary" (click)="previousStep()">Back</button>
+        <button type="button" class="btn btn-primary" (click)="nextStep()">Next</button>
+      }
+
+      @if (currentStep === 3) {
+        <button type="button" class="btn btn-secondary" (click)="previousStep()">Back</button>
+        <button type="button" class="btn btn-secondary" (click)="cancel()">Cancel</button>
+        <button type="button" class="btn btn-primary" (click)="submit()">Submit</button>
+      }
+    </div>
   </div>
 </div>

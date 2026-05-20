@@ -1,20 +1,6 @@
-import { Component, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-
-interface ServiceRequest {
-  id: string;
-  requestNumber: string;
-  sivNumber: string;
-  requesterName: string;
-  department: string;
-  status: 'Pending' | 'Approved' | 'Rejected' | 'Issued';
-  requestedDate: string;
-  issuedDate: string;
-  itemCount: number;
-  estimatedValue: number;
-  description: string;
-  issuedBy: string;
-}
+import { WorkflowService } from '../../../../core/services/workflow.service';
 
 @Component({
   selector: 'app-issued-requests',
@@ -23,21 +9,34 @@ interface ServiceRequest {
   templateUrl: './issued-requests.component.html',
   styleUrls: ['./issued-requests.component.scss']
 })
-export class IssuedRequestsComponent {
-  protected readonly requests = signal<ServiceRequest[]>([
-    {
-      id: '1',
-      requestNumber: 'SR-2024-005',
-      sivNumber: 'SIV-2024-001',
-      requesterName: 'Anna Lee',
-      department: 'IT',
+export class IssuedRequestsComponent implements OnInit {
+  private readonly workflowService = inject(WorkflowService);
+
+  protected readonly requests = signal<any[]>([]);
+
+  ngOnInit(): void {
+    this.loadRequests();
+  }
+
+  loadRequests(): void {
+    const mgr = this.workflowService.getDefaultManagerQueueId();
+    const issuedRequests = this.workflowService.getAllRequests().filter(req => 
+      req.managerId === mgr && 
+      req.status === 'Completed'
+    );
+    this.requests.set(issuedRequests.map(req => ({
+      id: req.id,
+      requestNumber: req.srNumber,
+      sivNumber: 'SIV-' + req.srNumber.split('-').slice(1).join('-'), // Mock SIV number
+      requesterName: req.employeeName,
+      department: req.department,
       status: 'Issued',
-      requestedDate: '2024-01-08',
-      issuedDate: '2024-01-12',
-      itemCount: 3,
-      estimatedValue: 5348,
-      description: 'Laptop and accessories',
+      requestedDate: req.submittedDate.toLocaleDateString(),
+      issuedDate: req.completedDate ? req.completedDate.toLocaleDateString() : 'N/A',
+      itemCount: req.items.length,
+      estimatedValue: req.estimatedCost || 0,
+      description: req.justification,
       issuedBy: 'Storekeeper'
-    }
-  ]);
+    })));
+  }
 }

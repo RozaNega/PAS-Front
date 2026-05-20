@@ -1,4 +1,10 @@
-export type RequestStatus = 'Draft' | 'Submitted' | 'Pending' | 'Approved' | 'Rejected' | 'Completed';
+export type RequestStatus =
+  | 'Draft'
+  | 'Submitted'
+  | 'Pending'
+  | 'Approved'
+  | 'Rejected'
+  | 'Completed';
 export type RequestPriority = 'Normal' | 'Medium' | 'Urgent';
 
 export interface RequestSummaryCard {

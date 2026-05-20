@@ -19,6 +19,7 @@ export class TwoFactorModalComponent {
   contactInfo = signal('');
   verificationCode = signal('');
   loading = signal(false);
+  codeSent = signal(false);
 
   nextStep(): void {
     if (this.method() === 'sms' && !this.contactInfo()) {
@@ -29,22 +30,52 @@ export class TwoFactorModalComponent {
       alert('Please enter your email');
       return;
     }
-    this.step.set(2);
+
+    if (this.method() === 'app') {
+      this.step.set(2);
+      return;
+    }
+
+    this.sendVerificationCode();
+  }
+
+  sendVerificationCode(): void {
+    this.loading.set(true);
+    // Simulate sending code
+    setTimeout(() => {
+      this.loading.set(false);
+      this.codeSent.set(true);
+      this.step.set(2);
+      console.log(`Code sent to ${this.contactInfo()} via ${this.method()}`);
+    }, 1500);
+  }
+
+  resendCode(): void {
+    if (this.loading()) return;
+    this.sendVerificationCode();
+    alert('A new verification code has been sent.');
   }
 
   submit(): void {
-    if (!this.verificationCode()) {
-      alert('Please enter the verification code');
+    if (!this.verificationCode() || this.verificationCode().length < 6) {
+      alert('Please enter a valid 6-digit verification code');
       return;
     }
     this.loading.set(true);
     // Simulate API call
     setTimeout(() => {
       this.loading.set(false);
-      this.modal.close({ 
-        method: this.method(), 
-        contactInfo: this.contactInfo() 
-      });
+      // Demo code
+      if (this.verificationCode() === '123456') {
+        this.modal.close({ 
+          method: this.method(), 
+          contactInfo: this.contactInfo(),
+          enabled: true
+        });
+        alert('Two-Factor Authentication enabled successfully!');
+      } else {
+        alert('Invalid verification code. Please try 123456 for demo purposes.');
+      }
     }, 1500);
   }
 

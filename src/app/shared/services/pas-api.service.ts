@@ -234,7 +234,7 @@ export class PasApiService {
 
   // Service Requests API
   createServiceRequest(request: ApiServiceRequest): Observable<unknown> {
-    return this.api.post('service-requests', request);
+    return this.api.post('ServiceRequests', request);
   }
 
   createReturnMaterialRequest(request: ApiReturnMaterialRequest): Observable<unknown> {

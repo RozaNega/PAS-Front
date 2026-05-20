@@ -3,8 +3,22 @@
     <img src="/assets/images/afr.jpg" alt="Background" class="bg-image" />
     <div class="bg-overlay"></div>
     <div class="bg-text-watermark">
-      <span class="watermark-word">AFRICOM</span>
-      <span class="watermark-word">TECHNOLOGIES</span>
+      <div class="watermark-scroll">
+        <span class="watermark-text">AFRICOM TECHNOLOGIES</span>
+        <span class="watermark-text">AFRICOM TECHNOLOGIES</span>
+        <span class="watermark-text">AFRICOM TECHNOLOGIES</span>
+        <span class="watermark-text">AFRICOM TECHNOLOGIES</span>
+        <span class="watermark-text">AFRICOM TECHNOLOGIES</span>
+      </div>
+    </div>
+    <div class="bg-text-watermark bg-text-watermark--bottom">
+      <div class="watermark-scroll watermark-scroll--reverse">
+        <span class="watermark-text">AFRICOM TECHNOLOGIES</span>
+        <span class="watermark-text">AFRICOM TECHNOLOGIES</span>
+        <span class="watermark-text">AFRICOM TECHNOLOGIES</span>
+        <span class="watermark-text">AFRICOM TECHNOLOGIES</span>
+        <span class="watermark-text">AFRICOM TECHNOLOGIES</span>
+      </div>
     </div>
   </div>
 
@@ -97,6 +111,12 @@
       @if (showControlError('username') && registerForm.controls.username.hasError('required')) {
         <p class="field-error">Username is required.</p>
       }
+      @if (showControlError('username') && registerForm.controls.username.hasError('minlength')) {
+        <p class="field-error">Username must be at least 3 characters.</p>
+      }
+      @if (showControlError('username') && registerForm.controls.username.hasError('pattern')) {
+        <p class="field-error">Username can only contain letters, numbers, and underscores.</p>
+      }
 
       <label class="auth-label" for="register-phone">Phone number</label>
       <div class="input-shell">
@@ -149,7 +169,9 @@
           autocomplete="organization-title"
         />
       </div>
-      @if (showControlError('department') && registerForm.controls.department.hasError('required')) {
+      @if (
+        showControlError('department') && registerForm.controls.department.hasError('required')
+      ) {
         <p class="field-error">Department is required.</p>
       }
 
@@ -160,30 +182,29 @@
           id="register-employee-code"
           type="text"
           formControlName="employeeCode"
-          placeholder="Employee Code"
+          placeholder="EMP1234"
           autocomplete="off"
         />
       </div>
-      @if (showControlError('employeeCode') && registerForm.controls.employeeCode.hasError('required')) {
+      @if (
+        showControlError('employeeCode') && registerForm.controls.employeeCode.hasError('required')
+      ) {
         <p class="field-error">Employee code is required.</p>
       }
-
-      <label class="auth-label" for="register-position">Position</label>
-      <div class="input-shell">
-        <i class="bi bi-briefcase input-icon"></i>
-        <input
-          id="register-position"
-          type="text"
-          formControlName="position"
-          placeholder="Position"
-          autocomplete="organization-title"
-        />
-      </div>
-      @if (showControlError('position') && registerForm.controls.position.hasError('required')) {
-        <p class="field-error">Position is required.</p>
+      @if (
+        showControlError('employeeCode') &&
+        registerForm.controls.employeeCode.hasError('invalidFormat')
+      ) {
+        <p class="field-error">
+          Employee code must be in format EMP followed by numbers (e.g., EMP1234).
+        </p>
       }
-
-
+      @if (
+        showControlError('employeeCode') &&
+        registerForm.controls.employeeCode.hasError('invalidLength')
+      ) {
+        <p class="field-error">Employee code must be between 4-15 characters long.</p>
+      }
 
       <label class="auth-label" for="register-password">Password</label>
       <div class="input-shell input-shell--with-action">
@@ -210,6 +231,13 @@
       }
       @if (showControlError('password') && registerForm.controls.password.hasError('minlength')) {
         <p class="field-error">Password must be at least 8 characters.</p>
+      }
+      @if (
+        showControlError('password') && registerForm.controls.password.hasError('passwordStrength')
+      ) {
+        <p class="field-error">
+          Password must contain at least one uppercase letter, one lowercase letter, and one number.
+        </p>
       }
 
       <label class="auth-label" for="register-confirm-password">Confirm password</label>

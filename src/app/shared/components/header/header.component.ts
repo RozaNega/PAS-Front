@@ -13,6 +13,7 @@ import { AuthService } from '../../../core/services/auth.service';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { filter } from 'rxjs';
 import { LayoutShellService } from '../../../layouts/layout-shell.service';
+import { CurrentUserService } from '../../../core/services/current-user.service';
 
 @Component({
   selector: 'app-header',
@@ -27,11 +28,18 @@ export class HeaderComponent {
   private readonly location = inject(Location);
   private readonly destroyRef = inject(DestroyRef);
   private readonly layoutShellService = inject(LayoutShellService);
-
+  private readonly currentUserService = inject(CurrentUserService);
+  
   @Output() searchChange = new EventEmitter<string>();
-  protected readonly canGoBack = signal(false);
+  public isBackVisible = signal(false);
+  public profileImageUrl = signal<string | null>(null);
 
   constructor() {
+    this.currentUserService.currentUser$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(user => {
+        this.profileImageUrl.set(this.currentUserService.getDisplayUrl(user?.profileImageUrl || user?.photoUrl));
+      });
     this.updateBackButtonState(this.router.url);
     this.router.events
       .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
@@ -63,7 +71,7 @@ export class HeaderComponent {
   }
 
   private updateBackButtonState(url: string): void {
-    this.canGoBack.set(this.shouldShowBackButton(url));
+    this.isBackVisible.set(this.shouldShowBackButton(url));
   }
 
   private shouldShowBackButton(url: string): boolean {

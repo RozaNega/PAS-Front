@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { tap, catchError } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
@@ -25,7 +26,35 @@ export class ApiService {
   }
 
   post<T>(endpoint: string, data: any): Observable<T> {
-    return this.http.post<T>(`${this.baseUrl}/${endpoint}`, data);
+    const fullUrl = `${this.baseUrl}/${endpoint}`;
+    console.log('📤 [ApiService POST]', {
+      endpoint,
+      baseUrl: this.baseUrl,
+      fullUrl,
+      data: { ...data, password: data.password ? '[HIDDEN]' : undefined },
+      timestamp: new Date().toISOString()
+    });
+    
+    return this.http.post<T>(fullUrl, data).pipe(
+      tap((response) => {
+        console.log('✅ [ApiService POST] Success response:', {
+          endpoint,
+          responseType: typeof response,
+          hasData: !!(response as any)?.data,
+          success: (response as any)?.success
+        });
+      }),
+      catchError((error) => {
+        console.error('❌ [ApiService POST] Error:', {
+          endpoint,
+          status: error.status,
+          statusText: error.statusText,
+          message: error.message,
+          url: error.url
+        });
+        throw error;
+      })
+    );
   }
 
   put<T>(endpoint: string, data: any): Observable<T> {
@@ -48,8 +77,10 @@ export class ApiService {
 
   uploadProfilePhoto<T>(userId: string, file: File): Observable<T> {
     const formData = new FormData();
-    formData.append('photo', file, file.name);
-    return this.http.post<T>(`${this.baseUrl}/Users/${userId}/upload-photo`, formData);
+    // Matching the key 'Photo' found in UsersService
+    formData.append('Photo', file, file.name);
+    // Using the 'Auth' controller endpoint for profile photos
+    return this.http.post<T>(`${this.baseUrl}/Auth/upload-profile-photo`, formData);
   }
 
   deleteProfilePhoto<T>(userId: string): Observable<T> {

@@ -192,7 +192,7 @@
         </button>
       </div>
       <div class="chart-placeholder bar-chart">
-        @for (location of locationDistribution; track location.name) {
+        @for (location of locationDistribution(); track location.name) {
           <div class="bar-item">
             <span class="bar-label">{{ location.name }}</span>
             <div class="bar-wrapper">
@@ -237,7 +237,7 @@
       </button>
     </div>
     <div class="top-items-grid">
-      @for (item of topRequestedItems; track item.id) {
+      @for (item of topRequestedItems(); track item.id) {
         <div class="top-item-card">
           <div class="item-icon">
             <i class="bi bi-box-seam"></i>

@@ -1,12 +1,17 @@
-import { Component, OnInit, computed, inject } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { DomSanitizer } from '@angular/platform-browser';
 import { CommonModule } from '@angular/common';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
+import { CurrentUserService } from '../../core/services/current-user.service';
+import { ProfileService } from '../../core/services/profile.service';
 import { SignalRService } from '../../core/services/signalr.service';
 import { filter, map } from 'rxjs';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { getMenuConfigForRole, MenuItem } from '../../config/menu.config';
 import { User } from '../../core/services/auth.service';
+import { DEFAULT_AVATAR_PATH } from '../../core/models/stored-user.model';
+import { WorkflowService, UserRole } from '../../core/services/workflow.service';
 
 interface ThemeOption {
   id: string;
@@ -15,6 +20,8 @@ interface ThemeOption {
 }
 
 interface PopoverNotificationItem {
+  id: string;
+  type: string;
   title: string;
   message: string;
   time: string;
@@ -33,11 +40,27 @@ interface PopoverNotificationItem {
 })
 export class MainLayoutComponent implements OnInit {
   private readonly authService = inject(AuthService);
+  private readonly currentUserService = inject(CurrentUserService);
+  private readonly profileService = inject(ProfileService);
   private readonly signalRService = inject(SignalRService);
+  private readonly sanitizer = inject(DomSanitizer);
   private readonly router = inject(Router);
+  private readonly workflowService = inject(WorkflowService);
 
   protected menuItems: MenuItem[] = [];
+  private readonly workflowNotificationTick = signal(0);
   protected user: User | null = null;
+  protected readonly defaultAvatar = DEFAULT_AVATAR_PATH;
+
+  private readonly rawProfileImageUrl = toSignal(this.currentUserService.profileImageUrl$, {
+    initialValue: this.currentUserService.getProfileImageUrl(),
+  });
+  protected readonly profileImageUrl = computed(() => {
+    const url = this.rawProfileImageUrl();
+    return this.sanitizer.bypassSecurityTrustUrl(
+      url ? this.currentUserService.getDisplayUrl(url) : DEFAULT_AVATAR_PATH,
+    );
+  });
   protected sidebarOpen = true;
   protected configOpen = false;
   protected darkTheme = false;
@@ -50,6 +73,8 @@ export class MainLayoutComponent implements OnInit {
     this.signalRService.notifications$.pipe(
       map((items) =>
         items.map<PopoverNotificationItem>((item) => ({
+          id: item.id || Math.random().toString(36).substr(2, 9),
+          type: item.type || 'info',
           title: item.type === 'error' ? 'Error' : item.type === 'success' ? 'Success' : 'Info',
           message: item.message,
           time: this.formatNotificationTime(item.sentDate),
@@ -60,6 +85,11 @@ export class MainLayoutComponent implements OnInit {
   );
 
   protected readonly quickNotifications = computed<PopoverNotificationItem[]>(() => {
+    const workflowItems = this.getWorkflowPopoverItems();
+    if (workflowItems.length > 0) {
+      return workflowItems;
+    }
+
     const notifications = this.notifications();
 
     if (notifications.length > 0) {
@@ -70,21 +100,29 @@ export class MainLayoutComponent implements OnInit {
     if (this.router.url.startsWith('/admin')) {
       return [
         {
+          id: 'admin_1',
+          type: 'success',
           title: 'New Property Added',
           message: 'Property "Sunset Villas" has been successfully added to the system.',
           time: '5m ago',
         },
         {
+          id: 'admin_2',
+          type: 'info',
           title: 'User Approval Request',
           message: '3 new users awaiting approval for admin access.',
           time: '30m ago',
         },
         {
+          id: 'admin_3',
+          type: 'success',
           title: 'System Backup Completed',
           message: 'Daily backup completed successfully. Database size: 2.4GB',
           time: '2h ago',
         },
         {
+          id: 'admin_4',
+          type: 'error',
           title: 'Security Alert',
           message: 'Multiple failed login attempts detected from unknown IP address.',
           time: '4h ago',
@@ -96,21 +134,29 @@ export class MainLayoutComponent implements OnInit {
     if (this.router.url.startsWith('/storekeeper')) {
       return [
         {
+          id: 'sk_1',
+          type: 'error',
           title: 'Urgent: Stock Issuance Pending',
           message: '3 urgent stock issuance requests need immediate attention.',
           time: '5m ago',
         },
         {
+          id: 'sk_2',
+          type: 'success',
           title: 'New GRN Received',
           message: 'GRN-2024-0456 received from Tech Supplies Ltd. Ready for inspection.',
           time: '15m ago',
         },
         {
+          id: 'sk_3',
+          type: 'error',
           title: 'Low Stock Alert',
           message: 'Laptop stock is critically low (5 units). Minimum threshold: 20 units.',
           time: '45m ago',
         },
         {
+          id: 'sk_4',
+          type: 'success',
           title: 'Warehouse Transfer Completed',
           message: 'Transfer of 50 monitors from Warehouse A to Warehouse B completed.',
           time: '2h ago',
@@ -118,19 +164,37 @@ export class MainLayoutComponent implements OnInit {
       ];
     }
 
+    if (this.isManagerRoute()) {
+      return [];
+    }
+
+    if (this.isComplianceOfficerRoute()) {
+      return [];
+    }
+
+    if (this.isEmployeeRoute()) {
+      return [];
+    }
+
     // Default notifications for other roles
     return [
       {
+        id: 'def_1',
+        type: 'approved',
         title: 'Requisition updated',
         message: 'REQ-1034 changed status to Approved.',
         time: '2m ago',
       },
       {
+        id: 'def_2',
+        type: 'rejected',
         title: 'Low stock alert',
         message: 'Central warehouse: printer paper is below threshold.',
         time: '14m ago',
       },
       {
+        id: 'def_3',
+        type: 'info',
         title: 'Transfer received',
         message: 'TRF-228 was received at North store.',
         time: '1h ago',
@@ -164,6 +228,13 @@ export class MainLayoutComponent implements OnInit {
     this.signalRService.startConnection();
     this.restoreTheme();
     this.applyTheme();
+
+    this.workflowService.getNotificationUpdates().subscribe(() => {
+      this.workflowNotificationTick.update((v) => v + 1);
+    });
+    this.workflowService.getRequestUpdates().subscribe(() => {
+      this.workflowNotificationTick.update((v) => v + 1);
+    });
 
     this.router.events
       .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
@@ -209,6 +280,27 @@ export class MainLayoutComponent implements OnInit {
   protected closeNotifications(event: Event): void {
     event.stopPropagation();
     this.notificationsOpen = false;
+  }
+
+  protected markWorkflowNotificationAsRead(id: string): void {
+    if (!id) return;
+    this.workflowService.markNotificationAsRead(id);
+    this.workflowNotificationTick.update((v) => v + 1);
+  }
+
+  protected dismissWorkflowNotification(id: string): void {
+    if (!id) return;
+    this.workflowService.dismissNotification(id);
+    this.workflowNotificationTick.update((v) => v + 1);
+  }
+
+  protected markAllWorkflowNotificationsAsRead(): void {
+    const user = this.currentUserService.getCurrentUserValue();
+    const role = this.getWorkflowRoleForRoute();
+    if (user?.id && role) {
+      this.workflowService.markAllNotificationsAsRead(user.id, role);
+      this.workflowNotificationTick.update((v) => v + 1);
+    }
   }
 
   protected toggleDarkMode(): void {
@@ -273,24 +365,36 @@ export class MainLayoutComponent implements OnInit {
   }
 
   protected notificationsRoute(): string {
-  if (this.router.url.startsWith('/admin')) {
-    return '/admin/notifications';
+    if (this.router.url.startsWith('/admin')) {
+      return '/admin/notifications';
+    }
+
+    if (this.router.url.startsWith('/storekeeper')) {
+      return '/storekeeper/notifications';
+    }
+
+    if (this.isManagerRoute()) {
+      return '/manager/notifications';
+    }
+
+    if (this.isComplianceOfficerRoute()) {
+      return '/compliance-officer/risk-alerts';
+    }
+
+    if (this.isEmployeeRoute()) {
+      return '/employee/dashboard/notifications';
+    }
+
+    return '/notifications';
   }
 
-  if (this.router.url.startsWith('/storekeeper')) {
-    return '/storekeeper/notifications';
+  protected notificationsPopoverTitle(): string {
+    return 'Notifications';
   }
 
-  if (this.isManagerRoute()) {
-    return '/manager/dashboard';
+  protected viewAllNotificationsLabel(): string {
+    return 'View all notifications';
   }
-
-  if (this.isComplianceOfficerRoute()) {
-    return '/compliance-officer/dashboard';
-  }
-
-  return '/notifications';
-}
 
   protected isManagerRoute(): boolean {
     return this.router.url.startsWith('/manager');
@@ -298,6 +402,10 @@ export class MainLayoutComponent implements OnInit {
 
   protected isComplianceOfficerRoute(): boolean {
     return this.router.url.startsWith('/compliance-officer');
+  }
+
+  protected isEmployeeRoute(): boolean {
+    return this.router.url.startsWith('/employee');
   }
 
   protected toggleMenuGroup(label: string): void {
@@ -457,6 +565,44 @@ export class MainLayoutComponent implements OnInit {
     const g = Number.parseInt(normalized.slice(2, 4), 16);
     const b = Number.parseInt(normalized.slice(4, 6), 16);
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  }
+
+  private getWorkflowPopoverItems(): PopoverNotificationItem[] {
+    this.workflowNotificationTick();
+    const user = this.currentUserService.getCurrentUserValue();
+    const role = this.getWorkflowRoleForRoute();
+    if (!user?.id || !role) {
+      return [];
+    }
+
+    return this.workflowService
+      .getNotificationsForUser(user.id, role)
+      .filter((n) => !n.isRead)
+      .slice(-8)
+      .reverse()
+      .map((n) => ({
+        id: n.id,
+        type: n.type,
+        title: n.title,
+        message: n.message,
+        time: this.formatNotificationTime(n.createdDate),
+      }));
+  }
+
+  private getWorkflowRoleForRoute(): UserRole | null {
+    if (this.isManagerRoute()) {
+      return 'Manager';
+    }
+    if (this.isComplianceOfficerRoute()) {
+      return 'Compliance';
+    }
+    if (this.isEmployeeRoute()) {
+      return 'Employee';
+    }
+    if (this.router.url.startsWith('/admin')) {
+      return 'Admin';
+    }
+    return null;
   }
 
   private formatNotificationTime(date: Date): string {

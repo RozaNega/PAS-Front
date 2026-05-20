@@ -22,7 +22,7 @@ export interface ServiceRequestDto {
 export interface CreateServiceRequestDto {
   items: {
     itemId: string;
-    srDetailId?: string;
+    srDetailId?: string | null;
     requestedQty: number;
     preferredShelfId: string;
     notes?: string;

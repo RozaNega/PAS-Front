@@ -5,36 +5,46 @@ import { ApiResponseModel } from '../models/api-response.model';
 
 export interface ApprovalWorkflowDto {
   id: string;
-  name: string;
+  workflowName?: string;
   description?: string;
-  entityType: string;
-  isActive: boolean;
+  approversCount: number;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface ApprovalWorkflowDetailDto extends ApprovalWorkflowDto {
+  approvers: WorkflowApproverDto[];
+}
+
+export interface WorkflowApproverDto {
+  id: string;
+  userId: string;
+  userName?: string;
+  approvalLevel: number;
+  assignedAt: string;
 }
 
 export interface CreateWorkflowCommand {
-  name: string;
+  workflowName: string;
   description?: string;
-  entityType: string;
 }
 
 export interface UpdateWorkflowCommand {
   id: string;
-  name?: string;
+  workflowName?: string;
   description?: string;
-  entityType?: string;
-  isActive?: boolean;
 }
 
 @Injectable({ providedIn: 'root' })
 export class ApprovalWorkflowsService {
   constructor(private apiService: ApiService) {}
 
-  getAll(params?: any): Observable<ApiResponseModel<ApprovalWorkflowDto[]>> {
+  getAll(params?: { searchTerm?: string }): Observable<ApiResponseModel<ApprovalWorkflowDto[]>> {
     return this.apiService.get<ApiResponseModel<ApprovalWorkflowDto[]>>('ApprovalWorkflows', params);
   }
 
-  getById(id: string): Observable<ApiResponseModel<ApprovalWorkflowDto>> {
-    return this.apiService.get<ApiResponseModel<ApprovalWorkflowDto>>(`ApprovalWorkflows/${id}`);
+  getById(id: string): Observable<ApiResponseModel<ApprovalWorkflowDetailDto>> {
+    return this.apiService.get<ApiResponseModel<ApprovalWorkflowDetailDto>>(`ApprovalWorkflows/${id}`);
   }
 
   create(data: CreateWorkflowCommand): Observable<ApiResponseModel<string>> {

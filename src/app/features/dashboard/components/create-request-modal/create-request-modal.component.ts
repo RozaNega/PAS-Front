@@ -88,10 +88,10 @@ export class CreateRequestModalComponent {
         name: item.name, 
         sku: item.sku, 
         quantity: 1,
-        itemId: '', 
+        itemId: item.itemId, 
         srDetailId: '3fa85f64-5717-4562-b3fc-2c963f66afa6', // Template GUID
         requestedQty: 1,
-        preferredShelfId: '', 
+        preferredShelfId: item.preferredShelfId, 
         notes: ''
       });
     }
@@ -128,7 +128,7 @@ export class CreateRequestModalComponent {
     this.pasApi.createServiceRequest(apiPayload).subscribe({
       next: (response) => {
         console.log('Request saved successfully:', response);
-        this.modal.close(apiPayload);
+        this.modal.close(this.form);
       },
       error: (err) => {
         console.error('Error saving request:', err);

@@ -1,8 +1,21 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Subscription, take } from 'rxjs';
 import { ServiceRequestService } from '../../../../features/requisition/service-requests/services/service-request.service';
-import { ServiceRequestDetail, ServiceRequestTimeline, ServiceRequestActivity, CancelServiceRequestRequest } from '../../../../features/requisition/service-requests/models/service-request.model';
+import {
+  WorkflowService,
+  ServiceRequest,
+  ApiServiceRequestRow,
+  NotificationMessage,
+} from '../../../../core/services/workflow.service';
+import { CurrentUserService } from '../../../../core/services/current-user.service';
+import {
+  ServiceRequestDetail,
+  ServiceRequestTimeline,
+  ServiceRequestActivity,
+  CancelServiceRequestRequest,
+} from '../../../../features/requisition/service-requests/models/service-request.model';
 
 interface Request {
   id: string;
@@ -39,17 +52,23 @@ interface ActivityLogEntry {
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './approved-requests.component.html',
-  styleUrls: ['./approved-requests.component.scss']
+  styleUrls: ['./approved-requests.component.scss'],
 })
-export class ApprovedRequestsComponent implements OnInit {
+export class ApprovedRequestsComponent implements OnInit, OnDestroy {
   private serviceRequestService = inject(ServiceRequestService);
-  
+  private readonly workflowService = inject(WorkflowService);
+  private readonly currentUserService = inject(CurrentUserService);
+  private readonly subs: Subscription[] = [];
+  private currentUserId = '';
+
   protected readonly requests = signal<Request[]>([]);
   protected readonly isLoading = signal(false);
   protected readonly error = signal<string | null>(null);
-  
+
   // Track request data
-  protected readonly trackingData = signal<{[key: string]: { timeline?: ServiceRequestTimeline, activity?: ServiceRequestActivity[] }}>({});
+  protected readonly trackingData = signal<{
+    [key: string]: { timeline?: ServiceRequestTimeline; activity?: ServiceRequestActivity[] };
+  }>({});
   protected readonly isLoadingTracking = signal<string | null>(null);
   protected readonly trackingError = signal<string | null>(null);
 
@@ -83,14 +102,14 @@ export class ApprovedRequestsComponent implements OnInit {
       id: requestId,
       reason: this.cancelReason() || undefined,
       notifyApprover: this.notifyApprover(),
-      sendEmailConfirmation: this.sendEmailConfirmation()
+      sendEmailConfirmation: this.sendEmailConfirmation(),
     };
 
     this.serviceRequestService.cancelServiceRequest(request).subscribe({
       next: () => {
         // Remove the request from the list
         const requests = this.requests();
-        const index = requests.findIndex(r => r.id === requestId);
+        const index = requests.findIndex((r) => r.id === requestId);
         if (index !== -1) {
           const updatedRequests = [...requests];
           updatedRequests.splice(index, 1);
@@ -102,7 +121,7 @@ export class ApprovedRequestsComponent implements OnInit {
       error: (err) => {
         console.error('Error cancelling request:', err);
         alert('Failed to cancel request. Please try again.');
-      }
+      },
     });
   }
 
@@ -129,45 +148,198 @@ export class ApprovedRequestsComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.currentUserId = this.currentUserService.getUserId() || '';
+    this.syncFromApi();
+    this.subs.push(
+      this.currentUserService.currentUser$.subscribe((user) => {
+        this.currentUserId = user?.id || '';
+        this.loadRequests();
+      }),
+    );
+    this.subs.push(
+      this.workflowService.getRequestUpdates().subscribe(() => this.loadRequests()),
+      this.workflowService.getNotificationUpdates().subscribe(() => this.loadRequests()),
+    );
     this.loadRequests();
+  }
+
+  ngOnDestroy(): void {
+    this.subs.forEach((s) => s.unsubscribe());
+  }
+
+  private syncFromApi(): void {
+    this.serviceRequestService
+      .getServiceRequests()
+      .pipe(take(1))
+      .subscribe({
+        next: (res) => {
+          const items = (res as { data?: { items?: ApiServiceRequestRow[] } })?.data?.items ?? [];
+          this.workflowService.mergeApiServiceRequests(items, {
+            managerQueueId: this.workflowService.getAssignedManagerQueueId(),
+            employeeIdFilter: null,
+          });
+          this.loadRequests();
+        },
+        error: () => {
+          this.loadRequests();
+        },
+      });
   }
 
   private loadRequests(): void {
     this.isLoading.set(true);
     this.error.set(null);
-    
-    this.serviceRequestService.getServiceRequests().subscribe({
-      next: (response) => {
-        const mappedRequests: Request[] = response.data.items.map(sr => ({
-          id: sr.id,
-          srNumber: sr.srNumber,
+
+    const approvedStatuses = ['Manager Approved', 'Admin Approved', 'Completed'];
+    const currentUser = this.currentUserService.getCurrentUserValue();
+    const approvedNotifications = this.workflowService
+      .getNotificationsForUser(currentUser?.id || '', 'Employee')
+      .filter((notification) => {
+        const title = notification.title.toLowerCase();
+        const message = notification.message.toLowerCase();
+        const isApprovedLike =
+          title.includes('approved') ||
+          message.includes('approved') ||
+          message.includes('completed');
+        const isRejectedLike = title.includes('rejected') || message.includes('rejected');
+        return isApprovedLike && !isRejectedLike;
+      });
+
+    const approvedFromNotificationIds = new Set(
+      approvedNotifications
+        .map((notification) => notification.requestId)
+        .filter((requestId): requestId is string => !!requestId),
+    );
+
+    const approvedFromNotificationSrNumbers = new Set(
+      approvedNotifications
+        .map(
+          (notification) =>
+            this.extractSrNumber(notification.requestId) ||
+            this.extractSrNumber(notification.message),
+        )
+        .filter((srNumber): srNumber is string => !!srNumber),
+    );
+
+    const employeeKeys = [
+      this.currentUserId,
+      currentUser?.email,
+      currentUser?.fullName,
+      currentUser?.username,
+    ]
+      .map((value) => value?.trim())
+      .filter((value): value is string => !!value);
+
+    const mappedRequests: Request[] = this.workflowService
+      .getAllRequests()
+      .filter((sr: ServiceRequest) => {
+        if (!approvedStatuses.includes(sr.status)) {
+          return false;
+        }
+
+        const isNotificationMatched =
+          approvedFromNotificationIds.has(sr.id) ||
+          approvedFromNotificationSrNumbers.has(sr.srNumber);
+
+        if (isNotificationMatched) {
+          return true;
+        }
+
+        return (
+          employeeKeys.includes(sr.employeeId) ||
+          employeeKeys.includes(sr.employeeEmail) ||
+          employeeKeys.includes(sr.employeeName)
+        );
+      })
+      .map((sr: ServiceRequest) => ({
+        id: sr.id,
+        srNumber: sr.srNumber,
+        title: sr.items[0]?.name || 'Approved Request',
+        description:
+          sr.justification || sr.items[0]?.description || 'Approved request from workflow',
+        priority: sr.priority,
+        status: sr.status,
+        canCancel:
+          sr.status === 'Draft' || sr.status === 'Submitted' || sr.status === 'Under Review',
+        currentStep: this.getCurrentStepFromStatus(sr.status),
+        totalSteps: 5,
+        approvedDate:
+          sr.managerReviewDate?.toLocaleDateString() || sr.adminReviewDate?.toLocaleDateString(),
+        items: sr.items.map((item) => ({
+          name: item.name,
+          quantity: item.quantity,
           status: sr.status,
-          canCancel: sr.status === 'Draft' || sr.status === 'Pending',
-          currentStep: this.getCurrentStepFromStatus(sr.status),
+          expectedDate: sr.requiredDate.toLocaleDateString(),
+        })),
+        activityLog: (sr.workflowHistory || []).map((h) => ({
+          timestamp: new Date(h.timestamp).toLocaleString(),
+          action: h.action,
+          performedBy: h.performedBy,
+        })),
+      }));
+
+    const existingRequestKeys = new Set(
+      mappedRequests
+        .flatMap((request) => [request.id, request.srNumber])
+        .filter((v): v is string => !!v),
+    );
+
+    const notificationOnlyRequests: Request[] = approvedNotifications
+      .map((notification: NotificationMessage) => {
+        const srNumber =
+          this.extractSrNumber(notification.requestId) ||
+          this.extractSrNumber(notification.message);
+        if (!srNumber || existingRequestKeys.has(srNumber)) {
+          return null;
+        }
+
+        return {
+          id: `notif_${notification.id}`,
+          srNumber,
+          title: 'Request approved',
+          description: notification.message,
+          priority: 'N/A',
+          status: 'Manager Approved',
+          approvedDate: notification.createdDate?.toLocaleDateString(),
+          canCancel: false,
+          currentStep: this.getCurrentStepFromStatus('Manager Approved'),
           totalSteps: 5,
           items: [],
-          activityLog: []
-        }));
-        this.requests.set(mappedRequests);
-        this.isLoading.set(false);
-        console.log('Loaded requests:', mappedRequests);
-      },
-      error: (err) => {
-        this.error.set('Failed to load requests');
-        this.isLoading.set(false);
-        console.error('Error loading requests:', err);
-      }
-    });
+          activityLog: [
+            {
+              timestamp: notification.createdDate?.toLocaleString() || '',
+              action: notification.title,
+              performedBy: 'Manager',
+            },
+          ],
+        } as Request;
+      })
+      .filter((request): request is Request => !!request);
+
+    this.requests.set([...mappedRequests, ...notificationOnlyRequests]);
+    this.isLoading.set(false);
+  }
+
+  private extractSrNumber(value?: string): string | null {
+    if (!value) {
+      return null;
+    }
+
+    const match = value.match(/SR-\d{8}-\d{4}/i);
+    return match ? match[0].toUpperCase() : null;
   }
 
   private getCurrentStepFromStatus(status: string): number {
     const statusMap: { [key: string]: number } = {
-      'Draft': 1,
-      'Pending': 2,
-      'Approved': 3,
-      'Issued': 4,
-      'Completed': 5,
-      'Rejected': 2
+      Draft: 1,
+      Submitted: 2,
+      'Under Review': 2,
+      'Manager Approved': 3,
+      'Admin Approved': 4,
+      'Compliance Review': 4,
+      Completed: 5,
+      'Manager Rejected': 2,
+      'Admin Rejected': 2,
     };
     return statusMap[status] || 1;
   }
@@ -184,14 +356,14 @@ export class ApprovedRequestsComponent implements OnInit {
   private loadTrackingData(requestId: string): void {
     this.isLoadingTracking.set(requestId);
     this.trackingError.set(null);
-    
+
     // Load timeline and activity in parallel
     this.serviceRequestService.getServiceRequestTimeline(requestId).subscribe({
       next: (response) => {
         const current = this.trackingData();
         this.trackingData.set({
           ...current,
-          [requestId]: { ...current[requestId], timeline: response.data }
+          [requestId]: { ...current[requestId], timeline: response.data },
         });
         this.isLoadingTracking.set(null);
       },
@@ -199,7 +371,7 @@ export class ApprovedRequestsComponent implements OnInit {
         console.error('Error loading timeline:', err);
         this.trackingError.set('Failed to load timeline');
         this.isLoadingTracking.set(null);
-      }
+      },
     });
 
     this.serviceRequestService.getServiceRequestActivity(requestId).subscribe({
@@ -207,12 +379,12 @@ export class ApprovedRequestsComponent implements OnInit {
         const current = this.trackingData();
         this.trackingData.set({
           ...current,
-          [requestId]: { ...current[requestId], activity: response.data }
+          [requestId]: { ...current[requestId], activity: response.data },
         });
       },
       error: (err) => {
         console.error('Error loading activity:', err);
-      }
+      },
     });
   }
 
@@ -235,7 +407,7 @@ export class ApprovedRequestsComponent implements OnInit {
         error: (err) => {
           console.error('Error adding comment:', err);
           alert('Failed to add comment');
-        }
+        },
       });
     }
   }

@@ -1,17 +1,119 @@
 <div class="risk-reports-container">
-  <div class="page-header"><h1>Risk Reports</h1><p class="subtitle">Risk assessment reports</p></div>
+  <div class="page-header">
+    <h1>Risk Reports</h1>
+    <p class="subtitle">Compliance risk assessment &amp; mitigation planning</p>
+  </div>
+
   <div class="reports-list">
     @for (report of reports(); track report.id) {
       <div class="report-card">
-        <div class="report-header"><div class="report-name">{{ report.reportName }}</div><div class="risk-badge">{{ report.riskLevel }}</div></div>
+        <div class="report-header">
+          <div class="report-name">
+            <i class="bi bi-exclamation-triangle-fill file-icon"></i>
+            {{ report.reportName }}
+          </div>
+          <span class="badge" [class.badge-warning]="report.riskLevel === 'Medium'" [class.badge-danger]="report.riskLevel === 'High'" style="background: #fef3c7; color: #92400e;">
+            {{ report.riskLevel }} Risk
+          </span>
+        </div>
         <div class="report-details">
           <div class="detail-row"><span class="label">Generated:</span><span class="value">{{ report.generatedDate }}</span></div>
-          <div class="detail-row"><span class="label">High Risk:</span><span class="value">{{ report.highRiskItems }}</span></div>
-          <div class="detail-row"><span class="label">Medium Risk:</span><span class="value">{{ report.mediumRiskItems }}</span></div>
-          <div class="detail-row"><span class="label">Low Risk:</span><span class="value">{{ report.lowRiskItems }}</span></div>
+          <div class="detail-row"><span class="label">High Risk:</span><span class="value text-danger">{{ report.highRiskItems }}</span></div>
+          <div class="detail-row"><span class="label">Medium Risk:</span><span class="value text-warning">{{ report.mediumRiskItems }}</span></div>
+          <div class="detail-row"><span class="label">Low Risk:</span><span class="value text-success">{{ report.lowRiskItems }}</span></div>
         </div>
-        <div class="report-actions"><button class="btn btn-primary">Download</button></div>
+        <div class="report-actions">
+          <button type="button" class="btn btn-secondary" (click)="downloadReport(report)" [disabled]="downloadingReportId() !== null">
+            @if (downloadingReportId() === report.id) {
+              <span class="spinner"></span> Downloading {{ downloadProgress() }}%
+            } @else {
+              <i class="bi bi-file-pdf"></i> Download PDF
+            }
+          </button>
+          <button type="button" class="btn btn-primary" (click)="viewReport(report)">
+            <i class="bi bi-eye"></i> View
+          </button>
+        </div>
       </div>
     }
   </div>
+
+  <!-- Merged View Modal -->
+  @if (activeViewReport(); as rep) {
+    <div class="modal-backdrop" (click)="closeModal()">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h2>
+            <i class="bi bi-exclamation-triangle-fill text-primary"></i> 
+            Risk Assessment Details
+          </h2>
+          <button class="btn-close-modal" (click)="closeModal()" aria-label="Close modal">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="section-title">General Information</div>
+          <div class="metadata-grid">
+            <div class="grid-item">
+              <label>Report Name</label>
+              <span>{{ rep.reportName }}</span>
+            </div>
+            <div class="grid-item">
+              <label>Generated Date</label>
+              <span>{{ rep.generatedDate }}</span>
+            </div>
+            <div class="grid-item">
+              <label>Risk Assessor</label>
+              <span>{{ rep.riskAssessor }}</span>
+            </div>
+            <div class="grid-item">
+              <label>General Risk Tier</label>
+              <span class="text-warning" style="font-weight: 700;">{{ rep.riskLevel }} Tier</span>
+            </div>
+          </div>
+
+          <div class="section-title">Granular Item Risk Levels</div>
+          <div class="metadata-grid">
+            <div class="grid-item">
+              <label>High Risk Violations</label>
+              <span class="text-danger" style="font-weight: 700;">{{ rep.highRiskItems }} items</span>
+            </div>
+            <div class="grid-item">
+              <label>Medium Risk Flagged</label>
+              <span class="text-warning" style="font-weight: 700;">{{ rep.mediumRiskItems }} items</span>
+            </div>
+            <div class="grid-item">
+              <label>Low Risk / Normal</label>
+              <span class="text-success" style="font-weight: 700;">{{ rep.lowRiskItems }} items</span>
+            </div>
+            <div class="grid-item">
+              <label>Safety Index Rating</label>
+              <span class="text-success" style="font-weight: 700;">{{ rep.safetyIndex }}</span>
+            </div>
+          </div>
+
+          <div class="section-title">Active Mitigation Strategy</div>
+          <div style="background: var(--surface-section); border-left: 4px solid var(--primary-color); padding: 1rem; border-radius: 0 8px 8px 0; margin-bottom: 1.25rem;">
+            <p style="margin: 0; font-size: 0.9rem; line-height: 1.5; color: var(--text-color);">
+              <strong>Strategy: </strong>{{ rep.mitigationStrategy }}
+            </p>
+            <div style="margin-top: 0.5rem; font-size: 0.85rem; color: var(--text-color-muted);">
+              <strong>Next Assessment Audit Scheduled: </strong>{{ rep.nextReviewDate }}
+            </div>
+          </div>
+
+          <div class="info-note">
+            <i class="bi bi-shield-fill-exclamation text-warning"></i>
+            <span>All high risk assets are isolated under mandatory physical supervision protocols.</span>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" (click)="closeModal()">Close</button>
+          <button class="btn btn-primary" (click)="downloadReport(rep)">
+            <i class="bi bi-file-pdf"></i> Download PDF
+          </button>
+        </div>
+      </div>
+    </div>
+  }
 </div>

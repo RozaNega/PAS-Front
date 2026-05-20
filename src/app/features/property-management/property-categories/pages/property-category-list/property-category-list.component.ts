@@ -131,12 +131,12 @@ export class PropertyCategoryListComponent implements OnInit {
             // Transform backend data to match frontend structure
             const transformedCategories = response.data.map(cat => ({
               id: cat.id,
-              name: cat.name,
+              name: cat.name ?? '',
               icon: '💻',
-              parentId: cat.parentCategoryId || null,
-              subcategories: [],
+              parentId: cat.parentCategoryId ?? null,
+              subcategories: [] as Category[],
               propertiesCount: 0,
-              status: (cat.isActive ? 'Active' : 'Inactive') as 'Active' | 'Inactive',
+              status: (cat.isActive !== false ? 'Active' : 'Inactive') as 'Active' | 'Inactive',
               color: 'blue',
               displayOrder: 1
             }));
@@ -220,7 +220,8 @@ export class PropertyCategoryListComponent implements OnInit {
 
     if (editing) {
       // Update existing category
-      this.categoriesService.update(editing.id, {
+      this.categoriesService.update({
+        id: editing.id,
         name: data.name,
         description: data.description,
         parentCategoryId: data.parentId || null

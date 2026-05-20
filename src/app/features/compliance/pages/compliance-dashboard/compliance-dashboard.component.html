@@ -1,29 +1,54 @@
 <div class="compliance-dashboard">
-  <div class="page-header">
-    <h1>Compliance Dashboard</h1>
-    <p>Monitor compliance score, risk summary, and violation trends</p>
-  </div>
+  <!-- Hero Banner -->
+  <header class="hero-banner">
+    <div class="hero-copy">
+      <p class="hero-eyebrow">Compliance Officer Dashboard</p>
+      <div class="hero-header-content">
+        <div class="hero-avatar">
+          <div class="photo-scan-container" [class.scanning]="isValidatingPhoto()">
+            @if (profilePhoto()) {
+              <img [src]="profilePhoto()" alt="Profile photo" class="avatar-img shadow-lg" />
+            } @else {
+              <div class="avatar-placeholder shadow-lg">
+                <i class="bi bi-person-fill"></i>
+              </div>
+            }
+
+            @if (isValidatingPhoto()) {
+              <div class="scan-overlay">
+                <div class="scan-line"></div>
+                <span class="scan-label">Scanning Face...</span>
+              </div>
+            }
+          </div>
+        </div>
+        <div class="hero-text">
+          <h1>👋 {{ greeting }}, {{ officerName() }}!</h1>
+          <p>Monitor compliance score, risk summary, and violation trends</p>
+        </div>
+      </div>
+    </div>
+    <div class="dashboard-info-widget">
+      <div class="info-item">
+        <i class="bi bi-calendar3 info-icon text-primary"></i>
+        <span class="info-text">{{ currentDateStr }}</span>
+      </div>
+      <div class="info-item">
+        <i class="bi bi-clock info-icon text-secondary"></i>
+        <span class="info-text">{{ currentTime() }}</span>
+      </div>
+      <div class="info-item">
+        <i class="bi bi-geo-alt-fill info-icon text-danger"></i>
+        <span class="info-text">{{ currentLocation() }}</span>
+      </div>
+    </div>
+  </header>
 
   <!-- Compliance Overview -->
   <div class="overview-section">
     <div class="overview-card">
       <div class="overview-header">
-
         <span class="overview-title">Compliance Overview</span>
-        <div class="dashboard-info-widget">
-          <div class="info-item">
-            <span class="info-icon">📅</span>
-            <span class="info-text">{{ currentDateStr }}</span>
-          </div>
-          <div class="info-item">
-            <span class="info-icon">🕒</span>
-            <span class="info-text">{{ currentTime() }}</span>
-          </div>
-          <div class="info-item">
-            <span class="info-icon">📍</span>
-            <span class="info-text">{{ currentLocation() }}</span>
-          </div>
-        </div>
       </div>
       <div class="overview-content">
         <p>System Status: 🟢 All Systems Operational | Last Audit: Dec 14, 2024 | Next Audit: Jan 15, 2025</p>

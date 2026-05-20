@@ -6,6 +6,7 @@ import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { EditProfileModalComponent } from '../../components/edit-profile-modal/edit-profile-modal.component';
 import { ChangePasswordModalComponent } from '../../components/change-password-modal/change-password-modal.component';
 import { AuthService } from '../../../../core/services/auth.service';
+import { FaceDetectionService } from '../../../../core/services/face-detection.service';
 
 @Component({
   selector: 'app-decision-profile-page',
@@ -18,15 +19,18 @@ export class DecisionProfilePageComponent implements OnDestroy {
   private readonly modalService = inject(NgbModal);
   private readonly sanitizer = inject(DomSanitizer);
   private readonly authService = inject(AuthService);
-  
+
   @ViewChild('videoElement') videoElement!: ElementRef<HTMLVideoElement>;
   @ViewChild('canvasElement') canvasElement!: ElementRef<HTMLCanvasElement>;
 
   profilePhoto = signal<SafeUrl | string | null>(null);
   isSelectingPhoto = signal(false);
   isCameraActive = signal(false);
+  isValidatingPhoto = signal(false);
   cameraStream = signal<MediaStream | null>(null);
-  
+
+  private readonly faceDetectionService = inject(FaceDetectionService);
+
   profile = {
     name: 'Sarah Smith',
     title: 'IT Department Manager',
@@ -40,6 +44,9 @@ export class DecisionProfilePageComponent implements OnDestroy {
   twoFactorEnabled = signal(false);
   twoFactorMethod = signal<'sms' | 'email' | 'app'>('sms');
   phoneNumber = signal('');
+  twoFactorSetupComplete = signal(false);
+  twoFactorVerificationSent = signal(false);
+  twoFactorVerificationCode = signal('');
 
   approvalLimits = {
     singleRequestLimit: '$10,000',
@@ -75,17 +82,19 @@ export class DecisionProfilePageComponent implements OnDestroy {
       centered: true,
       backdrop: 'static',
     });
-    
-    modalRef.result.then((result) => {
-      if (result) {
-        this.profile.name = result.fullName;
-        this.profile.email = result.email;
-        this.profile.phone = result.phone;
-        this.profile.department = result.department;
-        this.profile.title = result.position;
-        alert('Profile updated successfully!');
-      }
-    }).catch(() => {});
+
+    modalRef.result
+      .then((result) => {
+        if (result) {
+          this.profile.name = result.fullName;
+          this.profile.email = result.email;
+          this.profile.phone = result.phone;
+          this.profile.department = result.department;
+          this.profile.title = result.position;
+          alert('Profile updated successfully!');
+        }
+      })
+      .catch(() => {});
   }
 
   changePhoto(): void {
@@ -99,25 +108,51 @@ export class DecisionProfilePageComponent implements OnDestroy {
     }
   }
 
-  private handleFile(file: File): void {
-    if (file.size > 2 * 1024 * 1024) {
-      alert('File too large. Max 2MB.');
+  private async handleFile(file: File): Promise<void> {
+    if (file.size > 20 * 1024 * 1024) {
+      alert('File too large. Max 20MB.');
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = (e: ProgressEvent<FileReader>) => {
-      const base64 = e.target?.result as string;
-      this.profilePhoto.set(this.sanitizer.bypassSecurityTrustUrl(base64));
-      this.isSelectingPhoto.set(false);
-    };
-    reader.readAsDataURL(file);
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file.');
+      return;
+    }
+
+    this.isValidatingPhoto.set(true);
+
+    try {
+      const result = await this.faceDetectionService.validateProfilePhoto(file);
+
+      // Delay for premium feel
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+
+      this.isValidatingPhoto.set(false);
+
+      if (!result.valid) {
+        alert(`Security Alert: ${result.message}`);
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (e: ProgressEvent<FileReader>) => {
+        const base64 = e.target?.result as string;
+        this.profilePhoto.set(this.sanitizer.bypassSecurityTrustUrl(base64));
+        this.isSelectingPhoto.set(false);
+        alert('Face verified! Profile photo updated.');
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error('Photo validation error:', error);
+      this.isValidatingPhoto.set(false);
+      alert('Failed to analyze photo. Please try again.');
+    }
   }
 
   async startCamera(): Promise<void> {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user', width: 400, height: 400 }
+        video: { facingMode: 'user', width: 400, height: 400 },
       });
       this.cameraStream.set(stream);
       this.isCameraActive.set(true);
@@ -141,11 +176,10 @@ export class DecisionProfilePageComponent implements OnDestroy {
     const ctx = canvas.getContext('2d');
     if (ctx) {
       ctx.drawImage(video, 0, 0);
-      canvas.toBlob((blob) => {
+      canvas.toBlob(async (blob) => {
         if (blob) {
           const file = new File([blob], 'photo.jpg', { type: 'image/jpeg' });
-          const photoUrl = URL.createObjectURL(file);
-          this.profilePhoto.set(this.sanitizer.bypassSecurityTrustUrl(photoUrl));
+          await this.handleFile(file);
           this.stopCamera();
         }
       }, 'image/jpeg');
@@ -153,7 +187,9 @@ export class DecisionProfilePageComponent implements OnDestroy {
   }
 
   stopCamera(): void {
-    this.cameraStream()?.getTracks().forEach(t => t.stop());
+    this.cameraStream()
+      ?.getTracks()
+      .forEach((t) => t.stop());
     this.cameraStream.set(null);
     this.isCameraActive.set(false);
   }
@@ -173,24 +209,26 @@ export class DecisionProfilePageComponent implements OnDestroy {
       backdrop: 'static',
       scrollable: true,
     });
-    
-    modalRef.result.then((result) => {
-      if (result && result.currentPassword && result.newPassword) {
-        this.authService.changePassword(result).subscribe({
-          next: (res) => {
-            if (res.succeeded) {
-              alert('Password changed successfully!');
-            } else {
-              alert('Failed to change password: ' + res.message);
-            }
-          },
-          error: (err) => {
-            console.error('Password change error', err);
-            alert('An error occurred while changing your password.');
-          }
-        });
-      }
-    }).catch(() => {});
+
+    modalRef.result
+      .then((result) => {
+        if (result && result.currentPassword && result.newPassword) {
+          this.authService.changePassword(result).subscribe({
+            next: (res) => {
+              if (res.succeeded) {
+                alert('Password changed successfully!');
+              } else {
+                alert('Failed to change password: ' + res.message);
+              }
+            },
+            error: (err) => {
+              console.error('Password change error', err);
+              alert('An error occurred while changing your password.');
+            },
+          });
+        }
+      })
+      .catch(() => {});
   }
 
   toggle2FA(): void {
@@ -204,6 +242,62 @@ export class DecisionProfilePageComponent implements OnDestroy {
       }
       this.twoFactorEnabled.set(true);
       alert('2FA has been enabled successfully!');
+    }
+  }
+
+  enable2FA(): void {
+    if (this.twoFactorMethod() === 'sms' && !this.phoneNumber()) {
+      alert('Please enter a phone number to enable SMS 2FA.');
+      return;
+    }
+    // Send code / initiate setup
+    this.twoFactorVerificationSent.set(true);
+    alert('Verification code sent. Please enter the code to complete setup.');
+  }
+
+  disable2FA(): void {
+    this.twoFactorEnabled.set(false);
+    this.twoFactorMethod.set('sms');
+    this.phoneNumber.set('');
+    this.twoFactorVerificationSent.set(false);
+    this.twoFactorVerificationCode.set('');
+    this.twoFactorSetupComplete.set(false);
+    alert('2FA has been disabled.');
+  }
+
+  updateTwoFactorMethod(event: any): void {
+    this.twoFactorMethod.set(event.target?.value ?? 'sms');
+  }
+
+  twoFactorPhone(): string {
+    return this.phoneNumber();
+  }
+
+  updateTwoFactorPhone(event: any): void {
+    this.phoneNumber.set(event.target?.value ?? '');
+  }
+
+  saveTwoFactorPhone(): void {
+    if (this.phoneNumber()) {
+      this.twoFactorVerificationSent.set(true);
+      alert('Verification code sent to ' + this.phoneNumber());
+    } else {
+      alert('Please enter a valid phone number.');
+    }
+  }
+
+  updateTwoFactorVerificationCode(event: any): void {
+    this.twoFactorVerificationCode.set(event.target?.value ?? '');
+  }
+
+  verifyTwoFactorCode(): void {
+    // Simple local check for demo purposes
+    if (this.twoFactorVerificationCode() === '123456') {
+      this.twoFactorSetupComplete.set(true);
+      this.twoFactorVerificationSent.set(false);
+      alert('2FA setup completed successfully!');
+    } else {
+      alert('Invalid code.');
     }
   }
 

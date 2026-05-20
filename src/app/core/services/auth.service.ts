@@ -1,9 +1,11 @@
-import { Injectable } from '@angular/core';
+import { Injectable, PLATFORM_ID, inject } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import { Router } from '@angular/router';
 import { BehaviorSubject, Observable, map, tap } from 'rxjs';
 import { ApiService } from './api.service';
 import { TokenService } from './token.service';
 import { ApiResponseModel } from '../models/api-response.model';
+import { CurrentUserService } from './current-user.service';
 
 export type DashboardRole = 'admin' | 'storekeeper' | 'employee' | 'manager' | 'compliance-officer';
 export const DASHBOARD_ROLES: DashboardRole[] = [
@@ -21,6 +23,7 @@ export interface User {
   email: string;
   roles: string[];
   permissions: string[];
+  isActive?: boolean;
 }
 
 export interface LoginRequest {
@@ -42,10 +45,14 @@ export class AuthService {
   private currentUserSubject = new BehaviorSubject<User | null>(null);
   public currentUser$ = this.currentUserSubject.asObservable();
 
+  private platformId = inject(PLATFORM_ID);
+  private isBrowser = isPlatformBrowser(this.platformId);
+
   constructor(
     private apiService: ApiService,
     private tokenService: TokenService,
     private router: Router,
+    private currentUserService: CurrentUserService,
   ) {
     this.loadStoredUser();
   }
@@ -55,7 +62,7 @@ export class AuthService {
     if (!token) return;
 
     let user = this.tokenService.getUser();
-    
+
     // If user object is missing but we have a valid JWT, reconstruct user from claims
     if (!user && token.includes('.')) {
       const decoded = this.tokenService.getDecodedToken();
@@ -65,8 +72,9 @@ export class AuthService {
           username: decoded.unique_name || decoded.name || '',
           fullName: decoded.fullName || decoded.FullName || '',
           email: decoded.email || '',
-          roles: Array.isArray(decoded.role) ? decoded.role : (decoded.role ? [decoded.role] : []),
-          permissions: Array.isArray(decoded['permissions']) ? decoded['permissions'] : []
+          roles: Array.isArray(decoded.role) ? decoded.role : decoded.role ? [decoded.role] : [],
+          permissions: Array.isArray(decoded['permissions']) ? decoded['permissions'] : [],
+          isActive: true, // If we have a valid token, assume active for now
         };
         this.tokenService.setUser(user);
       }
@@ -78,63 +86,168 @@ export class AuthService {
   }
 
   login(request: LoginRequest): Observable<AuthResponse> {
-    console.log('Login request:', request, 'URL:', 'Auth/login');
-    return this.apiService
-      .post<ApiResponseModel<AuthResponse>>('Auth/login', request)
-      .pipe(
-        map((response) => {
-          // Backend returns { success, message, data: { token, refreshToken, expiresAt, user }, statusCode }
-          if (response.success && response.data) {
+    const loginPayload = {
+      username: request.username,
+      userName: request.username,
+      email: request.username,
+      password: request.password,
+    };
+
+    console.log('🔐 [AuthService] Attempting login:', {
+      endpoint: 'Auth/login',
+      username: request.username,
+      timestamp: new Date().toISOString(),
+    });
+
+    return this.apiService.post<ApiResponseModel<AuthResponse>>('Auth/login', loginPayload).pipe(
+      tap((response) => {
+        console.log('✅ [AuthService] Login response received:', response);
+        console.log('Response structure:', {
+          hasData: !!response.data,
+          hasSuccess: response.success,
+          statusCode: (response as any).statusCode,
+        });
+      }),
+      map((response) => {
+        const directResponse = response as any;
+        const data =
+          (response.data as any) ||
+          (directResponse.result as any) ||
+          (directResponse.payload as any) ||
+          null;
+        const tokenCandidate =
+          (data as any)?.token ||
+          (data as any)?.Token ||
+          (data as any)?.accessToken ||
+          (data as any)?.AccessToken ||
+          directResponse.token ||
+          directResponse.Token ||
+          directResponse.accessToken ||
+          directResponse.AccessToken ||
+          '';
+        const hasToken = typeof tokenCandidate === 'string' && tokenCandidate.length > 0;
+        const statusCode = Number((response as any).statusCode ?? (data as any)?.statusCode ?? 0);
+        const isSuccess =
+          response.success === true ||
+          response.succeeded === true ||
+          (response as any).isSuccess === true ||
+          (statusCode >= 200 && statusCode < 300) ||
+          hasToken;
+
+        if (isSuccess && data) {
+          const userData =
+            (data as any).user ||
+            (data as any).User ||
+            (data as any).currentUser ||
+            (response as any).user ||
+            null;
+
+          const normalizedUser: User = userData
+            ? {
+                id: userData.id || userData.userId || '',
+                username: userData.username || userData.userName || request.username,
+                fullName: userData.fullName || userData.FullName || userData.name || '',
+                email: userData.email || '',
+                roles: Array.isArray(userData.roles)
+                  ? userData.roles
+                  : userData.roleName
+                    ? [userData.roleName]
+                    : userData.role
+                      ? [userData.role]
+                      : [],
+                permissions: Array.isArray(userData.permissions) ? userData.permissions : [],
+                isActive: userData.isActive !== false,
+              }
+            : {
+                id: '',
+                username: request.username,
+                fullName: '',
+                email: '',
+                roles: [],
+                permissions: [],
+                isActive: true,
+              };
+
+          // Explicitly check for inactive status if the backend returns it
+          if (normalizedUser.isActive === false) {
             return {
-              succeeded: true,
-              token: response.data.token || '',
-              refreshToken: response.data.refreshToken || '',
-              expiresAt: response.data.expiresAt || '',
-              user: response.data.user || {
+              succeeded: false,
+              token: '',
+              refreshToken: '',
+              expiresAt: '',
+              user: {
                 id: '',
                 username: '',
                 fullName: '',
                 email: '',
                 roles: [],
                 permissions: [],
+                isActive: false,
               },
-              errors: [],
+              errors: [
+                response.message ||
+                  'User account is not allowed to sign in. Please contact an administrator.',
+              ],
             };
           }
+
           return {
-            succeeded: false,
-            token: '',
-            refreshToken: '',
-            expiresAt: '',
-            user: {
-              id: '',
-              username: '',
-              fullName: '',
-              email: '',
-              roles: [],
-              permissions: [],
-            },
-            errors: [response.message || 'Login failed'],
+            succeeded: true,
+            token: tokenCandidate,
+            refreshToken:
+              (data as any).refreshToken ||
+              (data as any).RefreshToken ||
+              (data as any).refresh_token ||
+              (response as any).refreshToken ||
+              '',
+            expiresAt:
+              (data as any).expiresAt ||
+              (data as any).ExpiresAt ||
+              (data as any).expiry ||
+              (response as any).expiresAt ||
+              '',
+            user: normalizedUser,
+            errors: [],
           };
-        }),
-        tap((response) => {
-          if (response.succeeded) {
-            this.tokenService.setToken(response.token);
-            this.tokenService.setRefreshToken(response.refreshToken);
-            this.tokenService.setUser(response.user);
-            this.currentUserSubject.next(response.user);
-          }
-        }),
-      );
+        }
+        return {
+          succeeded: false,
+          token: '',
+          refreshToken: '',
+          expiresAt: '',
+          user: {
+            id: '',
+            username: '',
+            fullName: '',
+            email: '',
+            roles: [],
+            permissions: [],
+            isActive: false,
+          },
+          errors: [response.message || (response as any).error || 'Login failed'],
+        };
+      }),
+      tap((response) => {
+        if (response.succeeded) {
+          this.tokenService.setToken(response.token);
+          this.tokenService.setRefreshToken(response.refreshToken);
+          this.currentUserService.setUser(response.user);
+          this.currentUserSubject.next(response.user);
+        }
+      }),
+    );
   }
 
-  forgotPassword(email: string): Observable<{ succeeded: boolean; message: string; token?: string }> {
+  forgotPassword(
+    email: string,
+  ): Observable<{ succeeded: boolean; message: string; token?: string }> {
     return this.apiService.post<ApiResponseModel<any>>('Auth/forgot-password', { email }).pipe(
       map((response) => ({
         succeeded: response.success,
         message: response.message || (response.success ? 'Success' : 'Failed'),
-        token: response.data?.token || (typeof response.data === 'string' ? response.data : undefined),
-      }))
+        token:
+          response.data?.token || (typeof response.data === 'string' ? response.data : undefined),
+      })),
     );
   }
 
@@ -143,40 +256,53 @@ export class AuthService {
       map((response) => ({
         succeeded: response.success,
         message: response.message || (response.success ? 'Success' : 'Failed'),
-      }))
+      })),
     );
   }
 
-  changePassword(request: { currentPassword: string; newPassword: string }): Observable<{ succeeded: boolean; message: string }> {
+  changePassword(request: {
+    currentPassword: string;
+    newPassword: string;
+  }): Observable<{ succeeded: boolean; message: string }> {
     return this.apiService.post<ApiResponseModel<any>>('Auth/change-password', request).pipe(
       map((response) => ({
         succeeded: response.success,
         message: response.message || (response.success ? 'Success' : 'Failed'),
-      }))
+      })),
     );
   }
 
-  enable2FA(method: 'sms' | 'email' | 'app', contactInfo?: string): Observable<{ succeeded: boolean; message: string }> {
-    return this.apiService.post<ApiResponseModel<any>>('Auth/enable-2fa', { method, contactInfo }).pipe(
-      map((response) => ({
-        succeeded: response.success,
-        message: response.message || (response.success ? '2FA enabled successfully' : 'Failed to enable 2FA'),
-      }))
-    );
+  enable2FA(
+    method: 'sms' | 'email' | 'app',
+    contactInfo?: string,
+  ): Observable<{ succeeded: boolean; message: string }> {
+    return this.apiService
+      .post<ApiResponseModel<any>>('Auth/enable-2fa', { method, contactInfo })
+      .pipe(
+        map((response) => ({
+          succeeded: response.success,
+          message:
+            response.message ||
+            (response.success ? '2FA enabled successfully' : 'Failed to enable 2FA'),
+        })),
+      );
   }
 
   disable2FA(): Observable<{ succeeded: boolean; message: string }> {
     return this.apiService.post<ApiResponseModel<any>>('Auth/disable-2fa', {}).pipe(
       map((response) => ({
         succeeded: response.success,
-        message: response.message || (response.success ? '2FA disabled successfully' : 'Failed to disable 2FA'),
-      }))
+        message:
+          response.message ||
+          (response.success ? '2FA disabled successfully' : 'Failed to disable 2FA'),
+      })),
     );
   }
 
   logout(): void {
     this.tokenService.clear();
     this.currentUserSubject.next(null);
+    this.currentUserService.clear();
     this.router.navigate(['/auth/login']);
   }
 
@@ -224,6 +350,7 @@ export class AuthService {
       this.hasRoleMatch(normalizedRoles, [
         'superadmin',
         'admin',
+        'propertyadmin',
         'propertymanager',
         'propertyofficer',
       ])

@@ -5,58 +5,81 @@ import { ApiResponseModel } from '../models/api-response.model';
 
 export interface EmployeeDto {
   id: string;
-  employeeNumber: string;
-  firstName: string;
-  lastName: string;
-  email?: string;
-  phone?: string;
+  employeeCode?: string;
+  fullName?: string;
   department?: string;
-  position?: string;
-  userId?: string;
-  isActive: boolean;
 }
 
-export interface CreateEmployeeRequest {
-  employeeNumber: string;
-  firstName: string;
-  lastName: string;
-  email?: string;
-  phone?: string;
-  department?: string;
-  position?: string;
-  userId?: string;
-}
-
-export interface UpdateEmployeeRequest {
+export interface EmployeeDetailDto {
   id: string;
-  employeeNumber?: string;
-  firstName?: string;
-  lastName?: string;
+  employeeCode?: string;
+  fullName?: string;
+  department?: string;
   email?: string;
-  phone?: string;
+  isActive: boolean;
+  userAccount?: UserAccountSummaryDto;
+  recentActivities: EmployeeActivityDto[];
+}
+
+export interface UserAccountSummaryDto {
+  id: string;
+  username?: string;
+  email?: string;
+  role?: string;
+  isActive: boolean;
+  lastLoginAt?: string;
+}
+
+export interface EmployeeActivityDto {
+  date: string;
+  action?: string;
+  entity?: string;
+  description?: string;
+}
+
+export interface CreateEmployeeCommand {
+  employeeCode?: string;
+  fullName?: string;
   department?: string;
   position?: string;
-  userId?: string;
-  isActive?: boolean;
+  email?: string;
+  phone?: string;
+  hireDate?: string;
+}
+
+export interface UpdateEmployeeCommand {
+  id: string;
+  employeeCode?: string;
+  fullName?: string;
+  department?: string;
+  position?: string;
+  email?: string;
+  phone?: string;
+  hireDate?: string;
+  isActive: boolean;
 }
 
 @Injectable({ providedIn: 'root' })
 export class EmployeesService {
   constructor(private apiService: ApiService) {}
 
-  getAll(params?: any): Observable<ApiResponseModel<EmployeeDto[]>> {
+  getAll(params?: { department?: string; searchTerm?: string; withUserAccountOnly?: boolean }): Observable<ApiResponseModel<EmployeeDto[]>> {
     return this.apiService.get<ApiResponseModel<EmployeeDto[]>>('Employees', params);
   }
 
-  getById(id: string): Observable<ApiResponseModel<EmployeeDto>> {
-    return this.apiService.get<ApiResponseModel<EmployeeDto>>(`Employees/${id}`);
+  getById(id: string): Observable<ApiResponseModel<EmployeeDetailDto>> {
+    return this.apiService.get<ApiResponseModel<EmployeeDetailDto>>(`Employees/${id}`);
   }
 
-  create(data: CreateEmployeeRequest): Observable<ApiResponseModel<string>> {
+  getByUserId(userId: string): Observable<ApiResponseModel<EmployeeDetailDto>> {
+    return this.apiService.get<ApiResponseModel<EmployeeDetailDto>>(`Employees/by-user/${userId}`);
+  }
+
+  create(data: CreateEmployeeCommand): Observable<ApiResponseModel<string>> {
     return this.apiService.post<ApiResponseModel<string>>('Employees', data);
   }
 
-  update(data: UpdateEmployeeRequest): Observable<ApiResponseModel<any>> {
+  update(data: UpdateEmployeeCommand): Observable<ApiResponseModel<any>> {
     return this.apiService.put<ApiResponseModel<any>>(`Employees/${data.id}`, data);
   }
 

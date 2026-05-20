@@ -2,7 +2,10 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { NgOptimizedImage } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
-import { finalize } from 'rxjs';
+import { finalize, catchError, of, switchMap } from 'rxjs';
+import { environment } from '../../../../../environments/environment';
+import { UsersService } from '../../../../core/services/users.service';
+import { RegistrationService } from '../../../../core/services/registration.service';
 
 import { AuthThemeService } from '../../services/auth-theme.service';
 import { AuthService } from '../../../../core/services/auth.service';
@@ -24,8 +27,13 @@ export class Login {
     ];
   private readonly formBuilder = inject(FormBuilder);
   private readonly authService = inject(AuthService);
+  private readonly registrationService = inject(RegistrationService);
+  private readonly usersService = inject(UsersService);
   private readonly router = inject(Router);
   protected readonly theme = inject(AuthThemeService);
+
+  protected readonly isDevelopment = !environment.production;
+  protected readonly activating = signal(false);
 
   protected readonly submitted = signal(false);
   protected readonly loading = signal(false);
@@ -60,6 +68,7 @@ export class Login {
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
         next: (result) => {
+          console.log('DEBUG: Login result in component:', result);
           if (!result.succeeded) {
             this.statusTone.set('error');
             this.statusMessage.set(result.errors?.join(' ') || 'Invalid username or password.');
@@ -81,7 +90,7 @@ export class Login {
           let errorMessage = 'Unable to sign in. Verify your credentials and try again.';
 
           if (err?.status === 0) {
-            errorMessage = 'Unable to connect to the server. Please ensure the backend API is running at http://localhost:5028';
+            errorMessage = 'Unable to connect to the server. Please ensure the backend API is running on port 5028.';
           } else if (err?.status === 404) {
             errorMessage = 'Login endpoint not found. Please check API configuration.';
           } else if (err?.status === 500) {
@@ -98,6 +107,55 @@ export class Login {
 
   protected togglePasswordVisibility(): void {
     this.showPassword.update((value) => !value);
+  }
+
+  protected forceActivate(): void {
+    const username = this.loginForm.controls.username.value.trim();
+    if (!username) return;
+
+    this.activating.set(true);
+    this.statusMessage.set('Searching for account...');
+
+    // 1. Search for user by searchTerm to get the actual GUID ID
+    this.usersService.getAll({ searchTerm: username }).pipe(
+      switchMap((response) => {
+        if (response.success && response.data?.items?.length) {
+          // Find exact match by username
+          const exactMatch = response.data.items.find(
+            (u) => u.username.toLowerCase() === username.toLowerCase()
+          );
+          const userId = exactMatch?.id || response.data.items[0].id;
+          this.statusMessage.set('Force activating account...');
+          return this.usersService.activate(userId);
+        }
+        
+        // Fallback: If getAll is not matching or returns empty, try direct getById(username)
+        return this.usersService.getById(username).pipe(
+          switchMap((directRes) => {
+            if (directRes.success && directRes.data?.id) {
+              return this.usersService.activate(directRes.data.id);
+            }
+            throw new Error('User not found in system.');
+          })
+        );
+      }),
+      finalize(() => this.activating.set(false))
+    ).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.statusTone.set('success');
+          this.statusMessage.set('Account activated successfully! You can now sign in.');
+        } else {
+          this.statusTone.set('error');
+          this.statusMessage.set(response.message || 'Activation failed.');
+        }
+      },
+      error: (err) => {
+        console.error('Force activation failed:', err);
+        this.statusTone.set('error');
+        this.statusMessage.set('Could not activate account. The user may not exist.');
+      }
+    });
   }
 
   protected toggleDarkMode(): void {

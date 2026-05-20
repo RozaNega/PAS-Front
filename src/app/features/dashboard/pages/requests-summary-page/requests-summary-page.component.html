@@ -44,7 +44,12 @@
   <div class="chart-section">
     <h2>📈 STATUS BREAKDOWN CHART</h2>
     <div class="chart-container">
-      <div class="pie-chart" [style.--approved-pct]="approvedPercentage" [style.--pending-pct]="pendingPercentage" [style.--rejected-pct]="rejectedPercentage">
+      <div
+        class="pie-chart"
+        [style.--approved-pct]="approvedPercentage"
+        [style.--pending-pct]="pendingPercentage"
+        [style.--rejected-pct]="rejectedPercentage"
+      >
         <div class="pie-chart-inner">
           <div class="pie-title">Total: {{ stats.total }}</div>
           <div class="pie-item">🟢 Approved: {{ stats.approved }}</div>
@@ -58,7 +63,7 @@
 
   <!-- Requests by Month -->
   <div class="monthly-section">
-    <h2>📊 REQUESTS BY MONTH (2024)</h2>
+    <h2>📊 REQUESTS BY MONTH ({{ summaryYear }})</h2>
     <div class="monthly-grid">
       @for (data of monthlyData; track data.month) {
         <div class="monthly-item">
@@ -79,7 +84,9 @@
         <strong>Average Value per Request:</strong> {{ valueSummary.averageValue }}
       </div>
       <div class="value-item">
-        <strong>Highest Value Request:</strong> {{ valueSummary.highestValue }} ({{ valueSummary.highestValueRequest }})
+        <strong>Highest Value Request:</strong> {{ valueSummary.highestValue }} ({{
+          valueSummary.highestValueRequest
+        }})
       </div>
     </div>
   </div>

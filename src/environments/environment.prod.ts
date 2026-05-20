@@ -7,5 +7,6 @@ export const environment = {
   tokenKey: 'pas_token',
   refreshTokenKey: 'pas_refresh_token',
   userKey: 'pas_user',
+  defaultManagerQueueId: '' as string,
 };
 

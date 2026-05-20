@@ -37,9 +37,25 @@
     <div class="bottom-row">
       <div class="preview-section">
         <label class="section-label">Preview</label>
-        <div class="preview-avatar-wrapper">
+        <div class="preview-avatar-wrapper" [class.analyzing]="isAnalyzing()">
           @if (photoPreview()) {
             <img [src]="photoPreview()" alt="Preview" />
+            
+            @if (isAnalyzing()) {
+              <div class="analysis-overlay">
+                <div class="scanning-line"></div>
+                <div class="analysis-text">
+                  <span class="spinner-border spinner-border-sm me-2"></span>
+                  Analyzing Face...
+                </div>
+              </div>
+            }
+
+            @if (faceDetected() === true) {
+              <div class="success-badge">
+                <i class="bi bi-check-circle-fill"></i> Face Verified
+              </div>
+            }
           } @else {
             <div class="placeholder-preview">
               <i class="bi bi-person-fill"></i>
@@ -50,7 +66,8 @@
       
       <div class="action-buttons">
         <button class="btn-cancel" (click)="cancel()">Cancel</button>
-        <button class="btn-save" (click)="uploadPhoto()" [disabled]="!selectedFile() && !photoPreview()">
+        <button class="btn-save" (click)="uploadPhoto()" 
+                [disabled]="(!selectedFile() && !photoPreview()) || faceDetected() !== true || isAnalyzing() || isUploading()">
           @if (isUploading()) {
             <span class="spinner-border spinner-border-sm me-2"></span>
           }

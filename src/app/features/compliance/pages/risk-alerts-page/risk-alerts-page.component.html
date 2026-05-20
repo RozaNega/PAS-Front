@@ -1,187 +1,159 @@
-<div class="risk-alerts-page">
-  <div class="page-header">
-    <h1>
-      Risk Alerts ({{
-        criticalViolations.length +
-          highRiskItems.length +
-          mediumRiskItems.length +
-          lowRiskItems.length
-      }})
-    </h1>
-    <button class="refresh-btn" (click)="refreshAlerts()">Refresh</button>
-  </div>
-
-  <!-- Filters -->
-  <div class="filters-section">
-    <div class="filter-row">
-      <label for="search-input">Search</label>
-      <input
-        id="search-input"
-        type="text"
-        placeholder="Search by violation type, entity, date..."
-        [(ngModel)]="searchQuery"
-      />
-      <label for="severity-select">Severity</label>
-      <select id="severity-select" [(ngModel)]="filterSeverity">
-        <option value="All">Severity: [All ▼]</option>
-        <option value="Critical">Critical</option>
-        <option value="High">High</option>
-        <option value="Medium">Medium</option>
-        <option value="Low">Low</option>
-      </select>
-      <label for="status-select">Status</label>
-      <select id="status-select" [(ngModel)]="filterStatus" title="Filter by status">
-        <option value="All">Status: [All ▼]</option>
-        <option value="Open">Open</option>
-        <option value="In Progress">In Progress</option>
-        <option value="Resolved">Resolved</option>
-      </select>
-      <button class="filters-btn" (click)="applyFilters()">Filters ▼</button>
+<div class="notifications-page-container">
+  <!-- Dynamic Banner Hero -->
+  <div class="notifications-hero">
+    <div class="hero-left">
+      <div class="bell-icon-wrapper">
+        <i class="bi bi-bell-fill"></i>
+        @if (unreadCount() > 0) {
+          <span class="pulse-badge">{{ unreadCount() }}</span>
+        }
+      </div>
+      <div>
+        <h1>Compliance Notification Center</h1>
+        <p class="hero-subtitle">
+          Real-time oversight feeds, stale approval reminders, and automated compliance alerts.
+        </p>
+      </div>
+    </div>
+    <div class="hero-actions">
+      <button class="btn btn-secondary shadow-sm" (click)="refreshAlerts()">
+        <i class="bi bi-arrow-clockwise"></i> Sync Feeds
+      </button>
+      <button class="btn btn-primary shadow-sm" (click)="markAllAsRead()" [disabled]="unreadCount() === 0">
+        <i class="bi bi-check-all"></i> Mark All Read
+      </button>
     </div>
   </div>
 
-  <!-- Critical Violations -->
-  <div class="violations-section critical">
-    <h2>🔴 CRITICAL VIOLATIONS ({{ criticalViolations.length }}) [View All →]</h2>
-    <div class="violations-list">
-      @for (violation of criticalViolations; track violation.id) {
-        <div class="violation-card">
-          <div class="violation-header">
-            <span class="violation-icon">{{ getSeverityIcon(violation.severity) }}</span>
-            <span class="violation-type">{{ violation.type }} - {{ violation.entity }}</span>
-          </div>
-          <div class="violation-details">
-            <p>
-              Detected: {{ violation.detectedDate }} | Status: {{ violation.status }} | Assigned To:
-              {{ violation.assignedTo }}
-              @if (violation.dueDate) {
-                | Due: {{ violation.dueDate }}
+  <!-- Filters section -->
+  <div class="filters-panel card shadow-sm">
+    <div class="filters-row">
+      <div class="search-bar-wrapper">
+        <i class="bi bi-search search-icon"></i>
+        <input 
+          type="text" 
+          placeholder="Filter notifications by keywords, requester, or ID..." 
+          [(ngModel)]="searchQuery"
+          class="form-control search-input"
+        />
+      </div>
+      
+      <div class="filter-tabs">
+        <button 
+          class="tab-btn" 
+          [class.active]="filterType() === 'All'" 
+          (click)="filterType.set('All')">
+          All <span class="badge">{{ allNotifications().length }}</span>
+        </button>
+        <button 
+          class="tab-btn warning-tab" 
+          [class.active]="filterType() === 'unread'" 
+          (click)="filterType.set('unread')">
+          Unread <span class="badge">{{ unreadCount() }}</span>
+        </button>
+        <button 
+          class="tab-btn info-tab" 
+          [class.active]="filterType() === 'info'" 
+          (click)="filterType.set('info')">
+          Info
+        </button>
+        <button 
+          class="tab-btn warning-tab" 
+          [class.active]="filterType() === 'warning'" 
+          (click)="filterType.set('warning')">
+          Warning
+        </button>
+        <button 
+          class="tab-btn danger-tab" 
+          [class.active]="filterType() === 'error'" 
+          (click)="filterType.set('error')">
+          Danger
+        </button>
+        <button 
+          class="tab-btn success-tab" 
+          [class.active]="filterType() === 'success'" 
+          (click)="filterType.set('success')">
+          Success
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notification Feed list -->
+  <div class="notifications-feed-list">
+    @if (filteredNotifications().length === 0) {
+      <div class="empty-state-card card shadow-sm text-center">
+        <div class="empty-icon-box">
+          <i class="bi bi-bell-slash"></i>
+        </div>
+        <h3>All Clear!</h3>
+        <p class="text-muted">
+          No notifications match your current filter settings. Everything is currently running in compliance.
+        </p>
+      </div>
+    } @else {
+      @for (notif of filteredNotifications(); track notif.id) {
+        <div 
+          class="notification-card card shadow-sm mb-3" 
+          [class.unread-card]="!notif.isRead"
+          [class.border-left-info]="notif.type === 'info'"
+          [class.border-left-success]="notif.type === 'success'"
+          [class.border-left-warning]="notif.type === 'warning'"
+          [class.border-left-danger]="notif.type === 'error'">
+          
+          <div class="card-body d-flex align-items-start gap-3">
+            <div class="notif-badge-wrapper" [ngClass]="notif.type">
+              <i class="bi" [ngClass]="getTypeIcon(notif.type)"></i>
+            </div>
+            
+            <div class="notif-main-content flex-grow-1">
+              <div class="d-flex justify-content-between align-items-center mb-1">
+                <h5 class="notif-title m-0 d-flex align-items-center gap-2">
+                  {{ notif.title }}
+                  @if (!notif.isRead) {
+                    <span class="unread-dot-badge">New</span>
+                  }
+                </h5>
+                <span class="notif-time text-muted">
+                  <i class="bi bi-clock"></i> {{ notif.createdDate | date:'short' }}
+                </span>
+              </div>
+              <p class="notif-message m-0 text-secondary">
+                {{ notif.message }}
+              </p>
+              
+              @if (notif.actionRequired) {
+                <div class="action-alert-box mt-3 p-2 bg-light border-radius-sm d-flex justify-content-between align-items-center">
+                  <span class="text-warning-dark font-weight-semibold">
+                    <i class="bi bi-shield-fill-exclamation"></i> Immediate review or manager nudge required
+                  </span>
+                  <button class="btn btn-sm btn-primary-gradient" (click)="takeAction(notif)">
+                    <i class="bi bi-lightning-charge-fill"></i> Take Action
+                  </button>
+                </div>
               }
-            </p>
-          </div>
-          <div class="violation-actions">
-            @if (violation.status !== 'Resolved') {
-              <button class="action-btn" (click)="investigateViolation(violation.id)">
-                Investigate
+            </div>
+
+            <!-- Side Action Controls -->
+            <div class="notif-side-controls d-flex flex-column gap-2">
+              @if (!notif.isRead) {
+                <button 
+                  class="btn-control mark-read-btn" 
+                  title="Mark as Read" 
+                  (click)="markAsRead(notif.id)">
+                  <i class="bi bi-check2"></i>
+                </button>
+              }
+              <button 
+                class="btn-control dismiss-btn" 
+                title="Dismiss Alert" 
+                (click)="dismissNotification(notif.id)">
+                <i class="bi bi-x-lg"></i>
               </button>
-              <button class="action-btn" (click)="assignViolation(violation.id)">Assign</button>
-              <button class="action-btn" (click)="resolveViolation(violation.id)">Resolve</button>
-            } @else {
-              <button class="action-btn" (click)="viewViolationDetails(violation.id)">
-                View Details
-              </button>
-            }
+            </div>
           </div>
         </div>
       }
-    </div>
-  </div>
-
-  <!-- High Risk Items -->
-  <div class="violations-section high">
-    <h2>🟠 HIGH RISK ITEMS ({{ highRiskItems.length }}) [View All →]</h2>
-    <div class="violations-list">
-      @for (violation of highRiskItems; track violation.id) {
-        <div class="violation-card">
-          <div class="violation-header">
-            <span class="violation-icon">{{ getSeverityIcon(violation.severity) }}</span>
-            <span class="violation-type">{{ violation.type }} - {{ violation.entity }}</span>
-          </div>
-          <div class="violation-details">
-            <p>
-              Detected: {{ violation.detectedDate }} | Status: {{ violation.status }} | Assigned To:
-              {{ violation.assignedTo }}
-              @if (violation.dueDate) {
-                | Due: {{ violation.dueDate }}
-              }
-            </p>
-          </div>
-          <div class="violation-actions">
-            <button class="action-btn" (click)="investigateViolation(violation.id)">
-              Investigate
-            </button>
-            <button class="action-btn" (click)="assignViolation(violation.id)">Assign</button>
-            <button class="action-btn" (click)="resolveViolation(violation.id)">Resolve</button>
-          </div>
-        </div>
-      }
-    </div>
-  </div>
-
-  <!-- Medium Risk Items -->
-  <div class="violations-section medium">
-    <h2>🟡 MEDIUM RISK ITEMS ({{ mediumRiskItems.length }}) [View All →]</h2>
-    <div class="violations-list">
-      @for (violation of mediumRiskItems; track violation.id) {
-        <div class="violation-card">
-          <div class="violation-header">
-            <span class="violation-icon">{{ getSeverityIcon(violation.severity) }}</span>
-            <span class="violation-type">{{ violation.type }} - {{ violation.entity }}</span>
-          </div>
-          <div class="violation-details">
-            <p>
-              Detected: {{ violation.detectedDate }} | Status: {{ violation.status }} | Assigned To:
-              {{ violation.assignedTo }}
-              @if (violation.dueDate) {
-                | Due: {{ violation.dueDate }}
-              }
-            </p>
-          </div>
-        </div>
-      }
-    </div>
-  </div>
-
-  <!-- Low Risk Items -->
-  <div class="violations-section low">
-    <h2>🟢 LOW RISK ITEMS ({{ lowRiskItems.length }}) [View All →]</h2>
-    <div class="violations-list">
-      @for (violation of lowRiskItems; track violation.id) {
-        <div class="violation-card">
-          <div class="violation-header">
-            <span class="violation-icon">{{ getSeverityIcon(violation.severity) }}</span>
-            <span class="violation-type">{{ violation.type }} - {{ violation.entity }}</span>
-          </div>
-          <div class="violation-details">
-            <p>
-              Detected: {{ violation.detectedDate }} | Status: {{ violation.status }}
-              @if (violation.dueDate) {
-                | Due: {{ violation.dueDate }}
-              }
-            </p>
-          </div>
-        </div>
-      }
-    </div>
-  </div>
-
-  <!-- Pending Investigations -->
-  <div class="investigations-section">
-    <h2>🔍 PENDING INVESTIGATIONS ({{ pendingInvestigations.length }})</h2>
-    <div class="investigations-list">
-      @for (investigation of pendingInvestigations; track investigation.id) {
-        <div class="investigation-item">
-          <span
-            >• {{ investigation.type }} - {{ investigation.entity }} (Assigned to
-            {{ investigation.assignedTo }})</span
-          >
-        </div>
-      }
-    </div>
-  </div>
-
-  <!-- Resolved Issues -->
-  <div class="resolved-section">
-    <h2>✅ RESOLVED ISSUES ({{ resolvedIssues.length }} this month)</h2>
-    <div class="resolved-list">
-      @for (issue of resolvedIssues; track issue.id) {
-        <div class="resolved-item">
-          <span>• {{ issue.type }} - Resolved {{ issue.closedDate }}</span>
-        </div>
-      }
-    </div>
-    <div class="resolved-footer">
-      <a href="#" class="view-all-link">View All Resolved →</a>
-    </div>
+    }
   </div>
 </div>

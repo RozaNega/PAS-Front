@@ -1,4 +1,4 @@
-  import { Routes } from '@angular/router';
+import { Routes } from '@angular/router';
 import { MainLayoutComponent } from './layouts/main-layout/main-layout.component';
 import { AuthGuard } from './core/guards/auth.guard';
 
@@ -375,7 +375,7 @@ export const routes: Routes = [
             (m) => m.EmployeeDashboardComponent,
           ),
       },
-            {
+      {
         path: 'dashboard/my-requests',
         loadComponent: () =>
           import('./features/dashboard/pages/employee-dashboard/employee-dashboard.component').then(
@@ -903,6 +903,6 @@ export const routes: Routes = [
   },
   {
     path: '**',
-    redirectTo: 'employee/dashboard',
+    redirectTo: 'landing',
   },
 ];

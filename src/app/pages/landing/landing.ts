@@ -170,9 +170,10 @@ export class Landing implements OnInit {
   }
 
   ngOnInit(): void {
-    if (isPlatformBrowser(this.platformId) && this.authService.isAuthenticated()) {
-      const user = this.authService.getCurrentUser();
-      void this.router.navigateByUrl(this.authService.getDashboardRouteForUser(user));
+    // Keep landing page visible - don't auto-redirect
+    // Users can click login button if they want to authenticate
+    if (isPlatformBrowser(this.platformId)) {
+      console.log('📄 Landing page loaded - waiting for user action');
     }
   }
 
@@ -273,6 +274,14 @@ export class Landing implements OnInit {
     const toHex = (value: number) => value.toString(16).padStart(2, '0');
 
     return `#${toHex(mix(r))}${toHex(mix(g))}${toHex(mix(b))}`;
+  }
+
+  protected resetFirstVisit(): void {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem('pas_has_visited');
+      console.log('🔄 First visit flag reset. Refresh the page to see the landing page again.');
+      alert('First visit flag has been reset. Refresh the page to test the first-time experience.');
+    }
   }
 
   private hexToStrong(hex: string): string {

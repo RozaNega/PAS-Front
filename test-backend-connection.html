@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Backend Connection Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .test-result {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        pre {
+            background-color: #f4f4f4;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Backend Connection Test</h1>
+    <p>This page tests the connection between frontend and backend.</p>
+    
+    <div>
+        <button onclick="testDirectBackend()">Test Direct Backend (localhost:5028)</button>
+        <button onclick="testProxyBackend()">Test Through Proxy (/api)</button>
+        <button onclick="testSwagger()">Open Swagger</button>
+    </div>
+    
+    <div id="results"></div>
+
+    <script>
+        function addResult(message, type = 'info') {
+            const resultsDiv = document.getElementById('results');
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `test-result ${type}`;
+            resultDiv.innerHTML = message;
+            resultsDiv.appendChild(resultDiv);
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+
+        async function testDirectBackend() {
+            clearResults();
+            addResult('Testing direct connection to http://localhost:5028/api/Auth/test...', 'info');
+            
+            try {
+                const response = await fetch('http://localhost:5028/api/Auth/test', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    addResult('✅ Direct backend connection successful!<br><pre>' + JSON.stringify(data, null, 2) + '</pre>', 'success');
+                } else {
+                    addResult('⚠️ Backend responded with status: ' + response.status + '<br>This might be normal if /Auth/test endpoint doesn\'t exist.', 'info');
+                }
+            } catch (error) {
+                addResult('❌ Direct backend connection failed!<br>Error: ' + error.message + '<br><br>This is expected due to CORS. The proxy should handle this.', 'error');
+            }
+        }
+
+        async function testProxyBackend() {
+            clearResults();
+            addResult('Testing connection through proxy /api/Auth/test...', 'info');
+            
+            try {
+                const response = await fetch('/api/Auth/test', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    addResult('✅ Proxy connection successful!<br><pre>' + JSON.stringify(data, null, 2) + '</pre>', 'success');
+                } else {
+                    addResult('⚠️ Proxy responded with status: ' + response.status + '<br>Response: ' + await response.text(), 'info');
+                }
+            } catch (error) {
+                addResult('❌ Proxy connection failed!<br>Error: ' + error.message + '<br><br><strong>Action needed:</strong> Restart ng serve with proxy configuration.', 'error');
+            }
+        }
+
+        function testSwagger() {
+            window.open('http://localhost:5028/swagger/index.html', '_blank');
+        }
+
+        // Auto-run tests on page load
+        window.onload = function() {
+            addResult('Backend should be running on: http://localhost:5028', 'info');
+            addResult('Frontend should be running on: http://localhost:4200', 'info');
+            addResult('Click the buttons above to test connections.', 'info');
+        };
+    </script>
+</body>
+</html>

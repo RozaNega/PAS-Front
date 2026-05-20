@@ -139,9 +139,9 @@ export class ItemManagementComponent implements OnInit {
     const itemData: ServiceRequestItem = {
       id: this.editingItem?.id || this.generateId(),
       itemId: selectedItem.id,
-      itemName: selectedItem.itemName,
-      sku: selectedItem.sku,
-      unitOfMeasure: selectedItem.unitOfMeasure,
+      itemName: selectedItem.itemName ?? '',
+      sku: selectedItem.sku ?? '',
+      unitOfMeasure: selectedItem.unitOfMeasure ?? '',
       requestedQty: formValue.requestedQty,
       issuedQty: 0,
       pendingQty: formValue.requestedQty,

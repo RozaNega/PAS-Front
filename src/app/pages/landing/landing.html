@@ -80,13 +80,22 @@
                   ></button>
                 }
               </div>
+              <button 
+                type="button" 
+                class="btn ghost small" 
+                (click)="resetFirstVisit()"
+                title="Reset first visit flag for testing"
+                style="margin-top: 0.5rem; font-size: 0.75rem; padding: 0.25rem 0.5rem; width: 100%;"
+              >
+                🔄 Reset First Visit
+              </button>
             </section>
           }
         </div>
 
 
         <a class="btn ghost" routerLink="/auth/register" (click)="closeMenu()">Sign Up</a>
-        <a class="btn solid" [routerLink]="dashboardRoute()" (click)="closeMenu()">{{ authService.isAuthenticated() ? 'Dashboard' : 'Login' }}</a>
+        <a class="btn solid" routerLink="/auth/login" (click)="closeMenu()">Login</a>
       </div>
     </div>
   </header>
@@ -109,7 +118,7 @@
           </p>
 
           <div class="hero-actions">
-            <a class="btn solid" [routerLink]="dashboardRoute()">Open Dashboard</a>
+            <a class="btn solid" routerLink="/auth/login">Login</a>
 
             <a class="btn ghost subtle" href="#features">Explore Platform</a>
           </div>
@@ -230,7 +239,7 @@
       </div>
       <div class="footer-actions">
         <a class="btn ghost" routerLink="/auth/register">Book Onboarding</a>
-        <a class="btn solid" [routerLink]="dashboardRoute()">Sign In</a>
+        <a class="btn solid" routerLink="/auth/login">Login</a>
       </div>
       <p class="copyright">© {{ year() }} AFRICOM. All rights reserved.</p>
     </div>
