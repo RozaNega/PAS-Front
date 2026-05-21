@@ -9,27 +9,47 @@
     </button>
   </div>
 
+  @if (isLoading()) {
+    <p class="mb-2">Loading shelves…</p>
+  }
+
+  @if (error()) {
+    <div class="alert alert-danger mb-2" role="alert">
+      {{ error() }}
+      <div class="mt-2">
+        <button type="button" class="btn btn-sm btn-primary" (click)="retryWarehouses()">Retry loading warehouses</button>
+      </div>
+      <p class="mt-2 mb-0 small text-muted">{{ apiConnectionHint }}</p>
+    </div>
+  }
+
   <div class="filter-bar">
     <div class="filter-group">
-      <label>🏭 Warehouse:</label>
-      <select [(ngModel)]="selectedWarehouse" (ngModelChange)="onWarehouseChange($event)">
-        @for (wh of warehouses; track wh) {
-          <option [value]="wh">{{ wh }}</option>
+      <label>Warehouse:</label>
+      <select
+        [ngModel]="selectedWarehouseId()"
+        (ngModelChange)="onWarehouseChange($event)"
+        [disabled]="!warehouseOptions().length">
+        @for (wh of warehouseOptions(); track wh.id) {
+          <option [value]="wh.id">{{ wh.warehouseName }} ({{ wh.warehouseCode }})</option>
         }
       </select>
     </div>
     <div class="filter-group">
-      <label>📍 Aisle:</label>
-      <select [(ngModel)]="aisleFilter">
-        <option value="All Aisles">All Aisles</option>
-        <option value="Aisle A">Aisle A</option>
-        <option value="Aisle B">Aisle B</option>
-        <option value="Aisle C">Aisle C</option>
+      <label>Aisle:</label>
+      <select [ngModel]="aisleFilter()" (ngModelChange)="onAisleFilterChange($event)">
+        @for (a of aisleOptions(); track a) {
+          <option [value]="a">{{ a }}</option>
+        }
       </select>
     </div>
     <div class="search-box">
       <i class="bi bi-search"></i>
-      <input type="text" [value]="searchTerm()" (input)="onSearchChange($any($event.target).value)" placeholder="Search by shelf ID, aisle, rack...">
+      <input
+        type="text"
+        [ngModel]="searchTerm()"
+        (ngModelChange)="onSearchChange($event)"
+        placeholder="Search by shelf ID, aisle, rack..." />
     </div>
   </div>
 
@@ -42,7 +62,7 @@
         <div class="summary-content">
           <div class="summary-label">Total Shelves</div>
           <div class="summary-value">{{ totalShelves() }}</div>
-          <div class="summary-sub">In {{ selectedWarehouse() }}</div>
+          <div class="summary-sub">In {{ selectedWarehouseLabel() }}</div>
         </div>
       </div>
       <div class="summary-card">
@@ -85,29 +105,24 @@
       <h3>🗺️ Shelf Map View</h3>
     </div>
     <div class="warehouse-map">
-      <div class="warehouse-title">{{ selectedWarehouse() }}</div>
-      <div class="aisle-section">
-        <div class="aisle-label">AISLE A</div>
-        <div class="shelf-row">
-          @for (i of [1,2,3,4,5]; track i) {
-            <div class="shelf-box" (click)="openEditModal(shelves()[i-1] || null)">
-              <div class="shelf-id">A-0{{ i }}</div>
-              <div class="shelf-items">{{ shelves()[i-1]?.items || 0 }} items</div>
-            </div>
-          }
+      <div class="warehouse-title">{{ selectedWarehouseLabel() }}</div>
+      @if (!shelves().length) {
+        <p class="map-empty" style="padding: 1rem; color: #666;">
+          No shelves in this warehouse yet. Use <strong>Add Shelf</strong> to create locations, or choose another warehouse.
+        </p>
+      } @else {
+        <div class="aisle-section">
+          <div class="aisle-label">All shelves</div>
+          <div class="shelf-row" style="flex-wrap: wrap;">
+            @for (shelf of shelves(); track shelf.id) {
+              <div class="shelf-box" (click)="openEditModal(shelf)">
+                <div class="shelf-id">{{ shelf.aisle }}-{{ shelf.rack }}-{{ shelf.shelf }}</div>
+                <div class="shelf-items">{{ shelf.items }} items</div>
+              </div>
+            }
+          </div>
         </div>
-      </div>
-      <div class="aisle-section">
-        <div class="aisle-label">AISLE B</div>
-        <div class="shelf-row">
-          @for (i of [6,7,8,9]; track i) {
-            <div class="shelf-box" (click)="openEditModal(shelves()[i-1] || null)">
-              <div class="shelf-id">B-0{{ i-5 }}</div>
-              <div class="shelf-items">{{ shelves()[i-1]?.items || 0 }} items</div>
-            </div>
-          }
-        </div>
-      </div>
+      }
     </div>
   </div>
 
@@ -153,7 +168,7 @@
       </table>
     </div>
     <div class="pagination-bar">
-      <div class="pagination-info">Showing 1-{{ filteredShelves().length }} of 156 shelves</div>
+      <div class="pagination-info">Showing {{ filteredShelves().length }} shelf(es)</div>
       <div class="pagination-controls">
         <button class="page-btn" disabled>Previous</button>
         <button class="page-btn active">1</button>
@@ -166,13 +181,13 @@
   </div>
 
   <div class="bulk-actions">
-    <button class="btn btn-secondary">
+    <button class="btn btn-secondary" (click)="printQRCodes()" [disabled]="!filteredShelves().length">
       <i class="bi bi-qr-code"></i> Print QR Codes
     </button>
-    <button class="btn btn-secondary">
+    <button class="btn btn-secondary" (click)="openRearrangeModal()" [disabled]="!filteredShelves().length">
       <i class="bi bi-arrow-left-right"></i> Rearrange Shelves
     </button>
-    <button class="btn btn-secondary">
+    <button class="btn btn-secondary" (click)="exportShelfData()" [disabled]="!filteredShelves().length">
       <i class="bi bi-download"></i> Export Shelf Data
     </button>
   </div>
@@ -188,8 +203,25 @@
         </button>
       </div>
       <div class="modal-body">
-        <div class="warehouse-info">
-          <span>Warehouse: {{ selectedWarehouse() }}</span>
+        <div class="form-section">
+          <h4>Warehouse</h4>
+          <div class="form-field full-width">
+            <label for="modal-warehouse">Warehouse *</label>
+            <select
+              id="modal-warehouse"
+              name="modalWarehouse"
+              [(ngModel)]="modalDraft.warehouseId"
+              [disabled]="!warehouseOptions().length"
+            >
+              <option value="">— Select warehouse —</option>
+              @for (wh of warehouseOptions(); track wh.id) {
+                <option [value]="wh.id">{{ wh.warehouseName }} ({{ wh.warehouseCode }})</option>
+              }
+            </select>
+            @if (!warehouseOptions().length) {
+              <p class="small text-danger mt-1">No warehouses loaded. Fix the API connection, then click Retry above.</p>
+            }
+          </div>
         </div>
 
         <div class="form-section">
@@ -197,19 +229,19 @@
           <div class="form-grid">
             <div class="form-field">
               <label>Aisle *</label>
-              <input type="text" [(ngModel)]="modalFormData().aisle" placeholder="A-01">
+              <input type="text" name="aisle" [(ngModel)]="modalDraft.aisle" placeholder="A-01">
             </div>
             <div class="form-field">
               <label>Rack/Section *</label>
-              <input type="text" [(ngModel)]="modalFormData().rack" placeholder="R-01">
+              <input type="text" name="rack" [(ngModel)]="modalDraft.rack" placeholder="R-01">
             </div>
             <div class="form-field">
               <label>Shelf Number *</label>
-              <input type="text" [(ngModel)]="modalFormData().shelfNumber" placeholder="S-01">
+              <input type="text" name="shelfNumber" [(ngModel)]="modalDraft.shelfNumber" placeholder="S-01">
             </div>
             <div class="form-field">
               <label>Shelf Type *</label>
-              <select [(ngModel)]="modalFormData().shelfType">
+              <select name="shelfType" [(ngModel)]="modalDraft.shelfType">
                 <option value="Standard">Standard</option>
                 <option value="Heavy Duty">Heavy Duty</option>
                 <option value="Cold Storage">Cold Storage</option>
@@ -217,7 +249,7 @@
             </div>
             <div class="form-field full-width">
               <label>QR Code Value</label>
-              <input type="text" [(ngModel)]="modalFormData().qrValue" placeholder="WH01-A01-R01-S01" disabled>
+              <input type="text" name="qr" [(ngModel)]="modalDraft.qrValue" placeholder="WH01-A01-R01-S01" disabled>
             </div>
           </div>
         </div>
@@ -227,15 +259,15 @@
           <div class="form-grid">
             <div class="form-field">
               <label>Max Capacity (Items)</label>
-              <input type="number" [(ngModel)]="modalFormData().maxCapacity" placeholder="100">
+              <input type="number" name="maxCap" [(ngModel)]="modalDraft.maxCapacity" placeholder="100">
             </div>
             <div class="form-field">
               <label>Max Weight (kg)</label>
-              <input type="number" [(ngModel)]="modalFormData().maxWeight" placeholder="500">
+              <input type="number" name="maxW" [(ngModel)]="modalDraft.maxWeight" placeholder="500">
             </div>
             <div class="form-field full-width">
               <label>Category Restriction (Optional)</label>
-              <select [(ngModel)]="modalFormData().categoryRestriction">
+              <select name="cat" [(ngModel)]="modalDraft.categoryRestriction">
                 <option value="All Categories">All Categories</option>
                 <option value="Electronics">Electronics</option>
                 <option value="Furniture">Furniture</option>
@@ -253,15 +285,6 @@
     </div>
   </div>
 }
-
-<!-- Debug Test Button -->
-<div style="padding: 20px; background: yellow; margin: 20px;">
-  <h3>Debug Test</h3>
-  <button (click)="showAddItemDialog = true" style="background: red; color: white; padding: 10px;">
-    TEST: Force Show Dialog
-  </button>
-  <p>Dialog visible: {{ showAddItemDialog }}</p>
-</div>
 
 <!-- Beautiful Add Item Dialog -->
 <div class="dialog-overlay" *ngIf="showAddItemDialog" (click)="closeAddItemDialog()" 
@@ -369,3 +392,79 @@
     </div>
   </div>
 </div>
+
+<!-- Rearrange Shelves Modal -->
+@if (showRearrangeModal()) {
+  <div class="modal-overlay" (click)="closeRearrangeModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Rearrange Shelf Location</h3>
+        <button class="btn-close" (click)="closeRearrangeModal()">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-section">
+          <h4>Select Shelf to Rearrange</h4>
+          <div class="form-field full-width">
+            <label for="shelf-select">Shelf *</label>
+            <select
+              id="shelf-select"
+              (change)="rearrangeDraft.set({
+                shelfId: $any($event.target).value,
+                newAisle: '',
+                newRack: '',
+                newShelf: ''
+              })"
+            >
+              <option value="">— Select a shelf —</option>
+              @for (shelf of filteredShelves(); track shelf.id) {
+                <option [value]="shelf.id">
+                  {{ shelf.aisle }}-{{ shelf.rack }}-{{ shelf.shelf }}
+                </option>
+              }
+            </select>
+          </div>
+        </div>
+
+        @if (rearrangeDraft()) {
+          <div class="form-section">
+            <h4>New Location</h4>
+            <div class="form-grid">
+              <div class="form-field">
+                <label>New Aisle *</label>
+                <input
+                  type="text"
+                  [(ngModel)]="rearrangeDraft()!.newAisle"
+                  placeholder="A-01"
+                />
+              </div>
+              <div class="form-field">
+                <label>New Rack/Section *</label>
+                <input
+                  type="text"
+                  [(ngModel)]="rearrangeDraft()!.newRack"
+                  placeholder="R-01"
+                />
+              </div>
+              <div class="form-field">
+                <label>New Shelf Number *</label>
+                <input
+                  type="text"
+                  [(ngModel)]="rearrangeDraft()!.newShelf"
+                  placeholder="S-01"
+                />
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeRearrangeModal()">Cancel</button>
+        <button class="btn btn-primary" (click)="saveRearrangement()" [disabled]="!rearrangeDraft()">
+          Save Rearrangement
+        </button>
+      </div>
+    </div>
+  </div>
+}

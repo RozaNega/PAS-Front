@@ -1,7 +1,9 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
+import { EmployeesService, CreateEmployeeRequest } from '../../../../core/services/employees.service';
+import { RolesService } from '../../../../core/services/roles.service';
 
 @Component({
   selector: 'app-add-employee',
@@ -10,8 +12,15 @@ import { RouterLink } from '@angular/router';
   templateUrl: './add-employee.component.html',
   styleUrls: ['./add-employee.component.scss']
 })
-export class AddEmployeeComponent {
+export class AddEmployeeComponent implements OnInit {
+  private readonly employeesService = inject(EmployeesService);
+  private readonly rolesService = inject(RolesService);
+  private readonly router = inject(Router);
+
   showCreateModal = signal(true);
+  loading = signal(false);
+  error = signal<string | null>(null);
+  roles = signal<any[]>([]);
 
   departments = [
     'Information Technology (IT)',
@@ -25,27 +34,11 @@ export class AddEmployeeComponent {
   ];
 
   positions = [
-    'Manager',
-    'Officer',
-    'Staff',
-    'Intern',
-    'Coordinator',
-    'Specialist',
-    'Director'
+    'Manager', 'Officer', 'Staff', 'Intern', 'Coordinator', 'Specialist', 'Director'
   ];
 
   contractTypes = [
-    'Permanent',
-    'Contract',
-    'Temporary',
-    'Internship'
-  ];
-
-  roles = [
-    { value: 'staff', label: 'Staff' },
-    { value: 'store-officer', label: 'Store Officer' },
-    { value: 'manager', label: 'Manager' },
-    { value: 'admin', label: 'Admin' }
+    'Permanent', 'Contract', 'Temporary', 'Internship'
   ];
 
   formData = {
@@ -64,15 +57,89 @@ export class AddEmployeeComponent {
     userRole: 'staff'
   };
 
+  ngOnInit(): void {
+    this.loadRoles();
+    if (!this.formData.employeeCode) {
+      this.formData.employeeCode = this.generateEmployeeCode();
+    }
+  }
+
+  generateNewCode(): void {
+    this.formData.employeeCode = this.generateEmployeeCode();
+  }
+
+  loadRoles(): void {
+    this.rolesService.getAll().subscribe({
+      next: (response) => {
+        if (response.success && response.data) {
+          this.roles.set(response.data.map(role => ({
+            value: (role.roleName || '').toLowerCase().replace(/\s+/g, '-'),
+            label: role.roleName || 'Role'
+          })));
+        }
+      }
+    });
+  }
+
   closeModal(): void {
     this.showCreateModal.set(false);
+    this.router.navigate(['/admin/users/employees']);
+  }
+
+  validateForm(): boolean {
+    if (!this.formData.fullName || !this.formData.email || !this.formData.department) {
+      alert('Please fill in required fields');
+      return false;
+    }
+    return true;
   }
 
   saveDraft(): void {
+    localStorage.setItem('employeeDraft', JSON.stringify(this.formData));
     alert('Draft saved!');
   }
 
+  loadDraft(): void {
+    const draft = localStorage.getItem('employeeDraft');
+    if (draft) {
+      this.formData = JSON.parse(draft);
+    }
+  }
+
+  generateEmployeeCode(): string {
+    return `EMP${Date.now().toString().slice(-6)}${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`;
+  }
+
   saveEmployee(): void {
-    alert('Employee saved successfully!');
+    if (!this.validateForm()) return;
+
+    this.loading.set(true);
+    const employeeCode = this.formData.employeeCode || this.generateEmployeeCode();
+
+    const employeeData: CreateEmployeeRequest = {
+      employeeCode: employeeCode,
+      fullName: this.formData.fullName,
+      department: this.formData.department,
+      position: this.formData.position || null,
+      email: this.formData.email || null,
+      phone: this.formData.phone || null,
+      hireDate: this.formData.joinDate ? new Date(this.formData.joinDate).toISOString() : null,
+    };
+
+    this.employeesService.create(employeeData).subscribe({
+      next: (response) => {
+        if (response.success) {
+          alert('Employee created!');
+          this.router.navigate(['/admin/users/employees']);
+        } else {
+          this.error.set(response.message);
+        }
+        this.loading.set(false);
+      },
+      error: () => {
+        this.error.set('Connection error');
+        this.loading.set(false);
+      }
+    });
   }
 }

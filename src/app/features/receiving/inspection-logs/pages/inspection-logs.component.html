@@ -9,10 +9,17 @@
     </button>
   </div>
 
+  @if (loading()) {
+    <p class="text-muted">Loading inspection logs…</p>
+  }
+  @if (error()) {
+    <div class="alert alert-danger">{{ error() }}</div>
+  }
+
   <div class="filter-bar">
     <div class="search-box">
       <i class="bi bi-search"></i>
-      <input type="text" [value]="searchTerm()" (input)="onSearchChange($any($event.target).value)" placeholder="Search by GRN#, item, supplier...">
+      <input type="text" [ngModel]="searchTerm()" (ngModelChange)="onSearchChange($event)" placeholder="Search by GRN#, item, supplier...">
     </div>
     <div class="filter-group">
       <label>📅 Date:</label>
@@ -23,7 +30,7 @@
     </div>
     <div class="filter-group">
       <label>🏷️ Result:</label>
-      <select [(ngModel)]="resultFilter" (ngModelChange)="onResultFilterChange($event)">
+      <select [ngModel]="resultFilter()" (ngModelChange)="onResultFilterChange($event)">
         @for (result of results; track result) {
           <option [value]="result">{{ result }}</option>
         }
@@ -31,8 +38,8 @@
     </div>
     <div class="filter-group">
       <label>🔧 Inspector:</label>
-      <select [(ngModel)]="inspectorFilter" (ngModelChange)="onResultFilterChange($event)">
-        @for (inspector of inspectors; track inspector) {
+      <select [ngModel]="inspectorFilter()" (ngModelChange)="onInspectorFilterChange($event)">
+        @for (inspector of inspectors(); track inspector) {
           <option [value]="inspector">{{ inspector }}</option>
         }
       </select>

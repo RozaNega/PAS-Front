@@ -1,11 +1,27 @@
-import { ChangeDetectionStrategy, Component, inject, signal, DestroyRef } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
-import { CalendarWidgetComponent } from '../../../../shared/components/calendar-widget/calendar-widget.component';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  OnInit,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
+import { Router, RouterLink, RouterLinkActive } from '@angular/router';
+import { EMPTY, of } from 'rxjs';
+import { catchError, finalize } from 'rxjs/operators';
+
+import { DashboardService, DashboardStatistics } from '../../../../core/services/dashboard.service';
+import { ServiceRequestService } from '../../../requisition/service-requests/services/service-request.service';
+import { NotificationService as ToastService } from '../../../../core/services/notification.service';
+import { pasApiUrlHint } from '../../../../core/config/api-base';
 
 type RequisitionStatus = 'Pending' | 'Approved' | 'Rejected' | 'Completed' | 'Issued';
 
-interface Requisition {
-  readonly id: number;
+interface RequisitionRow {
+  readonly id: string;
   readonly requestor: string;
   readonly item: string;
   readonly quantity: number;
@@ -39,82 +55,53 @@ interface LowStockAlert {
   readonly level: 'Critical' | 'Warning' | 'Attention';
 }
 
+interface LocationBar {
+  readonly name: string;
+  readonly value: number;
+}
+
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
-  imports: [],
+  imports: [CommonModule, RouterLink, RouterLinkActive],
   templateUrl: './admin-dashboard.component.html',
   styleUrl: './admin-dashboard.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class AdminDashboardComponent {
+export class AdminDashboardComponent implements OnInit {
   readonly router = inject(Router);
-  private destroyRef = inject(DestroyRef);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly dashboardService = inject(DashboardService);
+  private readonly serviceRequests = inject(ServiceRequestService);
+  private readonly toast = inject(ToastService);
 
   readonly currentDate = signal('');
   readonly currentTime = signal('');
   readonly location = signal('Addis Ababa, Ethiopia');
+  readonly isLoading = signal(false);
+  readonly hasLoadedOnce = signal(false);
+  readonly loadError = signal<string | null>(null);
+  readonly lastRefreshed = signal<string | null>(null);
+  readonly isAutoRefreshEnabled = signal(false);
+  private autoRefreshInterval: ReturnType<typeof setInterval> | null = null;
 
-  readonly summaryCards = [
-    { title: 'Total Properties Value', value: '$2.4M', trend: '+12%', icon: 'bi bi-currency-dollar', color: 'blue' },
-    { title: 'Total Properties', value: '1,234', trend: '+5%', icon: 'bi bi-buildings', color: 'green' },
-    { title: 'Total Locations', value: '45', trend: '+2', icon: 'bi bi-geo-alt', color: 'purple' },
-    { title: 'Total Safety Boxes', value: '234', trend: '+10', icon: 'bi bi-box-seam', color: 'orange' },
-    { title: 'Pending Requisitions', value: '12', trend: '-3', icon: 'bi bi-clock', color: 'red' },
-    { title: 'Active Users', value: '89', trend: '+5', icon: 'bi bi-people', color: 'teal' },
-  ];
+  readonly requisitionsLoading = signal(false);
+  readonly requisitionsFromApi = signal(false);
 
-  readonly recentRequisitions: Requisition[] = [
-    {
-      id: 1,
-      requestor: 'John Doe',
-      item: 'Laptop',
-      quantity: 1,
-      date: '2024-04-28',
-      status: 'Pending',
-    },
-    {
-      id: 2,
-      requestor: 'Jane Smith',
-      item: 'Monitor',
-      quantity: 2,
-      date: '2024-04-27',
-      status: 'Approved',
-    },
-    {
-      id: 3,
-      requestor: 'Bob Johnson',
-      item: 'Printer',
-      quantity: 1,
-      date: '2024-04-26',
-      status: 'Rejected',
-    },
-    {
-      id: 4,
-      requestor: 'Alice Wilson',
-      item: 'Office Chair',
-      quantity: 5,
-      date: '2024-04-25',
-      status: 'Completed',
-    },
-    {
-      id: 5,
-      requestor: 'Charlie Brown',
-      item: 'Desk Lamp',
-      quantity: 3,
-      date: '2024-04-24',
-      status: 'Issued',
-    },
-  ];
+  readonly summaryCards = signal<
+    { title: string; value: string; trend: string; icon: string; color: string }[]
+  >([
+    { title: 'Total Property Value', value: '—', trend: '—', icon: 'bi bi-currency-dollar', color: 'blue' },
+    { title: 'Total Properties', value: '—', trend: '—', icon: 'bi bi-buildings', color: 'green' },
+    { title: 'Total Locations', value: '—', trend: '—', icon: 'bi bi-geo-alt', color: 'purple' },
+    { title: 'Total Safety Boxes', value: '—', trend: '—', icon: 'bi bi-box-seam', color: 'orange' },
+    { title: 'Pending Requisitions', value: '—', trend: '—', icon: 'bi bi-clock', color: 'red' },
+    { title: 'Employees', value: '—', trend: '—', icon: 'bi bi-people', color: 'teal' },
+  ]);
 
-  readonly recentActivities: ActivityItem[] = [
-    { id: 1, title: 'Property Added', description: 'Office Building A added to inventory', time: '5 min ago', icon: 'bi bi-building' },
-    { id: 2, title: 'Requisition Approved', description: 'REQ-1234 approved for John Doe', time: '15 min ago', icon: 'bi bi-check-circle' },
-    { id: 3, title: 'Stock Adjustment', description: 'Adjusted stock for SKU-002 (+10)', time: '30 min ago', icon: 'bi bi-sliders' },
-    { id: 4, title: 'User Created', description: 'Alice Wilson account created', time: '1 hour ago', icon: 'bi bi-person-plus' },
-    { id: 5, title: 'Asset Transfer', description: 'Transfer completed between departments', time: '2 hours ago', icon: 'bi bi-arrow-left-right' },
-    { id: 6, title: 'GRN Received', description: 'GRN-456 received and inspected', time: '3 hours ago', icon: 'bi bi-arrow-up-circle' },
-  ];
+  readonly recentRequisitions = signal<RequisitionRow[]>([]);
+
+  readonly recentActivities = signal<ActivityItem[]>([]);
 
   readonly topRequestedItems: TopRequestedItem[] = [
     { id: 1, name: 'Laptop', category: 'Electronics', quantity: 25, requests: 45 },
@@ -124,67 +111,369 @@ export class AdminDashboardComponent {
     { id: 5, name: 'Desk Lamp', category: 'Furniture', quantity: 8, requests: 25 },
   ];
 
-  readonly lowStockAlerts: LowStockAlert[] = [
-    { id: 1, item: 'USB Cable', sku: 'SKU-005', currentStock: 3, minLevel: 25, location: 'Warehouse A', level: 'Critical' },
-    { id: 2, item: 'Desk Lamp', sku: 'SKU-004', currentStock: 8, minLevel: 30, location: 'Warehouse B', level: 'Critical' },
-    { id: 3, item: 'Laptop', sku: 'SKU-002', currentStock: 5, minLevel: 20, location: 'Warehouse A', level: 'Warning' },
-    { id: 4, item: 'Keyboard', sku: 'SKU-006', currentStock: 15, minLevel: 40, location: 'Warehouse C', level: 'Warning' },
-    { id: 5, item: 'Mouse', sku: 'SKU-007', currentStock: 25, minLevel: 50, location: 'Warehouse B', level: 'Attention' },
-  ];
+  readonly lowStockAlerts = signal<LowStockAlert[]>([]);
 
-  readonly requisitionStatus = [
-    { label: 'Pending', value: 12, color: '#f59e0b' },
-    { label: 'Approved', value: 45, color: '#10b981' },
-    { label: 'Rejected', value: 8, color: '#ef4444' },
-    { label: 'Completed', value: 156, color: '#3b82f6' },
-    { label: 'Issued', value: 89, color: '#8b5cf6' },
-  ];
+  readonly requisitionStatus = signal<{ label: string; value: number; color: string }[]>([]);
 
-  readonly locationDistribution = [
-    { name: 'Warehouse A', value: 450 },
-    { name: 'Warehouse B', value: 320 },
-    { name: 'Warehouse C', value: 280 },
-    { name: 'North Office', value: 120 },
-    { name: 'South Office', value: 64 },
-  ];
+  readonly locationDistribution = signal<LocationBar[]>([]);
 
-  readonly complianceScore = 94;
+  readonly locationBarMax = computed(() =>
+    Math.max(1, ...this.locationDistribution().map((l) => l.value)),
+  );
+
+  readonly complianceScore = signal(94);
 
   constructor() {
     this.updateDateTime();
     const interval = setInterval(() => this.updateDateTime(), 1000);
-    this.destroyRef.onDestroy(() => clearInterval(interval));
+    this.destroyRef.onDestroy(() => {
+      clearInterval(interval);
+      if (this.autoRefreshInterval) {
+        clearInterval(this.autoRefreshInterval);
+        this.autoRefreshInterval = null;
+      }
+    });
+  }
+
+  ngOnInit(): void {
+    this.refreshData();
+  }
+
+  apiConnectionHint(): string {
+    return pasApiUrlHint();
+  }
+
+  private num(v: unknown): number {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : 0;
+  }
+
+  private formatMoney(value: number | undefined | null): string {
+    if (value == null || Number.isNaN(value)) return '—';
+    return new Intl.NumberFormat(undefined, {
+      style: 'currency',
+      currency: 'USD',
+      maximumFractionDigits: 0,
+    }).format(value);
+  }
+
+  private mapSeverity(severity: string | undefined | null): 'Critical' | 'Warning' | 'Attention' {
+    const s = (severity || '').toLowerCase();
+    if (s.includes('critical') || s.includes('high')) return 'Critical';
+    if (s.includes('warning') || s.includes('medium')) return 'Warning';
+    return 'Attention';
+  }
+
+  private mapStatusToRow(s: string | undefined | null): RequisitionStatus {
+    const m = (s || '').trim().toLowerCase();
+    const map: Record<string, RequisitionStatus> = {
+      pending: 'Pending',
+      approved: 'Approved',
+      rejected: 'Rejected',
+      completed: 'Completed',
+      issued: 'Issued',
+    };
+    return map[m] || 'Pending';
+  }
+
+  isPendingStatus(status: string): boolean {
+    return status.trim().toLowerCase() === 'pending';
+  }
+
+  private formatShortDate(iso: string | undefined): string {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return iso.slice(0, 10);
+    return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+  }
+
+  private computeComplianceScore(d: DashboardStatistics): number {
+    const pending = this.num(d.pendingRequisitions);
+    const approved = this.num(d.approvedRequisitions);
+    const completed = this.num(d.completedRequisitions);
+    const issued = this.num(d.issuedRequisitions);
+    const rejected = this.num(d.rejectedRequisitions);
+    const total = pending + approved + completed + issued + rejected;
+    if (total <= 0) return 94;
+    const openRatio = pending / total;
+    const score = Math.round(Math.max(62, Math.min(99, 100 - openRatio * 55 - rejected * 0.8)));
+    return score;
+  }
+
+  refreshData(): void {
+    this.loadDashboardStatistics();
+    this.loadRecentServiceRequests();
+  }
+
+  loadDashboardStatistics(): void {
+    this.isLoading.set(true);
+    this.loadError.set(null);
+    this.dashboardService
+      .getStatistics()
+      .pipe(
+        catchError((err: unknown) => {
+          this.loadError.set(this.describeHttpError(err));
+          return of(null);
+        }),
+        finalize(() => {
+          this.isLoading.set(false);
+          this.hasLoadedOnce.set(true);
+        }),
+      )
+      .subscribe((response) => {
+        if (response?.success && response.data) {
+          this.applyStatistics(response.data);
+          this.lastRefreshed.set(new Date().toLocaleString());
+          this.loadError.set(null);
+        } else if (response && !response.success) {
+          this.loadError.set(response.message || 'Dashboard statistics could not be loaded.');
+        } else if (!response) {
+          /* error handled in catchError */
+        } else {
+          this.loadError.set('Dashboard returned no statistics payload.');
+        }
+      });
+  }
+
+  private describeHttpError(err: unknown): string {
+    if (err instanceof HttpErrorResponse) {
+      if (err.status === 0) {
+        return `Unable to reach the API (${err.url || 'unknown URL'}). ${pasApiUrlHint()}`;
+      }
+      const body = err.error;
+      const msg =
+        body && typeof body === 'object' && 'message' in body && typeof (body as { message?: string }).message === 'string'
+          ? (body as { message: string }).message
+          : err.message;
+      return `Request failed (${err.status}). ${msg}`;
+    }
+    return `Unable to reach the dashboard API. ${pasApiUrlHint()}`;
+  }
+
+  loadRecentServiceRequests(): void {
+    this.requisitionsLoading.set(true);
+    this.serviceRequests
+      .getAll({ pageNumber: 1, pageSize: 8 })
+      .pipe(
+        catchError(() => {
+          this.requisitionsFromApi.set(false);
+          this.recentRequisitions.set(this.fallbackSampleRequisitions());
+          return EMPTY;
+        }),
+        finalize(() => this.requisitionsLoading.set(false)),
+      )
+      .subscribe((res) => {
+        if (!res) return;
+        if (res.success === false) {
+          this.requisitionsFromApi.set(false);
+          this.recentRequisitions.set([]);
+          return;
+        }
+        this.requisitionsFromApi.set(true);
+        const list = res.data ?? [];
+        if (!list.length) {
+          this.recentRequisitions.set([]);
+          return;
+        }
+        const rows: RequisitionRow[] = list.map((sr) => ({
+          id: sr.id,
+          requestor: sr.requesterName || '—',
+          item: sr.purpose?.trim() || (sr.totalItems > 1 ? `${sr.totalItems} line items` : 'Service request'),
+          quantity: this.num(sr.totalQuantity),
+          date: this.formatShortDate(sr.requestDate),
+          status: this.mapStatusToRow(sr.status),
+        }));
+        this.recentRequisitions.set(rows);
+      });
+  }
+
+  private fallbackSampleRequisitions(): RequisitionRow[] {
+    return [
+      { id: 'sample-1', requestor: 'John Doe', item: 'Laptop', quantity: 1, date: '2024-04-28', status: 'Pending' },
+      { id: 'sample-2', requestor: 'Jane Smith', item: 'Monitor', quantity: 2, date: '2024-04-27', status: 'Approved' },
+      { id: 'sample-3', requestor: 'Bob Johnson', item: 'Printer', quantity: 1, date: '2024-04-26', status: 'Rejected' },
+      { id: 'sample-4', requestor: 'Alice Wilson', item: 'Office Chair', quantity: 5, date: '2024-04-25', status: 'Completed' },
+      { id: 'sample-5', requestor: 'Charlie Brown', item: 'Desk Lamp', quantity: 3, date: '2024-04-24', status: 'Issued' },
+    ];
+  }
+
+  private applyStatistics(d: DashboardStatistics): void {
+    this.summaryCards.set([
+      {
+        title: 'Total Property Value',
+        value: this.formatMoney(d.totalPropertyValue),
+        trend: '—',
+        icon: 'bi bi-currency-dollar',
+        color: 'blue',
+      },
+      {
+        title: 'Total Properties',
+        value: this.num(d.totalProperties).toLocaleString(),
+        trend: '—',
+        icon: 'bi bi-buildings',
+        color: 'green',
+      },
+      {
+        title: 'Total Locations',
+        value: this.num(d.totalLocations).toLocaleString(),
+        trend: '—',
+        icon: 'bi bi-geo-alt',
+        color: 'purple',
+      },
+      {
+        title: 'Total Safety Boxes',
+        value: this.num(d.totalSafetyBoxes).toLocaleString(),
+        trend: '—',
+        icon: 'bi bi-box-seam',
+        color: 'orange',
+      },
+      {
+        title: 'Pending Requisitions',
+        value: this.num(d.pendingRequisitions).toLocaleString(),
+        trend: '—',
+        icon: 'bi bi-clock',
+        color: 'red',
+      },
+      {
+        title: 'Employees',
+        value: this.num(d.totalEmployees).toLocaleString(),
+        trend: '—',
+        icon: 'bi bi-people',
+        color: 'teal',
+      },
+    ]);
+
+    const chart = d.requisitionsByStatus || [];
+    this.requisitionStatus.set(
+      chart.length
+        ? chart.map((c) => ({ label: c.label, value: this.num(c.value), color: c.color || '#64748b' }))
+        : [
+            { label: 'Pending', value: this.num(d.pendingRequisitions), color: '#f59e0b' },
+            { label: 'Approved', value: this.num(d.approvedRequisitions), color: '#10b981' },
+            { label: 'Rejected', value: this.num(d.rejectedRequisitions), color: '#ef4444' },
+            { label: 'Completed', value: this.num(d.completedRequisitions), color: '#3b82f6' },
+            { label: 'Issued', value: this.num(d.issuedRequisitions), color: '#8b5cf6' },
+          ],
+    );
+
+    const locChart = d.propertiesByLocationChart || [];
+    if (locChart.length) {
+      this.locationDistribution.set(
+        locChart.map((c) => ({ name: c.label, value: this.num(c.value) })),
+      );
+    } else {
+      this.locationDistribution.set([]);
+    }
+
+    this.complianceScore.set(this.computeComplianceScore(d));
+
+    this.lowStockAlerts.set(
+      (d.lowStockAlerts || []).map((a, idx) => ({
+        id: idx + 1,
+        item: a.itemName,
+        sku: a.sku,
+        currentStock: this.num(a.currentStock),
+        minLevel: this.num(a.minStockLevel),
+        location: a.location || '—',
+        level: this.mapSeverity(a.severity),
+      })),
+    );
+
+    this.recentActivities.set(
+      (d.recentActivities || []).map((a, i) => ({
+        id: i + 1,
+        title: a.action || 'Activity',
+        description: [a.entityName, a.userName].filter(Boolean).join(' · ') || '—',
+        time: a.timeAgo || (a.actionDate ? new Date(a.actionDate).toLocaleString() : '—'),
+        icon: a.icon?.startsWith('bi') ? a.icon : 'bi bi-activity',
+      })),
+    );
   }
 
   updateDateTime(): void {
     const now = new Date();
-    const options: Intl.DateTimeFormatOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    const options: Intl.DateTimeFormatOptions = {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    };
     this.currentDate.set(now.toLocaleDateString('en-US', options));
     this.currentTime.set(now.toLocaleTimeString('en-US', { hour12: true }));
   }
 
-  refreshData() {
-    console.log('Refreshing data...');
-    this.updateDateTime();
-    // In a real application, this would fetch fresh data from an API
-  }
-
-  viewAllRequisitions() {
-    this.router.navigate(['/admin/requisitions']);
-  }
-
-  approveRequisition(id: number) {
-    const req = this.recentRequisitions.find(r => r.id === id);
-    if (req) {
-      console.log(`Approving requisition ${id}`);
+  toggleAutoRefresh(): void {
+    this.isAutoRefreshEnabled.update((enabled) => !enabled);
+    if (this.isAutoRefreshEnabled()) {
+      if (this.autoRefreshInterval) clearInterval(this.autoRefreshInterval);
+      this.autoRefreshInterval = setInterval(() => this.refreshData(), 30000);
+    } else if (this.autoRefreshInterval) {
+      clearInterval(this.autoRefreshInterval);
+      this.autoRefreshInterval = null;
     }
   }
 
-  rejectRequisition(id: number) {
-    const req = this.recentRequisitions.find(r => r.id === id);
-    if (req) {
-      console.log(`Rejecting requisition ${id}`);
+  viewAllRequisitions(): void {
+    void this.router.navigate(['/admin/requisitions']);
+  }
+
+  openRequisition(id: string): void {
+    if (id.startsWith('sample-')) {
+      void this.router.navigate(['/admin/requisitions']);
+      return;
     }
+    void this.router.navigate(['/admin/requisitions', id]);
+  }
+
+  approveRequisition(id: string): void {
+    if (id.startsWith('sample-')) {
+      this.toast.info('Sample row — open Requisitions for live approvals.');
+      void this.router.navigate(['/admin/requisitions/pending']);
+      return;
+    }
+    this.serviceRequests.approve({ id, remarks: '' }).subscribe({
+      next: (res) => {
+        if (res.success !== false) {
+          this.toast.success('Request approved');
+          this.patchRequisitionStatus(id, 'Approved');
+          this.loadDashboardStatistics();
+        } else {
+          this.toast.error(res.message || 'Approve failed');
+        }
+      },
+      error: () => this.toast.error('Approve failed'),
+    });
+  }
+
+  rejectRequisition(id: string): void {
+    if (id.startsWith('sample-')) {
+      this.toast.info('Sample row — use Requisitions for live rejections.');
+      void this.router.navigate(['/admin/requisitions/pending']);
+      return;
+    }
+    const reason = window.prompt('Reason for rejection (required):', '')?.trim();
+    if (!reason) {
+      this.toast.info('Rejection cancelled');
+      return;
+    }
+    this.serviceRequests.reject({ id, reason }).subscribe({
+      next: (res) => {
+        if (res.success !== false) {
+          this.toast.success('Request rejected');
+          this.patchRequisitionStatus(id, 'Rejected');
+          this.loadDashboardStatistics();
+        } else {
+          this.toast.error(res.message || 'Reject failed');
+        }
+      },
+      error: () => this.toast.error('Reject failed'),
+    });
+  }
+
+  private patchRequisitionStatus(id: string, status: RequisitionStatus): void {
+    this.recentRequisitions.update((rows) =>
+      rows.map((r) => (r.id === id ? { ...r, status } : r)),
+    );
   }
 
   getStatusClass(status: string): string {

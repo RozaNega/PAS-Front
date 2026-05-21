@@ -75,7 +75,7 @@
               <label>Role <span class="required">*</span></label>
               <select [(ngModel)]="formData.role">
                 <option value="">Select Role</option>
-                @for (role of roles; track role.value) {
+                @for (role of roles(); track role.value) {
                   <option [value]="role.value">{{ role.label }}</option>
                 }
               </select>

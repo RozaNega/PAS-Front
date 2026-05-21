@@ -1,6 +1,7 @@
-import { Component, signal, computed } from '@angular/core';
+import { Component, signal, computed, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { StockReportService, StockReportItem } from '../services/stock-report.service';
 
 interface StockItem {
   sku: string;
@@ -20,7 +21,9 @@ interface StockItem {
   templateUrl: './stock-report.component.html',
   styleUrls: ['./stock-report.component.scss']
 })
-export class StockReportComponent {
+export class StockReportComponent implements OnInit {
+  private readonly reportService = inject(StockReportService);
+
   dateRange = { start: '2024-12-01', end: '2024-12-15' };
   warehouseFilter = signal('All Warehouses');
   categoryFilter = signal('All Categories');
@@ -35,14 +38,9 @@ export class StockReportComponent {
   reportTypes = ['Summary', 'Detailed', 'Valuation', 'Movement'];
   formats = ['PDF', 'Excel', 'CSV'];
 
-  stockItems = signal<StockItem[]>([
-    { sku: 'LAP-001', name: 'Dell XPS Laptop', category: 'Electronics', warehouse: 'WH A', quantity: 45, unitPrice: 2499, total: 112455, status: 'In Stock' },
-    { sku: 'MON-002', name: 'HP Monitor', category: 'Electronics', warehouse: 'WH A', quantity: 67, unitPrice: 350, total: 23450, status: 'In Stock' },
-    { sku: 'CHR-003', name: 'Office Chair', category: 'Furniture', warehouse: 'WH B', quantity: 23, unitPrice: 450, total: 10350, status: 'Low Stock' },
-    { sku: 'CAB-004', name: 'USB Cables', category: 'Accessories', warehouse: 'WH A', quantity: 5, unitPrice: 5, total: 25, status: 'Out of Stock' },
-    { sku: 'PAP-005', name: 'A4 Paper', category: 'Stationery', warehouse: 'WH B', quantity: 120, unitPrice: 25, total: 3000, status: 'In Stock' },
-    { sku: 'TON-006', name: 'Toner Cartridge', category: 'Supplies', warehouse: 'WH A', quantity: 8, unitPrice: 75, total: 600, status: 'Low Stock' }
-  ]);
+  stockItems = signal<StockItem[]>([]);
+  loading = signal(false);
+  error = signal<string | null>(null);
 
   // Computed summary statistics
   totalItems = computed(() => this.stockItems().length);
@@ -84,14 +82,38 @@ export class StockReportComponent {
 
   filteredItems = signal<StockItem[]>([]);
 
-  constructor() {
-    // Calculate bar heights once to avoid ExpressionChangedAfterItHasBeenCheckedError
+  ngOnInit(): void {
     const heights: number[] = [];
     for (let i = 0; i < 8; i++) {
       heights.push(this.getRandomHeight(100, 60));
     }
     this.barHeights.set(heights);
-    this.filterItems();
+    this.loadStockReport();
+  }
+
+  loadStockReport(): void {
+    this.loading.set(true);
+    this.error.set(null);
+
+    this.reportService.getStockReport({
+      dateFrom: this.dateRange.start,
+      dateTo: this.dateRange.end
+    }).subscribe({
+      next: (res) => {
+        if (res.success !== false && Array.isArray(res.data)) {
+          this.stockItems.set(res.data);
+        } else {
+          this.error.set(res.message || 'Failed to load stock report');
+        }
+        this.loading.set(false);
+        this.filterItems();
+      },
+      error: (err) => {
+        console.error('Error loading stock report:', err);
+        this.error.set('Failed to load stock report. Please try again.');
+        this.loading.set(false);
+      }
+    });
   }
 
   filterItems(): void {
@@ -217,11 +239,11 @@ export class StockReportComponent {
 
   getStatusIcon(status: string): string {
     const icons: { [key: string]: string } = {
-      'In Stock': '🟢',
-      'Low Stock': '🟡',
-      'Out of Stock': '🔴'
+      'In Stock': 'bi bi-check-circle-fill',
+      'Low Stock': 'bi bi-exclamation-circle-fill',
+      'Out of Stock': 'bi bi-x-circle-fill'
     };
-    return icons[status] || '⚪';
+    return icons[status] || 'bi bi-info-circle-fill';
   }
 
   getRandomHeight(base: number, variance: number): number {

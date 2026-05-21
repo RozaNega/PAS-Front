@@ -1,7 +1,9 @@
 import { Component, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { InventoryService } from '../../../../core/services/inventory.service';
+import { HttpErrorResponse } from '@angular/common/http';
+import { WarehousesService, WarehouseDto, CreateWarehouseRequest, UpdateWarehouseRequest } from '../../../../core/services/warehouses.service';
+import { pasApiUrlHint } from '../../../../core/config/api-base';
 
 interface Warehouse {
   id: string;
@@ -24,7 +26,8 @@ interface Warehouse {
   styleUrls: ['./warehouses.component.scss']
 })
 export class WarehousesComponent {
-  readonly inventoryService = inject(InventoryService);
+  readonly warehousesService = inject(WarehousesService);
+  readonly apiConnectionHint = pasApiUrlHint();
   searchTerm = signal('');
   statusFilter = signal('All');
   typeFilter = signal('All Types');
@@ -34,14 +37,10 @@ export class WarehousesComponent {
 
   statuses = ['All', 'Active', 'Limited', 'Inactive'];
 
-  warehouses = signal<Warehouse[]>([
-    { id: '1', name: 'Warehouse A', code: 'WH-01', location: 'Addis Ababa', items: 5234, value: 1245000, shelves: 24, status: 'Active', type: 'Main Warehouse', maxCapacity: 10000 },
-    { id: '2', name: 'Warehouse B', code: 'WH-02', location: 'Addis Ababa', items: 3876, value: 890000, shelves: 18, status: 'Active', type: 'Secondary WH', maxCapacity: 8000 },
-    { id: '3', name: 'Warehouse C', code: 'WH-03', location: 'Dire Dawa', items: 2145, value: 450000, shelves: 12, status: 'Limited', type: 'Cold Storage', maxCapacity: 5000 },
-    { id: '4', name: 'Storage Unit', code: 'ST-01', location: 'Bole Area', items: 1090, value: 156000, shelves: 8, status: 'Active', type: 'Storage', maxCapacity: 3000 }
-  ]);
+  warehouses = signal<Warehouse[]>([]);
+  loadError = signal<string | null>(null);
 
-  modalFormData = signal({
+  modalFormData = {
     warehouseName: '',
     locationCode: '',
     address: '',
@@ -50,9 +49,11 @@ export class WarehousesComponent {
     contactPerson: '',
     contactPhone: '',
     contactEmail: ''
-  });
+  };
 
   // Computed properties for summary
+  activeWarehouseCount = computed(() => this.warehouses().filter((w) => w.status === 'Active').length);
+
   totalItems = computed(() => {
     return this.warehouses().reduce((sum, wh) => sum + wh.items, 0);
   });
@@ -84,29 +85,51 @@ export class WarehousesComponent {
 
   loadWarehouses(): void {
     this.isLoading.set(true);
-    this.inventoryService.getAllWarehouses().subscribe({
+    this.loadError.set(null);
+    this.warehousesService.getAll().subscribe({
       next: (response) => {
-        if (response.success && response.data) {
-          this.warehouses.set(response.data.map(wh => ({
+        const rows = Array.isArray(response.data) ? response.data : [];
+        this.warehouses.set(
+          rows.map((wh) => ({
             id: wh.id,
-            name: wh.name,
-            code: wh.id.substring(0, 8).toUpperCase(),
+            name: wh.warehouseName,
+            code: wh.warehouseCode,
             location: wh.location || '',
-            items: 0,
+            items: wh.currentUtilization ?? 0,
             value: 0,
             shelves: 0,
             status: wh.isActive ? 'Active' : 'Inactive',
-            type: 'Main Warehouse',
-            maxCapacity: 10000
-          })));
-          this.filterWarehouses();
+            type: 'Warehouse',
+            maxCapacity: wh.capacity ?? 10000,
+          })),
+        );
+        if (rows.length === 0) {
+          this.loadError.set(
+            response.success === false
+              ? response.message || 'No warehouses returned from the API.'
+              : 'No warehouses in the database yet.',
+          );
+        } else {
+          this.loadError.set(null);
         }
+        this.filterWarehouses();
         this.isLoading.set(false);
       },
-      error: (error) => {
+      error: (error: unknown) => {
         console.error('Error loading warehouses:', error);
+        let msg = 'Failed to reach the server.';
+        if (error instanceof HttpErrorResponse) {
+          if (error.status === 0) {
+            msg = 'Cannot reach the API (network). Is the backend running on port 5028?';
+          } else {
+            msg = `HTTP ${error.status}: ${error.message || 'request failed'}.`;
+          }
+        }
+        this.loadError.set(msg);
+        this.warehouses.set([]);
+        this.filterWarehouses();
         this.isLoading.set(false);
-      }
+      },
     });
   }
 
@@ -142,7 +165,7 @@ export class WarehousesComponent {
 
   openAddModal(): void {
     this.selectedWarehouse.set(null);
-    this.modalFormData.set({
+    this.modalFormData = {
       warehouseName: '',
       locationCode: '',
       address: '',
@@ -151,13 +174,13 @@ export class WarehousesComponent {
       contactPerson: '',
       contactPhone: '',
       contactEmail: ''
-    });
+    };
     this.showModal.set(true);
   }
 
   openEditModal(warehouse: Warehouse): void {
     this.selectedWarehouse.set(warehouse);
-    this.modalFormData.set({
+    this.modalFormData = {
       warehouseName: warehouse.name,
       locationCode: warehouse.code,
       address: warehouse.location,
@@ -166,7 +189,7 @@ export class WarehousesComponent {
       contactPerson: '',
       contactPhone: '',
       contactEmail: ''
-    });
+    };
     this.showModal.set(true);
   }
 
@@ -176,59 +199,65 @@ export class WarehousesComponent {
   }
 
   saveWarehouse(): void {
-    const data = this.modalFormData();
+    const data = this.modalFormData;
     const editing = this.selectedWarehouse();
 
     if (editing) {
-      this.inventoryService.updateWarehouse(editing.id, {
-        WarehouseName: data.warehouseName,
-        LocationCode: data.locationCode,
-        Address: data.address,
-        City: data.city,
-        Country: data.country,
-        ContactPerson: data.contactPerson,
-        ContactPhone: data.contactPhone,
-        ContactEmail: data.contactEmail
-      }).subscribe({
-        next: () => {
-          this.warehouses.update(whs =>
-            whs.map(w => w.id === editing.id ? { ...w, name: data.warehouseName, code: data.locationCode, location: data.address } : w)
-          );
-          this.filterWarehouses();
-          this.closeModal();
+      const payload: UpdateWarehouseRequest = {
+        id: editing.id,
+        warehouseName: data.warehouseName,
+        warehouseCode: data.locationCode || editing.code,
+        location: data.address || editing.location,
+        isActive: editing.status !== 'Inactive',
+      };
+      this.warehousesService.update(payload).subscribe({
+        next: (res) => {
+          if (res.success !== false) {
+            this.warehouses.update((whs) =>
+              whs.map((w) =>
+                w.id === editing.id
+                  ? { ...w, name: data.warehouseName, code: payload.warehouseCode ?? w.code, location: payload.location ?? w.location }
+                  : w,
+              ),
+            );
+            this.filterWarehouses();
+            this.closeModal();
+          } else {
+            alert(res.message || 'Update failed');
+          }
         },
         error: (error) => {
           console.error('Error updating warehouse:', error);
           if (error.status !== 401) {
             alert('Failed to update warehouse: ' + (error.error?.message || error.message || 'Server error'));
           }
-        }
+        },
       });
     } else {
-      this.inventoryService.createWarehouse({
-        WarehouseName: data.warehouseName,
-        LocationCode: data.locationCode,
-        Address: data.address,
-        City: data.city,
-        Country: data.country,
-        ContactPerson: data.contactPerson,
-        ContactPhone: data.contactPhone,
-        ContactEmail: data.contactEmail
-      }).subscribe({
+      const createPayload: CreateWarehouseRequest = {
+        warehouseName: data.warehouseName,
+        warehouseCode: data.locationCode || `WH-${Date.now()}`,
+        location: data.address || '—',
+        description: [data.city, data.country].filter(Boolean).join(', ') || undefined,
+        managerName: data.contactPerson || undefined,
+        contactNumber: data.contactPhone || undefined,
+      };
+      this.warehousesService.create(createPayload).subscribe({
         next: (response) => {
-          if (response.success) {
+          if (response.success !== false) {
+            const newId = typeof response.data === 'string' && response.data ? response.data : crypto.randomUUID();
             const newWarehouse: Warehouse = {
-              id: response.data || Date.now().toString(),
+              id: newId || crypto.randomUUID(),
               name: data.warehouseName,
-              code: data.locationCode,
-              location: data.address,
+              code: createPayload.warehouseCode,
+              location: createPayload.location,
               items: 0,
               value: 0,
               shelves: 0,
               status: 'Active',
-              type: 'Main Warehouse'
+              type: 'Warehouse',
             };
-            this.warehouses.update(whs => [...whs, newWarehouse]);
+            this.warehouses.update((whs) => [...whs, newWarehouse]);
             this.filterWarehouses();
             this.closeModal();
           } else {
@@ -240,24 +269,28 @@ export class WarehousesComponent {
           if (error.status !== 401) {
             alert('Failed to create warehouse: ' + (error.error?.message || error.message || 'Server error'));
           }
-        }
+        },
       });
     }
   }
 
   deleteWarehouse(id: string): void {
     if (confirm('Are you sure you want to delete this warehouse?')) {
-      this.inventoryService.deleteWarehouse(id).subscribe({
-        next: () => {
-          this.warehouses.update(whs => whs.filter(w => w.id !== id));
-          this.filterWarehouses();
+      this.warehousesService.delete(id).subscribe({
+        next: (res) => {
+          if (res.success !== false) {
+            this.warehouses.update((whs) => whs.filter((w) => w.id !== id));
+            this.filterWarehouses();
+          } else {
+            alert(res.message || 'Delete failed');
+          }
         },
         error: (error) => {
           console.error('Error deleting warehouse:', error);
           if (error.status !== 401) {
             alert('Failed to delete warehouse: ' + (error.error?.message || error.message || 'Server error'));
           }
-        }
+        },
       });
     }
   }

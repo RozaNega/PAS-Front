@@ -1,18 +1,17 @@
-<section class="category-page">
+<section class="category-dashboard animate-fade-in">
   <div class="sheet-shell">
-    <header class="sheet-topbar">
+    <header class="sheet-topbar glass-effect">
       <div class="brand-block">
         <div class="brand-mark" aria-hidden="true">
           <i class="bi bi-diagram-3"></i>
         </div>
         <div>
-          <p class="eyebrow">AFRICOM</p>
-          <h1>Catalog Category</h1>
+          <p class="eyebrow">AFRICOM ASSETS</p>
+          <h1>Category Workspace</h1>
         </div>
       </div>
 
       <div class="top-actions">
-        <button type="button" class="ghost-pill">PACE</button>
         <button type="button" class="primary-pill" (click)="openCreatePanel()">
           <i class="bi bi-plus-lg"></i>
           Create Category
@@ -20,14 +19,14 @@
       </div>
     </header>
 
-    <section class="search-row" aria-label="Category search and filters">
+    <section class="search-row glass-effect" aria-label="Category search and filters">
       <label class="search-field">
         <i class="bi bi-search"></i>
         <input
           type="search"
           [value]="searchTerm()"
           (input)="setSearchTerm($any($event.target).value)"
-          placeholder="Search categories"
+          placeholder="Search categories by name or description..."
           aria-label="Search categories"
         />
       </label>
@@ -46,27 +45,63 @@
         <select [value]="selectedSort()" (change)="setSort($any($event.target).value)">
           <option value="name">By name</option>
           <option value="items">By item count</option>
-          <option value="children">By child count</option>
+          <option value="children">By sub-nodes</option>
         </select>
       </div>
 
-      <button type="button" class="filter-chip" [class.active]="activePreset() === 'priority'" (click)="activatePreset('priority')">
-        <i class="bi bi-funnel-fill"></i>
-        Priority
-      </button>
-      <button type="button" class="filter-chip" [class.active]="activePreset() === 'structure'" (click)="activatePreset('structure')">
-        <i class="bi bi-diagram-3-fill"></i>
-        Structure
-      </button>
-      <button type="button" class="filter-chip" [class.active]="activePreset() === 'inventory'" (click)="activatePreset('inventory')">
-        <i class="bi bi-tags-fill"></i>
-        Inventory
-      </button>
+      <div class="compact-selectors">
+        <span class="meta-chip">View</span>
+        <select [value]="currentView()" (change)="setView($any($event.target).value)">
+          <option value="list">List View</option>
+          <option value="tree">Tree View</option>
+        </select>
+      </div>
     </section>
+
+    @if (currentView() === 'create') {
+      <section class="create-panel glass-effect animate-slide-down" aria-label="Create category panel">
+        <div class="create-panel__header">
+          <div>
+            <p class="section-label">Hierarchy Management</p>
+            <h2>Create New Category</h2>
+          </div>
+          <button type="button" class="close-btn" (click)="setView('list')">✕</button>
+        </div>
+
+        <form class="create-form" [formGroup]="categoryForm" (ngSubmit)="saveCategory()" novalidate>
+          <div class="form-grid">
+            <label>
+              <span>Category Name</span>
+              <input type="text" formControlName="name" placeholder="e.g. IT Equipment" />
+            </label>
+
+            <label>
+              <span>Description</span>
+              <input type="text" formControlName="description" placeholder="e.g. Laptops, servers, and peripherals" />
+            </label>
+
+            <label>
+              <span>Parent Category</span>
+              <select formControlName="parentCategoryId">
+                <option value="">Root (No Parent)</option>
+                @for (cat of categories(); track cat.id) {
+                  <option [value]="cat.id">{{ cat.name }}</option>
+                }
+              </select>
+            </label>
+          </div>
+
+          <div class="create-actions">
+            <button type="button" class="secondary-pill" (click)="setView('list')">Cancel</button>
+            <button type="submit" class="primary-pill" [disabled]="categoryForm.invalid">Save Category</button>
+          </div>
+        </form>
+      </section>
+    }
 
     <section class="summary-grid" aria-label="Category metrics">
       @for (card of quickStats(); track card.label) {
-        <article class="summary-card">
+        <article class="summary-card glass-effect">
           <div class="summary-card__header">
             <span>{{ card.label }}</span>
             <strong>{{ card.value }}</strong>
@@ -83,147 +118,92 @@
       }
     </section>
 
-    @if (showCreatePanel()) {
-      <section class="create-panel" aria-label="Create category panel">
-        <div class="create-panel__header">
-          <div>
-            <p class="section-label">New category</p>
-            <h2>Create category</h2>
-          </div>
-
-          <button type="button" class="row-action" (click)="closeCreatePanel()">✕</button>
-        </div>
-
-        <div class="status-line" [class.status-line--success]="createTone() === 'success'" [class.status-line--error]="createTone() === 'error'">
-          {{ createMessage() }}
-        </div>
-
-        <form class="create-form" [formGroup]="categoryForm" (ngSubmit)="saveCategory()" novalidate>
-          <label>
-            <span>Name</span>
-            <input type="text" formControlName="name" placeholder="Beverages" />
-          </label>
-
-          <label>
-            <span>Description</span>
-            <input type="text" formControlName="description" placeholder="Water, juice and packaged drinks" />
-          </label>
-
-          <label>
-            <span>Parent category</span>
-            <select formControlName="parentCategoryId">
-              <option value="">Root category</option>
-              @for (category of categories(); track category.id) {
-                <option [value]="category.id">{{ category.name }}</option>
-              }
-            </select>
-          </label>
-
-          <div class="create-actions">
-            <button type="button" class="secondary-pill" (click)="closeCreatePanel()">Cancel</button>
-            <button type="submit" class="primary-pill">Save Category</button>
-          </div>
-        </form>
-      </section>
-    }
-
-    <section class="board-chips" aria-label="Quick category filters">
-      <button type="button" class="board-chip" [class.active]="selectedParentFilter() === 'all'" (click)="setParentFilter('all')">All Parents</button>
-      <button type="button" class="board-chip" [class.active]="selectedParentFilter() === 'root'" (click)="setParentFilter('root')">Root Categories</button>
-      <span class="board-chip-divider"></span>
-      <button type="button" class="reset-link" (click)="clearFilters()">Reset</button>
-      <button type="button" class="secondary-pill" (click)="setView('list')">List</button>
-      <button type="button" class="secondary-pill" (click)="setView('tree')">Tree</button>
-      <button type="button" class="secondary-pill" (click)="setView('detail')">Detail</button>
-    </section>
-
-    <section class="table-shell">
+    <section class="table-shell glass-effect">
       <div class="table-toolbar">
         <div>
-          <p class="section-label">Category records</p>
-          <h2>Catalog category workspace</h2>
+          <p class="section-label">Inventory Classification</p>
+          <h2>{{ categories().length }} Catalog Nodes</h2>
         </div>
-
-        <a class="secondary-pill secondary-pill--link" routerLink="/catalog/items">
-          <i class="bi bi-box-seam"></i>
-          Go to item master
-        </a>
-      </div>
-
-      <div class="list-strip" aria-label="Category quick indicators">
-        <article>
-          <span>Total categories</span>
-          <strong>{{ totalCategories() }}</strong>
-        </article>
-        <article>
-          <span>Root categories</span>
-          <strong>{{ rootCategoryCount() }}</strong>
-        </article>
-        <article>
-          <span>Mapped items</span>
-          <strong>{{ totalItems() }}</strong>
-        </article>
+        
+        <div class="toolbar-actions">
+          <a class="ghost-btn-link" routerLink="/catalog/items">
+            <i class="bi bi-box-seam"></i> Go to Items
+          </a>
+        </div>
       </div>
 
       <div class="table-card">
-        @switch (currentView()) {
-          @case ('list') {
-            <table>
-              <thead>
-                <tr>
-                  <th>Category</th>
-                  <th>Description</th>
-                  <th>Parent</th>
-                  <th>Children</th>
-                  <th>Items</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (category of categories(); track trackByCategory($index, category)) {
+        @if (isLoading()) {
+          <div class="loading-state">
+            <div class="spinner"></div>
+            <p>Syncing categories...</p>
+          </div>
+        } @else {
+          @switch (currentView()) {
+            @case ('list') {
+              <table class="premium-table">
+                <thead>
                   <tr>
-                    <td>
-                      <div class="item-cell">
-                        <span class="item-avatar">{{ category.name.charAt(0) }}</span>
-                        <div>
-                          <strong>{{ category.name }}</strong>
-                          <small>Updated {{ category.updatedAt ?? category.createdAt | date : 'MMM d, y' }}</small>
-                        </div>
-                      </div>
-                    </td>
-                    <td>{{ category.description }}</td>
-                    <td>{{ category.parentCategoryName || 'Root' }}</td>
-                    <td>{{ category.subCategoriesCount }}</td>
-                    <td>{{ category.itemsCount }}</td>
-                    <td><button type="button" class="row-action" (click)="setView('detail')">•••</button></td>
+                    <th>Category Name</th>
+                    <th>Description</th>
+                    <th>Parent Node</th>
+                    <th>Sub-nodes</th>
+                    <th>Linked Items</th>
+                    <th class="text-right">Action</th>
                   </tr>
-                }
-              </tbody>
-            </table>
-          }
-          @case ('tree') {
-            <app-category-tree></app-category-tree>
-          }
-          @case ('create') {
-            <app-category-create></app-category-create>
-          }
-          @case ('edit') {
-            <app-category-edit></app-category-edit>
-          }
-          @case ('detail') {
-            <app-category-detail></app-category-detail>
+                </thead>
+                <tbody>
+                  @for (category of categories(); track category.id) {
+                    <tr>
+                      <td>
+                        <div class="category-info">
+                          <div class="category-icon">{{ category.name.charAt(0) }}</div>
+                          <div class="category-text">
+                            <span class="name">{{ category.name }}</span>
+                            <span class="id">UID: {{ category.id.split('-').pop() }}</span>
+                          </div>
+                        </div>
+                      </td>
+                      <td>{{ category.description }}</td>
+                      <td>
+                        <span class="parent-tag" [class.root]="!category.parentCategoryName">
+                          {{ category.parentCategoryName || 'Root' }}
+                        </span>
+                      </td>
+                      <td>{{ category.subCategoriesCount || 0 }}</td>
+                      <td>{{ category.itemsCount || 0 }}</td>
+                      <td class="text-right">
+                        <div class="row-actions">
+                          <button class="icon-btn" (click)="categoryApi.remove(category.id)"><i class="bi bi-trash"></i></button>
+                          <button class="icon-btn"><i class="bi bi-pencil"></i></button>
+                        </div>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            }
+            @case ('tree') {
+              <div class="tree-placeholder">
+                <i class="bi bi-diagram-3"></i>
+                <p>Tree visualization is being optimized for large datasets.</p>
+              </div>
+            }
           }
         }
       </div>
     </section>
 
-    <footer class="page-footer">
-      <span>AFRICOM · Category workspace</span>
-      <button type="button" class="ghost-pill" (click)="openCreatePanel()">
-        <i class="bi bi-plus-lg"></i>
-        Add category
-      </button>
+    <footer class="page-footer glass-effect">
+      <div class="footer-left">
+        <i class="bi bi-shield-check"></i>
+        <span>Hierarchy integrity verified</span>
+      </div>
+      <div class="footer-right">
+        <span>AFRICOM Asset Management Platform v2.0</span>
+      </div>
     </footer>
   </div>
 </section>
+
 

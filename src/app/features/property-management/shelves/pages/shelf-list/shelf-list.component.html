@@ -1,4 +1,10 @@
-<div class="shelves-container">
+<div class="shelves-container" [class.loading]="isLoading()">
+  @if (isLoading()) {
+    <div class="loading-overlay">
+      <div class="spinner"></div>
+      <p>Loading shelves...</p>
+    </div>
+  }
   <div class="page-header">
     <div class="header-info">
       <h1>Shelf Management</h1>
@@ -9,9 +15,9 @@
   <div class="filter-bar">
     <div class="filter-group">
       <label>Select Safety Box:</label>
-      <select [(ngModel)]="selectedSafetyBox" (ngModelChange)="onSafetyBoxChange($event)">
-        @for (box of safetyBoxes; track box) {
-          <option [value]="box">{{ box }}</option>
+      <select [ngModel]="selectedWarehouse()?.id" (ngModelChange)="onWarehouseIdChange($event)">
+        @for (box of safetyBoxes(); track box.id) {
+          <option [value]="box.id">{{ box.warehouseName }}</option>
         }
       </select>
     </div>
@@ -30,6 +36,11 @@
             <div class="shelf-status" [class.status-gray]="shelf.status === 'Empty'" [class.status-yellow]="shelf.status === 'Partial'" [class.status-green]="shelf.status === 'Full'">
               {{ shelf.itemsCount }} items
             </div>
+          </div>
+        } @empty {
+          <div class="empty-state">
+            <i class="bi bi-grid-3x3"></i>
+            <p>No shelves found in this warehouse.</p>
           </div>
         }
       </div>
@@ -98,26 +109,26 @@
       </div>
       <div class="modal-body">
         <div class="safety-box-info">
-          <span>Safety Box: {{ selectedSafetyBox() }}</span>
+          <span>Warehouse: {{ selectedWarehouse()?.warehouseName }}</span>
         </div>
         <div class="form-section">
           <h4>Shelf Details</h4>
           <div class="form-grid">
             <div class="form-field full-width">
               <label>Shelf Number <span class="required">*</span></label>
-              <input type="text" [(ngModel)]="modalFormData().shelfNumber" placeholder="Shelf-13">
+              <input type="text" [(ngModel)]="modalFormData.shelfNumber" placeholder="Shelf-13">
             </div>
             <div class="form-field full-width">
               <label>Description</label>
-              <textarea [(ngModel)]="modalFormData().description" rows="2" placeholder="Top shelf - for server equipment"></textarea>
+              <textarea [(ngModel)]="modalFormData.description" rows="2" placeholder="Top shelf - for server equipment"></textarea>
             </div>
             <div class="form-field">
               <label>Capacity (Items)</label>
-              <input type="number" [(ngModel)]="modalFormData().capacity" placeholder="10">
+              <input type="number" [(ngModel)]="modalFormData.capacity" placeholder="10">
             </div>
             <div class="form-field">
               <label>Max Weight (kg)</label>
-              <input type="number" [(ngModel)]="modalFormData().maxWeight" placeholder="50">
+              <input type="number" [(ngModel)]="modalFormData.maxWeight" placeholder="50">
             </div>
           </div>
         </div>
@@ -126,13 +137,13 @@
           <h4>QR Code Generation</h4>
           <div class="checkbox-group">
             <label class="checkbox-item">
-              <input type="checkbox" [(ngModel)]="modalFormData().generateQR">
+              <input type="checkbox" [(ngModel)]="modalFormData.generateQR">
               <span>Generate QR code for this shelf</span>
             </label>
           </div>
           <div class="form-field" style="margin-top: 1rem;">
             <label>QR Code Value</label>
-            <input type="text" [(ngModel)]="modalFormData().qrValue" placeholder="SAF-001-SHELF-13" disabled>
+            <input type="text" [(ngModel)]="modalFormData.qrValue" placeholder="SAF-001-SHELF-13" disabled>
           </div>
         </div>
       </div>

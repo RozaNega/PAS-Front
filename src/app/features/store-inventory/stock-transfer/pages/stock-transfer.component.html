@@ -11,6 +11,36 @@
     </button>
   </header>
 
+  <!-- Error Message -->
+  @if (error()) {
+    <div class="alert alert-error">
+      <i class="bi bi-exclamation-triangle-fill"></i>
+      <div>
+        <strong>Error</strong>
+        <p>{{ error() }}</p>
+      </div>
+    </div>
+  }
+
+  <!-- Success Message -->
+  @if (success()) {
+    <div class="alert alert-success">
+      <i class="bi bi-check-circle-fill"></i>
+      <div>
+        <strong>Success</strong>
+        <p>{{ success() }}</p>
+      </div>
+    </div>
+  }
+
+  <!-- Loading State -->
+  @if (loading() || submitting()) {
+    <div class="loading-overlay">
+      <div class="spinner"></div>
+      <p>{{ submitting() ? 'Creating transfer order...' : 'Loading warehouses...' }}</p>
+    </div>
+  }
+
   <!-- Transfer Form -->
   <div class="transfer-form">
     <!-- Step 1: Select Source & Destination -->
@@ -21,17 +51,17 @@
       <div class="warehouse-selection">
         <div class="warehouse-group">
           <label>From Warehouse *</label>
-          <select [(ngModel)]="fromWarehouse" class="form-select">
-            @for (wh of warehouses; track wh) {
-              <option [value]="wh">{{ wh }}</option>
+          <select [ngModel]="fromWarehouse()" (ngModelChange)="fromWarehouse.set($event); onFromWarehouseChange()" class="form-select">
+            @for (wh of warehouses(); track wh.id) {
+              <option [value]="wh.id">{{ wh.name }}</option>
             }
           </select>
         </div>
         <div class="warehouse-group">
           <label>To Warehouse *</label>
-          <select [(ngModel)]="toWarehouse" class="form-select">
-            @for (wh of warehouses; track wh) {
-              <option [value]="wh">{{ wh }}</option>
+          <select [ngModel]="toWarehouse()" (ngModelChange)="toWarehouse.set($event)" class="form-select">
+            @for (wh of warehouses(); track wh.id) {
+              <option [value]="wh.id">{{ wh.name }}</option>
             }
           </select>
         </div>
@@ -48,32 +78,29 @@
         <input type="text" placeholder="Search items in {{ fromWarehouse() }}...">
       </div>
       <div class="items-list">
-        @for (item of transferItems(); track item.sku) {
-          <div class="item-row" [class.selected]="item.selected">
-            <label class="checkbox-label">
-              <input 
-                type="checkbox" 
-                [checked]="item.selected" 
-                (change)="toggleItemSelection(item.sku)"
-              >
+        @if (transferItems().length === 0) {
+          <p class="empty-message">No items available in selected warehouse</p>
+        } @else {
+          @for (item of transferItems(); track item.sku) {
+            <div class="item-row">
               <div class="item-info">
                 <span class="item-sku">SKU: {{ item.sku }}</span>
                 <span class="item-name">{{ item.name }}</span>
                 <span class="item-available">Available: {{ item.available }}</span>
               </div>
-            </label>
-            <div class="item-quantity">
-              <label>Qty to Transfer:</label>
-              <input 
-                type="number" 
-                [(ngModel)]="item.toTransfer"
-                (input)="updateTransferQuantity(item.sku, $any($event.target).value)"
-                [min]="0"
-                [max]="item.available"
-                class="form-input"
-              >
+              <div class="item-quantity">
+                <label>Qty to Transfer:</label>
+                <input
+                  type="number"
+                  [value]="item.toTransfer"
+                  (input)="updateTransferQuantity(item.sku, $any($event.target).value)"
+                  [min]="0"
+                  [max]="item.available"
+                  class="form-input"
+                >
+              </div>
             </div>
-          </div>
+          }
         }
       </div>
     </section>
@@ -85,15 +112,15 @@
       </div>
       <div class="form-group">
         <label>Transfer Reason *</label>
-        <input type="text" [(ngModel)]="transferReason" class="form-input" placeholder="Re-balancing inventory - Warehouse B has higher demand">
+        <input type="text" [ngModel]="transferReason()" (ngModelChange)="transferReason.set($event)" class="form-input" placeholder="Re-balancing inventory - Warehouse B has higher demand">
       </div>
       <div class="form-group">
         <label>Required By Date *</label>
-        <input type="text" [(ngModel)]="requiredByDate" class="form-input">
+        <input type="date" [ngModel]="requiredByDate()" (ngModelChange)="requiredByDate.set($event)" class="form-input">
       </div>
       <div class="form-group">
         <label>Notes</label>
-        <textarea [(ngModel)]="notes" class="form-textarea" rows="2" placeholder="Transfer to support increased demand in Warehouse B"></textarea>
+        <textarea [ngModel]="notes()" (ngModelChange)="notes.set($event)" class="form-textarea" rows="2" placeholder="Transfer to support increased demand in Warehouse B"></textarea>
       </div>
     </section>
 
@@ -119,8 +146,19 @@
 
   <!-- Form Actions -->
   <div class="form-actions">
-    <button type="button" class="action-btn secondary" (click)="cancelForm()">Cancel</button>
-    <button type="button" class="action-btn primary" (click)="createTransferOrder()">Create Transfer Order</button>
+    <button type="button" class="action-btn secondary" (click)="cancelForm()" [disabled]="submitting()">Cancel</button>
+    <button
+      type="button"
+      class="action-btn primary"
+      (click)="createTransferOrder()"
+      [disabled]="submitting() || !isFormValid()"
+    >
+      @if (submitting()) {
+        <i class="bi bi-hourglass-split"></i> Processing...
+      } @else {
+        Create Transfer Order
+      }
+    </button>
   </div>
 
   <!-- Transfer History Modal -->
@@ -135,73 +173,20 @@
         </div>
 
         <div class="modal-body">
-          <!-- Filter Bar -->
-          <div class="filter-bar">
-            <div class="filter-group">
-              <label>📅 Date:</label>
-              <input type="text" value="Dec 01, 2024" class="date-input">
-              <span>to</span>
-              <input type="text" value="Dec 15, 2024" class="date-input">
+          <!-- Transfer History Table -->
+          <div class="history-controls">
+            <div class="search-box">
+              <i class="bi bi-search"></i>
+              <input type="text" placeholder="Search transfer number or warehouse...">
             </div>
-            <div class="filter-group">
-              <label>🔧 Status:</label>
-              <select class="filter-select">
-                <option>All</option>
-                <option>Completed</option>
-                <option>In Progress</option>
-                <option>Pending</option>
-              </select>
-            </div>
-            <div class="filter-group">
-              <label>📍 From:</label>
-              <select class="filter-select">
-                <option>All</option>
-                <option>Warehouse A</option>
-                <option>Warehouse B</option>
-              </select>
-            </div>
-            <div class="filter-group">
-              <label>To:</label>
-              <select class="filter-select">
-                <option>All</option>
-                <option>Warehouse A</option>
-                <option>Warehouse B</option>
-              </select>
-            </div>
-            <button type="button" class="action-btn primary small">Apply Filters</button>
-            <button type="button" class="action-btn secondary small">Reset</button>
           </div>
 
-          <!-- Transfer Summary -->
-          <section class="transfer-summary-section">
-            <h3>📊 TRANSFER SUMMARY</h3>
-            <div class="summary-grid">
-              <div class="summary-card-small">
-                <p class="summary-label">Total Transfers</p>
-                <p class="summary-value">23</p>
-                <p class="summary-sub">this month</p>
-              </div>
-              <div class="summary-card-small">
-                <p class="summary-label">Completed</p>
-                <p class="summary-value">15</p>
-                <p class="summary-sub">✅ Done</p>
-              </div>
-              <div class="summary-card-small">
-                <p class="summary-label">In Progress</p>
-                <p class="summary-value">5</p>
-                <p class="summary-sub">🔄 Active</p>
-              </div>
-              <div class="summary-card-small">
-                <p class="summary-label">Pending Approval</p>
-                <p class="summary-value">3</p>
-                <p class="summary-sub">⏳ Waiting</p>
-              </div>
+          @if (transferHistory().length === 0) {
+            <div class="empty-state">
+              <i class="bi bi-inbox"></i>
+              <p>No transfer history available</p>
             </div>
-          </section>
-
-          <!-- Transfer Log -->
-          <section class="transfer-log-section">
-            <h3>📋 TRANSFER LOG</h3>
+          } @else {
             <div class="table-container">
               <table class="transfer-log-table">
                 <thead>
@@ -212,36 +197,29 @@
                     <th>Items</th>
                     <th>Qty</th>
                     <th>Status</th>
-                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   @for (log of transferHistory(); track log.id) {
                     <tr>
-                      <td>{{ log.id }}</td>
+                      <td><strong>{{ log.transferNumber || log.id }}</strong></td>
                       <td>{{ log.date }}</td>
                       <td>{{ log.fromTo }}</td>
                       <td>{{ log.items }}</td>
                       <td>{{ log.qty }}</td>
                       <td>
-                        <span class="status-badge {{ getStatusColor(log.status) }}">
-                          {{ getStatusEmoji(log.status) }}
+                        <span class="status-badge" [ngClass]="'status-' + log.status.toLowerCase()">
+                          <i [ngClass]="getStatusIcon(log.status.toLowerCase())"></i>
+                          {{ log.status }}
                         </span>
-                      </td>
-                      <td>
-                        <div class="action-icons">
-                          <button type="button" class="icon-btn" title="View">👁️</button>
-                          <button type="button" class="icon-btn" title="Print">🖨️</button>
-                          <button type="button" class="icon-btn" title="Email">📧</button>
-                        </div>
                       </td>
                     </tr>
                   }
                 </tbody>
               </table>
-              <p class="table-footer">Showing 1-{{ transferHistory().length }} of 23 transfers</p>
+              <p class="table-footer">Showing {{ transferHistory().length }} transfer(s)</p>
             </div>
-          </section>
+          }
         </div>
 
         <div class="modal-footer">

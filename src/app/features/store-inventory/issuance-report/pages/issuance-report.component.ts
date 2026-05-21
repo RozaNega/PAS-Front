@@ -1,6 +1,7 @@
-import { Component, signal, computed } from '@angular/core';
+import { Component, signal, computed, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { IssuanceReportService, IssuanceReportItem } from '../services/issuance-report.service';
 
 interface Issuance {
   date: string;
@@ -19,7 +20,9 @@ interface Issuance {
   templateUrl: './issuance-report.component.html',
   styleUrls: ['./issuance-report.component.scss']
 })
-export class IssuanceReportComponent {
+export class IssuanceReportComponent implements OnInit {
+  private readonly reportService = inject(IssuanceReportService);
+
   dateRange = { start: '2024-12-01', end: '2024-12-15' };
   warehouseFilter = signal('All Warehouses');
   departmentFilter = signal('All Departments');
@@ -33,18 +36,14 @@ export class IssuanceReportComponent {
   requesters = ['All Requesters', 'John Doe', 'Sarah Smith', 'Mike Wilson', 'Lisa Wong', 'Peter Chen'];
   formats = ['PDF', 'Excel', 'CSV'];
 
-  issuances = signal<Issuance[]>([
-    { date: 'Dec 15', sivNumber: 'SIV-045', requester: 'John Doe', department: 'IT', item: 'Dell Laptop', quantity: 2, value: 4998 },
-    { date: 'Dec 15', sivNumber: 'SIV-044', requester: 'Sarah Smith', department: 'HR', item: 'Office Chair', quantity: 3, value: 1350 },
-    { date: 'Dec 14', sivNumber: 'SIV-043', requester: 'Mike Wilson', department: 'Operations', item: 'USB Cables', quantity: 50, value: 250 },
-    { date: 'Dec 14', sivNumber: 'SIV-042', requester: 'Lisa Wong', department: 'Finance', item: 'Monitor', quantity: 2, value: 700 },
-    { date: 'Dec 13', sivNumber: 'SIV-041', requester: 'Peter Chen', department: 'Marketing', item: 'A4 Paper', quantity: 10, value: 250 }
-  ]);
+  issuances = signal<Issuance[]>([]);
+  loading = signal(false);
+  error = signal<string | null>(null);
 
   // Computed summary statistics
-  totalSIVs = computed(() => 156);
+  totalSIVs = computed(() => this.issuances().length);
   totalItemsIssued = computed(() => 987);
-  totalValueIssued = computed(() => 123450);
+  totalValueIssued = computed(() => this.issuances().reduce((sum, item) => sum + item.value, 0));
   avgPerDay = computed(() => '66 units/day');
   activeUsers = computed(() => 45);
 
@@ -81,14 +80,39 @@ export class IssuanceReportComponent {
 
   filteredIssuances = signal<Issuance[]>([]);
 
-  constructor() {
-    // Calculate bar heights once to avoid ExpressionChangedAfterItHasBeenCheckedError
+  ngOnInit(): void {
     const heights: number[] = [];
     for (let i = 0; i < 8; i++) {
       heights.push(this.getRandomHeight(100, 60));
     }
     this.barHeights.set(heights);
-    this.filterIssuances();
+    this.loadIssuanceReport();
+  }
+
+  loadIssuanceReport(): void {
+    this.loading.set(true);
+    this.error.set(null);
+
+    this.reportService.getIssuanceReport({
+      dateFrom: this.dateRange.start,
+      dateTo: this.dateRange.end,
+      pageSize: 100
+    }).subscribe({
+      next: (res) => {
+        if (res.success !== false && Array.isArray(res.data)) {
+          this.issuances.set(res.data);
+        } else {
+          this.error.set(res.message || 'Failed to load issuance report');
+        }
+        this.loading.set(false);
+        this.filterIssuances();
+      },
+      error: (err) => {
+        console.error('Error loading issuance report:', err);
+        this.error.set('Failed to load issuance report. Please try again.');
+        this.loading.set(false);
+      }
+    });
   }
 
   filterIssuances(): void {
@@ -207,3 +231,4 @@ export class IssuanceReportComponent {
     return base + Math.random() * variance;
   }
 }
+

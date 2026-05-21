@@ -108,6 +108,52 @@
     .required {
       color: #ef4444;
     }
+
+    .optional {
+      color: var(--text-color-muted);
+      font-weight: 400;
+      font-size: 0.75rem;
+    }
+  }
+
+  .field-hint {
+    font-size: 0.75rem;
+    color: var(--text-color-muted);
+    font-style: italic;
+  }
+
+  .input-with-button {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+
+    input {
+      flex: 1;
+    }
+
+    .btn-generate {
+      padding: 0.75rem;
+      border: 1px solid var(--surface-border);
+      border-radius: 8px;
+      background: var(--surface-section);
+      color: var(--primary-color);
+      cursor: pointer;
+      transition: all 0.3s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 40px;
+
+      &:hover {
+        background: var(--primary-color);
+        color: white;
+        border-color: var(--primary-color);
+      }
+
+      i {
+        font-size: 1rem;
+      }
+    }
   }
 
   input,

@@ -4,263 +4,266 @@
       <h1>Location Management</h1>
       <p class="subtitle">Manage all physical locations across the organization</p>
     </div>
-    <button class="btn btn-primary" (click)="openAddModal()">
-      <i class="bi bi-plus-lg"></i> Location
+    <button class="btn btn-primary" (click)="openAddModal()" [disabled]="isLoading()">
+      <i class="bi bi-plus-lg"></i> Add Location
     </button>
   </div>
 
-  <div class="filter-bar">
-    <div class="search-box">
-      <i class="bi bi-search"></i>
-      <input type="text" [value]="searchTerm()" (input)="onSearchChange($any($event.target).value)" placeholder="Search locations...">
-    </div>
-    <div class="filter-group">
-      <label>🏷️ Filter by Type:</label>
-      <select [(ngModel)]="typeFilter" (ngModelChange)="onTypeFilterChange($event)">
-        @for (type of locationTypes; track type) {
-          <option [value]="type">{{ type }}</option>
-        }
-      </select>
-    </div>
-    <div class="filter-group">
-      <label>📍 Parent:</label>
-      <select [(ngModel)]="parentFilter" (ngModelChange)="onParentFilterChange($event)">
-        <option value="All">All Locations</option>
-        @for (loc of locations(); track loc.id) {
-          @if (loc.parentId === null) {
-            <option [value]="loc.id">{{ loc.icon }} {{ loc.name }}</option>
-          }
-        }
-      </select>
-    </div>
-    <div class="view-toggles">
-      <button class="btn-toggle" [class.active]="viewMode() === 'tree'" (click)="setViewMode('tree')">
-        <i class="bi bi-diagram-3"></i> Tree View
-      </button>
-      <button class="btn-toggle" [class.active]="viewMode() === 'list'" (click)="setViewMode('list')">
-        <i class="bi bi-list-ul"></i> List View
-      </button>
-    </div>
-  </div>
-
-  <div class="summary-grid">
-    <div class="summary-card">
-      <div class="summary-label">Total Locations</div>
-      <div class="summary-value">45</div>
-    </div>
-    <div class="summary-card">
-      <div class="summary-label">Building</div>
-      <div class="summary-value">8</div>
-    </div>
-    <div class="summary-card">
-      <div class="summary-label">Floors</div>
-      <div class="summary-value">15</div>
-    </div>
-    <div class="summary-card">
-      <div class="summary-label">Departments/Rooms</div>
-      <div class="summary-value">22</div>
-    </div>
-  </div>
-
-  @if (viewMode() === 'tree') {
-    <div class="tree-view">
-      <div class="tree-node root">
-        <div class="node-content">
-          <span class="node-icon">📁</span>
-          <span class="node-label">All Locations (45)</span>
-        </div>
-        <div class="node-children">
-          <div class="tree-node">
-            <div class="node-content">
-              <span class="node-icon">🏢</span>
-              <span class="node-label">Headquarters (1)</span>
-            </div>
-            <div class="node-children">
-              <div class="tree-node">
-                <div class="node-content">
-                  <span class="node-icon">📍</span>
-                  <span class="node-label">Floor 1 (12 properties)</span>
-                </div>
-                <div class="node-children">
-                  <div class="tree-node leaf">
-                    <div class="node-content">
-                      <span class="node-icon">💻</span>
-                      <span class="node-label">IT Department (28 props)</span>
-                    </div>
-                  </div>
-                  <div class="tree-node leaf">
-                    <div class="node-content">
-                      <span class="node-icon">�</span>
-                      <span class="node-label">HR Department (12 props)</span>
-                    </div>
-                  </div>
-                  <div class="tree-node leaf">
-                    <div class="node-content">
-                      <span class="node-icon">💰</span>
-                      <span class="node-label">Finance (18 props)</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="tree-node">
-                <div class="node-content">
-                  <span class="node-icon">📍</span>
-                  <span class="node-label">Floor 2 (23 properties)</span>
-                </div>
-                <div class="node-children">
-                  <div class="tree-node leaf">
-                    <div class="node-content">
-                      <span class="node-icon">�</span>
-                      <span class="node-label">Sales (15 props)</span>
-                    </div>
-                  </div>
-                  <div class="tree-node leaf">
-                    <div class="node-content">
-                      <span class="node-icon">📢</span>
-                      <span class="node-label">Marketing (8 props)</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="tree-node">
-                <div class="node-content">
-                  <span class="node-icon">📍</span>
-                  <span class="node-label">Floor 3 (8 properties)</span>
-                </div>
-                <div class="node-children">
-                  <div class="tree-node leaf">
-                    <div class="node-content">
-                      <span class="node-icon">👔</span>
-                      <span class="node-label">Executive (8 props)</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="tree-node">
-            <div class="node-content">
-              <span class="node-icon">🏭</span>
-              <span class="node-label">Warehouse A (1)</span>
-            </div>
-            <div class="node-children">
-              <div class="tree-node leaf">
-                <div class="node-content">
-                  <span class="node-icon">�</span>
-                  <span class="node-label">Aisle A (45 props)</span>
-                </div>
-              </div>
-              <div class="tree-node leaf">
-                <div class="node-content">
-                  <span class="node-icon">📦</span>
-                  <span class="node-label">Aisle B (67 props)</span>
-                </div>
-              </div>
-              <div class="tree-node leaf">
-                <div class="node-content">
-                  <span class="node-icon">📦</span>
-                  <span class="node-label">Aisle C (44 props)</span>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="tree-node">
-            <div class="node-content">
-              <span class="node-icon">🏭</span>
-              <span class="node-label">Warehouse B (1)</span>
-            </div>
-            <div class="node-children">
-              <div class="tree-node leaf">
-                <div class="node-content">
-                  <span class="node-icon">📦</span>
-                  <span class="node-label">Aisle A (34 props)</span>
-                </div>
-              </div>
-              <div class="tree-node leaf">
-                <div class="node-content">
-                  <span class="node-icon">📦</span>
-                  <span class="node-label">Aisle B (23 props)</span>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="tree-node">
-            <div class="node-content">
-              <span class="node-icon">🏢</span>
-              <span class="node-label">Branch Office (1)</span>
-            </div>
-            <div class="node-children">
-              <div class="tree-node leaf">
-                <div class="node-content">
-                  <span class="node-icon">📍</span>
-                  <span class="node-label">Floor 1 (25 props)</span>
-                </div>
-              </div>
-              <div class="tree-node leaf">
-                <div class="node-content">
-                  <span class="node-icon">📍</span>
-                  <span class="node-label">Floor 2 (20 props)</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+  @if (isLoading()) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading locations...</p>
     </div>
   }
 
-  @if (viewMode() === 'list') {
-    <div class="table-container">
-      <table class="locations-table">
-        <thead>
-          <tr>
-            <th>Location</th>
-            <th>Type</th>
-            <th>Parent</th>
-            <th>Properties</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (loc of filteredLocations(); track loc.id) {
-            <tr>
-              <td>
-                <div class="location-name">
-                  <span class="location-icon">{{ loc.icon }}</span>
-                  <span>{{ loc.name }}</span>
-                </div>
-              </td>
-              <td>{{ loc.type }}</td>
-              <td>{{ loc.parentId ? locations().find(l => l.id === loc.parentId)?.name : '-' }}</td>
-              <td>{{ loc.propertiesCount }}</td>
-              <td>
-                <div class="actions-cell">
-                  <button class="action-btn" (click)="openEditModal(loc)" title="Edit">
-                    <i class="bi bi-pencil"></i>
-                  </button>
-                  <button class="action-btn" (click)="toggleStatus(loc.id)" title="Toggle Status">
-                    <i class="bi bi-power"></i>
-                  </button>
-                  <button class="action-btn delete" (click)="deleteLocation(loc.id)" title="Delete">
-                    <i class="bi bi-trash"></i>
-                  </button>
-                </div>
-              </td>
-            </tr>
-          }
-        </tbody>
-      </table>
+  @if (error()) {
+    <div class="error-alert">
+      <i class="bi bi-exclamation-triangle"></i>
+      <div>
+        <strong>Unable to load locations</strong>
+        <p>{{ error() }}</p>
+      </div>
+      <button class="btn btn-sm btn-secondary" (click)="retryLoad()">
+        <i class="bi bi-arrow-clockwise"></i> Retry
+      </button>
     </div>
-    <div class="pagination-bar">
-      <div class="pagination-info">Showing 1-{{ filteredLocations().length }} of 45 locations</div>
-      <div class="pagination-controls">
-        <button class="page-btn" disabled>Previous</button>
-        <button class="page-btn active">1</button>
-        <button class="page-btn">2</button>
-        <button class="page-btn">→</button>
-        <button class="page-btn">2</button>
+  }
+
+  @if (!isLoading()) {
+    <div class="filter-bar">
+      <div class="search-box">
+        <i class="bi bi-search"></i>
+        <input type="text" [value]="searchTerm()" (input)="onSearchChange($any($event.target).value)" placeholder="Search locations...">
+      </div>
+      <div class="filter-group">
+        <label>Filter by Type:</label>
+        <select [(ngModel)]="typeFilter" (ngModelChange)="onTypeFilterChange($event)">
+          @for (type of locationTypes; track type) {
+            <option [value]="type">{{ type }}</option>
+          }
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Parent Location:</label>
+        <select [(ngModel)]="parentFilter" (ngModelChange)="onParentFilterChange($event)">
+          <option value="All">All Locations</option>
+          @for (loc of locations(); track loc.id) {
+            @if (loc.parentId === null) {
+              <option [value]="loc.id">{{ loc.name }}</option>
+            }
+          }
+        </select>
+      </div>
+      <div class="view-toggles">
+        <button class="btn-toggle" [class.active]="viewMode() === 'tree'" (click)="setViewMode('tree')">
+          <i class="bi bi-diagram-3"></i> Tree View
+        </button>
+        <button class="btn-toggle" [class.active]="viewMode() === 'list'" (click)="setViewMode('list')">
+          <i class="bi bi-list-ul"></i> List View
+        </button>
       </div>
     </div>
+
+    <div class="summary-grid">
+      <div class="summary-card">
+        <div class="summary-icon">
+          <i class="bi bi-geo-alt-fill"></i>
+        </div>
+        <div class="summary-content">
+          <div class="summary-label">Total Locations</div>
+          <div class="summary-value">{{ locationStats().total }}</div>
+        </div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon">
+          <i class="bi bi-building"></i>
+        </div>
+        <div class="summary-content">
+          <div class="summary-label">Buildings</div>
+          <div class="summary-value">{{ locationStats().buildings }}</div>
+        </div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon">
+          <i class="bi bi-layers"></i>
+        </div>
+        <div class="summary-content">
+          <div class="summary-label">Floors</div>
+          <div class="summary-value">{{ locationStats().floors }}</div>
+        </div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon">
+          <i class="bi bi-door-closed"></i>
+        </div>
+        <div class="summary-content">
+          <div class="summary-label">Departments/Rooms</div>
+          <div class="summary-value">{{ locationStats().departments }}</div>
+        </div>
+      </div>
+    </div>
+
+    @if (viewMode() === 'tree') {
+      @if (locations().length === 0) {
+        <div class="empty-state">
+          <i class="bi bi-inbox"></i>
+          <h3>No locations found</h3>
+          <p>Start by creating a new location to organize your properties.</p>
+          <button class="btn btn-primary btn-sm" (click)="openAddModal()">
+            <i class="bi bi-plus-lg"></i> Create Location
+          </button>
+        </div>
+      } @else {
+        <div class="tree-view">
+          <div class="tree-header">
+            <i class="bi bi-diagram-3"></i>
+            <span>Location Hierarchy</span>
+          </div>
+          <div class="tree-content">
+            <div class="tree-node root">
+              <div class="node-toggle">
+                <i class="bi bi-chevron-down"></i>
+              </div>
+              <div class="node-icon">
+                <i class="bi bi-diagram-3-fill"></i>
+              </div>
+              <div class="node-label">
+                <span class="node-name">All Locations</span>
+                <span class="node-count">{{ locations().length }} items</span>
+              </div>
+            </div>
+            <div class="node-children">
+              @for (rootLoc of treeStructure(); track rootLoc.id) {
+                <div class="tree-node parent">
+                  <div class="node-toggle">
+                    <i class="bi bi-chevron-right"></i>
+                  </div>
+                  <div class="node-icon" [ngClass]="getIconClass(rootLoc.type)">
+                    <i [ngClass]="getIconClassSolid(rootLoc.type)"></i>
+                  </div>
+                  <div class="node-label">
+                    <span class="node-name">{{ rootLoc.name }}</span>
+                    @if (rootLoc.children && rootLoc.children.length > 0) {
+                      <span class="node-count">{{ rootLoc.children.length }} item{{ rootLoc.children.length !== 1 ? 's' : '' }}</span>
+                    }
+                  </div>
+                </div>
+                @if (rootLoc.children && rootLoc.children.length > 0) {
+                  <div class="node-children">
+                    @for (child of rootLoc.children; track child.id) {
+                      <div class="tree-node child-node">
+                        <div class="node-icon" [ngClass]="getIconClass(child.type)">
+                          <i [ngClass]="getIconClassSolid(child.type)"></i>
+                        </div>
+                        <div class="node-label">
+                          <span class="node-name">{{ child.name }}</span>
+                          <span class="node-type">{{ child.type }}</span>
+                        </div>
+                        <div class="node-status" [class.active]="child.status === 'Active'">
+                          {{ child.status }}
+                        </div>
+                      </div>
+                    }
+                  </div>
+                }
+              }
+            </div>
+          </div>
+        </div>
+      }
+    }
+
+    @if (viewMode() === 'list') {
+      @if (filteredLocations().length === 0) {
+        <div class="empty-state">
+          <i class="bi bi-inbox"></i>
+          <h3>No locations found</h3>
+          <p>Try adjusting your filters or create a new location.</p>
+          <button class="btn btn-primary btn-sm" (click)="openAddModal()">
+            <i class="bi bi-plus-lg"></i> Create Location
+          </button>
+        </div>
+      } @else {
+        <div class="table-container">
+          <table class="locations-table">
+            <thead>
+              <tr>
+                <th>
+                  <i class="bi bi-geo-alt"></i> Location
+                </th>
+                <th>
+                  <i class="bi bi-tag"></i> Type
+                </th>
+                <th>
+                  <i class="bi bi-diagram-2"></i> Parent
+                </th>
+                <th>
+                  <i class="bi bi-circle-half"></i> Status
+                </th>
+                <th>
+                  <i class="bi bi-gear"></i> Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (loc of filteredLocations(); track loc.id) {
+                <tr>
+                  <td>
+                    <div class="location-name">
+                      <div class="location-icon" [ngClass]="getIconClass(loc.type)">
+                        <i [ngClass]="getIconClassSolid(loc.type)"></i>
+                      </div>
+                      <span>{{ loc.name }}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="type-badge">{{ loc.type }}</span>
+                  </td>
+                  <td>
+                    @if (loc.parentId && locations().find(l => l.id === loc.parentId)?.name; as parentName) {
+                      <span class="parent-link">{{ parentName }}</span>
+                    } @else {
+                      <span class="no-parent">—</span>
+                    }
+                  </td>
+                  <td>
+                    <span class="status-badge" [class.active]="loc.status === 'Active'" [class.inactive]="loc.status === 'Inactive'">
+                      <i class="bi" [ngClass]="loc.status === 'Active' ? 'bi-check-circle-fill' : 'bi-x-circle-fill'"></i>
+                      {{ loc.status }}
+                    </span>
+                  </td>
+                  <td>
+                    <div class="actions-cell">
+                      <button class="action-btn" (click)="openEditModal(loc)" title="Edit Location">
+                        <i class="bi bi-pencil"></i>
+                      </button>
+                      <button class="action-btn" (click)="toggleStatus(loc.id)" title="Toggle Status">
+                        <i class="bi bi-power"></i>
+                      </button>
+                      <button class="action-btn delete" (click)="deleteLocation(loc.id)" title="Delete Location">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <div class="pagination-bar">
+          <div class="pagination-info">Showing {{ filteredLocations().length }} of {{ locations().length }} locations</div>
+          <div class="pagination-controls">
+            <button class="page-btn" disabled>
+              <i class="bi bi-chevron-left"></i>
+            </button>
+            <button class="page-btn active">1</button>
+            <button class="page-btn" disabled>
+              <i class="bi bi-chevron-right"></i>
+            </button>
+          </div>
+        </div>
+      }
+    }
   }
 </div>
 

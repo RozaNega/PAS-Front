@@ -1,8 +1,11 @@
-import { Component, signal, computed } from '@angular/core';
+import { Component, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ItemMasterService } from '../../../../core/services/item-master.service';
+import { InventoryService } from '../../../../core/services/inventory.service';
 
 interface Item {
+  id?: string;
   sku: string;
   name: string;
   category: string;
@@ -64,10 +67,17 @@ export class ItemCatalogComponent {
   showBulkImportModal = signal(false);
   selectedItem = signal<Item | null>(null);
 
-  // Computed summary statistics
+  // selection state (store item ids when available, fallback to sku)
+  selectedIds = signal<string[]>([]);
+  isEditing = signal(false);
+  showAdjustModal = signal(false);
+  adjustDraft = signal<{ itemId?: string; adjustmentType?: 'increase'|'decrease'|'set'; quantity?: number; reason?: string }>({ itemId: undefined, adjustmentType: 'increase', quantity: 0, reason: '' });
+  adjustModeBulk = signal(false);
+
+  // Computed / reactive summary statistics
   totalItems = computed(() => this.items().length);
   activeItems = computed(() => this.items().filter(i => i.status === 'Active').length);
-  categoryCount = computed(() => 45);
+  categoryCount = signal(0);
   lowStockItems = computed(() => this.items().filter(i => i.status === 'Low Stock').length);
   outOfStockItems = computed(() => this.items().filter(i => i.status === 'Out of Stock').length);
 
@@ -86,8 +96,122 @@ export class ItemCatalogComponent {
     { date: 'Dec 10, 2024', type: '🔄 Transfer', quantity: 5, reference: 'TRF-2024-008', user: 'Mike Wilson', balance: 38 }
   ]);
 
+  // New item draft for Add modal
+  newItem = signal<Partial<Item & { isActive?: boolean }>>({ sku: '', name: '', category: '', uom: 'PCS', minStock: 0, currentStock: 0, price: 0, isActive: true });
+
+  private readonly itemService = inject(ItemMasterService);
+  private readonly inventoryService = inject(InventoryService);
+
+  // Bulk edit/adjust drafts
+  bulkEditDraft = signal<{ category?: string; uom?: string; minStock?: number }>({ category: undefined, uom: undefined, minStock: undefined });
+  bulkAdjustDraft = signal<{ adjustmentType?: 'increase'|'decrease'|'set'; quantity?: number; reason?: string }>({ adjustmentType: 'increase', quantity: 0, reason: '' });
+
   constructor() {
-    this.filterItems();
+    this.loadItems();
+  }
+
+  loadItems(page = 1, pageSize = 50): void {
+    this.itemService.getItemMasters({ pageNumber: page, pageSize }).subscribe({
+      next: (res) => {
+        if (res?.success && res.data) {
+          const dt = res.data.items || [];
+          const mapped = dt.map(i => ({
+            id: i.id,
+            sku: i.sku,
+            name: i.itemName,
+            category: i.categoryName || 'Uncategorized',
+            uom: i.unitOfMeasure || 'PCS',
+            minStock: i.minStockLevel ?? 0,
+            currentStock: i.currentStock ?? (i.stockQuantity ?? 0),
+            status: (i.isActive ? ((i.currentStock ?? (i.stockQuantity ?? 0)) === 0 ? 'Out of Stock' : ((i.isLowStock || (i.currentStock ?? 0) <= (i.minStockLevel ?? 0)) ? 'Low Stock' : 'Active')) : 'Out of Stock') as any,
+            price: 0
+          } as Item));
+
+          this.items.set(mapped);
+          this.filteredItems.set(mapped);
+          const uniqueCategories = Array.from(new Set(mapped.map(m => m.category)));
+          this.categoryCount.set(uniqueCategories.length);
+        } else {
+          this.filterItems();
+        }
+      },
+      error: () => this.filterItems()
+    });
+  }
+
+  // Selection helpers
+  toggleSelect(idOrSku: string): void {
+    const sel = new Set(this.selectedIds());
+    if (sel.has(idOrSku)) sel.delete(idOrSku); else sel.add(idOrSku);
+    this.selectedIds.set(Array.from(sel));
+  }
+
+  selectAll(): void {
+    const ids = this.filteredItems().map(i => i.id ?? i.sku);
+    this.selectedIds.set(ids);
+  }
+
+  selectLowStock(): void {
+    const ids = this.filteredItems().filter(i => i.status === 'Low Stock').map(i => i.id ?? i.sku);
+    this.selectedIds.set(ids);
+  }
+
+  selectOutOfStock(): void {
+    const ids = this.filteredItems().filter(i => i.status === 'Out of Stock').map(i => i.id ?? i.sku);
+    this.selectedIds.set(ids);
+  }
+
+  // Bulk workflows
+  bulkEdit(): void {
+    // open bulk edit modal
+    this.bulkEditDraft.set({ category: undefined, uom: undefined, minStock: undefined });
+    // show using same add modal? create a dedicated modal in template
+    this.showBulkImportModal.set(true);
+  }
+
+  performBulkEdit(): void {
+    const draft = this.bulkEditDraft();
+    const selected = this.filteredItems().filter(i => this.selectedIds().includes(i.id ?? i.sku));
+    if (!selected.length) return;
+    let remaining = selected.length;
+    selected.forEach(item => {
+      if (!item.id) { remaining -= 1; if (remaining === 0) this.loadItems(); return; }
+      const payload: any = {};
+      if (draft.category !== undefined) payload.categoryName = draft.category;
+      if (draft.uom !== undefined) payload.unitOfMeasure = draft.uom;
+      if (draft.minStock !== undefined) payload.minStockLevel = draft.minStock;
+      if (Object.keys(payload).length === 0) { remaining -= 1; if (remaining === 0) this.loadItems(); return; }
+      this.itemService.updateItemMaster(item.id!, payload).subscribe({ next: () => { remaining -= 1; if (remaining === 0) { this.showBulkImportModal.set(false); this.selectedIds.set([]); this.loadItems(); } }, error: () => { remaining -= 1; if (remaining === 0) { this.showBulkImportModal.set(false); this.selectedIds.set([]); this.loadItems(); } } });
+    });
+  }
+
+  bulkAdjustStock(): void {
+    // open bulk adjust modal
+    this.bulkAdjustDraft.set({ adjustmentType: 'increase', quantity: 0, reason: '' });
+    // copy into adjustDraft for modal binding
+    this.adjustDraft.set({ itemId: undefined, adjustmentType: this.bulkAdjustDraft().adjustmentType, quantity: this.bulkAdjustDraft().quantity, reason: this.bulkAdjustDraft().reason });
+    this.adjustModeBulk.set(true);
+    this.showAdjustModal.set(true);
+  }
+
+  performBulkAdjust(): void {
+    const draft = this.bulkAdjustDraft();
+    const selected = this.filteredItems().filter(i => this.selectedIds().includes(i.id ?? i.sku));
+    if (!selected.length || !draft.adjustmentType || !draft.quantity) return;
+    let remaining = selected.length;
+    selected.forEach(item => {
+      if (!item.id) { remaining -= 1; if (remaining === 0) this.loadItems(); return; }
+      const req = { itemId: item.id!, shelfId: '', adjustmentType: draft.adjustmentType!, quantity: draft.quantity!, reason: draft.reason ?? '' };
+      this.inventoryService.adjustStock(req).subscribe({ next: () => { remaining -= 1; if (remaining === 0) { this.showAdjustModal.set(false); this.selectedIds.set([]); this.loadItems(); } }, error: () => { remaining -= 1; if (remaining === 0) { this.showAdjustModal.set(false); this.selectedIds.set([]); this.loadItems(); } } });
+    });
+  }
+
+  setBulkEditField(field: string, value: any): void {
+    this.bulkEditDraft.update(d => ({ ...(d as any), [field]: value }));
+  }
+
+  setBulkAdjustField(field: string, value: any): void {
+    this.bulkAdjustDraft.update(d => ({ ...(d as any), [field]: value }));
   }
 
   filterItems(): void {
@@ -183,31 +307,112 @@ export class ItemCatalogComponent {
   }
 
   editItem(item: Item): void {
-    console.log('Edit item:', item.sku);
+    // open modal in edit mode
+    this.isEditing.set(true);
+    this.newItem.set({ sku: item.sku, name: item.name, category: item.category, uom: item.uom, minStock: item.minStock, currentStock: item.currentStock, price: item.price });
+    this.selectedItem.set(item);
+    this.showAddModal.set(true);
+  }
+
+  createItem(): void {
+    const draft = this.newItem();
+    if (!draft || !draft.sku || !draft.name) {
+      return;
+    }
+    const payload: any = {
+      sku: draft.sku,
+      itemName: draft.name,
+      categoryName: draft.category,
+      unitOfMeasure: draft.uom,
+      minStockLevel: draft.minStock,
+      stockQuantity: draft.currentStock,
+      isActive: draft.isActive ?? true
+    };
+    this.itemService.createItemMaster(payload).subscribe({
+      next: (res) => {
+        // After successful create, reload list
+        this.closeAddModal();
+        this.newItem.set({ sku: '', name: '', category: '', uom: 'PCS', minStock: 0, currentStock: 0, price: 0, isActive: true });
+        this.loadItems();
+      },
+      error: () => {
+        // on error, still close modal and fallback to local list
+        this.closeAddModal();
+      }
+    });
+  }
+
+  updateItem(): void {
+    const draft = this.newItem();
+    const id = this.selectedItem()?.id;
+    if (!id || !draft) return;
+    const payload: any = {
+      sku: draft.sku,
+      itemName: draft.name,
+      categoryName: draft.category,
+      unitOfMeasure: draft.uom,
+      minStockLevel: draft.minStock,
+      stockQuantity: draft.currentStock,
+      isActive: draft.isActive ?? true
+    };
+    this.itemService.updateItemMaster(id, payload).subscribe({ next: () => { this.closeAddModal(); this.loadItems(); this.isEditing.set(false); }, error: () => { this.closeAddModal(); this.isEditing.set(false); } });
+  }
+
+  setNewItemField(field: string, value: any): void {
+    this.newItem.update(n => ({ ...(n as any), [field]: value }));
   }
 
   adjustStock(item: Item): void {
-    console.log('Adjust stock for:', item.sku);
+    // open adjust modal prefilled for single item
+    this.adjustDraft.set({ itemId: item.id, adjustmentType: 'increase', quantity: 0, reason: '' });
+    this.adjustModeBulk.set(false);
+    this.showAdjustModal.set(true);
+  }
+
+  performAdjust(): void {
+    if (this.adjustModeBulk()) {
+      // save bulk draft then perform bulk adjust
+      this.bulkAdjustDraft.set({ adjustmentType: this.adjustDraft().adjustmentType, quantity: this.adjustDraft().quantity, reason: this.adjustDraft().reason });
+      this.performBulkAdjust();
+      return;
+    }
+    const d = this.adjustDraft();
+    if (!d.itemId || !d.adjustmentType || !d.quantity) return;
+    const req = { itemId: d.itemId, shelfId: '', adjustmentType: d.adjustmentType, quantity: d.quantity, reason: d.reason ?? '' };
+    this.inventoryService.adjustStock(req).subscribe({ next: () => { this.showAdjustModal.set(false); this.loadItems(); }, error: () => { this.showAdjustModal.set(false); } });
+  }
+
+  setAdjustField(field: string, value: any): void {
+    this.adjustDraft.update(d => ({ ...(d as any), [field]: value }));
   }
 
   viewStock(item: Item): void {
     this.openItemModal(item);
   }
 
-  bulkEdit(): void {
-    console.log('Bulk edit selected items');
-  }
-
-  bulkAdjustStock(): void {
-    console.log('Bulk adjust stock');
-  }
-
   bulkExport(): void {
     console.log('Bulk export items');
+    const list = this.selectedIds().length ? this.filteredItems().filter(i => this.selectedIds().includes(i.id ?? i.sku)) : this.filteredItems();
+    const rows = [
+      ['SKU','Name','Category','UOM','MinStock','Current','Status','Price'],
+      ...list.map(i => [i.sku, i.name, i.category, i.uom, String(i.minStock), String(i.currentStock), i.status, String(i.price)])
+    ];
+    const csv = rows.map(r => r.map(c => '"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'items_export.csv';
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   generateQRCodes(): void {
-    console.log('Generate QR codes');
+    // Open a printable page listing selected items' SKUs
+    const list = this.selectedIds().length ? this.filteredItems().filter(i => this.selectedIds().includes(i.id ?? i.sku)) : this.filteredItems();
+    const html = `<!doctype html><html><head><title>QR Codes</title></head><body><h1>QR Codes</h1>${list.map(i=>`<div style="margin:10px;padding:10px;border:1px solid #ccc;"><div><strong>${i.name}</strong></div><div>${i.sku}</div></div>`).join('')}</body></html>`;
+    const w = window.open('', '_blank');
+    if (w) { w.document.write(html); w.document.close(); }
   }
 
   formatValue(value: number): string {

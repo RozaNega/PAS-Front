@@ -1,0 +1,94 @@
+<div class="qr-codes-page">
+  <div class="page-header" *ngIf="!printMode()">
+    <div class="header-content">
+      <div class="header-left">
+        <h1>Generate QR Codes</h1>
+        <p>QR codes for inventory tracking and scanning</p>
+      </div>
+      <div class="header-actions">
+        <button type="button" class="btn btn-outline-primary" (click)="print()">
+          <i class="bi bi-printer"></i> Print
+        </button>
+        <button type="button" class="btn btn-outline-info" (click)="download()">
+          <i class="bi bi-download"></i> Download
+        </button>
+        <button type="button" class="btn btn-outline-secondary" (click)="cancel()">
+          <i class="bi bi-x"></i> Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div class="loading-container" *ngIf="loading()">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Generating...</span>
+    </div>
+    <p>Generating QR codes...</p>
+  </div>
+
+  <!-- QR Codes Grid -->
+  <div class="qr-codes-grid" *ngIf="!loading()">
+    <div class="qr-code-card" *ngFor="let item of items()">
+      <div class="qr-code-container">
+        <img [src]="getQRCode(item.id)" [alt]="'QR Code for ' + item.itemName" class="qr-image">
+      </div>
+      <div class="qr-info">
+        <h4>{{ item.itemName }}</h4>
+        <p class="sku">{{ item.sku }}</p>
+        <p class="warehouse">{{ item.warehouseName }}</p>
+        <p class="location">{{ item.shelfLocation }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Empty State -->
+  <div class="empty-state" *ngIf="!loading() && items().length === 0">
+    <i class="bi bi-qr-code"></i>
+    <p>No items selected</p>
+  </div>
+</div>
+
+<!-- Print Stylesheet -->
+<style media="print">
+  .page-header {
+    display: none;
+  }
+
+  .qr-codes-page {
+    padding: 0;
+  }
+
+  .qr-codes-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+    page-break-inside: avoid;
+  }
+
+  .qr-code-card {
+    page-break-inside: avoid;
+    border: 1px solid #ccc;
+    padding: 20px;
+    text-align: center;
+
+    .qr-image {
+      width: 150px;
+      height: 150px;
+    }
+
+    .qr-info {
+      margin-top: 10px;
+      font-size: 11px;
+
+      h4 {
+        margin: 5px 0;
+        font-size: 12px;
+      }
+
+      p {
+        margin: 3px 0;
+      }
+    }
+  }
+</style>

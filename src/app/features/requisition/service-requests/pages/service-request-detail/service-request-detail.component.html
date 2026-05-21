@@ -1,3 +1,382 @@
-﻿<section class="page">
-  <h1>Service Request Detail</h1>
-</section>
+﻿<div class="service-request-detail">
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-content">
+      <div class="header-left">
+        <button type="button" class="btn btn-outline-secondary" (click)="goBack()">
+          <i class="bi bi-arrow-left"></i> Back to Requests
+        </button>
+        <div class="header-info" *ngIf="serviceRequest()">
+          <h1>{{ serviceRequest()?.srNumber || 'Service Request' }}</h1>
+          <div class="header-badges">
+            <span class="badge" [ngClass]="getStatusClass(serviceRequest()?.status || '')">
+              {{ serviceRequest()?.status }}
+            </span>
+            <span class="badge" [ngClass]="getUrgencyClass(serviceRequest()?.urgency || '')">
+              {{ serviceRequest()?.urgency }}
+            </span>
+          </div>
+        </div>
+      </div>
+      <div class="header-actions" *ngIf="serviceRequest()">
+        <div class="btn-group">
+          <button type="button" class="btn btn-success" *ngIf="canApprove()" (click)="openApprovalModal()">
+            <i class="bi bi-check-circle"></i> Approve
+          </button>
+          <button type="button" class="btn btn-danger" *ngIf="canReject()" (click)="openRejectionModal()">
+            <i class="bi bi-x-circle"></i> Reject
+          </button>
+          <button type="button" class="btn btn-primary" *ngIf="canIssue()" (click)="openIssueModal()">
+            <i class="bi bi-box-arrow-right"></i> Issue Items
+          </button>
+          <button type="button" class="btn btn-outline-primary" *ngIf="canEdit()" (click)="editRequest()">
+            <i class="bi bi-pencil"></i> Edit
+          </button>
+          <button type="button" class="btn btn-outline-info" (click)="openCommentModal()">
+            <i class="bi bi-chat-dots"></i> Add Comment
+          </button>
+          <div class="btn-group">
+            <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+              <i class="bi bi-three-dots"></i> More
+            </button>
+            <ul class="dropdown-menu">
+              <li><a class="dropdown-item" href="#" (click)="printRequest()"><i class="bi bi-printer"></i> Print</a></li>
+              <li><a class="dropdown-item" href="#" (click)="exportRequest('pdf')"><i class="bi bi-file-pdf"></i> Export PDF</a></li>
+              <li><a class="dropdown-item" href="#" (click)="exportRequest('excel')"><i class="bi bi-file-excel"></i> Export Excel</a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="#" (click)="viewTimeline()"><i class="bi bi-clock-history"></i> View Timeline</a></li>
+              <li><a class="dropdown-item" href="#" (click)="viewActivity()"><i class="bi bi-activity"></i> View Activity</a></li>
+              <li><hr class="dropdown-divider" *ngIf="canDelete()"></li>
+              <li *ngIf="canDelete()"><a class="dropdown-item text-danger" href="#" (click)="deleteRequest()"><i class="bi bi-trash"></i> Delete</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div class="loading-container" *ngIf="loading()">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+    <p>Loading service request details...</p>
+  </div>
+
+  <!-- Error State -->
+  <div class="alert alert-danger" *ngIf="error()">
+    <i class="bi bi-exclamation-triangle"></i>
+    {{ error() }}
+    <button type="button" class="btn btn-outline-danger btn-sm ms-2" (click)="loadServiceRequest()">
+      <i class="bi bi-arrow-clockwise"></i> Retry
+    </button>
+  </div>
+
+  <!-- Content -->
+  <div class="content" *ngIf="serviceRequest() && !loading()">
+    <div class="row">
+      <!-- Main Details -->
+      <div class="col-lg-8">
+        <div class="card">
+          <div class="card-header">
+            <h5 class="card-title mb-0">Request Details</h5>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-6">
+                <div class="detail-group">
+                  <label>Request Number</label>
+                  <p>{{ serviceRequest()?.srNumber }}</p>
+                </div>
+                <div class="detail-group">
+                  <label>Requester</label>
+                  <p>{{ serviceRequest()?.requesterName }}</p>
+                </div>
+                <div class="detail-group">
+                  <label>Department</label>
+                  <p>{{ serviceRequest()?.department }}</p>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="detail-group">
+                  <label>Request Date</label>
+                  <p>{{ formatDate(serviceRequest()?.requestDate || '') }}</p>
+                </div>
+                <div class="detail-group">
+                  <label>Status</label>
+                  <p>
+                    <span class="badge" [ngClass]="getStatusClass(serviceRequest()?.status || '')">
+                      {{ serviceRequest()?.status }}
+                    </span>
+                  </p>
+                </div>
+                <div class="detail-group">
+                  <label>Urgency</label>
+                  <p>
+                    <span class="badge" [ngClass]="getUrgencyClass(serviceRequest()?.urgency || '')">
+                      {{ serviceRequest()?.urgency }}
+                    </span>
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div class="detail-group" *ngIf="serviceRequest()?.purpose">
+              <label>Purpose</label>
+              <p>{{ serviceRequest()?.purpose }}</p>
+            </div>
+            <div class="detail-group" *ngIf="serviceRequest()?.notes">
+              <label>Notes</label>
+              <p>{{ serviceRequest()?.notes }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Items List -->
+        <div class="card mt-4">
+          <div class="card-header">
+            <h5 class="card-title mb-0">Requested Items</h5>
+          </div>
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="table table-hover">
+                <thead>
+                  <tr>
+                    <th>Item</th>
+                    <th>SKU</th>
+                    <th>Unit</th>
+                    <th>Requested</th>
+                    <th>Issued</th>
+                    <th>Pending</th>
+                    <th>Shelf</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let item of serviceRequest()?.items">
+                    <td>
+                      <div class="item-info">
+                        <strong>{{ item.itemName }}</strong>
+                      </div>
+                    </td>
+                    <td>{{ item.sku }}</td>
+                    <td>{{ item.unitOfMeasure }}</td>
+                    <td>{{ item.requestedQty }}</td>
+                    <td>{{ item.issuedQty || 0 }}</td>
+                    <td>{{ item.pendingQty || item.requestedQty }}</td>
+                    <td>{{ item.shelfLocation || 'N/A' }}</td>
+                  </tr>
+                </tbody>
+                <tfoot>
+                  <tr class="table-light">
+                    <th colspan="3">Total</th>
+                    <th>{{ serviceRequest()?.totalQuantity }}</th>
+                    <th>{{ serviceRequest()?.issuedQuantity || 0 }}</th>
+                    <th>{{ (serviceRequest()?.totalQuantity || 0) - (serviceRequest()?.issuedQuantity || 0) }}</th>
+                    <th></th>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sidebar -->
+      <div class="col-lg-4">
+        <!-- Summary Card -->
+        <div class="card">
+          <div class="card-header">
+            <h5 class="card-title mb-0">Summary</h5>
+          </div>
+          <div class="card-body">
+            <div class="summary-item">
+              <span class="label">Total Items:</span>
+              <span class="value">{{ serviceRequest()?.totalItems }}</span>
+            </div>
+            <div class="summary-item">
+              <span class="label">Total Quantity:</span>
+              <span class="value">{{ serviceRequest()?.totalQuantity }}</span>
+            </div>
+            <div class="summary-item">
+              <span class="label">Issued Quantity:</span>
+              <span class="value">{{ serviceRequest()?.issuedQuantity || 0 }}</span>
+            </div>
+            <div class="summary-item">
+              <span class="label">Pending Quantity:</span>
+              <span class="value">{{ (serviceRequest()?.totalQuantity || 0) - (serviceRequest()?.issuedQuantity || 0) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Approval Info -->
+        <div class="card mt-4" *ngIf="serviceRequest()?.approvedByName">
+          <div class="card-header">
+            <h5 class="card-title mb-0">Approval Information</h5>
+          </div>
+          <div class="card-body">
+            <div class="detail-group">
+              <label>Approved By</label>
+              <p>{{ serviceRequest()?.approvedByName }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Timestamps -->
+        <div class="card mt-4">
+          <div class="card-header">
+            <h5 class="card-title mb-0">Timestamps</h5>
+          </div>
+          <div class="card-body">
+            <div class="detail-group">
+              <label>Created</label>
+              <p>{{ formatDate(serviceRequest()?.createdAt || '') }}</p>
+            </div>
+            <div class="detail-group" *ngIf="serviceRequest()?.updatedAt">
+              <label>Last Updated</label>
+              <p>{{ formatDate(serviceRequest()?.updatedAt || '') }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Approval Modal -->
+  <div class="modal fade" [class.show]="showApprovalModal()" [style.display]="showApprovalModal() ? 'block' : 'none'" *ngIf="showApprovalModal()">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Approve Service Request</h5>
+          <button type="button" class="btn-close" (click)="closeApprovalModal()"></button>
+        </div>
+        <div class="modal-body">
+          <p>Are you sure you want to approve this service request?</p>
+          <div class="mb-3">
+            <label for="approvalRemarks" class="form-label">Remarks (Optional)</label>
+            <textarea 
+              id="approvalRemarks" 
+              class="form-control" 
+              rows="3" 
+              [(ngModel)]="approvalRemarks"
+              placeholder="Add any remarks or comments...">
+            </textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="closeApprovalModal()">Cancel</button>
+          <button type="button" class="btn btn-success" (click)="approveRequest()">
+            <i class="bi bi-check-circle"></i> Approve
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Rejection Modal -->
+  <div class="modal fade" [class.show]="showRejectionModal()" [style.display]="showRejectionModal() ? 'block' : 'none'" *ngIf="showRejectionModal()">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Reject Service Request</h5>
+          <button type="button" class="btn-close" (click)="closeRejectionModal()"></button>
+        </div>
+        <div class="modal-body">
+          <p>Please provide a reason for rejecting this service request:</p>
+          <div class="mb-3">
+            <label for="rejectionReason" class="form-label">Reason for Rejection *</label>
+            <textarea 
+              id="rejectionReason" 
+              class="form-control" 
+              rows="3" 
+              [(ngModel)]="rejectionReason"
+              placeholder="Enter the reason for rejection..."
+              required>
+            </textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="closeRejectionModal()">Cancel</button>
+          <button type="button" class="btn btn-danger" (click)="rejectRequest()">
+            <i class="bi bi-x-circle"></i> Reject
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Comment Modal -->
+  <div class="modal fade" [class.show]="showCommentModal()" [style.display]="showCommentModal() ? 'block' : 'none'" *ngIf="showCommentModal()">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Add Comment</h5>
+          <button type="button" class="btn-close" (click)="closeCommentModal()"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="newComment" class="form-label">Comment *</label>
+            <textarea 
+              id="newComment" 
+              class="form-control" 
+              rows="4" 
+              [(ngModel)]="newComment"
+              placeholder="Enter your comment..."
+              required>
+            </textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="closeCommentModal()">Cancel</button>
+          <button type="button" class="btn btn-primary" (click)="addComment()">
+            <i class="bi bi-chat-dots"></i> Add Comment
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Issue Modal -->
+  <div class="modal fade" [class.show]="showIssueModal()" [style.display]="showIssueModal() ? 'block' : 'none'" *ngIf="showIssueModal()">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Issue Items</h5>
+          <button type="button" class="btn-close" (click)="closeIssueModal()"></button>
+        </div>
+        <div class="modal-body">
+          <p>This will create a Store Issue Voucher (SIV) and issue all requested items.</p>
+          <div class="table-responsive">
+            <table class="table table-sm">
+              <thead>
+                <tr>
+                  <th>Item</th>
+                  <th>Requested Qty</th>
+                  <th>To Issue</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let item of serviceRequest()?.items">
+                  <td>{{ item.itemName }}</td>
+                  <td>{{ item.requestedQty }}</td>
+                  <td>{{ item.requestedQty }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i>
+            A Store Issue Voucher (SIV) will be automatically created for this issuance.
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="closeIssueModal()">Cancel</button>
+          <button type="button" class="btn btn-primary" (click)="issueRequest()">
+            <i class="bi bi-box-arrow-right"></i> Issue Items
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Backdrop -->
+  <div class="modal-backdrop fade show" *ngIf="showApprovalModal() || showRejectionModal() || showCommentModal() || showIssueModal()"></div>
+</div>

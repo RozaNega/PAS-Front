@@ -5,7 +5,10 @@ import { Router } from '@angular/router';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { PasApiService } from '../../../../shared/services/pas-api.service';
 
-import { NotificationService, Notification } from '../../../common/notifications/services/notification-feature.service';
+import {
+  NotificationFeatureService,
+  Notification,
+} from '../../../common/notifications/services/notification-feature.service';
 
 export interface RequestUpdate {
   srNumber: string;
@@ -24,7 +27,6 @@ export interface SystemAlert {
   selector: 'app-notifications-page',
   standalone: true,
   imports: [CommonModule, FormsModule],
-  providers: [NotificationService],
   templateUrl: './notifications-page.component.html',
   styleUrl: './notifications-page.component.scss',
 })
@@ -32,7 +34,7 @@ export class NotificationsPageComponent {
   private router = inject(Router);
   private modal = inject(NgbModal);
   private readonly pasApi = inject(PasApiService);
-  private readonly notificationService = inject(NotificationService);
+  private readonly notificationService = inject(NotificationFeatureService);
 
   searchQuery = '';
   filterType = 'all';

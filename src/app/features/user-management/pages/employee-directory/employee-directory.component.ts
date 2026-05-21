@@ -1,6 +1,9 @@
-import { Component, signal, computed, inject } from '@angular/core';
+import { Component, signal, computed, inject, OnInit, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
+import { EmployeesService, EmployeeDto } from '../../../../core/services/employees.service';
+import { FormsModule } from '@angular/forms';
+import { ApiResponse } from '../../../../types/api-response.type';
 
 interface Employee {
   id: string;
@@ -11,20 +14,21 @@ interface Employee {
   department: string;
   position: string;
   hasUserAccount: boolean;
-  joinDate: Date;
-  status: 'Active' | 'Inactive' | 'On Leave';
+  joinDate?: Date;
+  status: 'Active' | 'Inactive';
   avatar: string;
 }
 
 @Component({
   selector: 'app-employee-directory',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './employee-directory.component.html',
   styleUrls: ['./employee-directory.component.scss']
 })
-export class EmployeeDirectoryComponent {
+export class EmployeeDirectoryComponent implements OnInit {
   private readonly router = inject(Router);
+  private readonly employeesService = inject(EmployeesService);
 
   searchQuery = signal('');
   departmentFilter = signal('All');
@@ -32,19 +36,89 @@ export class EmployeeDirectoryComponent {
   positionFilter = signal('All');
   currentPage = signal(1);
   rowsPerPage = signal(10);
+  loading = signal(false);
+  error = signal<string | null>(null);
 
-  employees: Employee[] = [
-    { id: '1', name: 'John Doe', employeeCode: 'EMP-001', email: 'john@afrocom.com', phone: '+251-911-234567', department: 'IT', position: 'IT Manager', hasUserAccount: true, joinDate: new Date('2020-01-15'), status: 'Active', avatar: 'JD' },
-    { id: '2', name: 'Sarah Smith', employeeCode: 'EMP-002', email: 'sarah@afrocom.com', phone: '+251-912-345678', department: 'Warehouse', position: 'Store Officer', hasUserAccount: true, joinDate: new Date('2021-03-01'), status: 'Active', avatar: 'SS' },
-    { id: '3', name: 'Mike Johnson', employeeCode: 'EMP-003', email: 'mike@afrocom.com', phone: '+251-913-456789', department: 'Operations', position: 'Logistics Coordinator', hasUserAccount: false, joinDate: new Date('2022-06-10'), status: 'Active', avatar: 'MJ' },
-    { id: '4', name: 'Lisa Wong', employeeCode: 'EMP-004', email: 'lisa@afrocom.com', phone: '+251-914-567890', department: 'HR', position: 'HR Manager', hasUserAccount: true, joinDate: new Date('2019-08-05'), status: 'Active', avatar: 'LW' },
-    { id: '5', name: 'Peter Chen', employeeCode: 'EMP-005', email: 'peter@afrocom.com', phone: '+251-915-678901', department: 'Finance', position: 'Accountant', hasUserAccount: true, joinDate: new Date('2021-11-20'), status: 'On Leave', avatar: 'PC' },
-  ];
+  employees = signal<Employee[]>([]);
+  totalEmployees = signal(0);
 
-  totalEmployees = signal(this.employees.length);
+  constructor() {
+    // Reload data when filters change
+    effect(() => {
+      const search = this.searchQuery();
+      const dept = this.departmentFilter();
+      const status = this.statusFilter();
+      
+      this.loadEmployees();
+    });
+  }
+
+  ngOnInit(): void {
+    this.loadEmployees();
+  }
+
+  loadEmployees(): void {
+    this.loading.set(true);
+    this.error.set(null);
+
+    const params: any = {};
+
+    if (this.searchQuery()) {
+      params.searchTerm = this.searchQuery();
+    }
+
+    if (this.departmentFilter() !== 'All') {
+      params.department = this.departmentFilter();
+    }
+
+    console.log('Loading employees with params:', params);
+
+    this.employeesService.getAll(params).subscribe({
+      next: (response) => {
+        console.log('Employee API response:', response);
+        
+        if (response.success !== false && Array.isArray(response.data)) {
+          const mappedEmployees = response.data.map((emp: EmployeeDto) => ({
+            id: emp.id,
+            name: emp.fullName || '',
+            employeeCode: emp.employeeCode || '',
+            email: '',
+            phone: '',
+            department: emp.department || '',
+            position: '',
+            hasUserAccount: false,
+            status: 'Active' as const,
+            avatar: this.getInitials(emp.fullName || '?')
+          }));
+          
+          console.log('Mapped employees:', mappedEmployees);
+          this.employees.set(mappedEmployees);
+          this.totalEmployees.set(mappedEmployees.length);
+        } else {
+          console.error('API response unsuccessful or no data:', response);
+          this.error.set(response.message || 'No employee data received from server');
+        }
+        this.loading.set(false);
+      },
+      error: (err) => {
+        console.error('Error loading employees:', err);
+        this.error.set('Failed to load employees. Please try again.');
+        this.loading.set(false);
+      }
+    });
+  }
+
+  getInitials(name: string): string {
+    return name
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .toUpperCase()
+      .substring(0, 2);
+  }
 
   filteredEmployees = computed(() => {
-    let result = [...this.employees];
+    let result = [...this.employees()];
 
     if (this.searchQuery()) {
       const q = this.searchQuery().toLowerCase();
@@ -123,28 +197,61 @@ export class EmployeeDirectoryComponent {
   getStatusColor(status: string): string {
     const colors: Record<string, string> = {
       'Active': 'green',
-      'Inactive': 'gray',
-      'On Leave': 'yellow'
+      'Inactive': 'gray'
     };
     return colors[status] || 'gray';
   }
 
-  formatDate(date: Date): string {
-    return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  }
-
   createUserAccount(id: string): void {
-    alert(`Creating user account for employee ${id}`);
+    const employee = this.employees().find(e => e.id === id);
+    if (employee) {
+      this.router.navigate(['/admin/users/add'], {
+        queryParams: {
+          employeeCode: employee.employeeCode,
+          fullName: employee.name,
+          email: employee.email,
+          department: employee.department
+        }
+      });
+    }
   }
 
   deleteEmployee(id: string): void {
     if (confirm('Are you sure you want to delete this employee?')) {
-      this.employees = this.employees.filter(e => e.id !== id);
-      this.totalEmployees.set(this.employees.length);
+      this.employeesService.delete(id).subscribe({
+        next: (response) => {
+          if (response.success) {
+            this.loadEmployees();
+            alert('Employee deleted successfully');
+          }
+        },
+        error: (err) => {
+          console.error('Error deleting employee:', err);
+          alert('Failed to delete employee. Please try again.');
+        }
+      });
     }
   }
 
   exportEmployees(format: string): void {
-    alert(`Exporting employees as ${format}...`);
+    console.log(`Exporting employees as ${format}...`);
+    // Implement export functionality
+  }
+
+  formatDate(date: Date | string | undefined): string {
+    if (!date) return 'N/A';
+    return new Date(date).toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric', 
+      year: 'numeric' 
+    });
+  }
+
+  editEmployee(id: string): void {
+    this.router.navigate(['/admin/users/employees', id, 'edit']);
+  }
+
+  viewEmployee(id: string): void {
+    this.router.navigate(['/admin/users/employees', id]);
   }
 }

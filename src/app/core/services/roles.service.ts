@@ -5,22 +5,21 @@ import { ApiResponseModel } from '../models/api-response.model';
 
 export interface RoleDto {
   id: string;
-  name: string;
+  roleName: string;
   description?: string;
+  userCount?: number;
   permissions?: string[];
 }
 
 export interface CreateRoleRequest {
-  name: string;
+  roleName: string;
   description?: string;
-  permissions?: string[];
 }
 
 export interface UpdateRoleRequest {
   id: string;
-  name?: string;
+  roleName?: string;
   description?: string;
-  permissions?: string[];
 }
 
 @Injectable({ providedIn: 'root' })

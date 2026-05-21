@@ -108,30 +108,106 @@ export const routes: Routes = [
         path: 'shelf-locations',
         loadComponent: () => import('./features/store-inventory/shelf-locations/pages/shelf-locations.component').then(m => m.ShelfLocationsComponent),
       },
-      // Requisitions
+      // Requisitions (API-backed)
       {
         path: 'requisitions',
-        loadComponent: () => import('./features/requisitions/all-requests/pages/all-requests.component').then(m => m.AllRequestsComponent),
+        children: [
+          {
+            path: '',
+            loadComponent: () =>
+              import('./features/requisition/service-requests/pages/service-request-list/service-request-list.component').then(
+                (m) => m.ServiceRequestListComponent,
+              ),
+            data: { initialStatus: 'All' },
+          },
+          {
+            path: 'pending',
+            loadComponent: () =>
+              import('./features/requisition/service-requests/pages/service-request-list/service-request-list.component').then(
+                (m) => m.ServiceRequestListComponent,
+              ),
+            data: { initialStatus: 'Pending' },
+          },
+          {
+            path: 'approved',
+            loadComponent: () =>
+              import('./features/requisition/service-requests/pages/service-request-list/service-request-list.component').then(
+                (m) => m.ServiceRequestListComponent,
+              ),
+            data: { initialStatus: 'Approved' },
+          },
+          {
+            path: 'rejected',
+            loadComponent: () =>
+              import('./features/requisition/service-requests/pages/service-request-list/service-request-list.component').then(
+                (m) => m.ServiceRequestListComponent,
+              ),
+            data: { initialStatus: 'Rejected' },
+          },
+          {
+            path: 'completed',
+            loadComponent: () =>
+              import('./features/requisition/service-requests/pages/service-request-list/service-request-list.component').then(
+                (m) => m.ServiceRequestListComponent,
+              ),
+            data: { initialStatus: 'Completed' },
+          },
+          {
+            path: 'create',
+            loadComponent: () =>
+              import('./features/requisition/service-requests/pages/service-request-form/service-request-form.component').then(
+                (m) => m.ServiceRequestFormComponent,
+              ),
+          },
+          {
+            path: ':id/edit',
+            loadComponent: () =>
+              import('./features/requisition/service-requests/pages/service-request-form/service-request-form.component').then(
+                (m) => m.ServiceRequestFormComponent,
+              ),
+          },
+          {
+            path: ':id',
+            loadComponent: () =>
+              import('./features/requisition/service-requests/pages/service-request-detail/service-request-detail.component').then(
+                (m) => m.ServiceRequestDetailComponent,
+              ),
+          },
+        ],
       },
       {
-        path: 'requisitions/pending',
-        loadComponent: () => import('./features/requisitions/pending-approvals/pages/pending-approvals.component').then(m => m.PendingApprovalsComponent),
-      },
-      {
-        path: 'requisitions/approved',
-        loadComponent: () => import('./features/requisitions/approved/pages/approved.component').then(m => m.ApprovedComponent),
-      },
-      {
-        path: 'requisitions/rejected',
-        loadComponent: () => import('./features/requisitions/rejected/pages/rejected.component').then(m => m.RejectedComponent),
-      },
-      {
-        path: 'requisitions/completed',
-        loadComponent: () => import('./features/requisitions/completed/pages/completed.component').then(m => m.CompletedComponent),
+        path: 'sivs/new',
+        loadComponent: () =>
+          import('./features/requisition/sivs/pages/siv-create/siv-create-page.component').then((m) => m.SivCreatePageComponent),
       },
       {
         path: 'sivs',
-        loadComponent: () => import('./features/requisitions/sivs/pages/sivs.component').then(m => m.SIVsComponent),
+        loadComponent: () =>
+          import('./features/requisition/sivs/pages/siv-list/siv-list.component').then((m) => m.SivListComponent),
+      },
+      {
+        path: 'sivs/:id',
+        loadComponent: () =>
+          import('./features/requisition/sivs/pages/siv-detail/siv-detail-page.component').then((m) => m.SivDetailPageComponent),
+      },
+      {
+        path: 'requisition',
+        loadChildren: () =>
+          import('./features/requisition/requisition.module').then((m) => m.RequisitionModule),
+      },
+      {
+        path: 'requisition/service-requests/new',
+        loadComponent: () =>
+          import('./features/requisition/service-requests/pages/service-request-form/service-request-form.component').then(
+            (m) => m.ServiceRequestFormComponent,
+          ),
+      },
+      {
+        path: 'requisition/service-requests/item-management/:requestId',
+        loadComponent: () =>
+          import('./features/requisition/service-requests/pages/item-management/item-management.component').then(
+            (m) => m.ItemManagementComponent,
+          ),
       },
       // Receiving
       {
@@ -148,7 +224,15 @@ export const routes: Routes = [
       },
       {
         path: 'receiving/suppliers',
-        loadComponent: () => import('./features/receiving/suppliers/pages/suppliers.component').then(m => m.SuppliersComponent),
+        loadComponent: () => import('./features/receiving/suppliers/pages/supplier-list/supplier-list.component').then(m => m.SupplierListComponent),
+      },
+      {
+        path: 'receiving/suppliers/new',
+        loadComponent: () => import('./features/receiving/suppliers/pages/supplier-form/supplier-form.component').then(m => m.SupplierFormComponent),
+      },
+      {
+        path: 'receiving/suppliers/edit/:id',
+        loadComponent: () => import('./features/receiving/suppliers/pages/supplier-form/supplier-form.component').then(m => m.SupplierFormComponent),
       },
       // Reports & Settings
       {
@@ -266,6 +350,10 @@ export const routes: Routes = [
       {
         path: 'warehouse/shelves',
         loadComponent: () => import('./features/store-inventory/shelf-management/pages/shelf-management.component').then(m => m.ShelfManagementComponent),
+      },
+      {
+        path: 'warehouse/warehouses',
+        loadComponent: () => import('./features/store-inventory/warehouses/pages/warehouses.component').then(m => m.WarehousesComponent),
       },
       {
         path: 'warehouse/scanner',

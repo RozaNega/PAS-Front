@@ -9,6 +9,30 @@
     </button>
   </div>
 
+  @if (showAddModal()) {
+    <div class="modal-overlay" (click)="closeAddModal()">
+      <div class="modal-content" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3>@if (isEditing()) { Edit Item } @else { Add New Item }</h3>
+          <button class="btn-close" (click)="closeAddModal()"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <form (ngSubmit)="isEditing() ? updateItem() : createItem()" class="add-item-form">
+          <label>SKU: <input type="text" [ngModel]="newItem().sku" (ngModelChange)="setNewItemField('sku',$event)" name="sku" required></label>
+          <label>Name: <input type="text" [ngModel]="newItem().name" (ngModelChange)="setNewItemField('name',$event)" name="name" required></label>
+          <label>Category: <input type="text" [ngModel]="newItem().category" (ngModelChange)="setNewItemField('category',$event)" name="category"></label>
+          <label>UOM: <input type="text" [ngModel]="newItem().uom" (ngModelChange)="setNewItemField('uom',$event)" name="uom"></label>
+          <label>Min Stock: <input type="number" [ngModel]="newItem().minStock" (ngModelChange)="setNewItemField('minStock',$event)" name="minStock"></label>
+          <label>Current Stock: <input type="number" [ngModel]="newItem().currentStock" (ngModelChange)="setNewItemField('currentStock',$event)" name="currentStock"></label>
+          <label>Price: <input type="number" [ngModel]="newItem().price" (ngModelChange)="setNewItemField('price',$event)" name="price"></label>
+          <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" (click)="closeAddModal()">Cancel</button>
+            <button type="submit" class="btn btn-primary">@if (isEditing()) { Update Item } @else { Create Item }</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
   <div class="filter-bar">
     <div class="search-box">
       <i class="bi bi-search"></i>
@@ -16,7 +40,7 @@
     </div>
     <div class="filter-group">
       <label>🏷️ Category:</label>
-      <select [(ngModel)]="categoryFilter" (ngModelChange)="onCategoryChange($event)">
+      <select [ngModel]="categoryFilter()" (ngModelChange)="onCategoryChange($event)">
         @for (cat of categories; track cat) {
           <option [value]="cat">{{ cat }}</option>
         }
@@ -24,7 +48,7 @@
     </div>
     <div class="filter-group">
       <label>📦 Status:</label>
-      <select [(ngModel)]="statusFilter" (ngModelChange)="onStatusChange($event)">
+      <select [ngModel]="statusFilter()" (ngModelChange)="onStatusChange($event)">
         @for (st of statuses; track st) {
           <option [value]="st">{{ st }}</option>
         }
@@ -32,7 +56,7 @@
     </div>
     <div class="filter-group">
       <label>🔄 Sort by:</label>
-      <select [(ngModel)]="sortBy" (ngModelChange)="onSortChange($event)">
+      <select [ngModel]="sortBy()" (ngModelChange)="onSortChange($event)">
         @for (opt of sortOptions; track opt) {
           <option [value]="opt">{{ opt }}</option>
         }
@@ -107,6 +131,7 @@
       <div class="items-grid">
         @for (item of filteredItems(); track item.sku) {
           <div class="item-card" (click)="openItemModal(item)">
+            <label class="card-select"><input type="checkbox" [checked]="selectedIds().includes(item.id ?? item.sku)" (change)="$event.stopPropagation(); toggleSelect(item.id ?? item.sku)"></label>
             <div class="card-icon">{{ getCategoryIcon(item.category) }}</div>
             <div class="card-title">{{ item.name }}</div>
             <div class="card-sku">SKU: {{ item.sku }}</div>
@@ -140,6 +165,7 @@
         <table class="items-table">
           <thead>
             <tr>
+              <th><input type="checkbox" [checked]="selectedIds().length === filteredItems().length && filteredItems().length > 0" (change)="$any($event.target).checked ? selectAll() : selectedIds.set([])"></th>
               <th>SKU</th>
               <th>Item Name</th>
               <th>Category</th>
@@ -153,7 +179,7 @@
           <tbody>
             @for (item of filteredItems(); track item.sku) {
               <tr>
-                <td>{{ item.sku }}</td>
+                <td><input type="checkbox" [checked]="selectedIds().includes(item.id ?? item.sku)" (change)="toggleSelect(item.id ?? item.sku)"> {{ item.sku }}</td>
                 <td>{{ item.name }}</td>
                 <td>{{ item.category }}</td>
                 <td>{{ item.uom }}</td>
@@ -198,15 +224,15 @@
   <div class="bulk-actions-section">
     <h3>⚡ BULK ACTIONS</h3>
     <div class="bulk-actions">
-      <label class="checkbox-label">
-        <input type="checkbox"> Select All
-      </label>
-      <label class="checkbox-label">
-        <input type="checkbox"> Select Low Stock
-      </label>
-      <label class="checkbox-label">
-        <input type="checkbox"> Select Out of Stock
-      </label>
+        <label class="checkbox-label">
+          <input type="checkbox" [checked]="selectedIds().length === filteredItems().length && filteredItems().length > 0" (change)="$any($event.target).checked ? selectAll() : selectedIds.set([])"> Select All
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" [checked]="selectedIds().length > 0 && selectedIds().every(id => filteredItems().some(i=> (i.id ?? i.sku) === id && i.status === 'Low Stock'))" (change)="$any($event.target).checked ? selectLowStock() : selectedIds.set([])"> Select Low Stock
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" [checked]="selectedIds().length > 0 && selectedIds().every(id => filteredItems().some(i=> (i.id ?? i.sku) === id && i.status === 'Out of Stock'))" (change)="$any($event.target).checked ? selectOutOfStock() : selectedIds.set([])"> Select Out of Stock
+        </label>
     </div>
     <div class="bulk-buttons">
       <button class="btn btn-secondary" (click)="bulkEdit()">
@@ -224,6 +250,53 @@
     </div>
   </div>
 </div>
+@if (showBulkImportModal()) {
+  <div class="modal-overlay" (click)="showBulkImportModal.set(false)">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Bulk Edit Items</h3>
+        <button class="btn-close" (click)="showBulkImportModal.set(false)"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <div class="modal-body">
+        <form (ngSubmit)="performBulkEdit()" class="bulk-edit-form">
+          <label>Category: <input type="text" [ngModel]="bulkEditDraft().category" (ngModelChange)="setBulkEditField('category',$event)" name="category"></label>
+          <label>UOM: <input type="text" [ngModel]="bulkEditDraft().uom" (ngModelChange)="setBulkEditField('uom',$event)" name="uom"></label>
+          <label>Min Stock: <input type="number" [ngModel]="bulkEditDraft().minStock" (ngModelChange)="setBulkEditField('minStock',$event)" name="minStock"></label>
+          <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" (click)="showBulkImportModal.set(false)">Cancel</button>
+            <button type="submit" class="btn btn-primary">Apply to Selected</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+}
+<!-- Item Details Modal -->
+@if (showAdjustModal()) {
+  <div class="modal-overlay" (click)="showAdjustModal.set(false)">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Adjust Stock</h3>
+        <button class="btn-close" (click)="showAdjustModal.set(false)"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <form class="adjust-form" (ngSubmit)="performAdjust()">
+          <label>Type:
+          <select [ngModel]="adjustDraft().adjustmentType" (ngModelChange)="setAdjustField('adjustmentType',$event)" name="type">
+            <option value="increase">Increase</option>
+            <option value="decrease">Decrease</option>
+            <option value="set">Set</option>
+          </select>
+        </label>
+        <label>Quantity: <input type="number" [ngModel]="adjustDraft().quantity" (ngModelChange)="setAdjustField('quantity',$event)" name="quantity"></label>
+        <label>Reason: <input type="text" [ngModel]="adjustDraft().reason" (ngModelChange)="setAdjustField('reason',$event)" name="reason"></label>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" (click)="showAdjustModal.set(false)">Cancel</button>
+          <button type="submit" class="btn btn-primary">Apply</button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
 
 <!-- Item Details Modal -->
 @if (showItemModal() && selectedItem()) {

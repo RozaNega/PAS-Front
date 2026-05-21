@@ -1,7 +1,7 @@
-﻿import { Component, signal, inject } from '@angular/core';
+﻿import { Component, signal, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { LocationService } from '../../services/location.service';
+import { LocationService, LocationDto } from '../../services/location.service';
 
 interface Location {
   id: string;
@@ -11,6 +11,7 @@ interface Location {
   parentId: string | null;
   propertiesCount: number;
   status: 'Active' | 'Inactive';
+  children?: Location[];
 }
 
 @Component({
@@ -25,35 +26,15 @@ export class LocationListComponent {
   searchTerm = signal('');
   typeFilter = signal('All Types');
   parentFilter = signal('All');
-  viewMode = signal('tree');
+  viewMode = signal<'tree' | 'list'>('tree');
   showModal = signal(false);
   selectedLocation = signal<Location | null>(null);
   isLoading = signal(false);
+  error = signal<string | null>(null);
 
   locationTypes = ['All Types', 'Building', 'Floor', 'Department', 'Room', 'Warehouse', 'Aisle', 'Shelf'];
 
-  locations = signal<Location[]>([
-    { id: '1', name: 'Headquarters', type: 'Building', icon: '🏢', parentId: null, propertiesCount: 234, status: 'Active' },
-    { id: '2', name: 'Floor 1', type: 'Floor', icon: '📍', parentId: '1', propertiesCount: 45, status: 'Active' },
-    { id: '3', name: 'IT Department', type: 'Department', icon: '💻', parentId: '2', propertiesCount: 28, status: 'Active' },
-    { id: '4', name: 'HR Department', type: 'Department', icon: '👥', parentId: '2', propertiesCount: 12, status: 'Active' },
-    { id: '5', name: 'Finance', type: 'Department', icon: '💰', parentId: '2', propertiesCount: 18, status: 'Active' },
-    { id: '6', name: 'Floor 2', type: 'Floor', icon: '📍', parentId: '1', propertiesCount: 67, status: 'Active' },
-    { id: '7', name: 'Sales', type: 'Department', icon: '📊', parentId: '6', propertiesCount: 15, status: 'Active' },
-    { id: '8', name: 'Marketing', type: 'Department', icon: '�', parentId: '6', propertiesCount: 8, status: 'Active' },
-    { id: '9', name: 'Floor 3', type: 'Floor', icon: '📍', parentId: '1', propertiesCount: 89, status: 'Active' },
-    { id: '10', name: 'Executive', type: 'Department', icon: '👔', parentId: '9', propertiesCount: 8, status: 'Active' },
-    { id: '11', name: 'Warehouse A', type: 'Warehouse', icon: '🏭', parentId: null, propertiesCount: 156, status: 'Active' },
-    { id: '12', name: 'Aisle A', type: 'Aisle', icon: '📦', parentId: '11', propertiesCount: 45, status: 'Active' },
-    { id: '13', name: 'Aisle B', type: 'Aisle', icon: '�', parentId: '11', propertiesCount: 67, status: 'Active' },
-    { id: '14', name: 'Aisle C', type: 'Aisle', icon: '📦', parentId: '11', propertiesCount: 44, status: 'Active' },
-    { id: '15', name: 'Warehouse B', type: 'Warehouse', icon: '🏭', parentId: null, propertiesCount: 57, status: 'Active' },
-    { id: '16', name: 'Aisle A', type: 'Aisle', icon: '📦', parentId: '15', propertiesCount: 34, status: 'Active' },
-    { id: '17', name: 'Aisle B', type: 'Aisle', icon: '📦', parentId: '15', propertiesCount: 23, status: 'Active' },
-    { id: '18', name: 'Branch Office', type: 'Building', icon: '🏢', parentId: null, propertiesCount: 45, status: 'Active' },
-    { id: '19', name: 'Floor 1', type: 'Floor', icon: '📍', parentId: '18', propertiesCount: 25, status: 'Active' },
-    { id: '20', name: 'Floor 2', type: 'Floor', icon: '📍', parentId: '18', propertiesCount: 20, status: 'Active' }
-  ]);
+  locations = signal<Location[]>([]);
 
   modalFormData = signal({
     name: '',
@@ -76,6 +57,17 @@ export class LocationListComponent {
   });
 
   filteredLocations = signal<Location[]>([]);
+  treeStructure = computed(() => this.buildTreeStructure(this.filteredLocations()));
+
+  locationStats = computed(() => {
+    const locs = this.locations();
+    return {
+      total: locs.length,
+      buildings: locs.filter(l => l.type === 'Building').length,
+      floors: locs.filter(l => l.type === 'Floor').length,
+      departments: locs.filter(l => l.type === 'Department' || l.type === 'Room').length,
+    };
+  });
 
   constructor() {
     this.loadLocations();
@@ -83,6 +75,7 @@ export class LocationListComponent {
 
   loadLocations(): void {
     this.isLoading.set(true);
+    this.error.set(null);
     this.locationService.getAll().subscribe({
       next: (response) => {
         if (response.success && response.data) {
@@ -95,25 +88,67 @@ export class LocationListComponent {
             Aisle: '📦',
             Shelf: '🗄️'
           };
-          const locations: Location[] = response.data.map(loc => ({
+
+          const locations: Location[] = (response.data as LocationDto[]).map((loc) => ({
             id: loc.id,
             name: loc.name,
-            type: 'Department', // Default type since DTO doesn't have it
-            icon: icons['Department'] || '📍',
+            type: this.inferLocationType(loc.name),
+            icon: icons[this.inferLocationType(loc.name)] || '📍',
             parentId: null,
             propertiesCount: 0,
             status: loc.isActive ? 'Active' : 'Inactive'
           }));
+
           this.locations.set(locations);
           this.filterLocations();
+        } else {
+          this.error.set(response.message || 'Failed to load locations');
         }
         this.isLoading.set(false);
       },
-      error: (error) => {
-        console.error('Error loading locations:', error);
+      error: (err) => {
+        console.error('Error loading locations:', err);
+        this.error.set('Failed to load locations from server. Please try again.');
         this.isLoading.set(false);
       }
     });
+  }
+
+  private inferLocationType(name: string): string {
+    const nameLower = name.toLowerCase();
+    if (nameLower.includes('floor')) return 'Floor';
+    if (nameLower.includes('department') || nameLower.includes('dept')) return 'Department';
+    if (nameLower.includes('warehouse') || nameLower.includes('warehouse')) return 'Warehouse';
+    if (nameLower.includes('aisle')) return 'Aisle';
+    if (nameLower.includes('shelf')) return 'Shelf';
+    if (nameLower.includes('room') || nameLower.includes('office')) return 'Room';
+    return 'Building';
+  }
+
+  private buildTreeStructure(locations: Location[]): Location[] {
+    const locationMap = new Map<string, Location>();
+    const roots: Location[] = [];
+
+    locations.forEach(loc => {
+      locationMap.set(loc.id, { ...loc, children: [] });
+    });
+
+    locations.forEach(loc => {
+      const node = locationMap.get(loc.id);
+      if (node) {
+        if (loc.parentId && locationMap.has(loc.parentId)) {
+          const parent = locationMap.get(loc.parentId);
+          if (parent) {
+            parent.children = parent.children || [];
+            parent.children.push(node);
+          }
+        } else {
+          roots.push(node);
+        }
+      }
+    });
+
+    return roots;
   }
 
   filterLocations(): void {
@@ -207,20 +242,38 @@ export class LocationListComponent {
     const data = this.modalFormData();
     const editing = this.selectedLocation();
 
+    if (!data.name.trim()) {
+      alert('Location name is required');
+      return;
+    }
+
     if (editing) {
-      // Update existing location
       this.locationService.update(editing.id, {
         name: data.name,
         address: data.addressLine1,
         city: data.city,
         isActive: data.active
       }).subscribe({
-        next: () => {
-          this.locations.update(locs =>
-            locs.map(l => l.id === editing.id ? { ...l, name: data.name, type: data.type, parentId: data.parentId, status: data.active ? 'Active' : 'Inactive' } : l)
-          );
-          this.filterLocations();
-          this.closeModal();
+        next: (response) => {
+          if (response.success) {
+            this.locations.update(locs =>
+              locs.map(l => l.id === editing.id
+                ? {
+                    ...l,
+                    name: data.name,
+                    type: data.type,
+                    parentId: data.parentId as string | null,
+                    status: data.active ? 'Active' : 'Inactive'
+                  }
+                : l
+              )
+            );
+            this.filterLocations();
+            this.closeModal();
+            alert('Location updated successfully');
+          } else {
+            alert(response.message || 'Failed to update location');
+          }
         },
         error: (error) => {
           console.error('Error updating location:', error);
@@ -228,7 +281,6 @@ export class LocationListComponent {
         }
       });
     } else {
-      // Create new location
       this.locationService.create({
         name: data.name,
         address: data.addressLine1,
@@ -251,13 +303,16 @@ export class LocationListComponent {
               name: data.name,
               type: data.type,
               icon: icons[data.type] || '📍',
-              parentId: data.parentId,
+              parentId: data.parentId as string | null,
               propertiesCount: 0,
               status: data.active ? 'Active' : 'Inactive'
             };
             this.locations.update(locs => [...locs, newLocation]);
             this.filterLocations();
             this.closeModal();
+            alert('Location created successfully');
+          } else {
+            alert(response.message || 'Failed to create location');
           }
         },
         error: (error) => {
@@ -271,9 +326,14 @@ export class LocationListComponent {
   deleteLocation(id: string): void {
     if (confirm('Are you sure you want to delete this location?')) {
       this.locationService.delete(id).subscribe({
-        next: () => {
-          this.locations.update(locs => locs.filter(l => l.id !== id));
-          this.filterLocations();
+        next: (response) => {
+          if (response.success) {
+            this.locations.update(locs => locs.filter(l => l.id !== id));
+            this.filterLocations();
+            alert('Location deleted successfully');
+          } else {
+            alert(response.message || 'Failed to delete location');
+          }
         },
         error: (error) => {
           console.error('Error deleting location:', error);
@@ -291,11 +351,15 @@ export class LocationListComponent {
         name: location.name,
         isActive: newStatus
       }).subscribe({
-        next: () => {
-          this.locations.update(locs =>
-            locs.map(l => l.id === id ? { ...l, status: l.status === 'Active' ? 'Inactive' : 'Active' } : l)
-          );
-          this.filterLocations();
+        next: (response) => {
+          if (response.success) {
+            this.locations.update(locs =>
+              locs.map(l => l.id === id ? { ...l, status: l.status === 'Active' ? 'Inactive' : 'Active' } : l)
+            );
+            this.filterLocations();
+          } else {
+            alert(response.message || 'Failed to update location status');
+          }
         },
         error: (error) => {
           console.error('Error updating location status:', error);
@@ -309,12 +373,46 @@ export class LocationListComponent {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          this.modalFormData.update(d => ({ ...d, latitude: position.coords.latitude.toString(), longitude: position.coords.longitude.toString() }));
+          this.modalFormData.update(d => ({
+            ...d,
+            latitude: position.coords.latitude.toString(),
+            longitude: position.coords.longitude.toString()
+          }));
         },
         (error) => {
           console.error('Error getting location:', error);
         }
       );
     }
+  }
+
+  retryLoad(): void {
+    this.loadLocations();
+  }
+
+  getIconClass(type: string): string {
+    const classMap: { [key: string]: string } = {
+      Building: 'icon-building',
+      Floor: 'icon-floor',
+      Department: 'icon-department',
+      Room: 'icon-room',
+      Warehouse: 'icon-warehouse',
+      Aisle: 'icon-aisle',
+      Shelf: 'icon-shelf'
+    };
+    return classMap[type] || 'icon-default';
+  }
+
+  getIconClassSolid(type: string): string {
+    const iconMap: { [key: string]: string } = {
+      Building: 'bi bi-building',
+      Floor: 'bi bi-layers-fill',
+      Department: 'bi bi-door-closed',
+      Room: 'bi bi-door-closed-fill',
+      Warehouse: 'bi bi-box-seam-fill',
+      Aisle: 'bi bi-columns-gap',
+      Shelf: 'bi bi-stack'
+    };
+    return iconMap[type] || 'bi bi-geo-alt';
   }
 }

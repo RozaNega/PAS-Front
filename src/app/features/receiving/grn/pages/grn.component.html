@@ -4,15 +4,27 @@
       <h1>Goods Receipt Notes (GRN)</h1>
       <p class="subtitle">Track all incoming shipments and deliveries</p>
     </div>
-    <button class="btn btn-primary" (click)="openCreateModal()">
-      <i class="bi bi-plus-lg"></i> New GRN
-    </button>
+    <div class="header-actions" style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+      <button type="button" class="btn btn-secondary" (click)="exportGrn()">
+        <i class="bi bi-download"></i> Export
+      </button>
+      <button type="button" class="btn btn-primary" (click)="openCreateModal()">
+        <i class="bi bi-plus-lg"></i> New GRN
+      </button>
+    </div>
   </div>
+
+  @if (loading()) {
+    <p class="text-muted">Loading GRNs…</p>
+  }
+  @if (error()) {
+    <div class="alert alert-danger">{{ error() }}</div>
+  }
 
   <div class="filter-bar">
     <div class="search-box">
       <i class="bi bi-search"></i>
-      <input type="text" [value]="searchTerm()" (input)="onSearchChange($any($event.target).value)" placeholder="Search by GRN#, PO#, Supplier...">
+      <input type="text" [ngModel]="searchTerm()" (ngModelChange)="onSearchChange($event)" placeholder="Search by GRN#, PO#, Supplier...">
     </div>
     <div class="filter-group">
       <label>📅 Date:</label>
@@ -23,7 +35,7 @@
     </div>
     <div class="filter-group">
       <label>🏷️ Status:</label>
-      <select [(ngModel)]="statusFilter" (ngModelChange)="onStatusFilterChange($event)">
+      <select [ngModel]="statusFilter()" (ngModelChange)="onStatusFilterChange($event)">
         @for (status of statuses; track status) {
           <option [value]="status">{{ status }}</option>
         }
@@ -31,9 +43,10 @@
     </div>
     <div class="filter-group">
       <label>🏭 Supplier:</label>
-      <select [(ngModel)]="supplierFilter" (ngModelChange)="onStatusFilterChange($event)">
-        @for (supplier of suppliers; track supplier) {
-          <option [value]="supplier">{{ supplier }}</option>
+      <select [ngModel]="supplierFilter()" (ngModelChange)="onSupplierFilterChange($event)">
+        <option value="All Suppliers">All Suppliers</option>
+        @for (s of suppliers(); track s.id) {
+          <option [value]="s.name">{{ s.name }}</option>
         }
       </select>
     </div>
@@ -94,7 +107,7 @@
               </td>
               <td>
                 <div class="actions-cell">
-                  <button class="action-btn" title="View">
+                  <button type="button" class="action-btn" title="View" (click)="viewGrn(grn.id)">
                     <i class="bi bi-eye"></i>
                   </button>
                   @if (grn.status === 'Pending Inspection') {
@@ -110,7 +123,7 @@
       </table>
     </div>
     <div class="pagination-bar">
-      <div class="pagination-info">Showing 1-{{ filteredGRNs().length }} of {{ summary().totalGRNs }} GRNs</div>
+      <div class="pagination-info">Showing {{ filteredGRNs().length }} GRN(s) loaded</div>
       <div class="pagination-controls">
         <button class="page-btn" disabled>Previous</button>
         <button class="page-btn active">1</button>
@@ -148,39 +161,49 @@
               <div class="form-grid">
                 <div class="form-field">
                   <label>GRN Number *</label>
-                  <input type="text" [value]="modalFormData().grnNumber" disabled>
+                  <input type="text" [(ngModel)]="modalDraft.grnNumber" name="grnNum">
                 </div>
                 <div class="form-field">
                   <label>Date Received *</label>
-                  <input type="date" [(ngModel)]="modalFormData().dateReceived">
+                  <input type="date" [(ngModel)]="modalDraft.dateReceived" name="dr">
                 </div>
               </div>
               <div class="form-field">
                 <label>Supplier *</label>
-                <select [(ngModel)]="modalFormData().supplier">
-                  <option>Tech Supplies Ltd</option>
-                  <option>Office Depot</option>
-                  <option>Global Suppliers</option>
-                  <option>Paper Co</option>
+                <select [(ngModel)]="modalDraft.supplierId" name="sup">
+                  @for (s of suppliers(); track s.id) {
+                    <option [value]="s.id">{{ s.name }}</option>
+                  }
                 </select>
               </div>
+              @if (catalogItems().length) {
+                <div class="form-field">
+                  <label>Catalog line item *</label>
+                  <p class="text-muted" style="font-size:0.85rem;margin:0 0 0.35rem;">
+                    One line is sent with quantity 1 so the receiving note passes validation. Edit quantities on the backend or extend this form later.
+                  </p>
+                  <select [(ngModel)]="modalDraft.defaultItemId" name="catItem">
+                    @for (it of catalogItems(); track it.id) {
+                      <option [value]="it.id">{{ it.name }}</option>
+                    }
+                  </select>
+                </div>
+              } @else {
+                <p class="text-warning" style="font-size:0.9rem;">No items loaded from Item Masters. Create will fail until catalog items exist.</p>
+              }
               <div class="form-grid">
                 <div class="form-field">
                   <label>PO Number (Optional)</label>
-                  <input type="text" [(ngModel)]="modalFormData().poNumber" placeholder="PO-2024-1234">
+                  <input type="text" [(ngModel)]="modalDraft.poNumber" name="po" placeholder="PO-2024-1234">
                 </div>
                 <div class="form-field">
                   <label>Delivery Note No.</label>
-                  <input type="text" [(ngModel)]="modalFormData().deliveryNote" placeholder="DN-45678">
+                  <input type="text" [(ngModel)]="modalDraft.deliveryNote" name="dn" placeholder="DN-45678">
                 </div>
               </div>
               <div class="form-field">
                 <label>Received By *</label>
-                <select [(ngModel)]="modalFormData().receivedBy">
-                  <option>John Doe (Store Officer)</option>
-                  <option>Sarah Smith (Inspector)</option>
-                  <option>Mike Wilson (Supervisor)</option>
-                </select>
+                <input type="text" [(ngModel)]="modalDraft.receivedBy" name="rb" placeholder="Name or staff ID">
               </div>
             </div>
           </div>
@@ -251,7 +274,7 @@
             </div>
             <div class="form-section">
               <h5>NOTES</h5>
-              <textarea [(ngModel)]="modalFormData().notes" rows="2" placeholder="All items received in good condition"></textarea>
+              <textarea [(ngModel)]="modalDraft.notes" name="notes" rows="2" placeholder="All items received in good condition"></textarea>
             </div>
           </div>
         }
@@ -267,6 +290,35 @@
         } @else {
           <button class="btn btn-primary" (click)="submitGRN()">Submit</button>
         }
+      </div>
+    </div>
+  </div>
+}
+
+@if (showDetail()) {
+  <div class="modal-overlay" (click)="closeDetail()">
+    <div class="modal-content" (click)="$event.stopPropagation()" style="max-width:640px;">
+      <div class="modal-header">
+        <h3>GRN details</h3>
+        <button type="button" class="btn-close" (click)="closeDetail()"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <div class="modal-body">
+        @if (detailLoading()) {
+          <p>Loading…</p>
+        } @else if (detailNote(); as n) {
+          <p><strong>Number:</strong> {{ n.noteNumber || n.grnNumber || n.id }}</p>
+          <p><strong>Supplier:</strong> {{ n.supplierName || '—' }}</p>
+          <p><strong>Date:</strong> {{ n.receivingDate }}</p>
+          <p><strong>Received by:</strong> {{ n.receivedBy }}</p>
+          <p><strong>Status:</strong> {{ n.status }}</p>
+          <p><strong>Items:</strong> {{ (n.items && n.items.length) || n.totalQuantity || 0 }}</p>
+          <pre style="max-height:240px;overflow:auto;font-size:12px;">{{ n | json }}</pre>
+        } @else {
+          <p>Could not load details.</p>
+        }
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeDetail()">Close</button>
       </div>
     </div>
   </div>

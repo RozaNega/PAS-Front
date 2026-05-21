@@ -9,30 +9,50 @@
       <i class="bi bi-download"></i>
       Export
     </button>
+    <button type="button" class="action-btn secondary" (click)="refreshData()" [disabled]="loading()">
+      <i class="bi bi-arrow-clockwise"></i>
+      Refresh
+    </button>
   </header>
+
+  @if (loadError()) {
+    <p class="filter-bar" role="alert" style="color: #b00020; margin: 0.5rem 0;">{{ loadError() }}</p>
+  }
+  @if (loading()) {
+    <p class="filter-bar" style="margin: 0.5rem 0;">Loading stock…</p>
+  }
 
   <!-- Filter Bar -->
   <section class="filter-bar" aria-label="Filter stock">
     <div class="filter-row">
       <div class="search-box">
         <i class="bi bi-search"></i>
-        <input 
-          type="text" 
-          placeholder="Search by Item Name, SKU, Category..." 
-          [(ngModel)]="searchTerm"
+        <input
+          type="text"
+          placeholder="Search by Item Name, SKU, Category..."
+          [ngModel]="searchTerm()"
+          (ngModelChange)="searchTerm.set($event)"
         >
       </div>
       <div class="filter-group">
         <label>📍 Warehouse:</label>
-        <select [(ngModel)]="warehouseFilter" class="filter-select">
-          @for (wh of warehouses; track wh) {
+        <select
+          class="filter-select"
+          [ngModel]="warehouseFilter()"
+          (ngModelChange)="warehouseFilter.set($event); onWarehouseFilterChange()"
+        >
+          @for (wh of warehouses(); track wh) {
             <option [value]="wh">{{ wh }}</option>
           }
         </select>
       </div>
       <div class="filter-group">
         <label>🏷️ Category:</label>
-        <select [(ngModel)]="categoryFilter" class="filter-select">
+        <select
+          class="filter-select"
+          [ngModel]="categoryFilter()"
+          (ngModelChange)="categoryFilter.set($event)"
+        >
           @for (cat of categories; track cat) {
             <option [value]="cat">{{ cat }}</option>
           }
@@ -40,14 +60,18 @@
       </div>
       <div class="filter-group">
         <label>🔧 Status:</label>
-        <select [(ngModel)]="statusFilter" class="filter-select">
+        <select
+          class="filter-select"
+          [ngModel]="statusFilter()"
+          (ngModelChange)="statusFilter.set($event)"
+        >
           @for (st of statuses; track st) {
             <option [value]="st">{{ st }}</option>
           }
         </select>
       </div>
       <div class="filter-info">
-        <span>📅 Last Updated: Just now</span>
+        <span>📅 Live data from server</span>
       </div>
     </div>
   </section>
@@ -89,6 +113,20 @@
     </div>
   </section>
 
+  <!-- Bulk Actions -->
+  <section class="bulk-actions" aria-label="Bulk actions">
+    <div class="bulk-row">
+      <button class="btn btn-sm" (click)="selectAll()">Select All</button>
+      <button class="btn btn-sm" (click)="selectLowStock()">Select Low Stock</button>
+      <button class="btn btn-sm" (click)="selectOutOfStock()">Select Out of Stock</button>
+      <button class="btn btn-sm" (click)="clearSelection()">Clear Selection</button>
+      <div class="bulk-spacer"></div>
+      <button class="btn btn-primary btn-sm" (click)="openBulkAdjustModal()">Bulk Adjust Stock</button>
+      <button class="btn btn-secondary btn-sm" (click)="bulkExport()">Bulk Export</button>
+      <button class="btn btn-success btn-sm" (click)="bulkGenerateQRCodes()">Generate QR Codes</button>
+    </div>
+  </section>
+
   <!-- Current Stock Table -->
   <section class="stock-table-section" aria-label="Current Stock Table">
     <h2>📋 CURRENT STOCK TABLE</h2>
@@ -96,6 +134,9 @@
       <table class="stock-table">
         <thead>
           <tr>
+              <th style="width: 48px; text-align: center;">
+                <input type="checkbox" [checked]="selected().size === filteredStock().length && filteredStock().length > 0" (change)="selected().size === filteredStock().length ? clearSelection() : selectAll()" />
+              </th>
             <th>SKU</th>
             <th>Item Name</th>
             <th>Category</th>
@@ -106,8 +147,11 @@
           </tr>
         </thead>
         <tbody>
-          @for (item of filteredStock(); track item.sku) {
+          @for (item of filteredStock(); track item.id) {
             <tr (click)="openDetailsModal(item)" class="clickable-row">
+              <td style="text-align: center;">
+                <input type="checkbox" [checked]="isSelected(item.id)" (click)="$event.stopPropagation()" (change)="toggleSelect(item.id)" />
+              </td>
               <td>{{ item.sku }}</td>
               <td>{{ item.name }}</td>
               <td>{{ item.category }}</td>
@@ -199,9 +243,9 @@
                       <td>{{ loc.available }}</td>
                       <td>
                         <div class="action-icons">
-                          <button type="button" class="icon-btn" title="Issue">📦</button>
-                          <button type="button" class="icon-btn" title="Transfer">🔄</button>
-                          <button type="button" class="icon-btn" title="Adjust">📝</button>
+                          <button type="button" class="icon-btn" title="Issue" (click)="$event.stopPropagation(); issueItem(selectedStock()!)">📦</button>
+                          <button type="button" class="icon-btn" title="Transfer" (click)="$event.stopPropagation(); transferStock(selectedStock()!)">🔄</button>
+                          <button type="button" class="icon-btn" title="Adjust" (click)="$event.stopPropagation(); openItemAdjustModal(selectedStock()!)">📝</button>
                           <button type="button" class="btn btn-sm" style="background-color: #dc3545; color: white; border: none;" title="Delete">Delete</button>
                         </div>
                       </td>
@@ -209,7 +253,7 @@
                   }
                 </tbody>
               </table>
-              <p class="table-footer">Total: {{ selectedStock()!.quantity }} units | Reserved: 7 units | Available: 38 units</p>
+              <p class="table-footer">Total: {{ selectedStock()!.quantity }} units | Reserved: {{ selectedStock()!.reserved }} units | Available: {{ selectedStock()!.available }} units</p>
             </div>
           </section>
 
@@ -247,12 +291,68 @@
         </div>
 
         <div class="modal-footer">
-          <button type="button" class="action-btn primary">Issue Item</button>
-          <button type="button" class="action-btn primary">Transfer Stock</button>
-          <button type="button" class="action-btn primary">Adjust Stock</button>
-          <button type="button" class="action-btn secondary">Print Label</button>
-          <button type="button" class="action-btn secondary">View QR</button>
+          <button type="button" class="action-btn primary" (click)="issueItem(selectedStock()!)">Issue Item</button>
+          <button type="button" class="action-btn primary" (click)="transferStock(selectedStock()!)">Transfer Stock</button>
+          <button type="button" class="action-btn primary" (click)="openItemAdjustModal(selectedStock()!)">Adjust Stock</button>
+          <button type="button" class="action-btn secondary" (click)="printLabel(selectedStock()!)">Print Label</button>
+          <button type="button" class="action-btn secondary" (click)="viewQR(selectedStock()!)">View QR</button>
           <button type="button" class="action-btn secondary" (click)="closeModal()">Close</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Bulk Adjust Modal -->
+  @if (showBulkAdjustModal()) {
+    <div class="modal-overlay" (click)="closeBulkAdjustModal()">
+      <div class="modal-content" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3>Bulk Adjust Stock</h3>
+          <button class="close-btn" (click)="closeBulkAdjustModal()">✕</button>
+        </div>
+        <div class="modal-body">
+          <label>Quantity</label>
+          <input type="number" [ngModel]="bulkAdjustQty()" (ngModelChange)="bulkAdjustQty.set($event)" />
+          <label>Type</label>
+          <select [ngModel]="bulkAdjustType()" (ngModelChange)="bulkAdjustType.set($event)">
+            <option value="increase">increase</option>
+            <option value="decrease">decrease</option>
+            <option value="set">set</option>
+          </select>
+          <label>Reason</label>
+          <input type="text" [ngModel]="bulkAdjustReason()" (ngModelChange)="bulkAdjustReason.set($event)" />
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" (click)="closeBulkAdjustModal()">Cancel</button>
+          <button class="btn btn-primary" (click)="performBulkAdjust()">Submit</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Item Adjust Modal -->
+  @if (showItemAdjustModal() && activeItemForAdjust()) {
+    <div class="modal-overlay" (click)="closeItemAdjustModal()">
+      <div class="modal-content" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3>Adjust: {{ activeItemForAdjust()!.name }}</h3>
+          <button class="close-btn" (click)="closeItemAdjustModal()">✕</button>
+        </div>
+        <div class="modal-body">
+          <label>Quantity</label>
+          <input type="number" [ngModel]="bulkAdjustQty()" (ngModelChange)="bulkAdjustQty.set($event)" />
+          <label>Type</label>
+          <select [ngModel]="bulkAdjustType()" (ngModelChange)="bulkAdjustType.set($event)">
+            <option value="increase">increase</option>
+            <option value="decrease">decrease</option>
+            <option value="set">set</option>
+          </select>
+          <label>Reason</label>
+          <input type="text" [ngModel]="bulkAdjustReason()" (ngModelChange)="bulkAdjustReason.set($event)" />
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" (click)="closeItemAdjustModal()">Cancel</button>
+          <button class="btn btn-primary" (click)="performItemAdjust()">Submit</button>
         </div>
       </div>
     </div>

@@ -4,7 +4,7 @@ import { FormArray, FormBuilder, FormGroup, ReactiveFormsModule, Validators } fr
 import { Router } from '@angular/router';
 import { RequisitionsService, CreateServiceRequestDto } from '../../../../core/services/requisitions.service';
 import { ItemService } from '../../../catalog/item-master/services/item.service';
-import { InventoryService, ShelfLocationDto } from '../../../../core/services/inventory.service';
+import { ShelvesService, ShelfLocationDto } from '../../../../core/services/shelves.service';
 import { finalize } from 'rxjs';
 
 @Component({
@@ -19,7 +19,7 @@ export class CreateRequestComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly requisitionsService = inject(RequisitionsService);
   private readonly itemService = inject(ItemService);
-  private readonly inventoryService = inject(InventoryService);
+  private readonly shelvesService = inject(ShelvesService);
 
   protected readonly loading = signal(false);
   protected readonly submitted = signal(false);
@@ -47,7 +47,7 @@ export class CreateRequestComponent implements OnInit {
       }
     });
 
-    this.inventoryService.getAllShelves().subscribe(res => {
+    this.shelvesService.getAll().subscribe(res => {
       if (res.success && res.data) {
         this.shelves.set(res.data);
       }

@@ -2,138 +2,122 @@
   <div class="page-header">
     <div class="header-info">
       <h1>Shelf Management</h1>
-      <p class="subtitle">Organize and manage shelf locations</p>
+      <p class="subtitle">Live shelf locations from the server (ShelfLocations API)</p>
     </div>
   </div>
 
+  @if (error()) {
+    <div class="alert alert-danger mb-3" role="alert">{{ error() }}</div>
+  }
+
   <div class="filter-bar">
-    <label>🏭 Warehouse:</label>
-    <select [(ngModel)]="selectedWarehouse" (ngModelChange)="onWarehouseChange($event)">
-      @for (wh of warehouses; track wh) {
-        <option [value]="wh">{{ wh }}</option>
+    <label>Warehouse:</label>
+    <select
+      [ngModel]="selectedWarehouseId()"
+      (ngModelChange)="onWarehouseChange($event)"
+      [disabled]="loadingWarehouses() || !warehouses().length">
+      @for (wh of warehouses(); track wh.id) {
+        <option [value]="wh.id">{{ wh.warehouseName }} ({{ wh.warehouseCode }})</option>
       }
     </select>
-    <label>📍 Aisle:</label>
-    <select [(ngModel)]="selectedAisle" (ngModelChange)="onAisleChange($event)">
+    <label>Aisle filter:</label>
+    <select [ngModel]="aisleFilter()" (ngModelChange)="onAisleChange($event)">
       @for (a of aisles; track a) {
         <option [value]="a">{{ a }}</option>
       }
     </select>
     <div class="search-box">
       <i class="bi bi-search"></i>
-      <input type="text" [value]="searchTerm()" (input)="onSearchChange($any($event.target).value)" placeholder="Search shelf...">
+      <input
+        type="text"
+        [ngModel]="searchTerm()"
+        (ngModelChange)="onSearchChange($event)"
+        placeholder="Search shelf code or location…" />
     </div>
   </div>
 
   <!-- Shelf Summary -->
   <div class="summary-section">
-    <h2>📊 SHELF SUMMARY - {{ selectedWarehouse() }}</h2>
+    <h2>SHELF SUMMARY</h2>
     <div class="summary-grid">
       <div class="summary-card">
         <div class="summary-icon">🗄️</div>
         <div class="summary-content">
           <div class="summary-label">Total Shelves</div>
-          <div class="summary-value">24</div>
-          <div class="summary-sub">● Same</div>
+          <div class="summary-value">{{ totalShelves() }}</div>
         </div>
       </div>
       <div class="summary-card">
         <div class="summary-icon">📦</div>
         <div class="summary-content">
-          <div class="summary-label">Occupied Shelves</div>
-          <div class="summary-value">18</div>
-          <div class="summary-sub">▲ +2</div>
+          <div class="summary-label">With stock</div>
+          <div class="summary-value">{{ occupiedShelves() }}</div>
         </div>
       </div>
       <div class="summary-card">
         <div class="summary-icon">📭</div>
         <div class="summary-content">
-          <div class="summary-label">Empty Shelves</div>
-          <div class="summary-value">6</div>
-          <div class="summary-sub">▼ -2</div>
+          <div class="summary-label">Empty / no stock</div>
+          <div class="summary-value">{{ emptyShelves() }}</div>
         </div>
       </div>
       <div class="summary-card">
         <div class="summary-icon">📊</div>
         <div class="summary-content">
-          <div class="summary-label">Utilization Rate</div>
-          <div class="summary-value">75%</div>
-          <div class="summary-sub">▲ +5%</div>
-        </div>
-      </div>
-      <div class="summary-card">
-        <div class="summary-icon">⚡</div>
-        <div class="summary-content">
-          <div class="summary-label">High Traffic Shelves</div>
-          <div class="summary-value">8</div>
-          <div class="summary-sub">▲ +1</div>
+          <div class="summary-label">Avg. fill %</div>
+          <div class="summary-value">{{ utilizationPct() }}%</div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Shelf Visual Map -->
+  <!-- Shelf Visual Map (from live data, first racks) -->
   <div class="map-section">
-    <h3>🗺️ SHELF VISUAL MAP</h3>
+    <h3>SHELF SNAPSHOT</h3>
     <div class="shelf-map">
-      <div class="map-header">WAREHOUSE A - SHELF LAYOUT</div>
+      <div class="map-header">TOP SHELVES BY CODE</div>
       <div class="rack-row">
-        @for (i of [1,2,3,4,5,6,7]; track i) {
+        @for (s of filteredRows().slice(0, 7); track s.id) {
           <div class="rack-box">
-            <div class="rack-label">RACK</div>
-            <div class="rack-code">A-0{{ i }}</div>
-            <div class="occupancy-bar" [class]="getOccupancyColor(78 - (i * 10))">
-              {{ getOccupancyBar(78 - (i * 10)) }}
+            <div class="rack-label">SHELF</div>
+            <div class="rack-code">{{ s.code }}</div>
+            <div class="occupancy-bar" [class]="getOccupancyColor(s.occupancy)">
+              {{ getOccupancyBar(s.occupancy) }}
             </div>
-            <div class="rack-items">{{ 234 - (i * 30) }}</div>
-            <div class="rack-percent">{{ 78 - (i * 10) }}%</div>
+            <div class="rack-items">{{ s.items }}</div>
+            <div class="rack-percent">{{ s.occupancy }}%</div>
           </div>
         }
       </div>
-      <div class="rack-row">
-        @for (i of [1,2,3,4,5,6,7]; track i) {
-          <div class="rack-box">
-            <div class="rack-label">RACK</div>
-            <div class="rack-code">B-0{{ i }}</div>
-            <div class="occupancy-bar" [class]="getOccupancyColor(45 - (i * 5))">
-              {{ getOccupancyBar(45 - (i * 5)) }}
-            </div>
-            <div class="rack-items">{{ 45 - (i * 5) }}</div>
-            <div class="rack-percent">{{ 45 - (i * 5) }}%</div>
-          </div>
-        }
-      </div>
-    </div>
-    <div class="map-legend">
-      <span>🟢 Green = High (>50 items)</span>
-      <span>🟡 Yellow = Medium (10-50 items)</span>
-      <span>🔴 Red = Low (<10 items)</span>
     </div>
   </div>
 
   <!-- Shelf List -->
   <div class="shelf-list-section">
-    <h3>📋 SHELF LIST</h3>
+    <h3>SHELF LIST</h3>
+    @if (loading()) {
+      <p class="text-muted">Loading shelves…</p>
+    }
     <div class="table-container">
       <table class="shelf-table">
         <thead>
           <tr>
             <th>Shelf Code</th>
             <th>Location</th>
-            <th>Items</th>
+            <th>Items (qty)</th>
             <th>Value</th>
             <th>Occupancy</th>
-            <th>Category</th>
+            <th>Notes</th>
             <th>Actions</th>
           </tr>
         </thead>
         <tbody>
-          @for (shelf of shelves(); track shelf.code) {
+          @for (shelf of filteredRows(); track shelf.id) {
             <tr>
               <td>{{ shelf.code }}</td>
               <td>{{ shelf.location }}</td>
               <td>{{ shelf.items }}</td>
-              <td>${{ shelf.value.toLocaleString() }}</td>
+              <td>—</td>
               <td>
                 <div class="occupancy-display">
                   <span class="occupancy-bar-text">{{ getOccupancyBar(shelf.occupancy) }}</span>
@@ -142,19 +126,16 @@
               <td>{{ shelf.category }}</td>
               <td>
                 <div class="actions-cell">
-                  <button class="action-btn" (click)="viewShelf(shelf)" title="View">
+                  <button type="button" class="action-btn" (click)="viewShelf(shelf)" title="View">
                     <i class="bi bi-eye"></i>
                   </button>
-                  <button class="action-btn" (click)="editShelf(shelf)" title="Edit">
+                  <button type="button" class="action-btn" (click)="editShelf(shelf)" title="Details">
                     <i class="bi bi-pencil"></i>
                   </button>
-                  <button class="action-btn" (click)="viewItems(shelf)" title="Items">
-                    <i class="bi bi-box"></i>
-                  </button>
-                  <button class="action-btn" (click)="printShelf(shelf)" title="Print">
+                  <button type="button" class="action-btn" (click)="printShelf(shelf)" title="Print">
                     <i class="bi bi-printer"></i>
                   </button>
-                  <button class="action-btn" (click)="deleteShelf(shelf)" title="Delete">
+                  <button type="button" class="action-btn" (click)="deleteShelf(shelf)" title="Delete">
                     <i class="bi bi-trash"></i>
                   </button>
                 </div>
@@ -165,22 +146,15 @@
       </table>
     </div>
     <div class="pagination-bar">
-      <div class="pagination-info">Showing 1-{{ shelves().length }} of 156 shelves</div>
-      <div class="pagination-controls">
-        <button class="page-btn" disabled>Previous</button>
-        <button class="page-btn active">1</button>
-        <button class="page-btn">2</button>
-        <button class="page-btn">3</button>
-        <button class="page-btn">→</button>
-      </div>
+      <div class="pagination-info">Showing {{ filteredRows().length }} shelf(es)</div>
     </div>
   </div>
 
   <!-- Bulk Actions -->
   <div class="bulk-actions-section">
-    <h3>⚡ BULK ACTIONS</h3>
+    <h3>BULK ACTIONS</h3>
     <div class="bulk-actions">
-      <button class="btn btn-secondary" (click)="openAddShelfModal()">
+      <button type="button" class="btn btn-secondary" (click)="openAddShelfModal()" [disabled]="saving() || !selectedWarehouseId()">
         <i class="bi bi-plus"></i> Add New Shelf
       </button>
       <button class="btn btn-secondary" (click)="openRearrangeModal()">
@@ -205,88 +179,63 @@
     <div class="modal-content" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h3>Add New Shelf Location</h3>
-        <button class="btn-close" (click)="closeAddShelfModal()">
+        <button type="button" class="btn-close" (click)="closeAddShelfModal()">
           <i class="bi bi-x-lg"></i>
         </button>
       </div>
       <div class="modal-body">
         <div class="warehouse-info">
-          <span>Warehouse: {{ selectedWarehouse() }}</span>
+          <span>Warehouse ID: {{ selectedWarehouseId() }}</span>
         </div>
         <div class="form-section">
           <h4>SHELF LOCATION DETAILS</h4>
           <div class="form-grid">
             <div class="form-field">
-              <label>Aisle *</label>
-              <input type="text" value="D-01">
+              <label>Shelf code *</label>
+              <input type="text" name="shelfCode" [(ngModel)]="addForm.shelfCode" placeholder="e.g. A-01-R-01-S-01" />
             </div>
             <div class="form-field">
-              <label>Rack/Section *</label>
-              <input type="text" value="R-01">
+              <label>Shelf name *</label>
+              <input type="text" name="shelfName" [(ngModel)]="addForm.shelfName" placeholder="Display name" />
             </div>
             <div class="form-field">
-              <label>Shelf Number *</label>
-              <input type="text" value="S-01">
+              <label>Aisle</label>
+              <input type="text" name="aisle" [(ngModel)]="addForm.aisle" />
             </div>
-          </div>
-          <div class="form-field">
-            <label>Full Location Code: [WH01-D01-R01-S01] (Auto-generated)</label>
+            <div class="form-field">
+              <label>Section</label>
+              <input type="text" name="section" [(ngModel)]="addForm.section" />
+            </div>
+            <div class="form-field">
+              <label>Level</label>
+              <input type="text" name="level" [(ngModel)]="addForm.level" />
+            </div>
+            <div class="form-field">
+              <label>Position</label>
+              <input type="text" name="position" [(ngModel)]="addForm.position" />
+            </div>
           </div>
           <div class="form-field">
             <label>Description</label>
-            <input type="text" value="New shelf for stationery items - near packing area">
+            <input type="text" name="description" [(ngModel)]="addForm.description" />
           </div>
         </div>
         <div class="form-section">
-          <h4>CAPACITY & RESTRICTIONS</h4>
+          <h4>CAPACITY</h4>
           <div class="form-grid">
             <div class="form-field">
-              <label>Max Capacity (Items) *</label>
-              <input type="number" value="500">
+              <label>Max capacity (units)</label>
+              <input type="number" name="capacity" [(ngModel)]="addForm.capacity" min="1" />
             </div>
-            <div class="form-field">
-              <label>Max Weight (kg) *</label>
-              <input type="number" value="1000">
-            </div>
-            <div class="form-field">
-              <label>Shelf Type *</label>
-              <select>
-                <option>Standard</option>
-                <option>Heavy-Duty</option>
-                <option>Cold Storage</option>
-                <option>Secure Locked</option>
-              </select>
-            </div>
-          </div>
-          <div class="form-field">
-            <label>Category Restriction (Optional)</label>
-            <select>
-              <option>All Categories</option>
-              <option>Electronics</option>
-              <option>Furniture</option>
-              <option>Stationery</option>
-            </select>
-          </div>
-        </div>
-        <div class="form-section">
-          <h4>QR CODE & LABEL</h4>
-          <div class="checkbox-group">
-            <label class="checkbox-label">
-              <input type="checkbox" checked> Generate QR code for this shelf
-            </label>
-          </div>
-          <div class="form-field">
-            <label>QR Code Value: WH01-D01-R01-S01</label>
-          </div>
-          <div class="qr-actions">
-            <button class="btn btn-secondary">Generate QR Code</button>
-            <button class="btn btn-secondary">Print Label</button>
           </div>
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-secondary" (click)="closeAddShelfModal()">Cancel</button>
-        <button class="btn btn-primary" (click)="createShelf()">Create Shelf</button>
+        <button type="button" class="btn btn-secondary" (click)="closeAddShelfModal()" [disabled]="saving()">Cancel</button>
+        <button type="button" class="btn btn-primary" (click)="createShelf()" [disabled]="saving()">
+          @if (saving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
+          Create Shelf
+        </button>
       </div>
     </div>
   </div>
@@ -297,143 +246,33 @@
   <div class="modal-overlay" (click)="closeShelfDetailsModal()">
     <div class="modal-content" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <h3>Shelf Details: {{ selectedShelf()?.code }} ({{ selectedWarehouse() }})</h3>
-        <button class="btn-close" (click)="closeShelfDetailsModal()">
+        <h3>Shelf: {{ selectedShelf()!.code }}</h3>
+        <button type="button" class="btn-close" (click)="closeShelfDetailsModal()">
           <i class="bi bi-x-lg"></i>
         </button>
       </div>
       <div class="modal-body">
         <div class="shelf-info-grid">
           <div class="detail-item">
-            <label>Full Location:</label>
-            <span>{{ selectedShelf()?.code }}</span>
+            <label>Location:</label>
+            <span>{{ selectedShelf()!.location }}</span>
           </div>
           <div class="detail-item">
-            <label>Aisle:</label>
-            <span>A-01</span>
+            <label>Items on hand:</label>
+            <span>{{ selectedShelf()!.items }}</span>
           </div>
           <div class="detail-item">
-            <label>Rack:</label>
-            <span>R-03</span>
+            <label>Capacity:</label>
+            <span>{{ selectedShelf()!.raw.capacity ?? '—' }}</span>
           </div>
           <div class="detail-item">
-            <label>Shelf Number:</label>
-            <span>S-03</span>
-          </div>
-          <div class="detail-item">
-            <label>Created:</label>
-            <span>Jan 15, 2024</span>
-          </div>
-          <div class="detail-item">
-            <label>Status:</label>
-            <span>🟢 Active</span>
-          </div>
-          <div class="detail-item">
-            <label>QR Code:</label>
-            <span>[QR Code Image]</span>
-          </div>
-          <div class="detail-item">
-            <label>Last Updated:</label>
-            <span>Dec 15, 2024</span>
-          </div>
-        </div>
-        <div class="items-section">
-          <h4>📦 ITEMS ON THIS SHELF</h4>
-          <table class="items-table">
-            <thead>
-              <tr>
-                <th>SKU</th>
-                <th>Item Name</th>
-                <th>Quantity</th>
-                <th>Unit Price</th>
-                <th>Total</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>LAP-001</td>
-                <td>Dell XPS Laptop</td>
-                <td>35</td>
-                <td>$2,499</td>
-                <td>$87,465</td>
-                <td>🟢 Good</td>
-                <td>
-                  <div class="actions-cell">
-                    <button class="action-btn"><i class="bi bi-eye"></i></button>
-                    <button class="action-btn"><i class="bi bi-pencil"></i></button>
-                    <button class="action-btn"><i class="bi bi-box"></i></button>
-                  </div>
-                </td>
-              </tr>
-              <tr>
-                <td>MON-002</td>
-                <td>HP Monitor</td>
-                <td>15</td>
-                <td>$350</td>
-                <td>$5,250</td>
-                <td>🟢 Good</td>
-                <td>
-                  <div class="actions-cell">
-                    <button class="action-btn"><i class="bi bi-eye"></i></button>
-                    <button class="action-btn"><i class="bi bi-pencil"></i></button>
-                    <button class="action-btn"><i class="bi bi-box"></i></button>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-          <div class="items-summary">
-            <span>Total Items: 100</span>
-            <span>Total Value: $92,965</span>
-            <span>Total Quantity: 100 units</span>
-          </div>
-          <div class="items-actions">
-            <button class="btn btn-secondary">
-              <i class="bi bi-plus"></i> Add Item to Shelf
-            </button>
-            <button class="btn btn-secondary">
-              <i class="bi bi-arrow-repeat"></i> Move Items
-            </button>
-            <button class="btn btn-secondary">
-              <i class="bi bi-box-arrow-right"></i> Transfer Out
-            </button>
-          </div>
-        </div>
-        <div class="shelf-stats-section">
-          <h4>📊 SHELF STATISTICS</h4>
-          <div class="stats-list">
-            <div class="stat-item">
-              <label>Capacity:</label>
-              <span>500 units (20% used)</span>
-            </div>
-            <div class="stat-item">
-              <label>Weight Used:</label>
-              <span>350 kg / 1000 kg (35%)</span>
-            </div>
-            <div class="stat-item">
-              <label>Turnover Rate:</label>
-              <span>2.5x per month</span>
-            </div>
-            <div class="stat-item">
-              <label>Last Restocked:</label>
-              <span>Dec 15, 2024</span>
-            </div>
-            <div class="stat-item">
-              <label>Last Picked:</label>
-              <span>Dec 14, 2024</span>
-            </div>
+            <label>Active:</label>
+            <span>{{ selectedShelf()!.isActive ? 'Yes' : 'No' }}</span>
           </div>
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-secondary">Edit Shelf</button>
-        <button class="btn btn-secondary">Move Items</button>
-        <button class="btn btn-secondary">Print Label</button>
-        <button class="btn btn-secondary">View QR</button>
-        <button class="btn btn-secondary">View in Map</button>
-        <button class="btn btn-primary" (click)="closeShelfDetailsModal()">Close</button>
+        <button type="button" class="btn btn-primary" (click)="closeShelfDetailsModal()">Close</button>
       </div>
     </div>
   </div>
@@ -444,7 +283,7 @@
   <div class="modal-overlay" (click)="closeRearrangeModal()">
     <div class="modal-content" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <h3>Rearrange Shelves - {{ selectedWarehouse() }}</h3>
+        <h3>Rearrange Shelves - {{ selectedWarehouseLabel() }}</h3>
         <button class="btn-close" (click)="closeRearrangeModal()">
           <i class="bi bi-x-lg"></i>
         </button>

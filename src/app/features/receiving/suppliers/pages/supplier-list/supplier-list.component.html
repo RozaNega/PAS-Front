@@ -1,4 +1,137 @@
-﻿<section class="page ecx-list-surface">
-  <h2>Suppliers</h2>
-</section>
+<div class="supplier-page">
+  <!-- Hero Section -->
+  <div class="hero-section">
+    <div class="hero-content">
+      <div class="hero-badge">
+        <i class="bi bi-truck"></i>
+        <span>Supplier Management</span>
+      </div>
+      <h1 class="hero-title">Suppliers</h1>
+      <p class="hero-subtitle">Manage and track all your supplier relationships in one place</p>
+    </div>
+    <div class="hero-stats">
+      <div class="stat-card">
+        <div class="stat-icon">
+          <i class="bi bi-people"></i>
+        </div>
+        <div class="stat-info">
+          <div class="stat-value">{{ suppliers.length }}</div>
+          <div class="stat-label">Total Suppliers</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon active">
+          <i class="bi bi-check-circle"></i>
+        </div>
+        <div class="stat-info">
+          <div class="stat-value">{{ suppliers.filter(s => s.isActive).length }}</div>
+          <div class="stat-label">Active</div>
+        </div>
+      </div>
+    </div>
+  </div>
 
+  <!-- Search and Actions Section -->
+  <div class="actions-section">
+    <div class="search-container">
+      <div class="search-input-group">
+        <i class="bi bi-search search-icon"></i>
+        <input 
+          type="text" 
+          [(ngModel)]="searchTerm" 
+          (keyup.enter)="onSearch()" 
+          placeholder="Search suppliers by name, email, phone..." 
+          class="search-input"
+        >
+        <button class="search-btn" (click)="onSearch()">
+          <i class="bi bi-arrow-right"></i>
+        </button>
+      </div>
+      <button class="clear-btn" (click)="clearSearch()" *ngIf="searchTerm">
+        <i class="bi bi-x-circle"></i> Clear
+      </button>
+    </div>
+    <button type="button" class="add-supplier-btn" (click)="addSupplier()">
+      <i class="bi bi-plus-lg"></i>
+      <span>Add New Supplier</span>
+    </button>
+    <button type="button" class="btn btn-secondary" style="margin-left:0.5rem;padding:0.75rem 1rem;border-radius:8px;" (click)="exportSuppliers()">
+      <i class="bi bi-download"></i> Export
+    </button>
+  </div>
+
+  <!-- Error Alert -->
+  <div *ngIf="errorMessage && !isLoading" class="error-alert">
+    <i class="bi bi-exclamation-triangle"></i>
+    <span>{{ errorMessage }}</span>
+    <button class="close-alert" (click)="errorMessage = ''">
+      <i class="bi bi-x"></i>
+    </button>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="loading-container">
+    <div class="loading-spinner"></div>
+    <p>Loading suppliers...</p>
+  </div>
+
+  <!-- Empty State -->
+  <div *ngIf="!isLoading && suppliers.length === 0 && !errorMessage" class="empty-state">
+    <div class="empty-illustration">
+      <i class="bi bi-box-seam"></i>
+    </div>
+    <h3>No Suppliers Yet</h3>
+    <p *ngIf="!searchTerm">Start by adding your first supplier to begin tracking your vendor relationships</p>
+    <p *ngIf="searchTerm">No suppliers match your search criteria</p>
+    <button class="add-first-btn" (click)="addSupplier()" *ngIf="!searchTerm">
+      <i class="bi bi-plus-circle"></i>
+      Add Your First Supplier
+    </button>
+  </div>
+
+  <!-- Suppliers Grid -->
+  <div *ngIf="!isLoading && suppliers.length > 0" class="suppliers-grid">
+    <div class="supplier-card" *ngFor="let supplier of suppliers" [class.inactive]="!supplier.isActive">
+      <div class="card-header">
+        <div class="supplier-avatar">
+          <span>{{ supplier.name.charAt(0).toUpperCase() }}</span>
+        </div>
+        <div class="status-badge" [class.active]="supplier.isActive">
+          <i class="bi" [class.bi-check-circle-fill]="supplier.isActive" [class.bi-x-circle-fill]="!supplier.isActive"></i>
+          {{ supplier.isActive ? 'Active' : 'Inactive' }}
+        </div>
+      </div>
+      <div class="card-body">
+        <h3 class="supplier-name">{{ supplier.name }}</h3>
+        <div class="supplier-details">
+          <div class="detail-item" *ngIf="supplier.contactPerson">
+            <i class="bi bi-person"></i>
+            <span>{{ supplier.contactPerson }}</span>
+          </div>
+          <div class="detail-item" *ngIf="supplier.email">
+            <i class="bi bi-envelope"></i>
+            <span>{{ supplier.email }}</span>
+          </div>
+          <div class="detail-item" *ngIf="supplier.phone">
+            <i class="bi bi-telephone"></i>
+            <span>{{ supplier.phone }}</span>
+          </div>
+          <div class="detail-item" *ngIf="supplier.address">
+            <i class="bi bi-geo-alt"></i>
+            <span>{{ supplier.address }}</span>
+          </div>
+        </div>
+      </div>
+      <div class="card-footer">
+        <button class="action-btn edit" (click)="editSupplier(supplier.id)">
+          <i class="bi bi-pencil"></i>
+          Edit
+        </button>
+        <button class="action-btn delete" (click)="deleteSupplier(supplier.id)">
+          <i class="bi bi-trash"></i>
+          Delete
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

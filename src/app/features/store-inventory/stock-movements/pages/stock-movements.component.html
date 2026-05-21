@@ -4,163 +4,254 @@
       <h1>Stock Movements</h1>
       <p class="subtitle">Complete transaction log of all inventory changes</p>
     </div>
-    <button class="btn btn-secondary" (click)="exportData()">
+    <button class="btn btn-primary" (click)="exportData()">
       <i class="bi bi-download"></i> Export
     </button>
   </div>
 
-  <div class="filter-bar">
-    <div class="search-box">
-      <i class="bi bi-search"></i>
-      <input type="text" [value]="searchTerm()" (input)="onSearchChange($any($event.target).value)" placeholder="Search by item, SKU, reference #...">
+  @if (loadError()) {
+    <div class="error-alert">
+      <i class="bi bi-exclamation-triangle"></i>
+      <div>
+        <strong>Unable to load stock movements</strong>
+        <p>{{ loadError() }}</p>
+      </div>
     </div>
-    <div class="filter-group">
-      <label>📅 Date:</label>
-      <input type="date" [value]="dateRange.start">
-      <span>to</span>
-      <input type="date" [value]="dateRange.end">
-      <button class="btn btn-sm btn-secondary">Apply Filters</button>
-      <button class="btn btn-sm btn-secondary">Reset</button>
-    </div>
-    <div class="filter-group">
-      <label>🏷️ Type:</label>
-      <select [(ngModel)]="typeFilter" (ngModelChange)="onTypeFilterChange($event)">
-        @for (type of movementTypes; track type) {
-          <option [value]="type">{{ type }}</option>
-        }
-      </select>
-    </div>
-    <div class="filter-group">
-      <label>🏭 Warehouse:</label>
-      <select [(ngModel)]="warehouseFilter" (ngModelChange)="onWarehouseFilterChange($event)">
-        @for (wh of warehouses; track wh) {
-          <option [value]="wh">{{ wh }}</option>
-        }
-      </select>
-    </div>
-    <div class="filter-group">
-      <label>👤 User:</label>
-      <select [(ngModel)]="userFilter">
-        <option value="All Users">All Users</option>
-        <option value="John Doe">John Doe</option>
-        <option value="Sarah Smith">Sarah Smith</option>
-        <option value="Mike Wilson">Mike Wilson</option>
-      </select>
-    </div>
-  </div>
+  }
 
-  <div class="summary-grid">
-    <div class="summary-card inflow">
-      <div class="summary-icon">📥</div>
-      <div class="summary-content">
-        <div class="summary-label">Total Inflow</div>
-        <div class="summary-value">{{ summary().inflow.units }} units</div>
-        <div class="summary-subvalue">{{ formatValue(summary().inflow.value) }}</div>
-      </div>
+  @if (loading()) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading stock movements...</p>
     </div>
-    <div class="summary-card outflow">
-      <div class="summary-icon">📤</div>
-      <div class="summary-content">
-        <div class="summary-label">Total Outflow</div>
-        <div class="summary-value">{{ summary().outflow.units }} units</div>
-        <div class="summary-subvalue">{{ formatValue(summary().outflow.value) }}</div>
-      </div>
-    </div>
-    <div class="summary-card transfer">
-      <div class="summary-icon">🔄</div>
-      <div class="summary-content">
-        <div class="summary-label">Total Transfers</div>
-        <div class="summary-value">{{ summary().transfer.units }} units</div>
-        <div class="summary-subvalue">{{ formatValue(summary().transfer.value) }}</div>
-      </div>
-    </div>
-    <div class="summary-card adjustment">
-      <div class="summary-icon">📝</div>
-      <div class="summary-content">
-        <div class="summary-label">Total Adjustments</div>
-        <div class="summary-value">{{ summary().adjustment.units }} units</div>
-        <div class="summary-subvalue">{{ formatValue(summary().adjustment.value) }}</div>
-      </div>
-    </div>
-    <div class="summary-card net-change">
-      <div class="summary-icon">📊</div>
-      <div class="summary-content">
-        <div class="summary-label">Net Change</div>
-        <div class="summary-value positive">▲ +258 units</div>
-        <div class="summary-subvalue positive">+$33,440</div>
-      </div>
-    </div>
-  </div>
+  }
 
-  <div class="chart-section">
-    <div class="section-header">
-      <h3>📈 MOVEMENT TREND CHART</h3>
-    </div>
-    <div class="chart-placeholder">
-      <div class="chart-legend">
-        <span class="legend-item"><span class="dot green"></span> Inflow</span>
-        <span class="legend-item"><span class="dot red"></span> Outflow</span>
-        <span class="legend-item"><span class="dot blue"></span> Net Change</span>
+  @if (!loading()) {
+    <!-- Quick Stats -->
+    <div class="quick-stats">
+      <div class="stat-card inflow">
+        <div class="stat-icon">
+          <i class="bi bi-arrow-down-circle-fill"></i>
+        </div>
+        <div class="stat-content">
+          <div class="stat-label">Total Inflow</div>
+          <div class="stat-value">{{ summary().inflow.units }}</div>
+          <div class="stat-amount">{{ formatValue(summary().inflow.value) }}</div>
+        </div>
       </div>
-      <div class="chart-bars">
-        @for (height of barHeightsInflow(); track $index) {
-          <div class="bar-group">
-            <div class="bar inflow" [style.height.px]="height"></div>
-            <div class="bar outflow" [style.height.px]="barHeightsOutflow()[$index]"></div>
-            <div class="bar net" [style.height.px]="barHeightsNet()[$index]"></div>
-            <div class="bar-label">Week {{ $index + 1 }}</div>
-          </div>
-        }
-      </div>
-    </div>
-  </div>
 
-  <div class="table-section">
-    <div class="section-header">
-      <h3>📋 MOVEMENT LOG TABLE</h3>
+      <div class="stat-card outflow">
+        <div class="stat-icon">
+          <i class="bi bi-arrow-up-circle-fill"></i>
+        </div>
+        <div class="stat-content">
+          <div class="stat-label">Total Outflow</div>
+          <div class="stat-value">{{ summary().outflow.units }}</div>
+          <div class="stat-amount">{{ formatValue(summary().outflow.value) }}</div>
+        </div>
+      </div>
+
+      <div class="stat-card transfer">
+        <div class="stat-icon">
+          <i class="bi bi-arrow-left-right-circle-fill"></i>
+        </div>
+        <div class="stat-content">
+          <div class="stat-label">Transfers</div>
+          <div class="stat-value">{{ summary().transfer.units }}</div>
+          <div class="stat-amount">{{ formatValue(summary().transfer.value) }}</div>
+        </div>
+      </div>
+
+      <div class="stat-card adjustment">
+        <div class="stat-icon">
+          <i class="bi bi-pencil-square"></i>
+        </div>
+        <div class="stat-content">
+          <div class="stat-label">Adjustments</div>
+          <div class="stat-value">{{ summary().adjustment.units }}</div>
+          <div class="stat-amount">{{ formatValue(summary().adjustment.value) }}</div>
+        </div>
+      </div>
+
+      <div class="stat-card net-change">
+        <div class="stat-icon">
+          <i class="bi bi-graph-up-arrow"></i>
+        </div>
+        <div class="stat-content">
+          <div class="stat-label">Net Change</div>
+          <div class="stat-value positive">+{{ 258 }}</div>
+          <div class="stat-amount positive">+$33,440</div>
+        </div>
+      </div>
     </div>
-    <div class="table-container">
-      <table class="movements-table">
-        <thead>
-          <tr>
-            <th>Date/Time</th>
-            <th>Type</th>
-            <th>Item</th>
-            <th>Qty</th>
-            <th>Reference</th>
-            <th>User</th>
-            <th>Balance</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (mov of filteredMovements(); track mov.id) {
-            <tr>
-              <td>{{ mov.dateTime }}</td>
-              <td>
-                <span class="type-badge" [class.badge-green]="mov.type === 'Inflow'" [class.badge-red]="mov.type === 'Outflow'" [class.badge-blue]="mov.type === 'Transfer'" [class.badge-orange]="mov.type === 'Adjustment'">
-                  {{ getMovementIcon(mov.type) }} {{ mov.type }}
-                </span>
-              </td>
-              <td>{{ mov.item }}</td>
-              <td>{{ mov.quantity > 0 ? '+' : '' }}{{ mov.quantity }}</td>
-              <td>{{ mov.refNumber }}</td>
-              <td>{{ mov.user }}</td>
-              <td>{{ mov.balance }}</td>
-            </tr>
+
+    <!-- Chart Section -->
+    <div class="chart-section">
+      <div class="section-header">
+        <div>
+          <h3>
+            <i class="bi bi-graph-up"></i> Movement Trend
+          </h3>
+          <p>Stock movement analysis over 8 weeks</p>
+        </div>
+      </div>
+      <div class="chart-container">
+        <div class="chart-legend">
+          <span class="legend-item inflow">
+            <span class="indicator"></span> Inflow
+          </span>
+          <span class="legend-item outflow">
+            <span class="indicator"></span> Outflow
+          </span>
+          <span class="legend-item net-change">
+            <span class="indicator"></span> Net
+          </span>
+        </div>
+        <div class="chart-bars">
+          @for (height of barHeightsInflow(); track $index) {
+            <div class="bar-group">
+              <div class="bars-container">
+                <div class="bar inflow" [style.height.%]="(height / 100) * 100" [title]="'Inflow: ' + height | number"></div>
+                <div class="bar outflow" [style.height.%]="(barHeightsOutflow()[$index] / 100) * 100" [title]="'Outflow: ' + barHeightsOutflow()[$index] | number"></div>
+                <div class="bar net-change" [style.height.%]="(barHeightsNet()[$index] / 100) * 100" [title]="'Net: ' + barHeightsNet()[$index] | number"></div>
+              </div>
+              <div class="bar-label">W{{ $index + 1 }}</div>
+            </div>
           }
-        </tbody>
-      </table>
-    </div>
-    <div class="pagination-bar">
-      <div class="pagination-info">Showing 1-{{ filteredMovements().length }} of 1,234 entries</div>
-      <div class="pagination-controls">
-        <button class="page-btn" disabled>Previous</button>
-        <button class="page-btn active">1</button>
-        <button class="page-btn">2</button>
-        <button class="page-btn">3</button>
-        <button class="page-btn">→</button>
-        <button class="page-btn">25</button>
+        </div>
       </div>
     </div>
-  </div>
+
+    <!-- Filters -->
+    <div class="filters-section">
+      <div class="section-header">
+        <h3>
+          <i class="bi bi-funnel"></i> Filters
+        </h3>
+      </div>
+      <div class="filter-bar">
+        <div class="search-box">
+          <i class="bi bi-search"></i>
+          <input
+            type="text"
+            [value]="searchTerm()"
+            (input)="onSearchChange($any($event.target).value)"
+            placeholder="Search item, SKU, reference...">
+        </div>
+
+        <select [ngModel]="typeFilter()" (ngModelChange)="onTypeFilterChange($event)" class="filter-select">
+          @for (type of movementTypes; track type) {
+            <option [value]="type">{{ type }}</option>
+          }
+        </select>
+
+        <select [ngModel]="warehouseFilter()" (ngModelChange)="onWarehouseFilterChange($event)" class="filter-select">
+          @for (wh of warehouses(); track wh) {
+            <option [value]="wh">{{ wh }}</option>
+          }
+        </select>
+
+        <select [ngModel]="userFilter()" (ngModelChange)="onUserFilterChange($event)" class="filter-select">
+          @for (u of userOptions(); track u) {
+            <option [value]="u">{{ u }}</option>
+          }
+        </select>
+
+        <div class="date-filters">
+          <input
+            type="date"
+            [ngModel]="dateFrom()"
+            (ngModelChange)="onDateFromChange($event)"
+            class="date-input">
+          <span>to</span>
+          <input
+            type="date"
+            [ngModel]="dateTo()"
+            (ngModelChange)="onDateToChange($event)"
+            class="date-input">
+          <button type="button" class="btn btn-sm btn-secondary" (click)="applyDateFilters()">
+            <i class="bi bi-check"></i> Apply
+          </button>
+          <button type="button" class="btn btn-sm btn-secondary" (click)="resetDateFilters()">
+            <i class="bi bi-arrow-clockwise"></i> Reset
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Table Section -->
+    <div class="table-section">
+      <div class="section-header">
+        <h3>
+          <i class="bi bi-table"></i> Movement Log
+        </h3>
+        <p>{{ filteredMovements().length }} transaction(s)</p>
+      </div>
+
+      @if (filteredMovements().length === 0) {
+        <div class="empty-state">
+          <i class="bi bi-inbox"></i>
+          <h4>No stock movements found</h4>
+          <p>Try adjusting your filters to view stock movements.</p>
+        </div>
+      } @else {
+        <div class="table-wrapper">
+          <table class="movements-table">
+            <thead>
+              <tr>
+                <th>Date/Time</th>
+                <th>Type</th>
+                <th>Item</th>
+                <th class="text-right">Qty</th>
+                <th>Reference</th>
+                <th>User</th>
+                <th class="text-right">Balance</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (mov of filteredMovements(); track mov.id) {
+                <tr>
+                  <td>
+                    <span class="date-time">{{ mov.dateTime }}</span>
+                  </td>
+                  <td>
+                    <span
+                      class="type-badge"
+                      [ngClass]="{
+                        'badge-inflow': mov.type === 'Inflow',
+                        'badge-outflow': mov.type === 'Outflow',
+                        'badge-transfer': mov.type === 'Transfer',
+                        'badge-adjustment': mov.type === 'Adjustment'
+                      }">
+                      <i [ngClass]="getMovementIconClass(mov.type)"></i>
+                      {{ mov.type }}
+                    </span>
+                  </td>
+                  <td>
+                    <strong>{{ mov.item }}</strong>
+                  </td>
+                  <td class="text-right">
+                    <span class="qty" [ngClass]="mov.quantity > 0 ? 'positive' : 'negative'">
+                      {{ mov.quantity > 0 ? '+' : '' }}{{ mov.quantity }}
+                    </span>
+                  </td>
+                  <td>
+                    <code>{{ mov.refNumber }}</code>
+                  </td>
+                  <td>{{ mov.user }}</td>
+                  <td class="text-right">
+                    <strong>{{ mov.balance }}</strong>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <div class="pagination-bar">
+          <div class="pagination-info">Showing {{ filteredMovements().length }} movement(s)</div>
+        </div>
+      }
+    </div>
+  }
 </div>

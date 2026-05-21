@@ -1,0 +1,109 @@
+<div class="bulk-adjust-stock-page">
+  <div class="page-header">
+    <div class="header-content">
+      <div class="header-left">
+        <h1>Bulk Stock Adjustment</h1>
+        <p>Adjust stock for multiple items at once</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Success Message -->
+  <div class="alert alert-success" *ngIf="success()">
+    <i class="bi bi-check-circle"></i>
+    <strong>Success!</strong> Stock adjustments have been applied. Redirecting...
+  </div>
+
+  <!-- Error Message -->
+  <div class="alert alert-danger" *ngIf="error()">
+    <i class="bi bi-exclamation-triangle"></i>
+    <strong>Error:</strong> {{ error() }}
+  </div>
+
+  <div class="form-card">
+    <!-- Selected Items -->
+    <div class="form-section">
+      <h3>Selected Items ({{ items().length }})</h3>
+      <div class="items-list">
+        <div class="items-list-item" *ngFor="let item of items()">
+          <div class="item-info">
+            <strong>{{ item.itemName }}</strong>
+            <small>{{ item.sku }} - {{ item.warehouseName }}</small>
+          </div>
+          <div class="item-stats">
+            <span class="current-stock">Current: {{ item.currentStock }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Adjustment Form -->
+    <div class="form-section">
+      <h3>Adjustment Details</h3>
+
+      <div class="form-group">
+        <label for="adjustmentType">Adjustment Type</label>
+        <select id="adjustmentType" class="form-control" [(ngModel)]="adjustmentType">
+          <option value="increase">Increase Stock</option>
+          <option value="decrease">Decrease Stock</option>
+          <option value="set">Set to Fixed Amount</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="quantity">Quantity</label>
+        <input
+          type="number"
+          id="quantity"
+          class="form-control"
+          [(ngModel)]="quantity"
+          min="0"
+          placeholder="Enter quantity">
+      </div>
+
+      <div class="form-group">
+        <label for="reason">Reason for Adjustment</label>
+        <select id="reason" class="form-control" [(ngModel)]="reason" required>
+          <option value="">-- Select a reason --</option>
+          <option *ngFor="let r of adjustmentReasons" [value]="r">{{ r }}</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="notes">Notes (Optional)</label>
+        <textarea
+          id="notes"
+          class="form-control"
+          [(ngModel)]="notes"
+          rows="3"
+          placeholder="Additional notes about this adjustment"></textarea>
+      </div>
+
+      <!-- Summary -->
+      <div class="adjustment-summary">
+        <div class="summary-item">
+          <span>Items to Adjust:</span>
+          <strong>{{ items().length }}</strong>
+        </div>
+        <div class="summary-item">
+          <span>Quantity per Item:</span>
+          <strong>{{ quantity }}</strong>
+        </div>
+        <div class="summary-item">
+          <span>Total Adjustment:</span>
+          <strong class="text-primary">{{ getTotalAdjustment() }}</strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="form-actions">
+      <button type="button" class="btn btn-outline-secondary" (click)="cancel()" [disabled]="loading()">
+        <i class="bi bi-x"></i> Cancel
+      </button>
+      <button type="button" class="btn btn-primary" (click)="adjustStock()" [disabled]="loading()">
+        <i class="bi bi-check"></i> {{ loading() ? 'Adjusting...' : 'Apply Adjustments' }}
+      </button>
+    </div>
+  </div>
+</div>

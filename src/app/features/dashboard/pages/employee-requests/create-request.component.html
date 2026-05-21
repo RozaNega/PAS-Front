@@ -49,7 +49,7 @@
                 <select [id]="'shelf-' + i" formControlName="preferredShelfId">
                   <option value="">Select shelf</option>
                   <option *ngFor="let shelf of shelves()" [value]="shelf.id">
-                    {{ shelf.code }} - {{ shelf.location }}
+                    {{ shelf.shelfCode }} — {{ shelf.shelfName }} ({{ shelf.aisle || '—' }})
                   </option>
                 </select>
                 <div class="error-message" *ngIf="submitted() && itemsArray.at(i).get('preferredShelfId')?.errors?.['required']">

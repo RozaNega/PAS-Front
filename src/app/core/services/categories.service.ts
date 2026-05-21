@@ -1,7 +1,8 @@
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { ApiService } from './api.service';
-import { ApiResponseModel } from '../models/api-response.model';
+import { ApiResponse } from '../../types/api-response.type';
+import { normalizeApiResponseModel, normalizePasListResponse } from '../utils/pas-api-json.util';
 
 export interface CategoryDto {
   id: string;
@@ -9,6 +10,9 @@ export interface CategoryDto {
   description?: string;
   parentCategoryId?: string;
   isActive: boolean;
+  subCategoriesCount?: number;
+  itemsCount?: number;
+  parentCategoryName?: string;
 }
 
 export interface CategoryHierarchyDto {
@@ -22,31 +26,40 @@ export interface CategoryHierarchyDto {
 export class CategoriesService {
   constructor(private apiService: ApiService) {}
 
-  getAll(params?: { includeInactive?: boolean; parentCategoryId?: string; searchTerm?: string }): Observable<ApiResponseModel<CategoryDto[]>> {
-    return this.apiService.get<ApiResponseModel<CategoryDto[]>>('Categories', params);
+  getAll(params?: { includeInactive?: boolean; parentCategoryId?: string; searchTerm?: string }): Observable<ApiResponse<CategoryDto[]>> {
+    return this.apiService.get<unknown>('Categories', params).pipe(
+      map(res => normalizePasListResponse<CategoryDto>(res) as ApiResponse<CategoryDto[]>)
+    );
   }
 
-  getById(id: string): Observable<ApiResponseModel<CategoryDto>> {
-    return this.apiService.get<ApiResponseModel<CategoryDto>>(`Categories/${id}`);
+  getById(id: string): Observable<ApiResponse<CategoryDto>> {
+    return this.apiService.get<unknown>(`Categories/${id}`).pipe(
+      map(res => normalizeApiResponseModel<CategoryDto>(res) as ApiResponse<CategoryDto>)
+    );
   }
 
-  getHierarchy(): Observable<ApiResponseModel<CategoryHierarchyDto[]>> {
-    return this.apiService.get<ApiResponseModel<CategoryHierarchyDto[]>>('Categories/hierarchy');
+  getHierarchy(): Observable<ApiResponse<CategoryHierarchyDto[]>> {
+    return this.apiService.get<unknown>('Categories/hierarchy').pipe(
+      map(res => normalizePasListResponse<CategoryHierarchyDto>(res) as ApiResponse<CategoryHierarchyDto[]>)
+    );
   }
 
-  createCategory(data: { name: string; description?: string; parentCategoryId?: string | null }): Observable<ApiResponseModel<string>> {
-    return this.apiService.post<ApiResponseModel<string>>('Categories', data);
+  createCategory(data: { name: string; description?: string; parentCategoryId?: string | null }): Observable<ApiResponse<string>> {
+    return this.apiService.post<unknown>('Categories', data).pipe(
+      map(res => normalizeApiResponseModel<string>(res) as ApiResponse<string>)
+    );
   }
 
-  create(data: any): Observable<ApiResponseModel<string>> {
-    return this.apiService.post<ApiResponseModel<string>>('Categories', data);
+  update(id: string, data: any): Observable<ApiResponse<any>> {
+    return this.apiService.put<unknown>(`Categories/${id}`, data).pipe(
+      map(res => normalizeApiResponseModel<any>(res) as ApiResponse<any>)
+    );
   }
 
-  update(id: string, data: any): Observable<ApiResponseModel<any>> {
-    return this.apiService.put<ApiResponseModel<any>>(`Categories/${id}`, data);
-  }
-
-  delete(id: string): Observable<ApiResponseModel<any>> {
-    return this.apiService.delete<ApiResponseModel<any>>(`Categories/${id}`);
+  delete(id: string): Observable<ApiResponse<any>> {
+    return this.apiService.delete<unknown>(`Categories/${id}`).pipe(
+      map(res => normalizeApiResponseModel<any>(res) as ApiResponse<any>)
+    );
   }
 }
+

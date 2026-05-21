@@ -18,9 +18,12 @@ export class ErrorInterceptor implements HttpInterceptor {
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
     return next.handle(req).pipe(
       catchError((error: HttpErrorResponse) => {
-        // During development, bypass 401 redirects to allow UI testing without backend
-        if (!environment.production && error.status === 401) {
-          console.warn('Unauthorized request (401) - bypassed in development mode:', req.url);
+        if (!environment.production && error.status > 0) {
+          console.warn('[PAS API]', error.status, req.method, req.urlWithParams || req.url, error.message, error.error);
+        }
+        // During development, allow 401/0 errors to pass through without redirecting
+        if (!environment.production && (error.status === 401 || error.status === 0)) {
+          console.warn(`API error (${error.status}) - development mode allows this:`, req.url);
           return throwError(() => error);
         }
 
@@ -40,7 +43,7 @@ export class ErrorInterceptor implements HttpInterceptor {
         }
 
         return throwError(() => error);
-      })
+      }),
     );
   }
 }

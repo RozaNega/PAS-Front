@@ -1,6 +1,7 @@
-import { Component, signal, computed } from '@angular/core';
+import { Component, signal, computed, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ReceivingReportService, ReceivingReportItem } from '../services/receiving-report.service';
 
 interface Receiving {
   date: string;
@@ -29,7 +30,9 @@ interface SupplierPerformance {
   templateUrl: './receiving-report.component.html',
   styleUrls: ['./receiving-report.component.scss']
 })
-export class ReceivingReportComponent {
+export class ReceivingReportComponent implements OnInit {
+  private readonly reportService = inject(ReceivingReportService);
+
   dateRange = { start: '2024-12-01', end: '2024-12-15' };
   supplierFilter = signal('All Suppliers');
   categoryFilter = signal('All Categories');
@@ -42,18 +45,14 @@ export class ReceivingReportComponent {
   statuses = ['All Status', 'Pending', 'Passed', 'Failed'];
   formats = ['PDF', 'Excel', 'CSV'];
 
-  receivings = signal<Receiving[]>([
-    { date: 'Dec 15', grnNumber: 'GRN-045', supplier: 'Tech Supplies', items: 3, quantity: 125, value: 30740, status: 'Pending' },
-    { date: 'Dec 14', grnNumber: 'GRN-044', supplier: 'Office Depot', items: 2, quantity: 50, value: 12500, status: 'Passed' },
-    { date: 'Dec 14', grnNumber: 'GRN-043', supplier: 'Global Suppliers', items: 1, quantity: 100, value: 500, status: 'Failed' },
-    { date: 'Dec 13', grnNumber: 'GRN-042', supplier: 'Paper Co', items: 2, quantity: 200, value: 5000, status: 'Passed' },
-    { date: 'Dec 12', grnNumber: 'GRN-041', supplier: 'Tech Supplies', items: 3, quantity: 75, value: 18750, status: 'Passed' }
-  ]);
+  receivings = signal<Receiving[]>([]);
+  loading = signal(false);
+  error = signal<string | null>(null);
 
   // Computed summary statistics
-  totalGRNs = computed(() => 45);
+  totalGRNs = computed(() => this.receivings().length);
   totalItemsReceived = computed(() => 2345);
-  totalValueReceived = computed(() => 156890);
+  totalValueReceived = computed(() => this.receivings().reduce((sum, item) => sum + item.value, 0));
   avgDailyReceiving = computed(() => '156 units/day');
   activeSuppliers = computed(() => 12);
 
@@ -94,14 +93,39 @@ export class ReceivingReportComponent {
 
   filteredReceivings = signal<Receiving[]>([]);
 
-  constructor() {
-    // Calculate bar heights once to avoid ExpressionChangedAfterItHasBeenCheckedError
+  ngOnInit(): void {
     const heights: number[] = [];
     for (let i = 0; i < 8; i++) {
       heights.push(this.getRandomHeight(100, 60));
     }
     this.barHeights.set(heights);
-    this.filterReceivings();
+    this.loadReceivingReport();
+  }
+
+  loadReceivingReport(): void {
+    this.loading.set(true);
+    this.error.set(null);
+
+    this.reportService.getReceivingReport({
+      dateFrom: this.dateRange.start,
+      dateTo: this.dateRange.end,
+      pageSize: 100
+    }).subscribe({
+      next: (res) => {
+        if (res.success !== false && Array.isArray(res.data)) {
+          this.receivings.set(res.data);
+        } else {
+          this.error.set(res.message || 'Failed to load receiving report');
+        }
+        this.loading.set(false);
+        this.filterReceivings();
+      },
+      error: (err) => {
+        console.error('Error loading receiving report:', err);
+        this.error.set('Failed to load receiving report. Please try again.');
+        this.loading.set(false);
+      }
+    });
   }
 
   filterReceivings(): void {
@@ -218,11 +242,11 @@ export class ReceivingReportComponent {
 
   getStatusIcon(status: string): string {
     const icons: { [key: string]: string } = {
-      'Pending': '🟡',
-      'Passed': '🟢',
-      'Failed': '🔴'
+      'Pending': 'bi bi-hourglass-split',
+      'Passed': 'bi bi-check-circle-fill',
+      'Failed': 'bi bi-x-circle-fill'
     };
-    return icons[status] || '⚪';
+    return icons[status] || 'bi bi-info-circle-fill';
   }
 
   getRandomHeight(base: number, variance: number): number {

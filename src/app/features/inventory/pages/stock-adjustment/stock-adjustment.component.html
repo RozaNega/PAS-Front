@@ -1,0 +1,270 @@
+<div class="stock-adjustment-page">
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-content">
+      <div class="header-left">
+        <button type="button" class="btn btn-outline-secondary" routerLink="/admin/inventory">
+          <i class="bi bi-arrow-left"></i> Back to Stock Overview
+        </button>
+        <div class="header-info">
+          <h1>Stock Adjustment</h1>
+          <p>Adjust inventory stock levels for items on shelves</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Success Message -->
+  <div class="alert alert-success" *ngIf="success()">
+    <i class="bi bi-check-circle"></i>
+    {{ success() }}
+  </div>
+
+  <!-- Error Message -->
+  <div class="alert alert-danger" *ngIf="error()">
+    <i class="bi bi-exclamation-triangle"></i>
+    <div [innerHTML]="error()?.replace(/\n/g, '<br>')"></div>
+  </div>
+
+  <!-- Adjustment Form -->
+  <div class="card">
+    <div class="card-header">
+      <h3>Stock Adjustment Details</h3>
+      <p>Select an item and shelf location to adjust stock levels</p>
+    </div>
+    <div class="card-body">
+      <form [formGroup]="adjustmentForm" (ngSubmit)="submitAdjustment()">
+        <!-- Item and Shelf Selection -->
+        <div class="row">
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label for="itemId" class="form-label">Item *</label>
+              <select 
+                id="itemId" 
+                class="form-control"
+                formControlName="itemId">
+                <option value="">Select Item</option>
+                <option *ngFor="let item of items()" [value]="item.id">
+                  {{ item.itemName }} ({{ item.sku }})
+                </option>
+              </select>
+              <div class="invalid-feedback" *ngIf="adjustmentForm.get('itemId')?.invalid && adjustmentForm.get('itemId')?.touched">
+                Item is required
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label for="shelfId" class="form-label">Shelf Location *</label>
+              <select 
+                id="shelfId" 
+                class="form-control"
+                formControlName="shelfId">
+                <option value="">Select Shelf</option>
+                <option *ngFor="let shelf of shelves()" [value]="shelf.id">
+                  {{ shelf.shelfCode }} - {{ shelf.shelfName }} ({{ shelf.warehouseName }})
+                </option>
+              </select>
+              <div class="invalid-feedback" *ngIf="adjustmentForm.get('shelfId')?.invalid && adjustmentForm.get('shelfId')?.touched">
+                Shelf location is required
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Current Stock Display -->
+        <div class="current-stock-info" *ngIf="currentStock() !== null">
+          <div class="alert alert-info">
+            <div class="row align-items-center">
+              <div class="col-md-8">
+                <h5 class="mb-1">Current Stock Information</h5>
+                <p class="mb-0">
+                  <strong>Item:</strong> {{ getSelectedItem()?.itemName }} ({{ getSelectedItem()?.sku }})<br>
+                  <strong>Shelf:</strong> {{ getSelectedShelf()?.shelfCode }} - {{ getSelectedShelf()?.shelfName }}<br>
+                  <strong>Current Stock:</strong> {{ currentStock() }} {{ getSelectedItem()?.unitOfMeasure }}
+                </p>
+              </div>
+              <div class="col-md-4 text-end">
+                <div class="current-stock-badge">
+                  <span class="badge badge-lg" 
+                        [class.badge-success]="(currentStock() || 0) > 0"
+                        [class.badge-danger]="(currentStock() || 0) === 0">
+                    {{ currentStock() }} Units
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Adjustment Type -->
+        <div class="row">
+          <div class="col-md-12">
+            <div class="mb-3">
+              <label class="form-label">Adjustment Type *</label>
+              <div class="adjustment-types">
+                <div *ngFor="let type of adjustmentTypes" class="adjustment-type-option">
+                  <input 
+                    type="radio" 
+                    [id]="'type-' + type.value"
+                    [value]="type.value"
+                    formControlName="adjustmentType"
+                    class="form-check-input">
+                  <label [for]="'type-' + type.value" class="adjustment-type-label">
+                    <i [class]="type.icon + ' ' + type.class"></i>
+                    <span>{{ type.label }}</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quantity -->
+        <div class="row">
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label for="quantity" class="form-label">
+                <span *ngIf="adjustmentForm.get('adjustmentType')?.value === 'set'">New Stock Level *</span>
+                <span *ngIf="adjustmentForm.get('adjustmentType')?.value !== 'set'">Quantity *</span>
+              </label>
+              <input 
+                type="number" 
+                id="quantity" 
+                class="form-control"
+                formControlName="quantity"
+                min="1"
+                [placeholder]="adjustmentForm.get('adjustmentType')?.value === 'set' ? 'Enter new stock level' : 'Enter quantity to adjust'">
+              <div class="invalid-feedback" *ngIf="adjustmentForm.get('quantity')?.invalid && adjustmentForm.get('quantity')?.touched">
+                <div *ngIf="adjustmentForm.get('quantity')?.errors?.['required']">Quantity is required</div>
+                <div *ngIf="adjustmentForm.get('quantity')?.errors?.['min']">Quantity must be at least 1</div>
+              </div>
+              <div class="form-text" *ngIf="!isValidAdjustment() && adjustmentForm.get('adjustmentType')?.value === 'decrease'">
+                <i class="bi bi-exclamation-triangle text-warning"></i>
+                Cannot decrease by more than current stock ({{ currentStock() }})
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6" *ngIf="currentStock() !== null && adjustmentForm.get('quantity')?.value">
+            <div class="mb-3">
+              <label class="form-label">New Stock Level (Preview)</label>
+              <div class="new-stock-preview">
+                <div class="stock-calculation">
+                  <span class="current">{{ currentStock() }}</span>
+                  <span class="operator" *ngIf="adjustmentForm.get('adjustmentType')?.value === 'increase'">+</span>
+                  <span class="operator" *ngIf="adjustmentForm.get('adjustmentType')?.value === 'decrease'">-</span>
+                  <span class="operator" *ngIf="adjustmentForm.get('adjustmentType')?.value === 'set'">=</span>
+                  <span class="quantity" *ngIf="adjustmentForm.get('adjustmentType')?.value !== 'set'">{{ adjustmentForm.get('quantity')?.value }}</span>
+                  <span class="equals" *ngIf="adjustmentForm.get('adjustmentType')?.value !== 'set'">=</span>
+                  <span class="result" 
+                        [class.text-success]="(calculateNewStock() || 0) >= 0"
+                        [class.text-danger]="(calculateNewStock() || 0) < 0">
+                    {{ calculateNewStock() }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Reason and Notes -->
+        <div class="row">
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label for="reason" class="form-label">Reason *</label>
+              <select 
+                id="reason" 
+                class="form-control"
+                formControlName="reason">
+                <option value="">Select Reason</option>
+                <option *ngFor="let reason of adjustmentReasons" [value]="reason">
+                  {{ reason }}
+                </option>
+              </select>
+              <div class="invalid-feedback" *ngIf="adjustmentForm.get('reason')?.invalid && adjustmentForm.get('reason')?.touched">
+                Reason is required
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label for="notes" class="form-label">Additional Notes</label>
+              <textarea 
+                id="notes" 
+                class="form-control"
+                formControlName="notes"
+                rows="3"
+                placeholder="Optional additional notes or comments..."></textarea>
+              <div class="invalid-feedback" *ngIf="adjustmentForm.get('notes')?.invalid && adjustmentForm.get('notes')?.touched">
+                Notes must be 500 characters or less
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Summary -->
+        <div class="adjustment-summary" *ngIf="currentStock() !== null && adjustmentForm.get('quantity')?.value && isValidAdjustment()">
+          <div class="alert alert-light border">
+            <h5 class="mb-3">Adjustment Summary</h5>
+            <div class="row">
+              <div class="col-md-6">
+                <div class="summary-item">
+                  <span class="label">Item:</span>
+                  <span class="value">{{ getSelectedItem()?.itemName }}</span>
+                </div>
+                <div class="summary-item">
+                  <span class="label">Shelf:</span>
+                  <span class="value">{{ getSelectedShelf()?.shelfCode }} - {{ getSelectedShelf()?.shelfName }}</span>
+                </div>
+                <div class="summary-item">
+                  <span class="label">Adjustment Type:</span>
+                  <span class="value">
+                    <i [class]="getAdjustmentTypeInfo()?.icon + ' ' + getAdjustmentTypeInfo()?.class"></i>
+                    {{ getAdjustmentTypeInfo()?.label }}
+                  </span>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="summary-item">
+                  <span class="label">Current Stock:</span>
+                  <span class="value">{{ currentStock() }} {{ getSelectedItem()?.unitOfMeasure }}</span>
+                </div>
+                <div class="summary-item">
+                  <span class="label">Adjustment Quantity:</span>
+                  <span class="value">{{ adjustmentForm.get('quantity')?.value }} {{ getSelectedItem()?.unitOfMeasure }}</span>
+                </div>
+                <div class="summary-item">
+                  <span class="label">New Stock Level:</span>
+                  <span class="value text-primary">
+                    <strong>{{ calculateNewStock() }} {{ getSelectedItem()?.unitOfMeasure }}</strong>
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" (click)="cancel()">
+            <i class="bi bi-x-circle"></i> Cancel
+          </button>
+          <button 
+            type="submit" 
+            class="btn btn-primary" 
+            [disabled]="loading() || !adjustmentForm.valid || !isValidAdjustment()">
+            <span *ngIf="!loading()">
+              <i class="bi bi-check-circle"></i> Apply Adjustment
+            </span>
+            <span *ngIf="loading()">
+              <div class="spinner-border spinner-border-sm" role="status">
+                <span class="visually-hidden">Loading...</span>
+              </div>
+              Processing...
+            </span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

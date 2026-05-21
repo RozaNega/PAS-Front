@@ -1,0 +1,296 @@
+<div class="stock-overview-page">
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-content">
+      <div class="header-left">
+        <h1>Stock Overview</h1>
+        <p>Monitor inventory levels and stock status across all warehouses</p>
+      </div>
+      <div class="header-actions">
+        <button type="button" class="btn btn-primary" routerLink="/admin/inventory/add-item">
+          <i class="bi bi-plus-circle"></i> Add New Item
+        </button>
+        <button type="button" class="btn btn-outline-primary" routerLink="/admin/inventory/adjustment">
+          <i class="bi bi-sliders"></i> Stock Adjustment
+        </button>
+        <button type="button" class="btn btn-outline-info" routerLink="/admin/inventory/movements">
+          <i class="bi bi-arrow-left-right"></i> View Movements
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bulk Actions Toolbar -->
+  <div class="bulk-actions-toolbar" *ngIf="hasSelection()">
+    <div class="bulk-info">
+      <span><strong>{{ selectedCount() }}</strong> item(s) selected</span>
+      <button type="button" class="btn btn-sm btn-link" (click)="clearSelection()">
+        <i class="bi bi-x"></i> Clear
+      </button>
+    </div>
+    <div class="bulk-buttons">
+      <button type="button" class="btn btn-sm btn-outline-primary" (click)="bulkAdjustStock()" title="Bulk Adjust Stock">
+        <i class="bi bi-sliders"></i> Adjust Stock
+      </button>
+      <button type="button" class="btn btn-sm btn-outline-success" (click)="generateQRCodes()" title="Generate QR Codes">
+        <i class="bi bi-qr-code"></i> QR Codes
+      </button>
+      <button type="button" class="btn btn-sm btn-outline-info" (click)="exportToExcel()" title="Export to Excel">
+        <i class="bi bi-file-earmark-excel"></i> Excel
+      </button>
+      <button type="button" class="btn btn-sm btn-outline-secondary" (click)="exportToCSV()" title="Export to CSV">
+        <i class="bi bi-file-earmark-text"></i> CSV
+      </button>
+    </div>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="summary-cards">
+    <div class="summary-card">
+      <div class="card-icon">
+        <i class="bi bi-boxes text-primary"></i>
+      </div>
+      <div class="card-content">
+        <h3>{{ totalItems() }}</h3>
+        <p>Total Items</p>
+      </div>
+    </div>
+    <div class="summary-card">
+      <div class="card-icon">
+        <i class="bi bi-currency-dollar text-success"></i>
+      </div>
+      <div class="card-content">
+        <h3>{{ formatCurrency(totalValue()) }}</h3>
+        <p>Total Value</p>
+      </div>
+    </div>
+    <div class="summary-card">
+      <div class="card-icon">
+        <i class="bi bi-exclamation-triangle text-warning"></i>
+      </div>
+      <div class="card-content">
+        <h3>{{ lowStockCount() }}</h3>
+        <p>Low Stock Items</p>
+      </div>
+    </div>
+    <div class="summary-card">
+      <div class="card-icon">
+        <i class="bi bi-x-circle text-danger"></i>
+      </div>
+      <div class="card-content">
+        <h3>{{ outOfStockCount() }}</h3>
+        <p>Out of Stock</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters-section">
+    <div class="filter-row">
+      <div class="filter-group">
+        <label for="search">Search</label>
+        <input
+          type="text"
+          id="search"
+          class="form-control"
+          [value]="searchTerm()"
+          (input)="onSearch($event)"
+          placeholder="Search by item name, SKU, shelf...">
+      </div>
+      <div class="filter-group">
+        <label for="warehouse">Warehouse</label>
+        <select
+          id="warehouse"
+          class="form-control"
+          [value]="warehouseFilter()"
+          (change)="onWarehouseFilter($event)">
+          <option value="All">All Warehouses</option>
+          <option *ngFor="let warehouse of warehouses()" [value]="warehouse.id">
+            {{ warehouse.warehouseName }}
+          </option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label for="stock">Stock Status</label>
+        <select
+          id="stock"
+          class="form-control"
+          [value]="stockFilter()"
+          (change)="onStockFilter($event)">
+          <option *ngFor="let filter of stockFilters" [value]="filter">{{ filter }}</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label for="rowsPerPage">Show</label>
+        <select
+          id="rowsPerPage"
+          class="form-control"
+          [value]="rowsPerPage()"
+          (change)="onRowsPerPageChange($event)">
+          <option value="10">10</option>
+          <option value="25">25</option>
+          <option value="50">50</option>
+          <option value="100">100</option>
+        </select>
+      </div>
+      <div class="filter-actions">
+        <button type="button" class="btn btn-outline-secondary" (click)="resetFilters()">
+          <i class="bi bi-arrow-clockwise"></i> Reset
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div class="loading-container" *ngIf="loading()">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+    <p>Loading stock overview...</p>
+  </div>
+
+  <!-- Error State -->
+  <div class="alert alert-danger" *ngIf="error()">
+    <i class="bi bi-exclamation-triangle"></i>
+    {{ error() }}
+    <button type="button" class="btn btn-outline-danger btn-sm ms-2" (click)="loadStockOverview()">
+      <i class="bi bi-arrow-clockwise"></i> Retry
+    </button>
+  </div>
+
+  <!-- Content -->
+  <div class="content" *ngIf="!loading()">
+    <!-- Results Info -->
+    <div class="results-info">
+      <span>
+        Showing {{ displayRange().start }}-{{ displayRange().end }} of {{ filteredStockItems().length }} items
+      </span>
+    </div>
+
+    <!-- Stock Items Table -->
+    <div class="table-container">
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th style="width: 40px;">
+                <input type="checkbox" class="form-check-input" [checked]="allPageItemsSelected()" (change)="toggleSelectAll()" title="Select all on this page">
+              </th>
+              <th>Item</th>
+              <th>SKU</th>
+              <th>Warehouse</th>
+              <th>Shelf Location</th>
+              <th>Current Stock</th>
+              <th>Reserved</th>
+              <th>Available</th>
+              <th>Stock Level</th>
+              <th>Status</th>
+              <th>Last Updated</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngIf="pagedStockItems().length === 0">
+              <td colspan="12" class="text-center">
+                <div class="empty-state">
+                  <i class="bi bi-box-seam"></i>
+                  <p>No stock items found</p>
+                  <p class="text-muted">Try adjusting your filters or check back later</p>
+                </div>
+              </td>
+            </tr>
+            <tr *ngFor="let item of pagedStockItems(); trackBy: trackByItemId" [class.selected]="isItemSelected(item.id)">
+              <td>
+                <input type="checkbox" class="form-check-input" [checked]="isItemSelected(item.id)" (change)="toggleSelectItem(item.id)">
+              </td>
+              <td>
+                <div class="item-info">
+                  <strong>{{ item.itemName }}</strong>
+                  <small class="text-muted d-block">{{ item.unitOfMeasure }}</small>
+                </div>
+              </td>
+              <td>{{ item.sku }}</td>
+              <td>{{ item.warehouseName }}</td>
+              <td>{{ item.shelfLocation || 'N/A' }}</td>
+              <td>
+                <span class="stock-quantity" [class.text-danger]="item.currentStock === 0">
+                  {{ item.currentStock }}
+                </span>
+              </td>
+              <td>{{ item.reservedStock || 0 }}</td>
+              <td>
+                <span class="available-quantity" [class.text-success]="item.availableStock > 0">
+                  {{ item.availableStock }}
+                </span>
+              </td>
+              <td>
+                <div class="stock-level">
+                  <div class="progress" style="height: 20px;">
+                    <div
+                      class="progress-bar"
+                      [class.bg-success]="getStockLevelPercentage(item) > 50"
+                      [class.bg-warning]="getStockLevelPercentage(item) > 20 && getStockLevelPercentage(item) <= 50"
+                      [class.bg-danger]="getStockLevelPercentage(item) <= 20"
+                      [style.width.%]="getStockLevelPercentage(item)">
+                    </div>
+                  </div>
+                  <small class="text-muted">
+                    Min: {{ item.minimumThreshold }} | Max: {{ item.maximumThreshold }}
+                  </small>
+                </div>
+              </td>
+              <td>
+                <span class="badge" [ngClass]="getStockStatusClass(item)">
+                  {{ getStockStatusText(item) }}
+                </span>
+              </td>
+              <td>{{ formatDate(item.lastUpdated) }}</td>
+              <td>
+                <div class="action-buttons">
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-outline-primary"
+                    (click)="adjustStock(item)"
+                    title="Adjust Stock">
+                    <i class="bi bi-sliders"></i>
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-outline-info"
+                    (click)="viewStockMovements(item.itemId)"
+                    title="View Movements">
+                    <i class="bi bi-clock-history"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination-container" *ngIf="totalPages() > 1">
+      <nav aria-label="Stock items pagination">
+        <ul class="pagination">
+          <li class="page-item" [class.disabled]="currentPage() === 1">
+            <button class="page-link" (click)="goToPage(currentPage() - 1)" [disabled]="currentPage() === 1">
+              <i class="bi bi-chevron-left"></i>
+            </button>
+          </li>
+          <li
+            class="page-item"
+            *ngFor="let page of [].constructor(totalPages()); let i = index"
+            [class.active]="currentPage() === i + 1">
+            <button class="page-link" (click)="goToPage(i + 1)">{{ i + 1 }}</button>
+          </li>
+          <li class="page-item" [class.disabled]="currentPage() === totalPages()">
+            <button class="page-link" (click)="goToPage(currentPage() + 1)" [disabled]="currentPage() === totalPages()">
+              <i class="bi bi-chevron-right"></i>
+            </button>
+          </li>
+        </ul>
+      </nav>
+    </div>
+  </div>
+</div>

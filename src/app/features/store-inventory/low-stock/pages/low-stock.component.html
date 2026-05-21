@@ -9,10 +9,17 @@
     </button>
   </div>
 
+  @if (loadError()) {
+    <p class="filter-bar" role="alert" style="color: #b00020; padding: 0 1rem;">{{ loadError() }}</p>
+  }
+  @if (loading()) {
+    <p class="filter-bar" style="padding: 0 1rem;">Loading alerts…</p>
+  }
+
   <div class="filter-bar">
     <div class="filter-group">
       <label>🔔 Alert Threshold:</label>
-      <select [(ngModel)]="alertThreshold">
+      <select [ngModel]="alertThreshold()" (ngModelChange)="alertThreshold.set($event)">
         <option>Show items below minimum ▼</option>
         <option>Show items below reorder point</option>
         <option>Show all low stock items</option>
@@ -20,15 +27,18 @@
     </div>
     <div class="filter-group">
       <label>📍 Warehouse:</label>
-      <select [(ngModel)]="warehouseFilter">
-        @for (wh of warehouses; track wh) {
+      <select
+        [ngModel]="warehouseFilter()"
+        (ngModelChange)="warehouseFilter.set($event); onWarehouseFilterChange()"
+      >
+        @for (wh of warehouses(); track wh) {
           <option [value]="wh">{{ wh }}</option>
         }
       </select>
     </div>
     <div class="filter-group">
-      <label>� Category:</label>
-      <select [(ngModel)]="categoryFilter">
+      <label>🏷️ Category:</label>
+      <select [ngModel]="categoryFilter()" (ngModelChange)="categoryFilter.set($event)">
         @for (cat of categories; track cat) {
           <option [value]="cat">{{ cat }}</option>
         }

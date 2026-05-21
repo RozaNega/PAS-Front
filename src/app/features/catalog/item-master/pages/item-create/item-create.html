@@ -1,56 +1,175 @@
-<section class="panel">
-  <h2>Create item</h2>
-  <p>{{ status() }}</p>
+<section class="create-page">
+  <!-- Status Message -->
+  <div *ngIf="status()" [ngClass]="'notice-banner notice-' + status()!.type" class="animate-fade-in">
+    <div>
+      <strong>
+        <i *ngIf="status()!.type === 'success'" class="bi bi-check-circle"></i>
+        <i *ngIf="status()!.type === 'error'" class="bi bi-exclamation-circle"></i>
+        <i *ngIf="status()!.type === 'info'" class="bi bi-info-circle"></i>
+        {{ status()!.message }}
+      </strong>
+    </div>
+  </div>
 
-  <form [formGroup]="itemForm" (ngSubmit)="createItem()" novalidate>
-    <label>
-      <span>SKU</span>
-      <input type="text" formControlName="sku" />
-    </label>
-
-    <label>
-      <span>Name</span>
-      <input type="text" formControlName="name" />
-    </label>
-
-    <div class="grid-two">
-      <label>
-        <span>Category ID</span>
-        <input type="text" formControlName="categoryId" />
-      </label>
-
-      <label>
-        <span>Category name</span>
-        <input type="text" formControlName="categoryName" />
-      </label>
+  <!-- Form Container -->
+  <div class="glass-effect create-panel animate-slide-down">
+    <!-- Header -->
+    <div class="panel-header">
+      <div>
+        <h1>Create Item</h1>
+        <p class="page-subtitle">Add a new item to the master catalog</p>
+      </div>
     </div>
 
-    <div class="grid-three">
-      <label>
-        <span>UoM</span>
-        <input type="text" formControlName="unitOfMeasure" />
-      </label>
+    <!-- Form -->
+    <form [formGroup]="itemForm" (ngSubmit)="createItem()" novalidate>
+      <div class="form-grid">
+        <!-- SKU -->
+        <label class="form-field" [class.error]="itemForm.get('sku')?.invalid && itemForm.get('sku')?.touched">
+          <span class="field-label">
+            SKU <span class="required-indicator">*</span>
+          </span>
+          <input
+            type="text"
+            formControlName="sku"
+            placeholder="e.g., OFF-DESK-001"
+            class="form-input"
+          />
+          <span *ngIf="getFieldError('sku')" class="error-message">
+            {{ getFieldError('sku') }}
+          </span>
+        </label>
 
-      <label>
-        <span>Price</span>
-        <input type="number" formControlName="price" />
-      </label>
+        <!-- Item Name -->
+        <label class="form-field" [class.error]="itemForm.get('itemName')?.invalid && itemForm.get('itemName')?.touched">
+          <span class="field-label">
+            Item Name <span class="required-indicator">*</span>
+          </span>
+          <input
+            type="text"
+            formControlName="itemName"
+            placeholder="e.g., Executive Desk"
+            class="form-input"
+          />
+          <span *ngIf="getFieldError('itemName')" class="error-message">
+            {{ getFieldError('itemName') }}
+          </span>
+        </label>
 
-      <label>
-        <span>Stock</span>
-        <input type="number" formControlName="stockOnHand" />
-      </label>
-    </div>
+        <!-- Category -->
+        <label class="form-field" [class.error]="itemForm.get('categoryId')?.invalid && itemForm.get('categoryId')?.touched">
+          <span class="field-label">
+            Category <span class="required-indicator">*</span>
+          </span>
+          <select
+            #categorySelect
+            formControlName="categoryId"
+            (change)="onCategorySelect(categorySelect.value)"
+            class="form-input"
+          >
+            <option value="">Select a category</option>
+            <option *ngFor="let cat of categories()" [value]="cat.id">
+              {{ cat.name }}
+            </option>
+          </select>
+          <span *ngIf="getFieldError('categoryId')" class="error-message">
+            {{ getFieldError('categoryId') }}
+          </span>
+        </label>
 
-    <label>
-      <span>Status</span>
-      <select formControlName="status">
-        <option value="active">Active</option>
-        <option value="draft">Draft</option>
-        <option value="archived">Archived</option>
-      </select>
-    </label>
+        <!-- Unit of Measure -->
+        <label class="form-field" [class.error]="itemForm.get('unitOfMeasure')?.invalid && itemForm.get('unitOfMeasure')?.touched">
+          <span class="field-label">
+            Unit of Measure <span class="required-indicator">*</span>
+          </span>
+          <select formControlName="unitOfMeasure" class="form-input">
+            <option *ngFor="let uom of unitsOfMeasure" [value]="uom">
+              {{ uom }}
+            </option>
+          </select>
+          <span *ngIf="getFieldError('unitOfMeasure')" class="error-message">
+            {{ getFieldError('unitOfMeasure') }}
+          </span>
+        </label>
 
-    <button type="submit">Create</button>
-  </form>
+        <!-- Stock Quantity -->
+        <label class="form-field" [class.error]="itemForm.get('stockQuantity')?.invalid && itemForm.get('stockQuantity')?.touched">
+          <span class="field-label">
+            Initial Stock <span class="required-indicator">*</span>
+          </span>
+          <input
+            type="number"
+            formControlName="stockQuantity"
+            placeholder="0"
+            class="form-input"
+          />
+          <span *ngIf="getFieldError('stockQuantity')" class="error-message">
+            {{ getFieldError('stockQuantity') }}
+          </span>
+        </label>
+
+        <!-- Minimum Stock Level -->
+        <label class="form-field" [class.error]="itemForm.get('minStockLevel')?.invalid && itemForm.get('minStockLevel')?.touched">
+          <span class="field-label">
+            Minimum Stock Level <span class="required-indicator">*</span>
+          </span>
+          <input
+            type="number"
+            formControlName="minStockLevel"
+            placeholder="0"
+            class="form-input"
+          />
+          <span *ngIf="getFieldError('minStockLevel')" class="error-message">
+            {{ getFieldError('minStockLevel') }}
+          </span>
+          <span class="help-text">Reorder point for automatic alerts</span>
+        </label>
+      </div>
+
+      <!-- Full Width Fields -->
+      <div class="form-grid-full">
+        <!-- Description -->
+        <label class="form-field">
+          <span class="field-label">Description</span>
+          <textarea
+            formControlName="description"
+            placeholder="Add optional details about this item..."
+            class="form-input form-textarea"
+            rows="3"
+          ></textarea>
+          <span class="help-text">Optional. Helps with item identification.</span>
+        </label>
+      </div>
+
+      <!-- Checkboxes -->
+      <div class="form-checkboxes">
+        <label class="checkbox-label">
+          <input type="checkbox" formControlName="requiresInspection" />
+          <span>Requires Inspection</span>
+          <span class="help-text">Check if this item needs QC inspection before use</span>
+        </label>
+
+        <label class="checkbox-label">
+          <input type="checkbox" formControlName="isActive" />
+          <span>Active</span>
+          <span class="help-text">Make this item available for selection</span>
+        </label>
+      </div>
+
+      <!-- Actions -->
+      <div class="form-actions">
+        <button type="button" class="secondary-pill" (click)="itemForm.reset()">
+          <i class="bi bi-arrow-clockwise"></i> Clear Form
+        </button>
+        <button
+          type="submit"
+          class="primary-pill"
+          [disabled]="isSubmitting()"
+        >
+          <i class="bi bi-plus-circle"></i>
+          {{ isSubmitting() ? 'Creating...' : 'Create Item' }}
+        </button>
+      </div>
+    </form>
+  </div>
 </section>

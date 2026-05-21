@@ -1,37 +1,52 @@
 <div class="pending-inspection-container">
   <div class="page-header">
     <div class="header-info">
-      <h1>Pending Inspection ({{ pendingInspections().length }})</h1>
-      <p class="subtitle">Items awaiting quality inspection</p>
+      <h1>Pending Inspection ({{ filteredPending().length }})</h1>
+      <p class="subtitle">Items awaiting quality inspection (from live receiving notes)</p>
     </div>
-    <button class="btn btn-secondary" (click)="refreshData()">
+    <button type="button" class="btn btn-secondary" (click)="refreshData()">
       <i class="bi bi-arrow-clockwise"></i> Refresh
     </button>
   </div>
 
+  @if (loading()) {
+    <p class="text-muted">Loading…</p>
+  }
+  @if (error()) {
+    <div class="alert alert-danger">{{ error() }}</div>
+  }
+
   <div class="filter-bar">
     <div class="search-box">
       <i class="bi bi-search"></i>
-      <input type="text" [value]="searchTerm()" placeholder="Search pending inspections...">
+      <input
+        type="text"
+        [ngModel]="searchTerm()"
+        (ngModelChange)="searchTerm.set($event)"
+        placeholder="Search pending inspections..."
+      />
     </div>
     <div class="filter-group">
       <label>📅 Sort by:</label>
-      <select [(ngModel)]="sortBy">
-        <option>Oldest</option>
-        <option>Newest</option>
-        <option>Priority</option>
+      <select [ngModel]="sortBy()" (ngModelChange)="sortBy.set($event); onSortChange()">
+        <option value="Oldest">Oldest</option>
+        <option value="Newest">Newest</option>
+        <option value="Priority">Priority</option>
       </select>
     </div>
   </div>
 
   <div class="inspections-section">
     <div class="section-header">
-      <h3>⏳ AWAITING INSPECTION ({{ pendingInspections().length }})</h3>
+      <h3>⏳ AWAITING INSPECTION ({{ filteredPending().length }})</h3>
     </div>
 
-    @for (inspection of pendingInspections(); track inspection.id) {
+    @for (inspection of filteredPending(); track inspection.id) {
       <div class="inspection-card" [class.priority-high]="inspection.priority === 'High'">
-        <div class="inspection-header">
+        <div class="inspection-header" style="display:flex;align-items:center;gap:0.5rem;">
+          <label style="margin:0;">
+            <input type="checkbox" [checked]="isSelected(inspection.id)" (change)="toggleSelect(inspection.id)" />
+          </label>
           <span class="inspection-icon">📦</span>
           <span class="inspection-title">{{ inspection.grnNumber }} - {{ inspection.supplier }}</span>
         </div>
@@ -43,7 +58,7 @@
             <span>Items to inspect: {{ inspection.itemsToInspect }} items</span>
           </div>
           <div class="detail-row">
-            <span>Priority: {{ getPriorityIcon(inspection.priority) }} {{ inspection.priority }} (Electronics)</span>
+            <span>Priority: {{ getPriorityIcon(inspection.priority) }} {{ inspection.priority }}</span>
           </div>
         </div>
         <div class="inspection-items">
@@ -57,23 +72,21 @@
               </tr>
             </thead>
             <tbody>
-              @for (item of inspection.items; track item.name) {
+              @for (item of inspection.items; track item.name + $index) {
                 <tr>
                   <td>{{ item.name }}</td>
                   <td>{{ item.received }}</td>
                   <td>{{ item.batchNumber }}</td>
-                  <td>⏳ Pending</td>
+                  <td>⏳ {{ item.status }}</td>
                 </tr>
               }
             </tbody>
           </table>
         </div>
         <div class="inspection-actions">
-          <button class="btn btn-sm btn-primary" (click)="openInspectionModal(inspection)">Start Inspection</button>
-          <button class="btn btn-sm btn-secondary">View GRN</button>
-          @if (inspection.priority === 'High') {
-            <button class="btn btn-sm btn-secondary">Return to Supplier</button>
-          }
+          <button type="button" class="btn btn-sm btn-primary" (click)="openInspectionModal(inspection)">Start Inspection</button>
+          <button type="button" class="btn btn-sm btn-secondary" (click)="viewGrn(inspection.id)">View GRN</button>
+          <button type="button" class="btn btn-sm btn-secondary" (click)="returnOne(inspection.id)">Return to Supplier</button>
         </div>
       </div>
     }
@@ -82,18 +95,13 @@
   <div class="bulk-actions">
     <div class="bulk-checkboxes">
       <label class="checkbox-item">
-        <input type="checkbox"> Select All
-      </label>
-      <label class="checkbox-item">
-        <input type="checkbox"> Select Electronics
-      </label>
-      <label class="checkbox-item">
-        <input type="checkbox"> Select Office Supplies
+        <input type="checkbox" #sa (change)="selectAll(sa.checked)" />
+        Select All
       </label>
     </div>
     <div class="bulk-buttons">
-      <button class="btn btn-primary">Bulk Inspect</button>
-      <button class="btn btn-secondary">Bulk Release to Stock</button>
+      <button type="button" class="btn btn-primary" (click)="bulkInspect()">Bulk Inspect</button>
+      <button type="button" class="btn btn-secondary" (click)="bulkRelease()">Bulk Release to Stock</button>
     </div>
   </div>
 </div>
@@ -103,7 +111,7 @@
     <div class="modal-content" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h3>Quality Inspection Form</h3>
-        <button class="btn-close" (click)="closeModal()">
+        <button type="button" class="btn-close" (click)="closeModal()">
           <i class="bi bi-x-lg"></i>
         </button>
       </div>
@@ -111,7 +119,7 @@
         <div class="modal-info">
           <span>GRN: {{ selectedInspection()!.grnNumber }}</span>
           <span>Supplier: {{ selectedInspection()!.supplier }}</span>
-          <span>Date: {{ selectedInspection()!.receivedDate.split('(')[0].trim() }}</span>
+          <span>Date: {{ selectedInspection()!.receivedDate }}</span>
         </div>
 
         <div class="form-section">
@@ -119,22 +127,18 @@
           <div class="form-grid">
             <div class="form-field">
               <label>Inspector Name *</label>
-              <select [(ngModel)]="inspectionFormData().inspectorName">
-                <option>Sarah Smith</option>
-                <option>John Doe</option>
-                <option>Mike Wilson</option>
-              </select>
+              <input type="text" [(ngModel)]="inspectionDraft.inspectorName" name="inspName" />
             </div>
             <div class="form-field">
               <label>Inspection Date *</label>
-              <input type="date" [(ngModel)]="inspectionFormData().inspectionDate">
+              <input type="date" [(ngModel)]="inspectionDraft.inspectionDate" name="inspDate" />
             </div>
           </div>
         </div>
 
         <div class="form-section">
           <h4>ITEM INSPECTION RESULTS</h4>
-          @for (item of inspectionFormData().results; track item.name) {
+          @for (item of inspectionDraft.results; track item.name + $index) {
             <div class="item-inspection">
               <div class="item-header">
                 <span>Item: {{ item.name }} ({{ item.received }} units, Batch: {{ item.batchNumber }})</span>
@@ -143,23 +147,23 @@
                 <h5>Inspection Checklist:</h5>
                 <div class="checklist-items">
                   <label class="checkbox-item">
-                    <input type="checkbox" [(ngModel)]="item.checklist.packagingIntact">
+                    <input type="checkbox" [(ngModel)]="item.checklist.packagingIntact" />
                     <span>Packaging intact</span>
                   </label>
                   <label class="checkbox-item">
-                    <input type="checkbox" [(ngModel)]="item.checklist.physicalCondition">
+                    <input type="checkbox" [(ngModel)]="item.checklist.physicalCondition" />
                     <span>Physical condition - no damage</span>
                   </label>
                   <label class="checkbox-item">
-                    <input type="checkbox" [(ngModel)]="item.checklist.serialNumbersMatch">
+                    <input type="checkbox" [(ngModel)]="item.checklist.serialNumbersMatch" />
                     <span>Serial numbers match</span>
                   </label>
                   <label class="checkbox-item">
-                    <input type="checkbox" [(ngModel)]="item.checklist.accessoriesIncluded">
+                    <input type="checkbox" [(ngModel)]="item.checklist.accessoriesIncluded" />
                     <span>Accessories included</span>
                   </label>
                   <label class="checkbox-item">
-                    <input type="checkbox" [(ngModel)]="item.checklist.powerOnTest">
+                    <input type="checkbox" [(ngModel)]="item.checklist.powerOnTest" />
                     <span>Power on test passed</span>
                   </label>
                 </div>
@@ -168,22 +172,22 @@
                 <span>Overall Result:</span>
                 <div class="radio-group">
                   <label class="radio-item">
-                    <input type="radio" [(ngModel)]="item.overallResult" value="Pass">
+                    <input type="radio" [(ngModel)]="item.overallResult" name="or{{ $index }}" value="Pass" />
                     <span>Pass</span>
                   </label>
                   <label class="radio-item">
-                    <input type="radio" [(ngModel)]="item.overallResult" value="Fail">
+                    <input type="radio" [(ngModel)]="item.overallResult" name="or{{ $index }}" value="Fail" />
                     <span>Fail</span>
                   </label>
                   <label class="radio-item">
-                    <input type="radio" [(ngModel)]="item.overallResult" value="Partial">
+                    <input type="radio" [(ngModel)]="item.overallResult" name="or{{ $index }}" value="Partial" />
                     <span>Partial</span>
                   </label>
                 </div>
               </div>
               <div class="form-field">
                 <label>Comments:</label>
-                <input type="text" [(ngModel)]="item.comments" placeholder="All units passed quality check">
+                <input type="text" [(ngModel)]="item.comments" placeholder="All units passed quality check" />
               </div>
             </div>
           }
@@ -196,28 +200,32 @@
           </div>
           <div class="radio-group">
             <label class="radio-item">
-              <input type="radio" [(ngModel)]="inspectionFormData().disposition" value="Return to Supplier">
+              <input type="radio" [(ngModel)]="inspectionDraft.disposition" name="disp" value="Return to Supplier" />
               <span>Return to Supplier</span>
             </label>
             <label class="radio-item">
-              <input type="radio" [(ngModel)]="inspectionFormData().disposition" value="Discount">
+              <input type="radio" [(ngModel)]="inspectionDraft.disposition" name="disp" value="Discount" />
               <span>Discount</span>
             </label>
             <label class="radio-item">
-              <input type="radio" [(ngModel)]="inspectionFormData().disposition" value="Scrap">
+              <input type="radio" [(ngModel)]="inspectionDraft.disposition" name="disp" value="Scrap" />
               <span>Scrap</span>
             </label>
             <label class="radio-item">
-              <input type="radio" [(ngModel)]="inspectionFormData().disposition" value="Re-inspect">
+              <input type="radio" [(ngModel)]="inspectionDraft.disposition" name="disp" value="Re-inspect" />
               <span>Re-inspect</span>
             </label>
           </div>
         </div>
+
+        <div class="form-section">
+          <label>General comments</label>
+          <textarea [(ngModel)]="inspectionDraft.comments" name="genc" rows="2"></textarea>
+        </div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-secondary" (click)="closeModal()">Cancel</button>
-        <button class="btn btn-secondary">Save Draft</button>
-        <button class="btn btn-primary" (click)="submitInspection()">Submit</button>
+        <button type="button" class="btn btn-secondary" (click)="closeModal()">Cancel</button>
+        <button type="button" class="btn btn-primary" (click)="submitInspection()">Submit</button>
       </div>
     </div>
   </div>

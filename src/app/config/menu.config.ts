@@ -1,4 +1,4 @@
-﻿import { ROUTES } from './route.config';
+import { ROUTES } from './route.config';
 
 export interface MenuItem {
   label: string;
@@ -123,6 +123,7 @@ export const complianceOfficerMenuConfig: MenuItem[] = [
 
 export const adminMenuConfig: MenuItem[] = [
   { label: 'Dashboard', route: '/admin/dashboard', icon: 'bi bi-grid-fill' },
+  { label: 'Notifications', route: '/admin/notifications', icon: 'bi bi-bell-fill' },
   {
     label: 'Property Management',
     icon: 'bi bi-building',
@@ -154,17 +155,16 @@ export const adminMenuConfig: MenuItem[] = [
       { label: 'Stock Movements', icon: 'bi bi-arrow-left-right', route: '/admin/inventory/movements' },
       { label: 'Low Stock', icon: 'bi bi-exclamation-triangle', route: '/admin/inventory/low-stock', badge: 3 },
       { label: 'Warehouses', icon: 'bi bi-building', route: '/admin/warehouses' },
-      { label: 'Shelves', icon: 'bi bi-grid-3x3', route: '/admin/shelves' },
+      { label: 'Shelves', icon: 'bi bi-grid-3x3', route: '/admin/shelf-locations' },
       { label: 'Stock Adjustment', icon: 'bi bi-sliders', route: '/admin/inventory/adjustment' },
     ],
   },
   {
     label: 'Requisitions',
     icon: 'bi bi-list-check',
-    badge: 5,
     children: [
       { label: 'All Requests', icon: 'bi bi-list', route: '/admin/requisitions' },
-      { label: 'Pending Approvals', icon: 'bi bi-clock', route: '/admin/requisitions/pending', badge: 5 },
+      { label: 'Pending Approvals', icon: 'bi bi-clock', route: '/admin/requisitions/pending' },
       { label: 'Approved', icon: 'bi bi-check-circle', route: '/admin/requisitions/approved' },
       { label: 'Rejected', icon: 'bi bi-x-circle', route: '/admin/requisitions/rejected' },
       { label: 'Completed', icon: 'bi bi-check2-all', route: '/admin/requisitions/completed' },
@@ -227,6 +227,7 @@ export const storekeeperMenuConfig: MenuItem[] = [
     icon: 'bi bi-building',
     children: [
       { label: 'Warehouse View', route: '/storekeeper/warehouse', icon: 'bi bi-building' },
+      { label: 'Warehouses', route: '/storekeeper/warehouse/warehouses', icon: 'bi bi-building-add' },
       { label: 'Shelf Management', route: '/storekeeper/warehouse/shelves', icon: 'bi bi-grid-3x3' },
       { label: 'QR Code Scanner', route: '/storekeeper/warehouse/scanner', icon: 'bi bi-qr-code-scan' },
     ],
@@ -258,7 +259,6 @@ export const storekeeperMenuConfig: MenuItem[] = [
     icon: 'bi bi-list-check',
     children: [
       { label: 'All Items', route: '/storekeeper/catalog', icon: 'bi bi-boxes' },
-      { label: 'Add New Item', route: '/storekeeper/catalog/add', icon: 'bi bi-plus-circle' },
       { label: 'Categories', route: '/storekeeper/catalog/categories', icon: 'bi bi-tags' },
     ],
   },

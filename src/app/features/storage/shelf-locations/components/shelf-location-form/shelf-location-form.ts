@@ -4,7 +4,7 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { FormBuilder, Validators } from '@angular/forms';
 import { finalize } from 'rxjs';
 
-import { InventoryService, ShelfLocationDto } from '../../../../../core/services/inventory.service';
+import { ShelvesService, ShelfLocationDto } from '../../../../../core/services/shelves.service';
 
 @Component({
   selector: 'app-shelf-location-form',
@@ -18,7 +18,7 @@ export class ShelfLocationForm {
   readonly submitLabel = input('Save Location');
 
   private readonly formBuilder = inject(FormBuilder);
-  private readonly inventoryService = inject(InventoryService);
+  private readonly shelvesService = inject(ShelvesService);
 
   loading = false;
 
@@ -44,20 +44,25 @@ export class ShelfLocationForm {
 
     this.loading = true;
     const formValue = this.form.getRawValue();
+    const shelfCode = [formValue.aisle, formValue.rack, formValue.shelfNumber].filter(Boolean).join('-') || `SH-${Date.now()}`;
+    const shelfName =
+      [formValue.zone, formValue.aisle, formValue.rack, formValue.shelfNumber].filter(Boolean).join(' ').trim() ||
+      'Shelf location';
 
-    this.inventoryService.createShelf({
-      warehouseId: formValue.warehouseId,
-      aisle: formValue.aisle,
-      rack: formValue.rack,
-      shelfNumber: formValue.shelfNumber,
-      zone: formValue.zone,
-      binType: formValue.binType,
-      length: formValue.length,
-      width: formValue.width,
-      height: formValue.height,
-      maxWeight: formValue.maxWeight,
-      capacity: formValue.capacity,
-    }).pipe(finalize(() => this.loading = false))
+    this.shelvesService
+      .create({
+        warehouseId: formValue.warehouseId,
+        shelfCode,
+        shelfName,
+        aisle: formValue.aisle || undefined,
+        section: formValue.rack || undefined,
+        level: formValue.shelfNumber || undefined,
+        position: formValue.zone || undefined,
+        capacity: formValue.capacity || undefined,
+        description: [formValue.binType, `L×W×H: ${formValue.length}×${formValue.width}×${formValue.height}`]
+          .filter(Boolean)
+          .join(' | ') || undefined,
+      }).pipe(finalize(() => this.loading = false))
     .subscribe({
       next: (response) => {
         if (response.success) {

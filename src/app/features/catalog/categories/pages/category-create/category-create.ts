@@ -31,17 +31,24 @@ export class CategoryCreate {
     }
 
     const formValue = this.categoryForm.getRawValue();
-    const created = this.categoryApi.create({
+    this.categoryApi.create({
       name: formValue.name,
       description: formValue.description,
       parentCategoryId: formValue.parentCategoryId || null,
-    });
-
-    this.status.set(`Category "${created.name}" was created.`);
-    this.categoryForm.reset({
-      name: '',
-      description: '',
-      parentCategoryId: '',
+    }).subscribe({
+      next: (res) => {
+        if (res.success) {
+          this.status.set(`Category "${formValue.name}" was created successfully.`);
+          this.categoryForm.reset({
+            name: '',
+            description: '',
+            parentCategoryId: '',
+          });
+        } else {
+          this.status.set('Error: ' + (res.message || 'Failed to create category.'));
+        }
+      },
+      error: () => this.status.set('A server error occurred.')
     });
   }
 }

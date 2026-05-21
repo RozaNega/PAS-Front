@@ -1,0 +1,135 @@
+<div class="siv-create-page req-page">
+  <header class="req-hero">
+    <div class="req-hero__text">
+      <p class="req-hero__eyebrow">Stores &amp; issuance</p>
+      <h1 class="req-hero__title">New store issue voucher</h1>
+      <p class="req-hero__subtitle">
+        Choose an approved service request, confirm quantities to issue from stock, and save — the voucher is created in the database via the StoreIssueVouchers API.
+      </p>
+    </div>
+    <div class="req-hero__actions">
+      <a class="btn btn-outline-secondary" routerLink="/admin/sivs">
+        <i class="bi bi-arrow-left"></i>
+        All SIVs
+      </a>
+    </div>
+  </header>
+
+  <div id="siv-create-banner" class="req-alert" *ngIf="error()" role="alert">
+    <i class="bi bi-exclamation-octagon-fill flex-shrink-0"></i>
+    <span class="flex-grow-1">{{ error() }}</span>
+  </div>
+
+  <section class="req-content siv-create__panel">
+    <div class="siv-create__section">
+      <h2 class="siv-create__h">1. Service request</h2>
+      <p class="siv-create__hint">Only approved requests with pending quantities can be issued.</p>
+      <div class="req-field" style="max-width: 32rem">
+        <label for="srSelect">Approved service request</label>
+        <select
+          id="srSelect"
+          class="form-control"
+          [ngModel]="selectedSrId()"
+          [disabled]="loadingList()"
+          (ngModelChange)="onServiceRequestChange($event)">
+          <option value="">— Select —</option>
+          <option *ngFor="let sr of approvedRequests()" [value]="sr.id">
+            {{ sr.srNumber || sr.id }} · {{ sr.requesterName || 'Requester' }} · {{ sr.department || '—' }}
+          </option>
+        </select>
+      </div>
+      <div class="req-loading" *ngIf="loadingList()" style="padding: 1.5rem">
+        <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+        <span>Loading approved requests…</span>
+      </div>
+    </div>
+
+    <div class="siv-create__section" *ngIf="selectedSrId()">
+      <h2 class="siv-create__h">2. Issue to &amp; notes</h2>
+      <div class="siv-create__meta" *ngIf="detail()">
+        <div><span class="siv-create__label">Requester</span> {{ detail()?.requesterName || '—' }}</div>
+        <div><span class="siv-create__label">Department</span> {{ detail()?.department || '—' }}</div>
+        <div><span class="siv-create__label">SR number</span> {{ detail()?.srNumber || '—' }}</div>
+      </div>
+      <div class="req-field" style="max-width: 40rem">
+        <label for="notes">Notes (optional)</label>
+        <textarea
+          id="notes"
+          class="form-control"
+          rows="2"
+          [ngModel]="notes()"
+          (ngModelChange)="notes.set($event)"
+          placeholder="Internal notes for this issuance…"></textarea>
+      </div>
+    </div>
+
+    <div class="siv-create__section" *ngIf="selectedSrId()">
+      <h2 class="siv-create__h">3. Lines to issue</h2>
+      <div class="req-loading" *ngIf="loadingDetail()" style="padding: 1.5rem">
+        <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+        <span>Loading line items…</span>
+      </div>
+      <div class="req-table-wrap" *ngIf="!loadingDetail() && draftLines().length">
+        <table class="req-table">
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th>SKU</th>
+              <th>UoM</th>
+              <th>Pending</th>
+              <th>Issue qty</th>
+              <th>Shelf ID (optional)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let line of draftLines(); let i = index">
+              <td>{{ line.itemName }}</td>
+              <td class="tabular-nums">{{ line.sku }}</td>
+              <td>{{ line.unitOfMeasure }}</td>
+              <td class="tabular-nums">{{ line.pendingQty }}</td>
+              <td style="width: 8rem">
+                <input
+                  type="number"
+                  class="form-control form-control-sm"
+                  min="0"
+                  [max]="line.pendingQty"
+                  [value]="line.issuedQty"
+                  (input)="updateLineQty(i, +$any($event.target).value)" />
+              </td>
+              <td style="min-width: 12rem">
+                <input
+                  type="text"
+                  class="form-control form-control-sm"
+                  placeholder="GUID if known"
+                  [value]="line.shelfId"
+                  (input)="updateLineShelf(i, $any($event.target).value)" />
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="siv-create__hint" *ngIf="!loadingDetail() && selectedSrId() && !draftLines().length && !error()">
+        No issuable lines for this request.
+      </p>
+    </div>
+
+    <div class="siv-create__footer">
+      <button type="button" class="btn btn-outline-secondary" (click)="cancel()" [disabled]="submitting()">Cancel</button>
+      <div class="siv-create__submit-wrap">
+        <button
+          type="button"
+          class="btn btn-primary"
+          (click)="submit()"
+          [disabled]="submitting() || loadingDetail()">
+          <span *ngIf="submitting()" class="spinner-border spinner-border-sm me-1" role="status"></span>
+          Create SIV
+        </button>
+        <p class="siv-create__submit-hint">
+          You must choose a service request above. If the lines table is empty, that SR has nothing left to issue or the API did not return line items.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <footer class="req-footer">AFRICOM Asset Management Platform · {{ currentYear }}</footer>
+</div>

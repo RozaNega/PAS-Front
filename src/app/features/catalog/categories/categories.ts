@@ -1,46 +1,34 @@
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-
-import { CategoryCreate } from './pages/category-create/category-create';
-import { CategoryDetail } from './pages/category-detail/category-detail';
-import { CategoryEdit } from './pages/category-edit/category-edit';
-import { CategoryTree as CategoryTreeComponent } from './components/category-tree/category-tree';
 import { CategoryApi } from './services/category-api';
 
 @Component({
   selector: 'app-categories',
-  imports: [
-    CommonModule,
-    ReactiveFormsModule,
-    RouterLink,
-    CategoryCreate,
-    CategoryEdit,
-    CategoryDetail,
-    CategoryTreeComponent,
-  ],
+  standalone: true,
+  imports: [CommonModule, ReactiveFormsModule, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './categories.html',
   styleUrl: './categories.css',
 })
 export class Categories {
-  private readonly formBuilder = inject(FormBuilder);
-  private readonly categoryApi = inject(CategoryApi);
+  protected readonly categoryApi = inject(CategoryApi);
+  private readonly fb = inject(FormBuilder);
 
-  protected readonly currentView = signal<'list' | 'tree' | 'create' | 'edit' | 'detail'>('list');
   protected readonly searchTerm = signal('');
   protected readonly selectedParentFilter = signal('all');
-  protected readonly selectedSort = signal<'name' | 'items' | 'children'>('name');
-  protected readonly activePreset = signal<'priority' | 'structure' | 'inventory'>('structure');
-  protected readonly showCreatePanel = signal(false);
-  protected readonly createTone = signal<'neutral' | 'success' | 'error'>('neutral');
-  protected readonly createMessage = signal('Create and organize catalog categories in the new workspace.');
-  protected readonly totalCategories = this.categoryApi.totalCategoryCount;
-  protected readonly totalItems = this.categoryApi.totalItemCount;
-  protected readonly rootCategoryCount = computed(() => this.categoryApi.rootCategories().length);
+  protected readonly selectedSort = signal('name');
+  protected readonly isLoading = signal(false);
+  protected readonly currentView = signal('list');
 
-  protected readonly categoryForm = this.formBuilder.nonNullable.group({
+  protected readonly categoryForm = this.fb.nonNullable.group({
     name: ['', [Validators.required, Validators.minLength(2)]],
     description: ['', [Validators.required, Validators.minLength(4)]],
     parentCategoryId: [''],
@@ -55,7 +43,7 @@ export class Categories {
       const matchesSearch =
         !term ||
         category.name.toLowerCase().includes(term) ||
-        category.description.toLowerCase().includes(term) ||
+        (category.description ?? '').toLowerCase().includes(term) ||
         (category.parentCategoryName?.toLowerCase().includes(term) ?? false);
       const matchesParent =
         parentFilter === 'all' ||
@@ -66,11 +54,11 @@ export class Categories {
 
     return [...filtered].sort((a, b) => {
       if (sort === 'items') {
-        return b.itemsCount - a.itemsCount;
+        return (b.itemsCount ?? 0) - (a.itemsCount ?? 0);
       }
 
       if (sort === 'children') {
-        return b.subCategoriesCount - a.subCategoriesCount;
+        return (b.subCategoriesCount ?? 0) - (a.subCategoriesCount ?? 0);
       }
 
       return a.name.localeCompare(b.name);
@@ -79,8 +67,8 @@ export class Categories {
 
   protected readonly quickStats = computed(() => {
     const categories = this.categories();
-    const totalItems = categories.reduce((sum, category) => sum + category.itemsCount, 0);
-    const childCount = categories.reduce((sum, category) => sum + category.subCategoriesCount, 0);
+    const totalItems = categories.reduce((sum, category) => sum + (category.itemsCount ?? 0), 0);
+    const childCount = categories.reduce((sum, category) => sum + (category.subCategoriesCount ?? 0), 0);
     const deepest = categories.find((category) => category.parentCategoryId !== null) ?? categories[0];
 
     return [
@@ -97,89 +85,46 @@ export class Categories {
     ...this.categoryApi.categories().map((category) => ({ label: category.name, value: category.id })),
   ]);
 
-  protected setView(view: 'list' | 'tree' | 'create' | 'edit' | 'detail'): void {
-    this.currentView.set(view);
-  }
-
-  protected openCreatePanel(): void {
-    this.currentView.set('create');
-    this.showCreatePanel.set(true);
-    this.createTone.set('neutral');
-    this.createMessage.set('Fill out the category details to add a new catalog node.');
-  }
-
-  protected closeCreatePanel(): void {
-    this.showCreatePanel.set(false);
-  }
-
-  protected saveCategory(): void {
-    if (this.categoryForm.invalid) {
-      this.categoryForm.markAllAsTouched();
-      this.createTone.set('error');
-      this.createMessage.set('Please complete the required category fields before saving.');
-      return;
-    }
-
-    const value = this.categoryForm.getRawValue();
-    const created = this.categoryApi.create({
-      name: value.name,
-      description: value.description,
-      parentCategoryId: value.parentCategoryId || null,
-    });
-
-    this.createTone.set('success');
-    this.createMessage.set(`Category ${created.name} was created successfully.`);
-    this.categoryForm.reset({
-      name: '',
-      description: '',
-      parentCategoryId: '',
-    });
-    this.showCreatePanel.set(false);
-    this.currentView.set('list');
+  protected setSearchTerm(term: string): void {
+    this.searchTerm.set(term);
   }
 
   protected setParentFilter(value: string): void {
     this.selectedParentFilter.set(value);
   }
 
-  protected setSearchTerm(value: string): void {
-    this.searchTerm.set(value);
-  }
-
-  protected setSort(value: 'name' | 'items' | 'children'): void {
+  protected setSort(value: string): void {
     this.selectedSort.set(value);
   }
 
-  protected activatePreset(preset: 'priority' | 'structure' | 'inventory'): void {
-    this.activePreset.set(preset);
-
-    if (preset === 'priority') {
-      this.currentView.set('list');
-      this.selectedSort.set('items');
-      this.selectedParentFilter.set('all');
-      return;
-    }
-
-    if (preset === 'structure') {
-      this.currentView.set('tree');
-      this.selectedSort.set('children');
-      this.selectedParentFilter.set('all');
-      return;
-    }
-
-    this.currentView.set('list');
-    this.selectedSort.set('name');
-    this.selectedParentFilter.set('root');
+  protected setView(view: string): void {
+    this.currentView.set(view);
   }
 
-  protected clearFilters(): void {
-    this.searchTerm.set('');
-    this.selectedParentFilter.set('all');
-    this.selectedSort.set('name');
-    this.activePreset.set('structure');
+  protected openCreatePanel(): void {
+    this.currentView.set('create');
   }
 
-  protected trackByCategory(_: number, category: { id: string }): string {
-    return category.id;
+  protected saveCategory(): void {
+    if (this.categoryForm.invalid) return;
+
+    this.isLoading.set(true);
+    const payload = this.categoryForm.getRawValue();
+    this.categoryApi.create(payload).subscribe({
+      next: (res) => {
+        if (res.success) {
+          this.categoryForm.reset();
+          this.currentView.set('list');
+        }
+        this.isLoading.set(false);
+      },
+      error: () => this.isLoading.set(false)
+    });
+  }
+
+  protected removeCategory(id: string): void {
+    if (confirm('Delete this category?')) {
+      this.categoryApi.remove(id);
+    }
   }
 }

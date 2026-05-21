@@ -9,7 +9,7 @@
       <span>Select item</span>
       <select [value]="selectedItemId()" (change)="updateSelection($any($event.target).value)">
         @for (item of items(); track item.id) {
-          <option [value]="item.id">{{ item.sku }} - {{ item.name }}</option>
+          <option [value]="item.id">{{ item.sku }} - {{ item.itemName }}</option>
         }
       </select>
     </label>
@@ -22,7 +22,7 @@
 
       <label>
         <span>Name</span>
-        <input type="text" formControlName="name" />
+        <input type="text" formControlName="itemName" />
       </label>
 
       <div class="grid-two">
@@ -37,30 +37,21 @@
         </label>
       </div>
 
-      <div class="grid-three">
+      <div class="grid-two">
         <label>
           <span>UoM</span>
           <input type="text" formControlName="unitOfMeasure" />
         </label>
 
         <label>
-          <span>Price</span>
-          <input type="number" formControlName="price" />
-        </label>
-
-        <label>
           <span>Stock</span>
-          <input type="number" formControlName="stockOnHand" />
+          <input type="number" formControlName="stockQuantity" />
         </label>
       </div>
 
-      <label>
-        <span>Status</span>
-        <select formControlName="status">
-          <option value="active">Active</option>
-          <option value="draft">Draft</option>
-          <option value="archived">Archived</option>
-        </select>
+      <label class="checkbox-label">
+        <input type="checkbox" formControlName="isActive" />
+        <span>Is Active</span>
       </label>
 
       <button type="submit">Save changes</button>

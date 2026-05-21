@@ -1,3 +1,171 @@
-﻿<section class="page">
-  <h1>Supplier Form</h1>
-</section>
+<div class="supplier-form-page">
+  <!-- Header -->
+  <div class="form-header">
+    <div class="header-icon">
+      <i class="bi bi-truck"></i>
+    </div>
+    <div class="header-content">
+      <h1>{{ isEditMode ? 'Edit Supplier' : 'Add New Supplier' }}</h1>
+      <p>{{ isEditMode ? 'Update supplier information' : 'Create a new supplier record' }}</p>
+    </div>
+  </div>
+
+  <!-- Form Container -->
+  <div class="form-container">
+    <form [formGroup]="supplierForm" (ngSubmit)="onSubmit()">
+      <!-- Basic Information -->
+      <div class="form-section">
+        <div class="section-title">
+          <i class="bi bi-info-circle"></i>
+          <span>Basic Information</span>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-field">
+            <label for="name">Supplier Name *</label>
+            <div class="input-wrapper">
+              <i class="bi bi-building input-icon"></i>
+              <input 
+                type="text" 
+                id="name" 
+                formControlName="name" 
+                class="form-input" 
+                placeholder="Enter supplier name"
+              >
+            </div>
+            <div class="error-text" *ngIf="f['name'].invalid && f['name'].touched">
+              Supplier name is required (min 2 characters)
+            </div>
+          </div>
+
+          <div class="form-field">
+            <label for="contactPerson">Contact Person</label>
+            <div class="input-wrapper">
+              <i class="bi bi-person input-icon"></i>
+              <input 
+                type="text" 
+                id="contactPerson" 
+                formControlName="contactPerson" 
+                class="form-input" 
+                placeholder="Contact person name"
+              >
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Contact Information -->
+      <div class="form-section">
+        <div class="section-title">
+          <i class="bi bi-telephone"></i>
+          <span>Contact Information</span>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-field">
+            <label for="email">Email</label>
+            <div class="input-wrapper">
+              <i class="bi bi-envelope input-icon"></i>
+              <input 
+                type="email" 
+                id="email" 
+                formControlName="email" 
+                class="form-input" 
+                placeholder="email@example.com"
+              >
+            </div>
+            <div class="error-text" *ngIf="f['email'].invalid && f['email'].touched">
+              Please enter a valid email address
+            </div>
+          </div>
+
+          <div class="form-field">
+            <label for="phone">Phone</label>
+            <div class="input-wrapper">
+              <i class="bi bi-phone input-icon"></i>
+              <input 
+                type="tel" 
+                id="phone" 
+                formControlName="phone" 
+                class="form-input" 
+                placeholder="Phone number"
+              >
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Address -->
+      <div class="form-section">
+        <div class="section-title">
+          <i class="bi bi-geo-alt"></i>
+          <span>Address</span>
+        </div>
+
+        <div class="form-field full-width">
+          <div class="input-wrapper">
+            <i class="bi bi-geo-alt input-icon"></i>
+            <textarea 
+              id="address" 
+              formControlName="address" 
+              class="form-input" 
+              rows="3"
+              placeholder="Enter supplier address"
+            ></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- Additional Information -->
+      <div class="form-section">
+        <div class="section-title">
+          <i class="bi bi-sliders"></i>
+          <span>Additional Information</span>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-field">
+            <label for="tin">Tax ID (TIN)</label>
+            <div class="input-wrapper">
+              <i class="bi bi-receipt input-icon"></i>
+              <input 
+                type="text" 
+                id="tin" 
+                formControlName="tin" 
+                class="form-input" 
+                placeholder="Optional — leave blank to auto-generate a unique TIN"
+              >
+            </div>
+            <div class="error-text" *ngIf="f['tin'].invalid && f['tin'].touched">
+              If provided, Tax ID must be at least 3 characters
+            </div>
+          </div>
+
+          <div class="form-field">
+            <label for="isActive">Status</label>
+            <div class="input-wrapper">
+              <i class="bi bi-toggle-on input-icon"></i>
+              <select id="isActive" formControlName="isActive" class="form-input">
+                <option [ngValue]="true">Active</option>
+                <option [ngValue]="false">Inactive</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Form Actions -->
+      <div class="form-actions">
+        <button type="button" class="action-btn cancel" (click)="onCancel()" [disabled]="isLoading">
+          <i class="bi bi-x-circle"></i>
+          Cancel
+        </button>
+        <button type="submit" class="action-btn submit" [disabled]="isLoading || supplierForm.invalid">
+          <i class="bi" [class.bi-check-circle]="!isLoading" [class.bi-hourglass-split]="isLoading"></i>
+          <span *ngIf="!isLoading">{{ isEditMode ? 'Update Supplier' : 'Create Supplier' }}</span>
+          <span *ngIf="isLoading">{{ isEditMode ? 'Updating...' : 'Creating...' }}</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

@@ -6,7 +6,7 @@
     </div>
     <div class="header-actions">
       <span class="employee-count">Total: {{ totalEmployees() }} employees</span>
-      <button type="button" class="btn btn-primary">
+      <button type="button" class="btn btn-primary" [routerLink]="['/admin/users/employees/add']">
         <i class="bi bi-plus-lg"></i>
         Add New Employee
       </button>
@@ -21,6 +21,10 @@
     </div>
   </div>
 
+  @if (error()) {
+    <div class="alert alert-danger mb-3" role="alert">{{ error() }}</div>
+  }
+
   <!-- Filter Bar -->
   <div class="filter-bar">
     <div class="filter-group">
@@ -31,31 +35,31 @@
       <div class="filter-field">
         <i class="bi bi-building"></i>
         <select [value]="departmentFilter()" (change)="onDepartmentFilter($event)">
-          <option>All Departments</option>
-          <option>IT</option>
-          <option>HR</option>
-          <option>Finance</option>
-          <option>Operations</option>
-          <option>Warehouse</option>
+          <option value="All">All Departments</option>
+          <option value="IT">IT</option>
+          <option value="HR">HR</option>
+          <option value="Finance">Finance</option>
+          <option value="Operations">Operations</option>
+          <option value="Warehouse">Warehouse</option>
         </select>
       </div>
       <div class="filter-field">
         <i class="bi bi-shield-check"></i>
         <select [value]="statusFilter()" (change)="onStatusFilter($event)">
-          <option>All Status</option>
-          <option>Active</option>
-          <option>Inactive</option>
-          <option>On Leave</option>
+          <option value="All">All Status</option>
+          <option value="Active">Active</option>
+          <option value="Inactive">Inactive</option>
+          <option value="On Leave">On Leave</option>
         </select>
       </div>
       <div class="filter-field">
         <i class="bi bi-person-badge"></i>
         <select [value]="positionFilter()" (change)="onPositionFilter($event)">
-          <option>All Positions</option>
-          <option>Manager</option>
-          <option>Officer</option>
-          <option>Staff</option>
-          <option>Intern</option>
+          <option value="All">All Positions</option>
+          <option value="Manager">Manager</option>
+          <option value="Officer">Officer</option>
+          <option value="Staff">Staff</option>
+          <option value="Intern">Intern</option>
         </select>
       </div>
     </div>

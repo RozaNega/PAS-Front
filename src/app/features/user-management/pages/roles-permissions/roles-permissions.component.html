@@ -23,7 +23,7 @@
         </div>
       </div>
       <div class="roles-list">
-        @for (role of roles; track role.id) {
+        @for (role of roles(); track role.id) {
           <div class="role-item {{ selectedRole() === role.id ? 'selected' : '' }}" (click)="selectRole(role.id)">
             <div class="role-indicator role-{{ role.color }}"></div>
             <div class="role-info">
@@ -130,7 +130,7 @@
             <div class="form-field">
               <select>
                 <option value="">Select role to copy permissions from...</option>
-                @for (role of roles; track role.id) {
+                @for (role of roles(); track role.id) {
                   <option [value]="role.id">{{ role.name }}</option>
                 }
               </select>

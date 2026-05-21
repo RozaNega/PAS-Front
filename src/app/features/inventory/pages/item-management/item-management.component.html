@@ -1,0 +1,166 @@
+<div class="item-management-page">
+  <div class="page-header">
+    <div class="header-content">
+      <div class="header-left">
+        <h1>{{ isNew() ? 'Add New Item' : 'Edit Item' }}</h1>
+        <p>{{ isNew() ? 'Create a new inventory item' : 'Update item details' }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Success Message -->
+  <div class="alert alert-success" *ngIf="success()">
+    <i class="bi bi-check-circle"></i>
+    <strong>Success!</strong> Item has been {{ isNew() ? 'created' : 'updated' }} successfully. Redirecting...
+  </div>
+
+  <!-- Error Message -->
+  <div class="alert alert-danger" *ngIf="error()">
+    <i class="bi bi-exclamation-triangle"></i>
+    <strong>Error:</strong> {{ error() }}
+  </div>
+
+  <div class="form-card">
+    <form (ngSubmit)="saveItem()">
+      <!-- Basic Information Section -->
+      <div class="form-section">
+        <h3>Basic Information</h3>
+
+        <div class="form-group">
+          <label for="itemName">Item Name *</label>
+          <input
+            type="text"
+            id="itemName"
+            class="form-control"
+            [(ngModel)]="itemName"
+            name="itemName"
+            required
+            placeholder="Enter item name">
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="sku">SKU *</label>
+            <input
+              type="text"
+              id="sku"
+              class="form-control"
+              [(ngModel)]="sku"
+              name="sku"
+              required
+              placeholder="e.g. LAP-HP-001">
+          </div>
+          <div class="form-group">
+            <label for="unitOfMeasure">Unit of Measure</label>
+            <select id="unitOfMeasure" class="form-control" [(ngModel)]="unitOfMeasure" name="unitOfMeasure">
+              <option *ngFor="let unit of unitOptions" [value]="unit">{{ unit }}</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="description">Description</label>
+          <textarea
+            id="description"
+            class="form-control"
+            [(ngModel)]="description"
+            name="description"
+            rows="3"
+            placeholder="Item description"></textarea>
+        </div>
+      </div>
+
+      <!-- Location Section -->
+      <div class="form-section">
+        <h3>Location & Storage</h3>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="warehouseId">Warehouse *</label>
+            <select
+              id="warehouseId"
+              class="form-control"
+              [(ngModel)]="warehouseId"
+              name="warehouseId"
+              (change)="onWarehouseChange()"
+              required>
+              <option value="">-- Select Warehouse --</option>
+              <option *ngFor="let wh of warehouses()" [value]="wh.id">
+                {{ wh.warehouseName }}
+              </option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="shelfId">Shelf *</label>
+            <select
+              id="shelfId"
+              class="form-control"
+              [(ngModel)]="shelfId"
+              name="shelfId"
+              required
+              [disabled]="!warehouseId">
+              <option value="">-- Select Shelf --</option>
+              <option *ngFor="let shelf of shelves()" [value]="shelf.id">
+                {{ shelf.shelfName }}
+              </option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stock Thresholds Section -->
+      <div class="form-section">
+        <h3>Stock Thresholds</h3>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="minimumThreshold">Minimum Threshold</label>
+            <input
+              type="number"
+              id="minimumThreshold"
+              class="form-control"
+              [(ngModel)]="minimumThreshold"
+              name="minimumThreshold"
+              min="0"
+              placeholder="Minimum stock level">
+          </div>
+
+          <div class="form-group">
+            <label for="maximumThreshold">Maximum Threshold</label>
+            <input
+              type="number"
+              id="maximumThreshold"
+              class="form-control"
+              [(ngModel)]="maximumThreshold"
+              name="maximumThreshold"
+              min="0"
+              placeholder="Maximum stock level">
+          </div>
+
+          <div class="form-group">
+            <label for="reorderQuantity">Reorder Quantity</label>
+            <input
+              type="number"
+              id="reorderQuantity"
+              class="form-control"
+              [(ngModel)]="reorderQuantity"
+              name="reorderQuantity"
+              min="0"
+              placeholder="Quantity to reorder">
+          </div>
+        </div>
+      </div>
+
+      <!-- Form Actions -->
+      <div class="form-actions">
+        <button type="button" class="btn btn-outline-secondary" (click)="cancel()" [disabled]="loading()">
+          <i class="bi bi-x"></i> Cancel
+        </button>
+        <button type="submit" class="btn btn-primary" [disabled]="loading()">
+          <i class="bi bi-check"></i> {{ loading() ? 'Saving...' : 'Save Item' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

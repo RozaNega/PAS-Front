@@ -1,8 +1,16 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ServiceRequestService } from '../../../../features/requisition/service-requests/services/service-request.service';
-import { ServiceRequestDetail, ServiceRequestTimeline, ServiceRequestActivity, CancelServiceRequestRequest } from '../../../../features/requisition/service-requests/models/service-request.model';
+import {
+  ServiceRequestService,
+  ServiceRequestDto,
+} from '../../../../features/requisition/service-requests/services/service-request.service';
+import {
+  ServiceRequestTimeline,
+  ServiceRequestActivity,
+  CancelServiceRequestRequest,
+} from '../../../../features/requisition/service-requests/models/service-request.model';
+import { ApiResponse } from '../../../../types/api-response.type';
 
 interface Request {
   id: string;
@@ -86,7 +94,7 @@ export class ApprovedRequestsComponent implements OnInit {
       sendEmailConfirmation: this.sendEmailConfirmation()
     };
 
-    this.serviceRequestService.cancelServiceRequest(request).subscribe({
+    this.serviceRequestService.cancel(request).subscribe({
       next: () => {
         // Remove the request from the list
         const requests = this.requests();
@@ -99,7 +107,7 @@ export class ApprovedRequestsComponent implements OnInit {
         this.showCancelConfirm.set(null);
         this.showCancelSuccess.set(requestId);
       },
-      error: (err) => {
+      error: (err: unknown) => {
         console.error('Error cancelling request:', err);
         alert('Failed to cancel request. Please try again.');
       }
@@ -136,27 +144,35 @@ export class ApprovedRequestsComponent implements OnInit {
     this.isLoading.set(true);
     this.error.set(null);
     
-    this.serviceRequestService.getServiceRequests().subscribe({
-      next: (response) => {
-        const mappedRequests: Request[] = response.data.items.map(sr => ({
+    this.serviceRequestService.getAll({ status: 'Approved' }).subscribe({
+      next: (response: ApiResponse<ServiceRequestDto[]>) => {
+        if (response.success === false || !Array.isArray(response.data)) {
+          this.error.set(response.message || 'Failed to load requests');
+          this.isLoading.set(false);
+          return;
+        }
+        const mappedRequests: Request[] = response.data.map((sr) => ({
           id: sr.id,
           srNumber: sr.srNumber,
+          title: sr.purpose,
+          description: sr.notes,
+          priority: sr.urgency,
           status: sr.status,
+          approvedDate: sr.requestDate,
           canCancel: sr.status === 'Draft' || sr.status === 'Pending',
           currentStep: this.getCurrentStepFromStatus(sr.status),
           totalSteps: 5,
           items: [],
-          activityLog: []
+          activityLog: [],
         }));
         this.requests.set(mappedRequests);
         this.isLoading.set(false);
-        console.log('Loaded requests:', mappedRequests);
       },
-      error: (err) => {
+      error: (err: unknown) => {
         this.error.set('Failed to load requests');
         this.isLoading.set(false);
         console.error('Error loading requests:', err);
-      }
+      },
     });
   }
 
@@ -186,33 +202,39 @@ export class ApprovedRequestsComponent implements OnInit {
     this.trackingError.set(null);
     
     // Load timeline and activity in parallel
-    this.serviceRequestService.getServiceRequestTimeline(requestId).subscribe({
-      next: (response) => {
+    this.serviceRequestService.getTimeline(requestId).subscribe({
+      next: (response: ApiResponse<unknown>) => {
         const current = this.trackingData();
         this.trackingData.set({
           ...current,
-          [requestId]: { ...current[requestId], timeline: response.data }
+          [requestId]: {
+            ...current[requestId],
+            timeline: response.data as ServiceRequestTimeline | undefined,
+          },
         });
         this.isLoadingTracking.set(null);
       },
-      error: (err) => {
+      error: (err: unknown) => {
         console.error('Error loading timeline:', err);
         this.trackingError.set('Failed to load timeline');
         this.isLoadingTracking.set(null);
-      }
+      },
     });
 
-    this.serviceRequestService.getServiceRequestActivity(requestId).subscribe({
-      next: (response) => {
+    this.serviceRequestService.getActivity(requestId).subscribe({
+      next: (response: ApiResponse<unknown[]>) => {
         const current = this.trackingData();
         this.trackingData.set({
           ...current,
-          [requestId]: { ...current[requestId], activity: response.data }
+          [requestId]: {
+            ...current[requestId],
+            activity: (response.data ?? []) as ServiceRequestActivity[],
+          },
         });
       },
-      error: (err) => {
+      error: (err: unknown) => {
         console.error('Error loading activity:', err);
-      }
+      },
     });
   }
 
@@ -226,16 +248,16 @@ export class ApprovedRequestsComponent implements OnInit {
 
   protected addComment(requestId: string): void {
     if (this.newComment().trim()) {
-      this.serviceRequestService.addServiceRequestComment(requestId, this.newComment()).subscribe({
+      this.serviceRequestService.addComment(requestId, this.newComment().trim()).subscribe({
         next: () => {
           this.newComment.set('');
           // Reload activity log to show new comment
           this.loadTrackingData(requestId);
         },
-        error: (err) => {
+        error: (err: unknown) => {
           console.error('Error adding comment:', err);
           alert('Failed to add comment');
-        }
+        },
       });
     }
   }

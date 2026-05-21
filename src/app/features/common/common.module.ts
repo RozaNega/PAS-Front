@@ -2,9 +2,8 @@ import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { SharedModule } from '../../shared/shared.module';
 
-// Notifications
+// Notifications (standalone; imported for legacy child route)
 import { NotificationListComponent } from './notifications/pages/notification-list/notification-list.component';
-import { NotificationService } from './notifications/services/notification-feature.service';
 
 // Documents
 import { DocumentListComponent } from './documents/pages/document-list/document-list.component';
@@ -21,8 +20,8 @@ const routes: Routes = [
 ];
 
 @NgModule({
-  declarations: [NotificationListComponent, DocumentListComponent, AuditTrailComponent],
-  imports: [SharedModule, RouterModule.forChild(routes)],
-  providers: [NotificationService, DocumentService, AuditTrailService],
+  declarations: [DocumentListComponent, AuditTrailComponent],
+  imports: [SharedModule, RouterModule.forChild(routes), NotificationListComponent],
+  providers: [DocumentService, AuditTrailService],
 })
 export class CommonModule {}

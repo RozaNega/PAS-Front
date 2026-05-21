@@ -1,163 +1,435 @@
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
+import { finalize } from 'rxjs';
 import { ItemMasterApi } from './services/item-master-api';
-import { ItemRecord, ItemStatus } from './models/models';
+import { CategoriesService, CategoryDto } from '../../../core/services/categories.service';
+import { ItemMasterBulkUpdateRequest, ItemMasterListDto } from '../../../core/services/item-master.service';
+
+interface PageNotice {
+  type: 'success' | 'error' | 'info';
+  title: string;
+  message: string;
+}
 
 @Component({
   selector: 'app-item-master',
-  imports: [CommonModule, ReactiveFormsModule, RouterLink],
+  standalone: true,
+  imports: [CommonModule, ReactiveFormsModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './item-master.html',
-  styleUrl: './item-master.css',
+  styleUrls: ['./item-master.css'],
 })
 export class ItemMaster {
-  private readonly formBuilder = inject(FormBuilder);
   private readonly itemApi = inject(ItemMasterApi);
+  private readonly categoriesService = inject(CategoriesService);
+  private readonly fb = inject(FormBuilder);
 
   protected readonly searchTerm = signal('');
   protected readonly categoryFilter = signal('all');
-  protected readonly statusFilter = signal<'all' | ItemStatus>('all');
+  protected readonly statusFilter = signal<'all' | 'healthy' | 'lowStock' | 'outOfStock'>('all');
   protected readonly selectedSort = signal<'name' | 'stock' | 'price'>('name');
-  protected readonly showCreatePanel = signal(false);
-  protected readonly createMessage = signal('Create a new item record to add it to the list.');
-  protected readonly createTone = signal<'neutral' | 'success' | 'error'>('neutral');
+  protected readonly selectedIds = signal<Set<string>>(new Set());
+  protected readonly categoryList = signal<CategoryDto[]>([]);
 
-  protected readonly createForm = this.formBuilder.nonNullable.group({
-    sku: ['', [Validators.required]],
-    name: ['', [Validators.required, Validators.minLength(3)]],
-    categoryName: ['Food Staples', [Validators.required]],
-    unitOfMeasure: ['Box', [Validators.required]],
-    price: [0, [Validators.required, Validators.min(0)]],
-    stockOnHand: [0, [Validators.required, Validators.min(0)]],
-    status: ['draft' as ItemStatus, [Validators.required]],
+  protected readonly showCreatePanel = signal(false);
+  protected readonly showEditModal = signal(false);
+  protected readonly editingItem = signal<ItemMasterListDto | null>(null);
+  protected readonly showQrModal = signal(false);
+  protected readonly showBulkActionModal = signal(false);
+  protected readonly activeBulkAction = signal<'edit' | 'adjust' | null>(null);
+  protected readonly qrItems = signal<ItemMasterListDto[]>([]);
+  protected readonly notice = signal<PageNotice | null>(null);
+  protected readonly isSubmitting = signal(false);
+  protected readonly isLoading = this.itemApi.isLoading;
+
+  protected readonly createForm = this.fb.nonNullable.group({
+    sku: ['', [Validators.required, Validators.minLength(3)]],
+    itemName: ['', [Validators.required, Validators.minLength(2)]],
+    categoryId: ['', [Validators.required]],
+    unitOfMeasure: ['PCS', [Validators.required]],
+    stockQuantity: [0, [Validators.required, Validators.min(0)]],
+    requiresInspection: [false],
+    minStockLevel: [0, [Validators.required, Validators.min(0)]],
   });
 
-  protected readonly totalItems = this.itemApi.items;
-  protected readonly activeItemCount = this.itemApi.activeItemCount;
-  protected readonly totalStock = this.itemApi.totalStock;
+  protected readonly editForm = this.fb.nonNullable.group({
+    sku: ['', [Validators.required, Validators.minLength(3)]],
+    itemName: ['', [Validators.required, Validators.minLength(2)]],
+    categoryId: ['', [Validators.required]],
+    unitOfMeasure: ['PCS', [Validators.required]],
+    requiresInspection: [false],
+    minStockLevel: [0, [Validators.required, Validators.min(0)]],
+  });
+
+  protected readonly bulkActionForm = this.fb.nonNullable.group({
+    categoryId: [''],
+    unitOfMeasure: [''],
+    requiresInspection: [false],
+    minStockAdjustment: [0],
+  });
+
+  constructor() {
+    this.categoriesService.getAll({ includeInactive: false }).subscribe({
+      next: (response) => {
+        if (response.success && response.data) {
+          this.categoryList.set(response.data);
+        }
+      },
+      error: (error) => {
+        console.error('Failed to load categories for item master:', error);
+      },
+    });
+  }
 
   protected readonly categories = computed(() => {
-    const uniqueCategories = new Set(this.totalItems().map((item) => item.categoryName));
-    return ['all', ...uniqueCategories];
-  });
-
-  protected readonly summaryCards = computed(() => {
-    const items = this.filteredItems();
-    const activeCount = items.filter((item) => item.status === 'active').length;
-    const draftCount = items.filter((item) => item.status === 'draft').length;
-    const totalStock = items.reduce((sum, item) => sum + item.stockOnHand, 0);
-    const averagePrice = items.length
-      ? items.reduce((sum, item) => sum + item.price, 0) / items.length
-      : 0;
-
-    return [
-      {
-        label: 'SKU',
-        value: items.length.toString().padStart(2, '0'),
-        subtext: 'Tracked items',
-        accent: 'violet',
-        spark: [18, 42, 35, 48, 52],
-      },
-      {
-        label: 'Item Name',
-        value: activeCount.toString().padStart(2, '0'),
-        subtext: 'Active records',
-        accent: 'blue',
-        spark: [32, 28, 40, 48, 44],
-      },
-      {
-        label: 'Status',
-        value: draftCount.toString().padStart(2, '0'),
-        subtext: 'Draft items',
-        accent: 'pink',
-        spark: [14, 20, 18, 30, 24],
-      },
-      {
-        label: 'Stock',
-        value: totalStock.toString().padStart(2, '0'),
-        subtext: 'Units on hand',
-        accent: 'emerald',
-        spark: [28, 36, 44, 41, 49],
-      },
-      {
-        label: 'Open Rate',
-        value: `ETB ${averagePrice.toFixed(2)}`,
-        subtext: 'Average price',
-        accent: 'amber',
-        spark: [16, 22, 28, 34, 30],
-      },
-    ];
-  });
-
-  protected readonly statusBadges = [
-    { label: 'All records', value: 'all' as const },
-    { label: 'Active', value: 'active' as const },
-    { label: 'Draft', value: 'draft' as const },
-    { label: 'Archived', value: 'archived' as const },
-  ];
-
-  protected readonly quickStats = computed(() => {
-    const items = this.filteredItems();
-    const totalStock = items.reduce((sum, item) => sum + item.stockOnHand, 0);
-    const lowStock = items.filter((item) => item.stockOnHand < 100).length;
-    const highestStockItem = [...items].sort((a, b) => b.stockOnHand - a.stockOnHand)[0];
-
-    return [
-      { label: 'Total Items', value: items.length.toString(), tone: 'violet' },
-      { label: 'Low Stock', value: lowStock.toString(), tone: 'amber' },
-      { label: 'Total Stock', value: totalStock.toString(), tone: 'blue' },
-      { label: 'Top Item', value: highestStockItem?.name ?? 'N/A', tone: 'emerald' },
-    ];
+    return this.categoryList();
   });
 
   protected readonly filteredItems = computed(() => {
-    const term = this.searchTerm().trim().toLowerCase();
-    const categoryFilter = this.categoryFilter();
-    const statusFilter = this.statusFilter();
+    const items = this.itemApi.items();
+    const term = this.searchTerm().toLowerCase().trim();
+    const cat = this.categoryFilter();
+    const status = this.statusFilter();
     const sort = this.selectedSort();
 
-    const filtered = this.totalItems().filter((item) => {
+    let result = items.filter((item) => {
+      const currentStock = item.currentStock ?? item.stockQuantity ?? 0;
+      const minStockLevel = item.minStockLevel ?? item.minimumThreshold ?? 0;
+      const categoryName = item.categoryName || '';
+
       const matchesSearch =
         !term ||
         item.sku.toLowerCase().includes(term) ||
-        item.name.toLowerCase().includes(term) ||
-        item.categoryName.toLowerCase().includes(term);
-      const matchesCategory = categoryFilter === 'all' || item.categoryName === categoryFilter;
-      const matchesStatus = statusFilter === 'all' || item.status === statusFilter;
+        item.itemName.toLowerCase().includes(term) ||
+        categoryName.toLowerCase().includes(term);
+
+      const matchesCategory = cat === 'all' || item.categoryId === cat;
+      const matchesStatus =
+        status === 'all' ||
+        (status === 'healthy' && currentStock > minStockLevel) ||
+        (status === 'lowStock' && currentStock > 0 && currentStock <= minStockLevel) ||
+        (status === 'outOfStock' && currentStock === 0);
 
       return matchesSearch && matchesCategory && matchesStatus;
     });
 
-    return [...filtered].sort((a, b) => {
-      if (sort === 'stock') {
-        return b.stockOnHand - a.stockOnHand;
-      }
-
-      if (sort === 'price') {
-        return b.price - a.price;
-      }
-
-      return a.name.localeCompare(b.name);
+    return result.sort((a, b) => {
+      if (sort === 'stock') return (b.currentStock ?? 0) - (a.currentStock ?? 0);
+      return a.itemName.localeCompare(b.itemName);
     });
   });
 
-  protected readonly topHighlights = computed(() => {
+  protected readonly totalItems = computed(() => this.itemApi.items().length);
+
+  protected readonly hasSelection = computed(() => this.selectedIds().size > 0);
+
+  protected readonly selectedItemCount = computed(() => this.selectedIds().size);
+
+  protected readonly summaryCards = computed(() => {
     const items = this.filteredItems();
-    const totalStock = items.reduce((sum, item) => sum + item.stockOnHand, 0);
-    const activeCount = items.filter((item) => item.status === 'active').length;
-    const averagePrice = items.length
-      ? items.reduce((sum, item) => sum + item.price, 0) / items.length
-      : 0;
+    const healthyCount = items.filter((item) => (item.currentStock ?? 0) > (item.minStockLevel ?? 0)).length;
+    const lowStockCount = items.filter((item) => {
+      const currentStock = item.currentStock ?? 0;
+      const minStockLevel = item.minStockLevel ?? 0;
+      return currentStock > 0 && currentStock <= minStockLevel;
+    }).length;
+    const outOfStockCount = items.filter((item) => (item.currentStock ?? 0) === 0).length;
 
     return [
-      { label: 'Active Records', value: activeCount },
-      { label: 'Stock Value', value: Math.round(totalStock * averagePrice) },
-      { label: 'Categories', value: this.categories().length - 1 },
-      { label: 'Draft Queue', value: items.filter((item) => item.status === 'draft').length },
+      {
+        label: 'Total Items',
+        value: items.length.toString().padStart(2, '0'),
+        subtext: 'Tracked records',
+        accent: 'violet',
+        spark: [18, 42, 35, 48, 52],
+      },
+      {
+        label: 'Healthy Items',
+        value: healthyCount.toString().padStart(2, '0'),
+        subtext: 'Above minimum level',
+        accent: 'blue',
+        spark: [32, 28, 40, 48, 44],
+      },
+      {
+        label: 'Low Stock',
+        value: lowStockCount.toString().padStart(2, '0'),
+        subtext: 'Requires attention',
+        accent: 'amber',
+        spark: [45, 52, 48, 60, 55],
+      },
+      {
+        label: 'Out of Stock',
+        value: outOfStockCount.toString().padStart(2, '0'),
+        subtext: 'Zero availability',
+        accent: 'rose',
+        spark: [10, 5, 8, 3, 0],
+      },
     ];
   });
+
+  protected getCurrentStock(item: ItemMasterListDto): number {
+    return item.currentStock ?? item.stockQuantity ?? 0;
+  }
+
+  protected getReservedStock(item: ItemMasterListDto): number {
+    return item.reservedStock ?? 0;
+  }
+
+  protected getAvailableStock(item: ItemMasterListDto): number {
+    return item.availableStock ?? this.getCurrentStock(item) - this.getReservedStock(item);
+  }
+
+  protected getMinimumStockLevel(item: ItemMasterListDto): number {
+    return item.minStockLevel ?? item.minimumThreshold ?? 0;
+  }
+
+  protected getStockStatus(item: ItemMasterListDto): 'Healthy' | 'Low Stock' | 'Out of Stock' {
+    const currentStock = this.getCurrentStock(item);
+    const minimumStockLevel = this.getMinimumStockLevel(item);
+
+    if (currentStock === 0) {
+      return 'Out of Stock';
+    }
+
+    if (currentStock <= minimumStockLevel) {
+      return 'Low Stock';
+    }
+
+    return 'Healthy';
+  }
+
+  protected openCreatePanel(): void {
+    this.showCreatePanel.set(true);
+  }
+
+  protected closeCreatePanel(): void {
+    this.showCreatePanel.set(false);
+    this.createForm.reset();
+    this.createForm.patchValue({ unitOfMeasure: 'PCS', stockQuantity: 0, requiresInspection: false, minStockLevel: 0 });
+  }
+
+  protected submitCreate(): void {
+    if (this.createForm.invalid || this.isSubmitting()) return;
+
+    this.isSubmitting.set(true);
+    this.itemApi
+      .create(this.createForm.getRawValue())
+      .pipe(finalize(() => this.isSubmitting.set(false)))
+      .subscribe({
+        next: (response) => {
+          if (response.success) {
+            this.closeCreatePanel();
+            this.showNotice('success', 'Item saved', 'The new item has been stored in the database.');
+            return;
+          }
+
+          this.showNotice('error', 'Save failed', 'The database rejected the new item record.');
+        },
+        error: (error) => {
+          this.showNotice('error', 'Save failed', error?.message || 'Unable to create the item.');
+        },
+      });
+  }
+
+  protected editItem(item: ItemMasterListDto): void {
+    this.editingItem.set(item);
+    this.editForm.patchValue({
+      sku: item.sku,
+      itemName: item.itemName,
+      categoryId: item.categoryId ?? '',
+      unitOfMeasure: item.unitOfMeasure,
+      requiresInspection: item.requiresInspection ?? false,
+      minStockLevel: item.minStockLevel ?? item.minimumThreshold ?? 0,
+    });
+    this.showEditModal.set(true);
+  }
+
+  protected closeEditModal(): void {
+    this.showEditModal.set(false);
+    this.editingItem.set(null);
+    this.editForm.reset();
+  }
+
+  protected submitEdit(): void {
+    if (this.editForm.invalid || !this.editingItem() || this.isSubmitting()) return;
+    const itemId = this.editingItem()!.id;
+
+    this.isSubmitting.set(true);
+    this.itemApi
+      .update(itemId, this.editForm.getRawValue())
+      .pipe(finalize(() => this.isSubmitting.set(false)))
+      .subscribe({
+        next: (response) => {
+          if (response.success) {
+            this.closeEditModal();
+            this.showNotice('success', 'Item updated', 'The item changes were saved to the database.');
+            return;
+          }
+
+          this.showNotice('error', 'Update failed', 'The database rejected the item changes.');
+        },
+        error: (error) => {
+          this.showNotice('error', 'Update failed', error?.message || 'Unable to update the item.');
+        },
+      });
+  }
+
+  protected toggleSelection(id: string): void {
+    this.selectedIds.update((set) => {
+      const newSet = new Set(set);
+      if (newSet.has(id)) newSet.delete(id);
+      else newSet.add(id);
+      return newSet;
+    });
+  }
+
+  protected toggleAll(): void {
+    if (this.selectedIds().size === this.filteredItems().length) {
+      this.selectedIds.set(new Set());
+    } else {
+      this.selectedIds.set(new Set(this.filteredItems().map((i) => i.id)));
+    }
+  }
+
+  protected isSelected(id: string): boolean {
+    return this.selectedIds().has(id);
+  }
+
+  protected selectLowStock(): void {
+    const ids = this.filteredItems().filter((item) => {
+      const currentStock = item.currentStock ?? 0;
+      const minStockLevel = item.minStockLevel ?? 0;
+      return currentStock > 0 && currentStock <= minStockLevel;
+    }).map((item) => item.id);
+    this.selectedIds.set(new Set(ids));
+  }
+
+  protected selectOutOfStock(): void {
+    const ids = this.filteredItems().filter((item) => (item.currentStock ?? 0) === 0).map((item) => item.id);
+    this.selectedIds.set(new Set(ids));
+  }
+
+  protected onBulkEdit(): void {
+    if (!this.hasSelection()) {
+      this.showNotice('info', 'Select items first', 'Choose one or more items before starting a bulk edit.');
+      return;
+    }
+
+    this.activeBulkAction.set('edit');
+    this.showBulkActionModal.set(true);
+  }
+
+  protected onBulkAdjust(): void {
+    if (!this.hasSelection()) {
+      this.showNotice('info', 'Select items first', 'Choose one or more items before adjusting stock thresholds.');
+      return;
+    }
+
+    this.activeBulkAction.set('adjust');
+    this.showBulkActionModal.set(true);
+  }
+
+  protected onBulkExport(): void {
+    const ids = Array.from(this.selectedIds());
+
+    if (ids.length === 0) {
+      this.showNotice('info', 'Select items first', 'Choose one or more items before exporting.');
+      return;
+    }
+
+    this.itemApi.bulkExport(ids);
+    this.showNotice('success', 'Export ready', `Downloaded CSV for ${ids.length} selected item${ids.length === 1 ? '' : 's'}.`);
+  }
+
+  protected submitBulkAction(): void {
+    const ids = Array.from(this.selectedIds());
+    const action = this.activeBulkAction();
+    const values = this.bulkActionForm.getRawValue();
+
+    if (ids.length === 0 || this.isSubmitting()) {
+      return;
+    }
+
+    this.isSubmitting.set(true);
+
+    if (action === 'adjust' && values.minStockAdjustment !== 0) {
+      this.itemApi.bulkAdjustStock(ids, values.minStockAdjustment).pipe(finalize(() => this.isSubmitting.set(false))).subscribe({
+        next: () => {
+          this.closeBulkModal();
+          this.selectedIds.set(new Set());
+          this.showNotice('success', 'Thresholds updated', `Updated ${ids.length} item${ids.length === 1 ? '' : 's'} in the database.`);
+        },
+        error: (error) => {
+          this.showNotice('error', 'Bulk update failed', error?.message || 'Unable to update the selected items.');
+        },
+      });
+    } else if (action === 'edit') {
+      const updates: Partial<ItemMasterBulkUpdateRequest> = {};
+      if (values.categoryId) updates.categoryId = values.categoryId;
+      if (values.unitOfMeasure) updates.unitOfMeasure = values.unitOfMeasure;
+      updates.requiresInspection = values.requiresInspection;
+
+      this.itemApi.bulkEdit(ids, updates).pipe(finalize(() => this.isSubmitting.set(false))).subscribe({
+        next: () => {
+          this.closeBulkModal();
+          this.selectedIds.set(new Set());
+          this.showNotice('success', 'Bulk edit saved', `Updated ${ids.length} item${ids.length === 1 ? '' : 's'} in the database.`);
+        },
+        error: (error) => {
+          this.showNotice('error', 'Bulk update failed', error?.message || 'Unable to update the selected items.');
+        },
+      });
+    } else {
+      this.isSubmitting.set(false);
+    }
+  }
+
+  protected closeBulkModal(): void {
+    this.showBulkActionModal.set(false);
+    this.activeBulkAction.set(null);
+    this.bulkActionForm.reset({ categoryId: '', unitOfMeasure: '', requiresInspection: false, minStockAdjustment: 0 });
+  }
+
+  protected onGenerateQR(): void {
+    const selected = this.filteredItems().filter((i) => this.selectedIds().has(i.id));
+    if (selected.length === 0) {
+      this.showNotice('info', 'Select items first', 'Choose one or more items before generating QR codes.');
+      return;
+    }
+
+    this.qrItems.set(selected);
+    this.showQrModal.set(true);
+  }
+
+  protected closeQrModal(): void {
+    this.showQrModal.set(false);
+  }
+
+  protected getQrUrl(item: ItemMasterListDto): string {
+    const data = JSON.stringify({ sku: item.sku, id: item.id, name: item.itemName });
+    return `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(data)}`;
+  }
+
+  protected printLabels(): void {
+    window.print();
+  }
+
+  protected exportVisible(): void {
+    const ids = this.filteredItems().map(i => i.id);
+    if (ids.length === 0) {
+      this.showNotice('info', 'Nothing to export', 'Use the filters to show items before exporting.');
+      return;
+    }
+    this.itemApi.bulkExport(ids);
+    this.showNotice('success', 'Export ready', `Downloaded CSV for ${ids.length} visible item${ids.length === 1 ? '' : 's'}.`);
+  }
 
   protected setSearchTerm(value: string): void {
     this.searchTerm.set(value);
@@ -167,7 +439,7 @@ export class ItemMaster {
     this.categoryFilter.set(value);
   }
 
-  protected setStatusFilter(value: 'all' | ItemStatus): void {
+  protected setStatusFilter(value: 'all' | 'healthy' | 'lowStock' | 'outOfStock'): void {
     this.statusFilter.set(value);
   }
 
@@ -175,87 +447,36 @@ export class ItemMaster {
     this.selectedSort.set(value);
   }
 
-  protected stockBarWidth(stock: number): string {
-    return `${Math.min(100, Math.max(10, (stock / 500) * 100))}%`;
-  }
-
-  protected openCreatePanel(): void {
-    this.showCreatePanel.set(true);
-    this.createTone.set('neutral');
-    this.createMessage.set('Fill in the item details and save to add a new record.');
-  }
-
-  protected closeCreatePanel(): void {
-    this.showCreatePanel.set(false);
-  }
-
-  protected submitCreate(): void {
-    if (this.createForm.invalid) {
-      this.createTone.set('error');
-      this.createMessage.set('Please complete the required fields before saving the item.');
-      this.createForm.markAllAsTouched();
+  protected removeItem(item: ItemMasterListDto): void {
+    if (!confirm(`Remove ${item.itemName}?`)) {
       return;
     }
 
-    const rawValue = this.createForm.getRawValue();
-    const created = this.itemApi.create({
-      sku: rawValue.sku,
-      name: rawValue.name,
-      categoryId: this.createCategoryId(rawValue.categoryName),
-      categoryName: rawValue.categoryName,
-      unitOfMeasure: rawValue.unitOfMeasure,
-      price: Number(rawValue.price),
-      stockOnHand: Number(rawValue.stockOnHand),
-      status: rawValue.status,
-    });
-
-    this.createTone.set('success');
-    this.createMessage.set(`Item ${created.sku} was added successfully.`);
-    this.showCreatePanel.set(false);
-    this.createForm.reset({
-      sku: '',
-      name: '',
-      categoryName: 'Food Staples',
-      unitOfMeasure: 'Box',
-      price: 0,
-      stockOnHand: 0,
-      status: 'draft',
+    this.isSubmitting.set(true);
+    this.itemApi.remove(item.id).pipe(finalize(() => this.isSubmitting.set(false))).subscribe({
+      next: () => {
+        this.showNotice('success', 'Item deleted', `${item.itemName} was removed from the database.`);
+      },
+      error: (error) => {
+        this.showNotice('error', 'Delete failed', error?.message || 'Unable to delete the item.');
+      },
     });
   }
 
-  protected clearFilters(): void {
+  protected dismissNotice(): void {
+    this.notice.set(null);
+  }
+
+  protected resetFilters(): void {
     this.searchTerm.set('');
     this.categoryFilter.set('all');
     this.statusFilter.set('all');
     this.selectedSort.set('name');
+    this.selectedIds.set(new Set());
+    this.showNotice('info', 'Filters reset', 'The item list now shows every available record.');
   }
 
-  protected itemStatusLabel(status: ItemStatus): string {
-    return status.charAt(0).toUpperCase() + status.slice(1);
-  }
-
-  protected itemStatusTone(status: ItemStatus): string {
-    return status;
-  }
-
-  protected sparkWidth(value: number): string {
-    return `${Math.max(20, Math.min(100, value))}%`;
-  }
-
-  protected trackByItemId(_: number, item: ItemRecord): string {
-    return item.id;
-  }
-
-  protected trackByCategory(_: number, category: string): string {
-    return category;
-  }
-
-  protected hasCreateError(controlName: 'sku' | 'name' | 'categoryName' | 'unitOfMeasure' | 'price' | 'stockOnHand' | 'status'): boolean {
-    const control = this.createForm.controls[controlName];
-    return control.invalid && (control.touched || this.createTone() === 'error');
-  }
-
-  private createCategoryId(categoryName: string): string {
-    return `cat-${categoryName.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+  private showNotice(type: PageNotice['type'], title: string, message: string): void {
+    this.notice.set({ type, title, message });
   }
 }

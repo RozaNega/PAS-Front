@@ -1,6 +1,7 @@
-import { Component, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { InspectionService, InspectionDto } from '../../inspections/services/inspection.service';
 
 interface InspectionLog {
   id: string;
@@ -16,34 +17,38 @@ interface InspectionLog {
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './inspection-logs.component.html',
-  styleUrls: ['./inspection-logs.component.scss']
+  styleUrls: ['./inspection-logs.component.scss'],
 })
-export class InspectionLogsComponent {
+export class InspectionLogsComponent implements OnInit {
+  private readonly inspections = inject(InspectionService);
+
   searchTerm = signal('');
-  dateRange = { start: '2024-12-01', end: '2024-12-15' };
+  dateRange = { start: '', end: '' };
   resultFilter = signal('All');
   inspectorFilter = signal('All Inspectors');
 
-  results = ['All', 'Pass', 'Fail', 'Partial'];
-  inspectors = ['All Inspectors', 'Sarah Smith', 'John Doe', 'Mike Wilson', 'Lisa Wong'];
+  readonly results = ['All', 'Pass', 'Fail', 'Partial'];
 
-  inspectionLogs = signal<InspectionLog[]>([
-    { id: '1', date: 'Dec 15', grnNumber: 'GRN-2024-045', item: 'Dell Laptop', inspector: 'Sarah S', result: 'Pass' },
-    { id: '2', date: 'Dec 15', grnNumber: 'GRN-2024-045', item: 'HP Monitor', inspector: 'Sarah S', result: 'Partial' },
-    { id: '3', date: 'Dec 14', grnNumber: 'GRN-2024-044', item: 'Office Chair', inspector: 'John D', result: 'Pass' },
-    { id: '4', date: 'Dec 14', grnNumber: 'GRN-2024-043', item: 'Paper', inspector: 'Mike W', result: 'Fail' },
-    { id: '5', date: 'Dec 13', grnNumber: 'GRN-2024-042', item: 'Toner', inspector: 'Sarah S', result: 'Pass' }
-  ]);
+  allLogs = signal<InspectionLog[]>([]);
+  inspectors = signal<string[]>(['All Inspectors']);
+  loading = signal(false);
+  error = signal<string | null>(null);
 
-  summary = signal({
-    totalInspections: 156,
-    passRate: 85,
-    failRate: 8,
-    partialRate: 7,
-    avgTime: 12
+  summary = computed(() => {
+    const logs = this.allLogs();
+    const n = logs.length || 1;
+    const pass = logs.filter((l) => l.result === 'Pass').length;
+    const fail = logs.filter((l) => l.result === 'Fail').length;
+    const partial = logs.filter((l) => l.result === 'Partial').length;
+    return {
+      totalInspections: logs.length,
+      passRate: Math.round((pass / n) * 100),
+      failRate: Math.round((fail / n) * 100),
+      partialRate: Math.round((partial / n) * 100),
+      avgTime: 12,
+    };
   });
 
-  // Bar heights for the chart - calculated once to avoid ExpressionChangedAfterItHasBeenCheckedError
   barHeightsPass = signal<number[]>([]);
   barHeightsFail = signal<number[]>([]);
   barHeightsPartial = signal<number[]>([]);
@@ -51,10 +56,22 @@ export class InspectionLogsComponent {
   showModal = signal(false);
   selectedLog = signal<InspectionLog | null>(null);
 
-  filteredLogs = signal<InspectionLog[]>([]);
+  filteredLogs = computed(() => {
+    const search = this.searchTerm().toLowerCase();
+    const result = this.resultFilter();
+    const inspector = this.inspectorFilter();
+    return this.allLogs().filter((log) => {
+      const matchesSearch =
+        !search ||
+        log.grnNumber.toLowerCase().includes(search) ||
+        log.item.toLowerCase().includes(search);
+      const matchesResult = result === 'All' || log.result === result;
+      const matchesInspector = inspector === 'All Inspectors' || log.inspector === inspector;
+      return matchesSearch && matchesResult && matchesInspector;
+    });
+  });
 
-  constructor() {
-    // Calculate bar heights once to avoid ExpressionChangedAfterItHasBeenCheckedError
+  ngOnInit(): void {
     const passHeights: number[] = [];
     const failHeights: number[] = [];
     const partialHeights: number[] = [];
@@ -66,37 +83,100 @@ export class InspectionLogsComponent {
     this.barHeightsPass.set(passHeights);
     this.barHeightsFail.set(failHeights);
     this.barHeightsPartial.set(partialHeights);
-    this.filterLogs();
+    this.loadLogs();
   }
 
-  filterLogs(): void {
-    const search = this.searchTerm().toLowerCase();
-    const result = this.resultFilter();
-    const inspector = this.inspectorFilter();
+  loadLogs(): void {
+    this.loading.set(true);
+    this.error.set(null);
+    this.inspections.getAll().subscribe({
+      next: (res) => {
+        const rows = res.success !== false && Array.isArray(res.data) ? res.data : [];
+        const logs = this.flattenInspections(rows);
+        this.allLogs.set(logs);
+        const names = new Set<string>();
+        logs.forEach((l) => names.add(l.inspector));
+        this.inspectors.set(['All Inspectors', ...[...names].sort()]);
+        this.loading.set(false);
+      },
+      error: (e) => {
+        this.error.set(e?.message || 'Failed to load inspection logs');
+        this.allLogs.set([]);
+        this.loading.set(false);
+      },
+    });
+  }
 
-    this.filteredLogs.set(
-      this.inspectionLogs().filter(log => {
-        const matchesSearch = log.grnNumber.toLowerCase().includes(search) || 
-                              log.item.toLowerCase().includes(search);
-        const matchesResult = result === 'All' || log.result === result;
-        const matchesInspector = inspector === 'All Inspectors' || log.inspector === inspector;
-        return matchesSearch && matchesResult && matchesInspector;
-      })
-    );
+  private flattenInspections(rows: InspectionDto[]): InspectionLog[] {
+    const out: InspectionLog[] = [];
+    let seq = 0;
+    for (const row of rows) {
+      const grn = row.receivingNoteId || row.id;
+      const date = row.inspectionDate ? new Date(row.inspectionDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—';
+      const inspector = row.inspectedBy || '—';
+      const items = Array.isArray(row.items) ? row.items : [];
+      if (!items.length) {
+        out.push({
+          id: `${row.id}-${seq++}`,
+          date,
+          grnNumber: String(grn),
+          item: row.notes || 'Inspection',
+          inspector,
+          result: this.mapResult(row.status),
+        });
+        continue;
+      }
+      items.forEach((it: unknown, idx: number) => {
+        const o = (it ?? {}) as Record<string, unknown>;
+        const name = String(o['name'] ?? o['itemName'] ?? `Line ${idx + 1}`);
+        const r = String(o['overallResult'] ?? o['result'] ?? row.status ?? 'Pass');
+        out.push({
+          id: `${row.id}-${idx}`,
+          date,
+          grnNumber: String(grn),
+          item: name,
+          inspector,
+          result: this.mapResult(r),
+        });
+      });
+    }
+    return out;
+  }
+
+  private mapResult(s: string | undefined): InspectionLog['result'] {
+    const v = (s || '').toLowerCase();
+    if (v.includes('fail') || v.includes('reject')) return 'Fail';
+    if (v.includes('partial')) return 'Partial';
+    return 'Pass';
   }
 
   onSearchChange(value: string): void {
     this.searchTerm.set(value);
-    this.filterLogs();
   }
 
   onResultFilterChange(value: string): void {
     this.resultFilter.set(value);
-    this.filterLogs();
+  }
+
+  onInspectorFilterChange(value: string): void {
+    this.inspectorFilter.set(value);
   }
 
   exportData(): void {
-    console.log('Exporting inspection logs...');
+    const rows = this.filteredLogs();
+    const header = ['Date', 'GRN / Note', 'Item', 'Inspector', 'Result'];
+    const csv = [header.join(',')].concat(
+      rows.map((l) =>
+        [l.date, l.grnNumber, `"${l.item.replace(/"/g, '""')}"`, `"${l.inspector.replace(/"/g, '""')}"`, l.result].join(','),
+      ),
+    );
+    const blob = new Blob([csv.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'inspection-logs.csv';
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   openDetailsModal(log: InspectionLog): void {
@@ -110,24 +190,16 @@ export class InspectionLogsComponent {
   }
 
   printReport(): void {
-    console.log('Printing inspection report for:', this.selectedLog()?.grnNumber);
+    window.print();
   }
 
   getResultColor(result: string): string {
-    const colors: { [key: string]: string } = {
-      Pass: 'green',
-      Fail: 'red',
-      Partial: 'yellow'
-    };
+    const colors: Record<string, string> = { Pass: 'green', Fail: 'red', Partial: 'yellow' };
     return colors[result] || 'gray';
   }
 
   getResultIcon(result: string): string {
-    const icons: { [key: string]: string } = {
-      Pass: '🟢',
-      Fail: '🔴',
-      Partial: '🟡'
-    };
+    const icons: Record<string, string> = { Pass: '🟢', Fail: '🔴', Partial: '🟡' };
     return icons[result] || '⚪';
   }
 

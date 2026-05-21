@@ -1,23 +1,11 @@
-import { Component, signal, computed } from '@angular/core';
+import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { StockTransferService, TransferItem, TransferHistory } from '../services/stock-transfer.service';
 
-interface TransferItem {
-  sku: string;
-  name: string;
-  available: number;
-  toTransfer: number;
-  selected: boolean;
-}
-
-interface TransferLog {
+interface WarehouseOption {
   id: string;
-  date: string;
-  fromTo: string;
-  items: number;
-  qty: number;
-  status: 'completed' | 'in-progress' | 'pending';
+  name: string;
 }
 
 @Component({
@@ -27,39 +15,32 @@ interface TransferLog {
   templateUrl: './stock-transfer.component.html',
   styleUrls: ['./stock-transfer.component.scss']
 })
-export class StockTransferComponent {
+export class StockTransferComponent implements OnInit {
+  private readonly transferService = inject(StockTransferService);
+
   // Form state
-  fromWarehouse = signal('Warehouse A');
-  toWarehouse = signal('Warehouse B');
+  fromWarehouse = signal('');
+  toWarehouse = signal('');
   transferReason = signal('');
-  requiredByDate = signal('Dec 18, 2024');
+  requiredByDate = signal('');
   notes = signal('');
 
-  // Modal states
+  // Data state
+  warehouses = signal<WarehouseOption[]>([]);
+  transferItems = signal<TransferItem[]>([]);
+  transferHistory = signal<TransferHistory[]>([]);
+
+  // UI state
   showHistoryModal = signal(false);
-
-  // Transfer items
-  transferItems = signal<TransferItem[]>([
-    { sku: 'LAP-001', name: 'Dell XPS Laptop', available: 45, toTransfer: 10, selected: true },
-    { sku: 'MON-002', name: 'HP Monitor', available: 67, toTransfer: 0, selected: false },
-    { sku: 'CAB-004', name: 'USB Cables', available: 55, toTransfer: 50, selected: true },
-    { sku: 'TON-006', name: 'Toner Cartridge', available: 8, toTransfer: 0, selected: false }
-  ]);
-
-  // Transfer history
-  transferHistory = signal<TransferLog[]>([
-    { id: 'TRF-2024-015', date: 'Dec 15', fromTo: 'WH A → WH B', items: 2, qty: 60, status: 'completed' },
-    { id: 'TRF-2024-014', date: 'Dec 14', fromTo: 'WH B → WH A', items: 1, qty: 50, status: 'completed' },
-    { id: 'TRF-2024-013', date: 'Dec 13', fromTo: 'WH A → Storage', items: 3, qty: 25, status: 'in-progress' },
-    { id: 'TRF-2024-012', date: 'Dec 12', fromTo: 'Main → Branch', items: 2, qty: 15, status: 'pending' }
-  ]);
-
-  // Filter options
-  warehouses = ['Warehouse A', 'Warehouse B', 'Warehouse C', 'Storage', 'Main', 'Branch'];
+  loading = signal(false);
+  submitting = signal(false);
+  error = signal<string | null>(null);
+  success = signal<string | null>(null);
+  loadingItems = signal(false);
 
   // Computed values
   selectedItems = computed(() => {
-    return this.transferItems().filter(item => item.selected);
+    return this.transferItems().filter(item => item.toTransfer > 0);
   });
 
   totalQuantity = computed(() => {
@@ -67,76 +48,206 @@ export class StockTransferComponent {
   });
 
   totalValue = computed(() => {
-    return this.totalQuantity() * 420; // Approximate value per unit
+    return this.selectedItems().reduce((sum, item) => sum + (item.toTransfer * (item.price || 0)), 0);
   });
 
+  isFormValid = computed(() => {
+    return (
+      this.fromWarehouse() &&
+      this.toWarehouse() &&
+      this.fromWarehouse() !== this.toWarehouse() &&
+      this.transferReason().trim().length > 0 &&
+      this.requiredByDate().length > 0 &&
+      this.selectedItems().length > 0
+    );
+  });
+
+  ngOnInit(): void {
+    this.loadWarehouses();
+    this.loadTransferHistory();
+  }
+
+  // Load warehouses
+  loadWarehouses(): void {
+    this.loading.set(true);
+    this.error.set(null);
+    this.transferService.getWarehouses().subscribe({
+      next: (res) => {
+        if (res.success !== false && Array.isArray(res.data)) {
+          const warehouseList = (res.data as any[]).map(wh => ({
+            id: wh.id,
+            name: wh.warehouseName
+          }));
+          this.warehouses.set(warehouseList);
+          if (warehouseList.length >= 2) {
+            this.fromWarehouse.set(warehouseList[0].id);
+            this.toWarehouse.set(warehouseList[1].id);
+            this.loadItemsForWarehouse();
+          }
+        } else {
+          this.error.set(res.message || 'Failed to load warehouses');
+        }
+        this.loading.set(false);
+      },
+      error: (err) => {
+        console.error('Error loading warehouses:', err);
+        this.error.set('Failed to load warehouses. Please try again.');
+        this.loading.set(false);
+      }
+    });
+  }
+
+  // Load items for selected warehouse
+  loadItemsForWarehouse(): void {
+    const warehouseId = this.fromWarehouse();
+    if (!warehouseId) return;
+
+    this.loadingItems.set(true);
+    this.error.set(null);
+    this.transferService.getItemsInWarehouse(warehouseId).subscribe({
+      next: (res) => {
+        if (res.success !== false && Array.isArray(res.data)) {
+          this.transferItems.set(res.data);
+        } else {
+          this.error.set(res.message || 'Failed to load items');
+        }
+        this.loadingItems.set(false);
+      },
+      error: (err) => {
+        console.error('Error loading items:', err);
+        this.error.set('Failed to load items. Please try again.');
+        this.loadingItems.set(false);
+      }
+    });
+  }
+
+  // Load transfer history
+  loadTransferHistory(): void {
+    this.transferService.getTransferHistory().subscribe({
+      next: (res) => {
+        if (res.success !== false && Array.isArray(res.data)) {
+          this.transferHistory.set(res.data);
+        }
+      },
+      error: (err) => console.error('Error loading history:', err)
+    });
+  }
+
   // Update transfer quantity
-  updateTransferQuantity(sku: string, value: number) {
-    this.transferItems.update(items => 
-      items.map(item => 
-        item.sku === sku ? { ...item, toTransfer: Math.min(value, item.available) } : item
+  updateTransferQuantity(sku: string, value: any): void {
+    const quantity = Math.max(0, parseInt(value) || 0);
+    this.transferItems.update(items =>
+      items.map(item =>
+        item.sku === sku
+          ? { ...item, toTransfer: Math.min(quantity, item.available) }
+          : item
       )
     );
   }
 
-  // Toggle item selection
-  toggleItemSelection(sku: string) {
-    this.transferItems.update(items => 
-      items.map(item => 
-        item.sku === sku ? { ...item, selected: !item.selected } : item
-      )
-    );
+  // On warehouse change
+  onFromWarehouseChange(): void {
+    this.loadItemsForWarehouse();
+    this.transferItems.set([]);
   }
 
   // Open history modal
-  openHistoryModal() {
+  openHistoryModal(): void {
     this.showHistoryModal.set(true);
   }
 
   // Close history modal
-  closeHistoryModal() {
+  closeHistoryModal(): void {
     this.showHistoryModal.set(false);
   }
 
   // Create transfer order
-  createTransferOrder() {
-    console.log('Creating transfer order...');
+  createTransferOrder(): void {
+    if (!this.isFormValid()) {
+      this.error.set('Please fill in all required fields and select items to transfer.');
+      return;
+    }
+
+    this.submitting.set(true);
+    this.error.set(null);
+    this.success.set(null);
+
+    const request = {
+      fromWarehouseId: this.fromWarehouse(),
+      toWarehouseId: this.toWarehouse(),
+      items: this.selectedItems().map(item => ({
+        itemId: item.itemId,
+        quantity: item.toTransfer
+      })),
+      reason: this.transferReason(),
+      requiredByDate: this.requiredByDate(),
+      notes: this.notes()
+    };
+
+    this.transferService.createTransfer(request).subscribe({
+      next: (res) => {
+        this.submitting.set(false);
+        if (res.success) {
+          this.success.set(`Transfer order created successfully: ${res.data?.transferNumber || 'Order ID: ' + res.data?.id}`);
+          setTimeout(() => {
+            this.resetForm();
+            this.loadTransferHistory();
+          }, 2000);
+        } else {
+          this.error.set(res.message || 'Failed to create transfer order');
+        }
+      },
+      error: (err) => {
+        this.submitting.set(false);
+        console.error('Error creating transfer:', err);
+        this.error.set(err?.error?.message || 'Failed to create transfer order. Please try again.');
+      }
+    });
   }
 
   // Cancel form
-  cancelForm() {
-    this.fromWarehouse.set('Warehouse A');
-    this.toWarehouse.set('Warehouse B');
-    this.transferReason.set('');
-    this.requiredByDate.set('Dec 18, 2024');
-    this.notes.set('');
-    this.transferItems.update(items => 
-      items.map(item => ({ ...item, selected: false, toTransfer: 0 }))
-    );
-  }
-
-  // Get status color
-  getStatusColor(status: string): string {
-    switch (status) {
-      case 'completed': return 'green';
-      case 'in-progress': return 'blue';
-      case 'pending': return 'yellow';
-      default: return 'gray';
+  cancelForm(): void {
+    if (confirm('Are you sure you want to cancel this transfer?')) {
+      this.resetForm();
     }
   }
 
-  // Get status emoji
-  getStatusEmoji(status: string): string {
+  // Reset form
+  private resetForm(): void {
+    this.transferReason.set('');
+    this.requiredByDate.set('');
+    this.notes.set('');
+    this.error.set(null);
+    this.success.set(null);
+    this.transferItems.update(items =>
+      items.map(item => ({ ...item, toTransfer: 0 }))
+    );
+  }
+
+  // Get status icon
+  getStatusIcon(status: string): string {
     switch (status) {
-      case 'completed': return '✅';
-      case 'in-progress': return '🔄';
-      case 'pending': return '⏳';
-      default: return '⚪';
+      case 'completed':
+        return 'bi bi-check-circle-fill';
+      case 'in-progress':
+        return 'bi bi-arrow-repeat';
+      case 'pending':
+        return 'bi bi-clock-fill';
+      default:
+        return 'bi bi-info-circle-fill';
     }
   }
 
   // Format value
   formatValue(value: number): string {
+    if (value >= 1000) {
+      return '$' + (value / 1000).toFixed(1) + 'K';
+    }
     return '$' + value.toLocaleString();
+  }
+
+  // Get warehouse name
+  getWarehouseName(id: string): string {
+    return this.warehouses().find(w => w.id === id)?.name || id;
   }
 }

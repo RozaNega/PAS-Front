@@ -1,0 +1,91 @@
+{
+  "inventory": [
+    {
+      "id": "inv-001",
+      "itemId": "item-001",
+      "itemName": "Office Laptop",
+      "sku": "LAP-HP-001",
+      "shelfId": "shelf-001",
+      "shelfLocation": "A-R1-S1",
+      "warehouseId": "wh-001",
+      "warehouseName": "Main Warehouse",
+      "currentStock": 25,
+      "reservedStock": 5,
+      "availableStock": 20,
+      "unitOfMeasure": "Units",
+      "lastUpdated": "2026-05-20T00:00:00.000Z",
+      "minimumThreshold": 10,
+      "maximumThreshold": 50
+    },
+    {
+      "id": "inv-002",
+      "itemId": "item-002",
+      "itemName": "Office Chair",
+      "sku": "CHR-STD-001",
+      "shelfId": "shelf-002",
+      "shelfLocation": "A-R1-S2",
+      "warehouseId": "wh-001",
+      "warehouseName": "Main Warehouse",
+      "currentStock": 0,
+      "reservedStock": 0,
+      "availableStock": 0,
+      "unitOfMeasure": "Units",
+      "lastUpdated": "2026-05-20T00:00:00.000Z",
+      "minimumThreshold": 20,
+      "maximumThreshold": 100
+    },
+    {
+      "id": "inv-003",
+      "itemId": "item-003",
+      "itemName": "Printer Paper",
+      "sku": "PAP-A4-001",
+      "shelfId": "shelf-004",
+      "shelfLocation": "A-R1-S1-BW",
+      "warehouseId": "wh-002",
+      "warehouseName": "Branch Warehouse A",
+      "currentStock": 500,
+      "reservedStock": 100,
+      "availableStock": 400,
+      "unitOfMeasure": "Boxes",
+      "lastUpdated": "2026-05-20T00:00:00.000Z",
+      "minimumThreshold": 200,
+      "maximumThreshold": 1000
+    },
+    {
+      "id": "inv-1779303881141",
+      "itemId": "itm-1779303881141",
+      "itemName": "UI Test Item",
+      "sku": "UI-TEST-1",
+      "shelfId": "",
+      "shelfLocation": "",
+      "warehouseId": "",
+      "warehouseName": "",
+      "currentStock": 7,
+      "reservedStock": 0,
+      "availableStock": 7,
+      "unitOfMeasure": "PCS",
+      "lastUpdated": "2026-05-20T19:04:41.141Z",
+      "minimumThreshold": 2,
+      "maximumThreshold": 0
+    }
+  ],
+  "ledger": [],
+  "itemMasters": [
+    {
+      "id": "itm-1779303881141",
+      "itemName": "UI Test Item",
+      "sku": "UI-TEST-1",
+      "description": "",
+      "categoryName": "Test",
+      "unitOfMeasure": "PCS",
+      "currentStock": 7,
+      "reservedStock": 0,
+      "availableStock": 7,
+      "minStockLevel": 2,
+      "requiresInspection": false,
+      "isLowStock": false,
+      "stockQuantity": 7,
+      "isActive": true
+    }
+  ]
+}

@@ -157,7 +157,7 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
     },
   ]);
 
-  readonly summaryCards: RequestSummaryCard[] = [
+  readonly summaryCards = signal<RequestSummaryCard[]>([
     {
       title: 'Total Requests',
       value: 5,
@@ -198,7 +198,7 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
       icon: 'bi-check2-all',
       tone: 'green',
     },
-  ];
+  ]);
 
   pendingRequests: PendingRequest[] = [
     {

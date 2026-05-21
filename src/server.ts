@@ -6,6 +6,10 @@ import {
 } from '@angular/ssr/node';
 import express from 'express';
 import { join } from 'node:path';
+import { request as httpRequest } from 'node:http';
+import { request as httpsRequest } from 'node:https';
+import type { IncomingHttpHeaders } from 'node:http';
+import type { Request, Response, NextFunction } from 'express';
 
 const browserDistFolder = join(import.meta.dirname, '../browser');
 const workspaceAssetsFolder = join(process.cwd(), 'src', 'assets');
@@ -14,65 +18,82 @@ const publicAssetsFolder = join(process.cwd(), 'public');
 const app = express();
 const angularApp = new AngularNodeAppEngine();
 
-const dashboardStatisticsResponse = {
-  success: true,
-  message: 'Dashboard statistics loaded successfully.',
-  statusCode: 200,
-  data: {
-    platform: {
-      badge: 'Operations Platform 2026',
-      title: "AFRICOM'S TECHNOLOGIES",
-      since: 'SINCE 2004',
-      subtitle:
-        'Coordinate assets, inventory, and requisitions from one command layer with policy-driven workflows and real-time visibility for every department.',
-    },
-    liveAttendees: {
-      total: 14666,
-      trendPercent: 12.5,
-      trendDirection: 'up',
-      comparisonLabel: 'vs last month',
-      countdown: {
-        days: 20,
-        hours: 14,
-        minutes: 6,
-        seconds: 37,
-        untilLabel: 'Until May 14th, 2026',
-      },
-    },
-    highlights: [
-      {
-        value: '500+',
-        label: 'Active Sites',
-        note: 'Across all regions',
-      },
-      {
-        value: '99.9%',
-        label: 'Data Accuracy',
-        note: 'Trusted and verified',
-      },
-      {
-        value: '24/7',
-        label: 'Operations Visibility',
-        note: 'Real-time monitoring',
-      },
-    ],
-  },
-};
-
 /**
- * Example Express Rest API endpoints can be defined here.
- * Uncomment and define endpoints as necessary.
+ * Forward `/api/*` to the real PAS backend (same role as `proxy.conf.json` during `ng serve`).
+ * The previous mock `Dashboard/statistics` response hid `recentActivities` and broke Activity Logs.
  *
- * Example:
- * ```ts
- * app.get('/api/{*splat}', (req, res) => {
- *   // Handle API request
- * });
- * ```
+ * Set `PAS_API_ORIGIN` when the API is not on http://localhost:5028 (no trailing slash).
  */
-app.get('/api/Dashboard/statistics', (_req, res) => {
-  res.status(200).json(dashboardStatisticsResponse);
-});
+function pasApiProxy(req: Request, res: Response, next: NextFunction): void {
+  if (!req.originalUrl.startsWith('/api')) {
+    next();
+    return;
+  }
+
+  const apiOrigin = (process.env['PAS_API_ORIGIN'] || 'http://localhost:5028').replace(/\/$/, '');
+  let targetUrl: URL;
+  try {
+    targetUrl = new URL(req.originalUrl, `${apiOrigin}/`);
+  } catch {
+    res.status(500).json({ success: false, message: 'Invalid PAS_API_ORIGIN or request URL' });
+    return;
+  }
+
+  const isHttps = targetUrl.protocol === 'https:';
+  const lib = isHttps ? httpsRequest : httpRequest;
+  const defaultPort = isHttps ? 443 : 80;
+  const port = targetUrl.port ? Number(targetUrl.port) : defaultPort;
+
+  const outgoingHeaders: IncomingHttpHeaders = { ...req.headers };
+  outgoingHeaders.host = targetUrl.host;
+  delete outgoingHeaders['connection'];
+
+  const proxyReq = lib(
+    {
+      hostname: targetUrl.hostname,
+      port,
+      path: targetUrl.pathname + targetUrl.search,
+      method: req.method,
+      headers: outgoingHeaders,
+    },
+    (proxyRes) => {
+      if (!proxyRes.statusCode) {
+        res.status(502).end();
+        return;
+      }
+      const hopByHop = new Set([
+        'connection',
+        'keep-alive',
+        'proxy-authenticate',
+        'proxy-authorization',
+        'te',
+        'trailers',
+        'transfer-encoding',
+        'upgrade',
+      ]);
+      const outHeaders: Record<string, string | string[]> = {};
+      for (const [key, value] of Object.entries(proxyRes.headers)) {
+        if (!key || hopByHop.has(key.toLowerCase()) || value === undefined) continue;
+        outHeaders[key] = value;
+      }
+      res.writeHead(proxyRes.statusCode, outHeaders);
+      proxyRes.pipe(res);
+    },
+  );
+
+  proxyReq.on('error', (err) => {
+    if (!res.headersSent) {
+      res.status(502).json({
+        success: false,
+        message: `API proxy to ${apiOrigin} failed: ${err.message}`,
+      });
+    }
+  });
+
+  req.pipe(proxyReq);
+}
+
+app.use(pasApiProxy);
 
 /**
  * Serve static files from /browser

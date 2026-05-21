@@ -9,6 +9,13 @@
     </button>
   </div>
 
+  @if (loadError()) {
+    <p class="info-bar" role="alert" style="color: #b00020;">{{ loadError() }}</p>
+  }
+  @if (loading()) {
+    <p class="info-bar">Loading overview…</p>
+  }
+
   <div class="info-bar">
     <span>📅 Date: {{ currentDate() }}</span>
     <span>🔄 Last Updated: {{ lastUpdated() }}</span>
@@ -22,45 +29,45 @@
         <h3>Today's Activity</h3>
         <div class="stat-row">
           <span class="stat-icon">📥</span>
-          <span class="stat-value">+124 units</span>
+          <span class="stat-value">+{{ todayIn() }} units</span>
         </div>
         <div class="stat-row">
           <span class="stat-icon">📤</span>
-          <span class="stat-value">-89 units</span>
+          <span class="stat-value">-{{ todayOut() }} units</span>
         </div>
         <div class="stat-row">
           <span class="stat-icon">🔄</span>
-          <span class="stat-value">+23 units</span>
+          <span class="stat-value">{{ todayXfer() }} units</span>
         </div>
       </div>
       <div class="quick-stats-card">
         <h3>This Week Activity</h3>
         <div class="stat-row">
           <span class="stat-icon">📥</span>
-          <span class="stat-value">+567 units</span>
+          <span class="stat-value">+{{ weekIn() }} units</span>
         </div>
         <div class="stat-row">
           <span class="stat-icon">📤</span>
-          <span class="stat-value">-432 units</span>
+          <span class="stat-value">-{{ weekOut() }} units</span>
         </div>
         <div class="stat-row">
           <span class="stat-icon">🔄</span>
-          <span class="stat-value">+98 units</span>
+          <span class="stat-value">{{ weekXfer() }} units</span>
         </div>
       </div>
       <div class="quick-stats-card">
         <h3>This Month Activity</h3>
         <div class="stat-row">
           <span class="stat-icon">📥</span>
-          <span class="stat-value">+2,345 units</span>
+          <span class="stat-value">+{{ monthIn() }} units</span>
         </div>
         <div class="stat-row">
           <span class="stat-icon">📤</span>
-          <span class="stat-value">-1,876 units</span>
+          <span class="stat-value">-{{ monthOut() }} units</span>
         </div>
         <div class="stat-row">
           <span class="stat-icon">🔄</span>
-          <span class="stat-value">+456 units</span>
+          <span class="stat-value">{{ monthXfer() }} units</span>
         </div>
       </div>
       <div class="quick-stats-card pending-actions">
@@ -75,7 +82,7 @@
         </div>
         <div class="stat-row">
           <span class="stat-icon">🔴</span>
-          <span class="stat-value">Low Stock Alerts: 4</span>
+          <span class="stat-value">Low Stock Alerts: {{ lowStockItems() }}</span>
         </div>
       </div>
     </div>

@@ -128,10 +128,10 @@ export class SIVListComponent implements OnInit, OnDestroy {
   }
 
   loadServiceRequests(): void {
-    this.serviceRequestService.getServiceRequests({ status: 'Approved' }).subscribe({
+    this.serviceRequestService.getAll({ status: 'Approved' }).subscribe({
       next: (response) => {
-        if (response.success && response.data) {
-          this.serviceRequests = response.data.items || response.data;
+        if (response.success !== false && Array.isArray(response.data)) {
+          this.serviceRequests = response.data;
         }
       },
       error: () => {
@@ -156,7 +156,7 @@ export class SIVListComponent implements OnInit, OnDestroy {
   onSRSelect(): void {
     const srId = this.createForm.get('srId')?.value;
     if (srId) {
-      this.serviceRequestService.getServiceRequestById(srId).subscribe({
+      this.serviceRequestService.getById(srId).subscribe({
         next: (response) => {
           if (response.success && response.data) {
             this.selectedSR = response.data;

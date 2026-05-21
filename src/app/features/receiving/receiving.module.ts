@@ -39,15 +39,13 @@ const routes: Routes = [
 
 @NgModule({
   declarations: [
-    SupplierListComponent,
-    SupplierFormComponent,
     InspectionListComponent,
     InspectionFormComponent,
     ReceivingNoteListComponent,
     ReceivingNoteFormComponent,
     ReceivingNoteDetailComponent
   ],
-  imports: [SharedModule, RouterModule.forChild(routes)],
+  imports: [SharedModule, RouterModule.forChild(routes), SupplierListComponent, SupplierFormComponent],
   providers: [SupplierService, InspectionService, ReceivingNoteService]
 })
 export class ReceivingModule {}

@@ -27,13 +27,12 @@ export class ItemEdit {
 
   protected readonly editForm = this.formBuilder.nonNullable.group({
     sku: ['', [Validators.required, Validators.minLength(3)]],
-    name: ['', [Validators.required, Validators.minLength(2)]],
+    itemName: ['', [Validators.required, Validators.minLength(2)]],
     categoryId: ['', [Validators.required]],
     categoryName: ['', [Validators.required]],
     unitOfMeasure: ['Unit', [Validators.required]],
-    price: [0, [Validators.required, Validators.min(0)]],
-    stockOnHand: [0, [Validators.required, Validators.min(0)]],
-    status: this.formBuilder.nonNullable.control<'active' | 'draft' | 'archived'>('active'),
+    stockQuantity: [0, [Validators.required, Validators.min(0)]],
+    isActive: [true, [Validators.required]],
   });
 
   protected readonly selectedItem = computed(() => {
@@ -59,13 +58,12 @@ export class ItemEdit {
       if (selected) {
         this.editForm.setValue({
           sku: selected.sku,
-          name: selected.name,
-          categoryId: selected.categoryId,
-          categoryName: selected.categoryName,
+          itemName: selected.itemName,
+          categoryId: selected.categoryId ?? '',
+          categoryName: selected.categoryName ?? '',
           unitOfMeasure: selected.unitOfMeasure,
-          price: selected.price,
-          stockOnHand: selected.stockOnHand,
-          status: selected.status,
+          stockQuantity: selected.stockQuantity ?? 0,
+          isActive: selected.isActive ?? true,
         });
       }
     });
@@ -82,13 +80,16 @@ export class ItemEdit {
       return;
     }
 
-    const updated = this.itemApi.update({
-      id: this.selectedItemId(),
-      ...this.editForm.getRawValue(),
+    const payload = this.editForm.getRawValue();
+    this.itemApi.update(this.selectedItemId(), payload).subscribe({
+      next: (res) => {
+        if (res.success) {
+          this.status.set(`Item "${payload.itemName}" was updated.`);
+        } else {
+          this.status.set('Failed to update: ' + res.message);
+        }
+      },
+      error: () => this.status.set('An error occurred while saving.')
     });
-
-    if (updated) {
-      this.status.set(`Item "${updated.name}" was updated.`);
-    }
   }
 }

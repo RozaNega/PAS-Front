@@ -12,8 +12,17 @@
         <h3><i class="bi bi-person"></i> Personal Information</h3>
         <div class="form-grid">
           <div class="form-field">
-            <label>Employee Code <span class="required">*</span></label>
-            <input type="text" placeholder="EMP-________" [(ngModel)]="formData.employeeCode">
+            <label>Employee Code <span class="optional">(Auto-generated)</span></label>
+            <div class="input-with-button">
+              <input type="text" placeholder="EMP123456789" [(ngModel)]="formData.employeeCode" readonly>
+              <button type="button" class="btn-generate" (click)="generateNewCode()" title="Generate new code">
+                <i class="bi bi-arrow-clockwise"></i>
+              </button>
+            </div>
+            <small class="field-hint">A unique code has been generated. Click the refresh button to generate a new one.</small>
+            <div style="color: #b00; font-size: 0.9em; margin-top: 4px;">
+              <strong>Debug:</strong> Employee code value: {{ formData.employeeCode }}
+            </div>
           </div>
           <div class="form-field">
             <label>Full Name <span class="required">*</span></label>
@@ -100,7 +109,7 @@
             <div class="user-role-selection">
               <p>If checked, user will be created with role:</p>
               <select [(ngModel)]="formData.userRole">
-                @for (role of roles; track role.value) {
+                @for (role of roles(); track role.value) {
                   <option [value]="role.value">{{ role.label }}</option>
                 }
               </select>

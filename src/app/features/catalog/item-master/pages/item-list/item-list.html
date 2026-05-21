@@ -1,39 +1,101 @@
-﻿<section class="item-list-container ecx-list-surface">
-  <h2>Item list</h2>
+<div class="item-dashboard animate-fade-in">
+  <!-- Header Section -->
+  <header class="dashboard-header glass-effect">
+    <div class="header-left">
+      <h1 class="dashboard-title">Inventory Master</h1>
+      <p class="dashboard-subtitle">Manage and track all items across warehouses</p>
+    </div>
+    
+    <div class="header-actions">
+      <div class="bulk-actions" [class.visible]="selectedIds().size > 0">
+        <span class="selection-count">{{ selectedIds().size }} selected</span>
+        <button class="btn btn-secondary" (click)="onBulkEdit()">
+          <i class="bi bi-pencil-square"></i> Bulk Edit
+        </button>
+        <button class="btn btn-secondary" (click)="onBulkAdjust()">
+          <i class="bi bi-sliders"></i> Adjust Stock
+        </button>
+        <button class="btn btn-secondary" (click)="onBulkExport()">
+          <i class="bi bi-download"></i> Export
+        </button>
+        <button class="btn btn-primary" (click)="onGenerateQR()">
+          <i class="bi bi-qr-code"></i> Generate QR
+        </button>
+      </div>
+    </div>
+  </header>
 
-  @if (!hasItems()) {
-    <p>No items found. Create one from the create tab.</p>
-  } @else {
-    <table>
-      <thead>
-        <tr>
-          <th>SKU</th>
-          <th>Name</th>
-          <th>Category</th>
-          <th>UoM</th>
-          <th>Price</th>
-          <th>Stock</th>
-          <th>Status</th>
-          <th>Action</th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (item of items(); track item.id) {
-          <tr>
-            <td>{{ item.sku }}</td>
-            <td>{{ item.name }}</td>
-            <td>{{ item.categoryName }}</td>
-            <td>{{ item.unitOfMeasure }}</td>
-            <td>{{ item.price }}</td>
-            <td>{{ item.stockOnHand }}</td>
-            <td>{{ item.status }}</td>
-            <td>
-              <button type="button" (click)="removeItem(item)">Delete</button>
-            </td>
-          </tr>
-        }
-      </tbody>
-    </table>
-  }
-</section>
+  <!-- Content Section -->
+  <section class="content-surface glass-effect mt-4">
+    @if (isLoading()) {
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <span>Fetching live inventory data...</span>
+      </div>
+    } @else if (!hasItems()) {
+      <div class="empty-state">
+        <i class="bi bi-inboxes"></i>
+        <h3>No Items Found</h3>
+        <p>The inventory database is currently empty.</p>
+      </div>
+    } @else {
+      <div class="table-container">
+        <table class="modern-table">
+          <thead>
+            <tr>
+              <th class="checkbox-col">
+                <input type="checkbox" [checked]="selectedIds().size === items().length" (change)="toggleAll()">
+              </th>
+              <th>SKU</th>
+              <th>Item Name</th>
+              <th>Category</th>
+              <th>UoM</th>
+              <th>Stock On Hand</th>
+              <th>Status</th>
+              <th class="text-right">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of items(); track item.id) {
+              <tr [class.row-selected]="isSelected(item.id)">
+                <td class="checkbox-col">
+                  <input type="checkbox" [checked]="isSelected(item.id)" (change)="toggleSelection(item.id)">
+                </td>
+                <td><span class="sku-badge">{{ item.sku }}</span></td>
+                <td class="item-name-cell">
+                  <strong>{{ item.itemName }}</strong>
+                  <span class="item-id">{{ item.id }}</span>
+                </td>
+                <td>{{ item.categoryName || 'Uncategorized' }}</td>
+                <td><span class="uom-tag">{{ item.unitOfMeasure }}</span></td>
+                <td>
+                  <div class="stock-cell">
+                    <span class="stock-value" [class.low-stock]="item.stockQuantity < 10">
+                      {{ item.stockQuantity }}
+                    </span>
+                    <div class="stock-progress">
+                      <div class="progress-bar" [style.width.%]="(item.stockQuantity / 200) * 100"></div>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <span class="status-badge" [class.status-active]="item.isActive" [class.status-inactive]="!item.isActive">
+                    {{ item.isActive ? 'Active' : 'Inactive' }}
+                  </span>
+                </td>
+                <td class="text-right">
+                  <div class="row-actions">
+                    <button class="icon-btn" title="Edit Item"><i class="bi bi-pencil"></i></button>
+                    <button class="icon-btn delete" (click)="removeItem(item)" title="Delete Item"><i class="bi bi-trash"></i></button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </section>
+</div>
+
 

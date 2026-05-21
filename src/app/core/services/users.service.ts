@@ -7,48 +7,82 @@ export interface UserDto {
   id: string;
   username: string;
   email: string;
-  firstName: string;
-  lastName: string;
   isActive: boolean;
-  role?: string;
+  roleId: string;
+  roleName: string;
+  employeeId?: string;
+  employeeCode?: string;
+  employeeName?: string;
 }
 
-export interface CreateUserRequest {
+export interface UserDetailDto {
+  id: string;
   username: string;
   email: string;
-  password: string;
-  firstName: string;
-  lastName: string;
-  roleId?: string;
+  isActive: boolean;
+  roleId: string;
+  roleName: string;
+  employeeId: string;
+  employeeCode: string;
+  employeeName: string;
 }
 
-export interface UpdateUserRequest {
+/** POST /api/Users — RegisterUserCommand */
+export interface RegisterUserCommand {
+  username: string;
+  password: string;
+  email: string;
+  fullName: string;
+  department: string;
+  employeeCode?: string | null;
+  phoneNumber?: string | null;
+  roleName?: string | null;
+}
+
+export interface UpdateUserCommand {
   id: string;
-  username?: string;
-  email?: string;
-  firstName?: string;
-  lastName?: string;
-  isActive?: boolean;
-  roleId?: string;
+  username: string;
+  email: string;
+  roleId: string;
+  isActive: boolean;
+}
+
+export interface PaginatedResponse<T> {
+  items: T[];
+  pageNumber: number;
+  totalPages: number;
+  totalCount: number;
+  hasPreviousPage: boolean;
+  hasNextPage: boolean;
 }
 
 @Injectable({ providedIn: 'root' })
 export class UsersService {
   constructor(private apiService: ApiService) {}
 
-  getAll(params?: any): Observable<ApiResponseModel<UserDto[]>> {
-    return this.apiService.get<ApiResponseModel<UserDto[]>>('Users', params);
+  getAll(params?: {
+    pageNumber?: number;
+    pageSize?: number;
+    searchTerm?: string;
+    roleId?: string;
+    isActive?: boolean;
+  }): Observable<ApiResponseModel<PaginatedResponse<UserDto>>> {
+    return this.apiService.get<ApiResponseModel<PaginatedResponse<UserDto>>>('Users', params);
   }
 
-  getById(id: string): Observable<ApiResponseModel<UserDto>> {
-    return this.apiService.get<ApiResponseModel<UserDto>>(`Users/${id}`);
+  getById(id: string): Observable<ApiResponseModel<UserDetailDto>> {
+    return this.apiService.get<ApiResponseModel<UserDetailDto>>(`Users/${id}`);
   }
 
-  create(data: CreateUserRequest): Observable<ApiResponseModel<string>> {
+  register(data: RegisterUserCommand): Observable<ApiResponseModel<string>> {
     return this.apiService.post<ApiResponseModel<string>>('Users', data);
   }
 
-  update(data: UpdateUserRequest): Observable<ApiResponseModel<any>> {
+  forgotPassword(email: string): Observable<ApiResponseModel<unknown>> {
+    return this.apiService.post<ApiResponseModel<unknown>>('Auth/forgot-password', { email });
+  }
+
+  update(data: UpdateUserCommand): Observable<ApiResponseModel<any>> {
     return this.apiService.put<ApiResponseModel<any>>(`Users/${data.id}`, data);
   }
 
@@ -56,7 +90,11 @@ export class UsersService {
     return this.apiService.delete<ApiResponseModel<any>>(`Users/${id}`);
   }
 
-  getCurrentUser(): Observable<ApiResponseModel<UserDto>> {
-    return this.apiService.get<ApiResponseModel<UserDto>>('Auth/me');
+  changePassword(userId: string, currentPassword: string, newPassword: string): Observable<ApiResponseModel<any>> {
+    return this.apiService.post<ApiResponseModel<any>>('Auth/change-password', {
+      currentPassword,
+      newPassword
+    });
   }
+
 }

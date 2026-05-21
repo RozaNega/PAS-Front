@@ -9,6 +9,13 @@
     </button>
   </div>
 
+  @if (loadError()) {
+    <p class="adjustment-form" role="alert" style="color: #b00020;">{{ loadError() }}</p>
+  }
+  @if (submitMessage()) {
+    <p class="adjustment-form" style="padding: 0 1rem;">{{ submitMessage() }}</p>
+  }
+
   <div class="adjustment-form">
     <div class="form-section">
       <div class="section-header">
@@ -40,11 +47,11 @@
       <div class="selected-item-info">
         <div class="info-row">
           <span>Item Selected:</span>
-          <span>{{ selectedItem() || 'None selected' }}</span>
+          <span>{{ selectedItemLabel() || 'None selected' }}</span>
         </div>
         <div class="info-row">
           <span>Current Location:</span>
-          <span>Warehouse A - Aisle 5 - Shelf B-03</span>
+          <span>{{ locationLabel() }}</span>
         </div>
         <div class="info-row">
           <span>Current Quantity:</span>
@@ -57,15 +64,15 @@
           <label>Adjustment Type:</label>
           <div class="radio-group">
             <label class="radio-item">
-              <input type="radio" name="adjustmentType" value="Add" [(ngModel)]="adjustmentType" (ngModelChange)="onAdjustmentTypeChange($event)">
+              <input type="radio" name="adjustmentType" value="Add" [ngModel]="adjustmentType()" (ngModelChange)="onAdjustmentTypeChange($event)">
               <span class="radio-label">➕ Add (+)</span>
             </label>
             <label class="radio-item">
-              <input type="radio" name="adjustmentType" value="Remove" [(ngModel)]="adjustmentType" (ngModelChange)="onAdjustmentTypeChange($event)">
+              <input type="radio" name="adjustmentType" value="Remove" [ngModel]="adjustmentType()" (ngModelChange)="onAdjustmentTypeChange($event)">
               <span class="radio-label">➖ Remove (-)</span>
             </label>
             <label class="radio-item">
-              <input type="radio" name="adjustmentType" value="Set" [(ngModel)]="adjustmentType" (ngModelChange)="onAdjustmentTypeChange($event)">
+              <input type="radio" name="adjustmentType" value="Set" [ngModel]="adjustmentType()" (ngModelChange)="onAdjustmentTypeChange($event)">
               <span class="radio-label">🎯 Set to Exact Value</span>
             </label>
           </div>
@@ -73,7 +80,7 @@
 
         <div class="form-field">
           <label>Quantity to Adjust:</label>
-          <input type="number" [(ngModel)]="quantityToAdjust" (input)="onQuantityChange($any($event.target).value)" placeholder="50">
+          <input type="number" [ngModel]="quantityToAdjust()" (ngModelChange)="onQuantityChange($event)" placeholder="50">
           <span class="field-hint">Enter the quantity to add, remove, or set</span>
         </div>
 
@@ -85,7 +92,7 @@
 
         <div class="form-field">
           <label>Reason for Adjustment *</label>
-          <select [(ngModel)]="reason">
+          <select [ngModel]="reason()" (ngModelChange)="reason.set($event)">
             <option value="">Select a reason ▼</option>
             <option value="Damaged Goods">📦 Damaged Goods</option>
             <option value="Lost/Missing">🔍 Lost/Missing</option>
@@ -99,7 +106,7 @@
 
         <div class="form-field">
           <label>Notes / Comments</label>
-          <textarea [(ngModel)]="notes" rows="3" placeholder="50 units found damaged during inspection - moisture damage"></textarea>
+          <textarea [ngModel]="notes()" (ngModelChange)="notes.set($event)" rows="3" placeholder="50 units found damaged during inspection - moisture damage"></textarea>
         </div>
       </div>
     </div>

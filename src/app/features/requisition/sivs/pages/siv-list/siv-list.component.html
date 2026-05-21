@@ -1,0 +1,238 @@
+<div class="siv-list-page req-page">
+  <header class="req-hero">
+    <div class="req-hero__text">
+      <p class="req-hero__eyebrow">Stores &amp; issuance</p>
+      <h1 class="req-hero__title">Store issue vouchers</h1>
+      <p class="req-hero__subtitle">
+        Track vouchers issued against approved service requests, print documents, and jump back to requisitions when needed.
+      </p>
+    </div>
+    <div class="req-hero__actions">
+      <a class="btn btn-outline-secondary" routerLink="/admin/requisitions">
+        <i class="bi bi-arrow-left"></i>
+        Service requests
+      </a>
+      <button type="button" class="btn btn-primary" (click)="createNewSiv()">
+        <i class="bi bi-plus-lg"></i>
+        New SIV
+      </button>
+      <details #exportSheet class="req-action-sheet req-action-sheet--below">
+        <summary class="btn btn-outline-secondary req-action-sheet__summary">
+          <i class="bi bi-download"></i>
+          Export
+        </summary>
+        <div class="req-action-sheet__panel" role="menu">
+          <button type="button" class="req-action-sheet__item" (click)="exportSivs('pdf', $event); closeSheet(exportSheet)">
+            <i class="bi bi-file-pdf req-action-sheet__item-icon req-action-sheet__item-icon--danger"></i>
+            <span>Export PDF</span>
+          </button>
+          <button type="button" class="req-action-sheet__item" (click)="exportSivs('excel', $event); closeSheet(exportSheet)">
+            <i class="bi bi-file-earmark-spreadsheet req-action-sheet__item-icon req-action-sheet__item-icon--success"></i>
+            <span>Export Excel</span>
+          </button>
+          <button type="button" class="req-action-sheet__item" (click)="exportSivs('csv', $event); closeSheet(exportSheet)">
+            <i class="bi bi-filetype-csv req-action-sheet__item-icon req-action-sheet__item-icon--primary"></i>
+            <span>Export CSV</span>
+          </button>
+        </div>
+      </details>
+    </div>
+  </header>
+
+  <nav class="req-segments" role="tablist" aria-label="SIV status">
+    <button type="button" class="req-segment req-segment--all" [class.active]="statusFilter() === 'All'" (click)="statusFilter.set('All')" role="tab">
+      <span class="req-segment__inner">
+        <i class="bi bi-grid-1x2-fill req-segment__icon" aria-hidden="true"></i>
+        <span class="req-segment__label">All SIVs</span>
+        <span class="req-count">{{ statusCounts().all }}</span>
+      </span>
+    </button>
+    <button type="button" class="req-segment req-segment--pending" [class.active]="statusFilter() === 'Pending'" (click)="statusFilter.set('Pending')" role="tab">
+      <span class="req-segment__inner">
+        <i class="bi bi-hourglass-split req-segment__icon" aria-hidden="true"></i>
+        <span class="req-segment__label">Pending</span>
+        <span class="req-count">{{ statusCounts().pending }}</span>
+      </span>
+    </button>
+    <button type="button" class="req-segment req-segment--issued" [class.active]="statusFilter() === 'Issued'" (click)="statusFilter.set('Issued')" role="tab">
+      <span class="req-segment__inner">
+        <i class="bi bi-send-fill req-segment__icon" aria-hidden="true"></i>
+        <span class="req-segment__label">Issued</span>
+        <span class="req-count">{{ statusCounts().issued }}</span>
+      </span>
+    </button>
+    <button type="button" class="req-segment req-segment--completed" [class.active]="statusFilter() === 'Completed'" (click)="statusFilter.set('Completed')" role="tab">
+      <span class="req-segment__inner">
+        <i class="bi bi-flag-fill req-segment__icon" aria-hidden="true"></i>
+        <span class="req-segment__label">Completed</span>
+        <span class="req-count">{{ statusCounts().completed }}</span>
+      </span>
+    </button>
+  </nav>
+
+  <div class="req-loading" *ngIf="loading()">
+    <div class="spinner-border text-primary" role="status" aria-hidden="true"></div>
+    <span>Loading vouchers…</span>
+  </div>
+
+  <div class="req-alert" *ngIf="error() && !loading()" role="alert">
+    <i class="bi bi-exclamation-octagon-fill flex-shrink-0"></i>
+    <span class="flex-grow-1">{{ error() }}</span>
+    <button type="button" class="btn btn-sm btn-outline-danger" (click)="loadSivs()">Retry</button>
+  </div>
+
+  <div class="req-content" *ngIf="!loading()">
+    <section class="req-toolbar" aria-label="Filters">
+      <div class="req-field">
+        <label for="search">Search</label>
+        <input
+          type="search"
+          id="search"
+          class="form-control"
+          [value]="searchTerm()"
+          (input)="onSearch($event)"
+          placeholder="SIV number, SR number, issued to…" />
+      </div>
+      <div class="req-field">
+        <label for="department">Department</label>
+        <select id="department" class="form-control" [value]="departmentFilter()" (change)="onDepartmentFilter($event)">
+          <option *ngFor="let dept of departments" [value]="dept">{{ dept }}</option>
+        </select>
+      </div>
+      <div class="req-field" style="flex: 0 1 120px">
+        <label for="rowsPerPage">Rows</label>
+        <select id="rowsPerPage" class="form-control" [value]="rowsPerPage()" (change)="onRowsPerPageChange($event)">
+          <option value="10">10</option>
+          <option value="25">25</option>
+          <option value="50">50</option>
+          <option value="100">100</option>
+        </select>
+      </div>
+      <div class="req-toolbar__actions">
+        <button type="button" class="btn btn-outline-secondary" (click)="resetFilters()">
+          <i class="bi bi-arrow-counterclockwise"></i>
+          Reset
+        </button>
+      </div>
+    </section>
+
+    <section class="req-datatable" aria-label="Store issue vouchers">
+      <div class="req-datatable__meta">
+        <span>
+          Showing <strong>{{ displayRange().start }}</strong>–<strong>{{ displayRange().end }}</strong> of
+          <strong>{{ filteredSivs().length }}</strong>
+          vouchers
+        </span>
+      </div>
+
+      <div class="req-table-wrap">
+        <table class="req-table">
+          <thead>
+            <tr>
+              <th>SIV number</th>
+              <th>SR number</th>
+              <th>Issued to</th>
+              <th>Issued by</th>
+              <th>Department</th>
+              <th>Status</th>
+              <th>Items</th>
+              <th>Qty</th>
+              <th>Issue date</th>
+              <th scope="col" class="text-end">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngIf="pagedSivs().length === 0">
+              <td colspan="10">
+                <div class="req-empty">
+                  <i class="bi bi-journal-minus"></i>
+                  <p>No vouchers match your filters.</p>
+                  <a class="btn btn-primary btn-sm" routerLink="/admin/requisitions">Open service requests</a>
+                </div>
+              </td>
+            </tr>
+            <tr *ngFor="let siv of pagedSivs(); trackBy: trackBySivId">
+              <td>
+                <button type="button" class="req-table__sr-btn req-table__sr" (click)="viewSiv(siv.id)">
+                  {{ displayCell(siv.sivNumber) }}
+                </button>
+              </td>
+              <td>
+                <button type="button" class="req-table__sr-btn" (click)="viewServiceRequest(siv.serviceRequestId)">
+                  {{ displayCell(siv.serviceRequestNumber) }}
+                </button>
+              </td>
+              <td [class.req-cell-muted]="!hasCell(siv.issuedToName)">{{ displayCell(siv.issuedToName) }}</td>
+              <td [class.req-cell-muted]="!hasCell(siv.issuedByName)">{{ displayCell(siv.issuedByName) }}</td>
+              <td [class.req-cell-muted]="!hasCell(siv.department)">{{ displayCell(siv.department) }}</td>
+              <td>
+                <span class="req-badge" [ngClass]="getStatusClass(siv.status)">{{ displayCell(siv.status) }}</span>
+              </td>
+              <td class="tabular-nums">{{ siv.totalItems }}</td>
+              <td class="tabular-nums">{{ siv.totalQuantity }}</td>
+              <td class="text-nowrap">{{ formatDate(siv.issueDate) }}</td>
+              <td class="text-end">
+                <div class="req-actions justify-content-end">
+                  <button type="button" class="btn btn-sm btn-outline-primary" (click)="viewSiv(siv.id)" title="View">
+                    <i class="bi bi-eye"></i>
+                  </button>
+                  <button type="button" class="btn btn-sm btn-outline-secondary" (click)="printSiv(siv.id)" title="Print">
+                    <i class="bi bi-printer"></i>
+                  </button>
+                  <details #rowSheet class="req-action-sheet">
+                    <summary class="btn btn-sm btn-outline-secondary req-action-sheet__summary" title="More actions">
+                      <i class="bi bi-three-dots-vertical"></i>
+                    </summary>
+                    <div class="req-action-sheet__panel" role="menu">
+                      <button type="button" class="req-action-sheet__item" (click)="viewSiv(siv.id); closeSheet(rowSheet)">
+                        <i class="bi bi-eye req-action-sheet__item-icon"></i>
+                        <span>View</span>
+                      </button>
+                      <button type="button" class="req-action-sheet__item" (click)="printSiv(siv.id); closeSheet(rowSheet)">
+                        <i class="bi bi-printer req-action-sheet__item-icon"></i>
+                        <span>Print</span>
+                      </button>
+                      <button type="button" class="req-action-sheet__item" (click)="viewServiceRequest(siv.serviceRequestId); closeSheet(rowSheet)">
+                        <i class="bi bi-list-check req-action-sheet__item-icon"></i>
+                        <span>Service request</span>
+                      </button>
+                      <div class="req-action-sheet__sep" *ngIf="statusEquals(siv, 'Pending')"></div>
+                      <button
+                        type="button"
+                        class="req-action-sheet__item req-action-sheet__item--danger"
+                        *ngIf="statusEquals(siv, 'Pending')"
+                        (click)="deleteSiv(siv.id); closeSheet(rowSheet)">
+                        <i class="bi bi-trash req-action-sheet__item-icon"></i>
+                        <span>Delete</span>
+                      </button>
+                    </div>
+                  </details>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <nav class="req-pagination" *ngIf="totalPages() > 1" aria-label="Pagination">
+      <ul class="pagination mb-0">
+        <li class="page-item" [class.disabled]="currentPage() === 1">
+          <button type="button" class="page-link" (click)="goToPage(currentPage() - 1)" [disabled]="currentPage() === 1">
+            <i class="bi bi-chevron-left"></i>
+          </button>
+        </li>
+        <li class="page-item" *ngFor="let page of [].constructor(totalPages()); let i = index" [class.active]="currentPage() === i + 1">
+          <button type="button" class="page-link" (click)="goToPage(i + 1)">{{ i + 1 }}</button>
+        </li>
+        <li class="page-item" [class.disabled]="currentPage() === totalPages()">
+          <button type="button" class="page-link" (click)="goToPage(currentPage() + 1)" [disabled]="currentPage() === totalPages()">
+            <i class="bi bi-chevron-right"></i>
+          </button>
+        </li>
+      </ul>
+    </nav>
+  </div>
+
+  <footer class="req-footer">AFRICOM Asset Management Platform · {{ currentYear }}</footer>
+</div>

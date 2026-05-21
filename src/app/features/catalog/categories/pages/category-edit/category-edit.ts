@@ -54,7 +54,7 @@ export class CategoryEdit {
       if (selected) {
         this.editForm.setValue({
           name: selected.name,
-          description: selected.description,
+          description: selected.description ?? '',
           parentCategoryId: selected.parentCategoryId ?? '',
         });
       }
@@ -73,15 +73,20 @@ export class CategoryEdit {
     }
 
     const formValue = this.editForm.getRawValue();
-    const updated = this.categoryApi.update({
+    this.categoryApi.update({
       id: this.selectedCategoryId(),
       name: formValue.name,
       description: formValue.description,
       parentCategoryId: formValue.parentCategoryId || null,
+    }).subscribe({
+      next: (res) => {
+        if (res.success) {
+          this.status.set(`Category "${formValue.name}" was updated successfully.`);
+        } else {
+          this.status.set('Error: ' + (res.message || 'Failed to update category.'));
+        }
+      },
+      error: () => this.status.set('A server error occurred during update.')
     });
-
-    if (updated) {
-      this.status.set(`Category "${updated.name}" was updated.`);
-    }
   }
 }

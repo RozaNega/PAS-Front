@@ -54,7 +54,7 @@ export class RequisitionsService {
   }
 
   createServiceRequest(data: CreateServiceRequestDto): Observable<ApiResponseModel<string>> {
-    return this.apiService.post<ApiResponseModel<string>>('ServiceRequests', data);
+    return this.apiService.post<ApiResponseModel<string>>('ServiceRequests', { command: data });
   }
 
   updateServiceRequest(id: string, data: any): Observable<ApiResponseModel<any>> {

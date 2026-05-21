@@ -1,7 +1,9 @@
-import { Component, signal, inject } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
+import { forkJoin } from 'rxjs';
+import { InventoryService, StockMovementDto } from '../../../../core/services/inventory.service';
 
 interface StockItem {
   rank: number;
@@ -22,59 +24,62 @@ interface CategoryStock {
   percentage: number;
 }
 
+function toYmd(d: Date): string {
+  return d.toISOString().slice(0, 10);
+}
+
+function addDays(d: Date, n: number): Date {
+  const x = new Date(d);
+  x.setDate(x.getDate() + n);
+  return x;
+}
+
 @Component({
   selector: 'app-stock-overview',
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './stock-overview.component.html',
-  styleUrls: ['./stock-overview.component.scss']
+  styleUrls: ['./stock-overview.component.scss'],
 })
-export class StockOverviewComponent {
+export class StockOverviewComponent implements OnInit {
   readonly router = inject(Router);
-  currentDate = signal('Dec 15, 2024');
-  lastUpdated = signal('2 minutes ago');
+  private readonly inventory = inject(InventoryService);
 
-  totalItems = signal(12345);
-  totalStockValue = signal(2543890);
-  avgTurnoverRate = signal(4.2);
-  stockTurnoverDays = signal(87);
-  lowStockItems = signal(4);
+  loading = signal(false);
+  loadError = signal<string | null>(null);
 
-  valueChange = signal('+12.5%');
-  turnoverChange = signal('+0.3x');
-  daysChange = signal('-5 days');
+  currentDate = signal(new Date().toLocaleDateString());
+  lastUpdated = signal('—');
 
-  warehouseStock = signal<WarehouseStock[]>([
-    { name: 'Warehouse A', items: 5234 },
-    { name: 'Warehouse B', items: 3876 },
-    { name: 'Warehouse C', items: 2145 },
-    { name: 'Storage', items: 1090 }
-  ]);
+  totalItems = signal(0);
+  totalStockValue = signal(0);
+  avgTurnoverRate = signal(0);
+  stockTurnoverDays = signal(0);
+  lowStockItems = signal(0);
 
-  categoryStock = signal<CategoryStock[]>([
-    { name: 'Electronics', items: 4320, percentage: 100 },
-    { name: 'Furniture', items: 3086, percentage: 71 },
-    { name: 'Office Supplies', items: 1852, percentage: 43 },
-    { name: 'IT Equipment', items: 1234, percentage: 29 },
-    { name: 'Stationery', items: 988, percentage: 23 },
-    { name: 'Other', items: 865, percentage: 20 }
-  ]);
+  valueChange = signal('—');
+  turnoverChange = signal('—');
+  daysChange = signal('—');
 
-  topItems = signal<StockItem[]>([
-    { rank: 1, name: 'Dell XPS Laptop', stockQty: 45, unitPrice: 2499, value: 112455 },
-    { rank: 2, name: 'HP LaserJet Printer', stockQty: 32, unitPrice: 899, value: 28768 },
-    { rank: 3, name: 'Office Chair (Ergo)', stockQty: 120, unitPrice: 450, value: 54000 },
-    { rank: 4, name: '27" Monitor', stockQty: 67, unitPrice: 350, value: 23450 },
-    { rank: 5, name: 'Server Rack', stockQty: 8, unitPrice: 2800, value: 22400 }
-  ]);
+  todayIn = signal(0);
+  todayOut = signal(0);
+  todayXfer = signal(0);
+  weekIn = signal(0);
+  weekOut = signal(0);
+  weekXfer = signal(0);
+  monthIn = signal(0);
+  monthOut = signal(0);
+  monthXfer = signal(0);
 
-  // Bar heights for the chart - calculated once to avoid ExpressionChangedAfterItHasBeenCheckedError
+  warehouseStock = signal<WarehouseStock[]>([]);
+  categoryStock = signal<CategoryStock[]>([]);
+  topItems = signal<StockItem[]>([]);
+
   barHeightsTotal = signal<number[]>([]);
   barHeightsInflow = signal<number[]>([]);
   barHeightsOutflow = signal<number[]>([]);
 
-  constructor() {
-    // Calculate bar heights once to avoid ExpressionChangedAfterItHasBeenCheckedError
+  ngOnInit(): void {
     const totalHeights: number[] = [];
     const inflowHeights: number[] = [];
     const outflowHeights: number[] = [];
@@ -86,10 +91,162 @@ export class StockOverviewComponent {
     this.barHeightsTotal.set(totalHeights);
     this.barHeightsInflow.set(inflowHeights);
     this.barHeightsOutflow.set(outflowHeights);
+    this.load();
+  }
+
+  load(): void {
+    this.loading.set(true);
+    this.loadError.set(null);
+    const today = new Date();
+    const startMonth = toYmd(addDays(today, -30));
+    const end = toYmd(today);
+    forkJoin({
+      overview: this.inventory.getStockOverview({ pageSize: 10000 }),
+      movements: this.inventory.getStockMovements({ dateFrom: startMonth, dateTo: end, pageSize: 2000 }),
+    }).subscribe({
+      next: ({ overview, movements }) => {
+        this.loading.set(false);
+        if (overview.success === false || !Array.isArray(overview.data)) {
+          this.loadError.set(overview.message || 'Could not load stock overview.');
+          return;
+        }
+        const rows = overview.data;
+        const totalUnits = rows.reduce((a, r) => a + (Number(r.currentStock) || 0), 0);
+        this.totalItems.set(totalUnits);
+        this.totalStockValue.set(0);
+
+        const low = rows.filter((r) => {
+          const min = Number(r.minimumThreshold) || 0;
+          const q = Number(r.currentStock) || 0;
+          return min > 0 && q <= min;
+        }).length;
+        this.lowStockItems.set(low);
+
+        const wmap = new Map<string, number>();
+        for (const r of rows) {
+          const n = r.warehouseName || '—';
+          wmap.set(n, (wmap.get(n) || 0) + (Number(r.currentStock) || 0));
+        }
+        this.warehouseStock.set(
+          [...wmap.entries()]
+            .map(([name, items]) => ({ name, items }))
+            .sort((a, b) => b.items - a.items),
+        );
+
+        const cmap = new Map<string, number>();
+        for (const r of rows) {
+          const c = r.unitOfMeasure || 'Units';
+          cmap.set(c, (cmap.get(c) || 0) + (Number(r.currentStock) || 0));
+        }
+        const maxC = Math.max(...[...cmap.values()], 1);
+        this.categoryStock.set(
+          [...cmap.entries()]
+            .map(([name, items]) => ({ name, items, percentage: Math.round((items / maxC) * 100) }))
+            .sort((a, b) => b.items - a.items)
+            .slice(0, 8),
+        );
+
+        const top = [...rows]
+          .sort((a, b) => (Number(b.currentStock) || 0) - (Number(a.currentStock) || 0))
+          .slice(0, 10)
+          .map((r, i) => ({
+            rank: i + 1,
+            name: r.itemName || '—',
+            stockQty: Number(r.currentStock) || 0,
+            unitPrice: 0,
+            value: 0,
+          }));
+        this.topItems.set(top);
+
+        if (movements.success !== false && Array.isArray(movements.data)) {
+          this.applyMovementRollups(movements.data);
+        }
+
+        this.lastUpdated.set('Just now');
+      },
+      error: (err) => {
+        this.loading.set(false);
+        this.loadError.set('Failed to load overview.');
+        console.error(err);
+      },
+    });
+  }
+
+  private applyMovementRollups(movs: StockMovementDto[]): void {
+    const startOfDay = (d: Date) => {
+      const x = new Date(d);
+      x.setHours(0, 0, 0, 0);
+      return x;
+    };
+    const t0 = startOfDay(new Date());
+    const w0 = addDays(t0, -7);
+    const m0 = addDays(t0, -30);
+
+    let tin = 0;
+    let tout = 0;
+    let txf = 0;
+    let win = 0;
+    let wout = 0;
+    let wxf = 0;
+    let min = 0;
+    let mout = 0;
+    let mxf = 0;
+
+    for (const raw of movs) {
+      const dt = raw.movementDate ? new Date(raw.movementDate) : null;
+      if (!dt || Number.isNaN(dt.getTime())) continue;
+      const q = Number(raw.quantity) || 0;
+      const kind = this.classifyMovement(raw);
+      const abs = Math.abs(q);
+
+      const add = (isT: boolean, isW: boolean, isM: boolean) => {
+        if (isT) {
+          if (kind === 'in') tin += abs;
+          else if (kind === 'out') tout += abs;
+          else txf += abs;
+        }
+        if (isW) {
+          if (kind === 'in') win += abs;
+          else if (kind === 'out') wout += abs;
+          else wxf += abs;
+        }
+        if (isM) {
+          if (kind === 'in') min += abs;
+          else if (kind === 'out') mout += abs;
+          else mxf += abs;
+        }
+      };
+
+      const isT = dt >= t0;
+      const isW = dt >= w0;
+      const isM = dt >= m0;
+      if (isT || isW || isM) add(isT, isW, isM);
+    }
+
+    this.todayIn.set(tin);
+    this.todayOut.set(tout);
+    this.todayXfer.set(txf);
+    this.weekIn.set(win);
+    this.weekOut.set(wout);
+    this.weekXfer.set(wxf);
+    this.monthIn.set(min);
+    this.monthOut.set(mout);
+    this.monthXfer.set(mxf);
+  }
+
+  private classifyMovement(d: StockMovementDto): 'in' | 'out' | 'other' {
+    const u = `${d.movementType || ''} ${d.referenceType || ''}`.toUpperCase();
+    if (u.includes('TRANSFER')) return 'other';
+    if (u.includes('IN') || u.includes('RECEIV') || u.includes('GRN')) return 'in';
+    if (u.includes('OUT') || u.includes('ISSUE') || u.includes('SIV')) return 'out';
+    const q = Number(d.quantity) || 0;
+    if (q > 0) return 'in';
+    if (q < 0) return 'out';
+    return 'other';
   }
 
   refreshData(): void {
-    this.lastUpdated.set('Just now');
+    this.load();
   }
 
   formatValue(value: number): string {
@@ -112,7 +269,6 @@ export class StockOverviewComponent {
     return base + Math.random() * variance;
   }
 
-  // Navigation methods
   viewWarehouseDetails(): void {
     this.router.navigate(['/admin/warehouses']);
   }

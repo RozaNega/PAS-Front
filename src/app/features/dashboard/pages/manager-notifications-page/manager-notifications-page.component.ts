@@ -2,7 +2,10 @@ import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { NotificationService, Notification } from '../../../common/notifications/services/notification-feature.service';
+import {
+  NotificationFeatureService,
+  Notification,
+} from '../../../common/notifications/services/notification-feature.service';
 
 export interface ApprovalRequest {
   srNumber: string;
@@ -23,13 +26,12 @@ export interface BudgetAlert {
   selector: 'app-manager-notifications-page',
   standalone: true,
   imports: [CommonModule, FormsModule],
-  providers: [NotificationService],
   templateUrl: './manager-notifications-page.component.html',
   styleUrl: './manager-notifications-page.component.scss',
 })
 export class ManagerNotificationsPageComponent {
   private readonly router = inject(Router);
-  private readonly notificationService = inject(NotificationService);
+  private readonly notificationService = inject(NotificationFeatureService);
 
   searchQuery = '';
   filterType = 'all';

@@ -60,7 +60,7 @@ export class ManagerApprovalDashboardComponent implements OnInit, OnDestroy {
   readonly currentLocation = signal<string>('Addis Ababa, Ethiopia');
   private clockInterval?: any;
 
-  keyMetrics: KeyMetric[] = [
+  keyMetrics = signal<KeyMetric[]>([
     {
       title: 'Pending Approvals',
       subtitle: '',
@@ -96,7 +96,7 @@ export class ManagerApprovalDashboardComponent implements OnInit, OnDestroy {
       trend: '⚠️ Near Limit',
       tone: 'yellow',
     },
-  ];
+  ]);
 
   pendingRequests: PendingRequest[] = [
     {
@@ -269,7 +269,9 @@ export class ManagerApprovalDashboardComponent implements OnInit, OnDestroy {
     if (!request) return;
 
     this.pendingRequests = this.pendingRequests.filter((r) => r.srNumber !== srNumber);
-    this.keyMetrics[0].value = this.pendingRequests.length;
+    const updatedMetrics = [...this.keyMetrics()];
+    updatedMetrics[0].value = this.pendingRequests.length;
+    this.keyMetrics.set(updatedMetrics);
 
     this.recentActivity.unshift({
       date: new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date()),
@@ -286,7 +288,9 @@ export class ManagerApprovalDashboardComponent implements OnInit, OnDestroy {
 
     if (confirm(`Are you sure you want to reject request ${srNumber}?`)) {
       this.pendingRequests = this.pendingRequests.filter((r) => r.srNumber !== srNumber);
-      this.keyMetrics[0].value = this.pendingRequests.length;
+      const updatedMetrics = [...this.keyMetrics()];
+      updatedMetrics[0].value = this.pendingRequests.length;
+      this.keyMetrics.set(updatedMetrics);
 
       this.recentActivity.unshift({
         date: new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date()),
