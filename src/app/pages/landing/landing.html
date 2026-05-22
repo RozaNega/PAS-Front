@@ -105,7 +105,7 @@
         </div>
 
         <a class="btn ghost" routerLink="/auth/register" (click)="closeMenu()">Sign Up</a>
-        <a class="btn solid" routerLink="/auth/login" (click)="closeMenu()">Login</a>
+        <a class="btn solid" [routerLink]="dashboardRoute()" (click)="closeMenu()">{{ dashboardLabel() }}</a>
       </div>
     </div>
   </header>
@@ -137,7 +137,7 @@
           </div>
 
           <div class="hero-actions">
-            <a class="btn solid" routerLink="/auth/login">Login</a>
+            <a class="btn solid" [routerLink]="dashboardRoute()">{{ dashboardLabel() }}</a>
             <a class="btn ghost" routerLink="/auth/register">Create account</a>
             <button type="button" class="btn outline" (click)="scrollToSection('features')">
               Explore platform

@@ -108,12 +108,12 @@ export class Landing implements OnInit, OnDestroy {
   ];
 
   protected readonly logoItems: readonly string[] = [
-    'Command Center',
-    'Supply Chain',
-    'Asset Registry',
-    'Warehouse Ops',
-    'Audit Trail',
-    'Onboarding',
+    'Headquarters',
+    'Supply Command', 
+    'Logistics Unit',
+    'Finance Desk',
+    'Audit Control',
+    'Regional Hubs',
   ];
 
   protected readonly year = computed(() => new Date().getFullYear());
@@ -186,6 +186,17 @@ export class Landing implements OnInit, OnDestroy {
   protected readonly contactSubmitting = signal(false);
   protected readonly contactSuccess = signal<string | null>(null);
   protected readonly contactError = signal<string | null>(null);
+
+  // Dynamic dashboard route based on authentication
+  protected readonly dashboardRoute = computed(() => {
+    // For landing page, always show login route since we don't have auth context
+    return '/auth/login';
+  });
+
+  protected readonly dashboardLabel = computed(() => {
+    // For landing page, always show "Login" since we don't have auth context
+    return 'Login';
+  });
 
   constructor() {
     this.restoreTheme();
