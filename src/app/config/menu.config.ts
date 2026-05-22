@@ -25,21 +25,11 @@ export const managerMenuConfig: MenuItem[] = [
     ],
   },
   {
-    label: 'SIV Management',
+    label: 'Store Issue Vouchers',
     icon: 'bi bi-file-text',
     children: [
       { label: 'All SIVs', route: '/manager/sivs/all', icon: 'bi bi-file-earmark-text' },
-      { label: 'Pending Issue', route: '/manager/sivs/pending', icon: 'bi bi-clock' },
-      { label: 'Issued', route: '/manager/sivs/issued', icon: 'bi bi-check-circle' },
-    ],
-  },
-  {
-    label: 'Approval Workflows',
-    icon: 'bi bi-diagram-3-fill',
-    children: [
-      { label: 'All Workflows', route: '/manager/workflows/all', icon: 'bi bi-diagram-3' },
-      { label: 'Create Workflow', route: '/manager/workflows/create', icon: 'bi bi-plus-circle' },
-      { label: 'Approvers', route: '/manager/workflows/approvers', icon: 'bi bi-people' },
+      { label: 'Department SIVs', route: '/manager/sivs/issued', icon: 'bi bi-check-circle' },
     ],
   },
   {
@@ -69,17 +59,11 @@ export const managerMenuConfig: MenuItem[] = [
         route: '/manager/reports/approval',
         icon: 'bi bi-file-earmark-bar-graph',
       },
-      { label: 'Request Reports', route: '/manager/reports/requests', icon: 'bi bi-file-text' },
-      { label: 'SIV Reports', route: '/manager/reports/sivs', icon: 'bi bi-file-text' },
-      { label: 'Inventory Reports', route: '/manager/reports/inventory', icon: 'bi bi-boxes' },
-      {
-        label: 'Stock Movement Reports',
-        route: '/manager/reports/stock-movements',
-        icon: 'bi bi-arrow-left-right',
-      },
+      { label: 'Department Request Reports', route: '/manager/reports/requests', icon: 'bi bi-file-text' },
+      { label: 'Issuance Report', route: '/manager/reports/sivs', icon: 'bi bi-file-text' },
+      { label: 'Stock Reports', route: '/manager/reports/inventory', icon: 'bi bi-boxes' },
     ],
   },
-  { label: 'Audit Trail', route: '/manager/audit-trail', icon: 'bi bi-clock-history' },
 ];
 
 export const complianceOfficerMenuConfig: MenuItem[] = [
@@ -94,49 +78,13 @@ export const complianceOfficerMenuConfig: MenuItem[] = [
         label: 'Pending Reviews',
         route: '/compliance-officer/audits/pending',
         icon: 'bi bi-clock',
+        badge: 3,
       },
       {
         label: 'Completed',
         route: '/compliance-officer/audits/completed',
         icon: 'bi bi-check-circle',
       },
-    ],
-  },
-  {
-    label: 'Compliance Reports',
-    icon: 'bi bi-bar-chart-fill',
-    children: [
-      {
-        label: 'Risk Reports',
-        route: '/compliance-officer/reports/risk',
-        icon: 'bi bi-exclamation-triangle',
-      },
-      {
-        label: 'Audit Reports',
-        route: '/compliance-officer/reports/audit',
-        icon: 'bi bi-file-earmark-spreadsheet',
-      },
-      {
-        label: 'Compliance Status',
-        route: '/compliance-officer/reports/status',
-        icon: 'bi bi-shield-check',
-      },
-      {
-        label: 'Disposal Reports',
-        route: '/compliance-officer/reports/disposal',
-        icon: 'bi bi-trash',
-      },
-      {
-        label: 'Inspection Reports',
-        route: '/compliance-officer/reports/inspection',
-        icon: 'bi bi-search',
-      },
-    ],
-  },
-  {
-    label: 'Decision Monitoring',
-    icon: 'bi bi-graph-up',
-    children: [
       {
         label: 'Approval Decisions',
         route: '/compliance-officer/decisions/approvals',
@@ -155,11 +103,50 @@ export const complianceOfficerMenuConfig: MenuItem[] = [
     ],
   },
   {
-    label: 'Records Management',
-    icon: 'bi bi-folder-fill',
+    label: 'Inspections',
+    icon: 'bi bi-search',
+    route: '/compliance-officer/inspections',
+  },
+  {
+    label: 'Documents',
+    icon: 'bi bi-file-earmark',
+    route: '/compliance-officer/documents',
+  },
+  {
+    label: 'Compliance',
+    icon: 'bi bi-shield-check',
     children: [
-      { label: 'Inspections', route: '/compliance-officer/inspections', icon: 'bi bi-search' },
-      { label: 'Documents', route: '/compliance-officer/documents', icon: 'bi bi-file-earmark' },
+      {
+        label: 'Compliance Status',
+        route: '/compliance-officer/reports/status',
+        icon: 'bi bi-shield-check',
+      },
+    ],
+  },
+  {
+    label: 'Reports',
+    icon: 'bi bi-bar-chart-fill',
+    children: [
+      {
+        label: 'Risk Reports',
+        route: '/compliance-officer/reports/risk',
+        icon: 'bi bi-exclamation-triangle',
+      },
+      {
+        label: 'Audit Reports',
+        route: '/compliance-officer/reports/audit',
+        icon: 'bi bi-file-earmark-spreadsheet',
+      },
+      {
+        label: 'Disposal Reports',
+        route: '/compliance-officer/reports/disposal',
+        icon: 'bi bi-trash',
+      },
+      {
+        label: 'Inspection Reports',
+        route: '/compliance-officer/reports/inspection',
+        icon: 'bi bi-search',
+      },
     ],
   },
 ];

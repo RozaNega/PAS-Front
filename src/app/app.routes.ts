@@ -591,6 +591,46 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'inventory',
+        loadComponent: () =>
+          import('./features/store-inventory/stock-overview/pages/stock-overview.component').then(
+            (m) => m.StockOverviewComponent,
+          ),
+        canActivate: [AuthGuard],
+      },
+      {
+        path: 'inventory/low-stock',
+        loadComponent: () =>
+          import('./features/store-inventory/low-stock/pages/low-stock.component').then(
+            (m) => m.LowStockComponent,
+          ),
+        canActivate: [AuthGuard],
+      },
+      {
+        path: 'inventory/movements',
+        loadComponent: () =>
+          import('./features/store-inventory/stock-movements/pages/stock-movements.component').then(
+            (m) => m.StockMovementsComponent,
+          ),
+        canActivate: [AuthGuard],
+      },
+      {
+        path: 'inventory/ledger',
+        loadComponent: () =>
+          import('./features/store-inventory/stock-ledger/pages/stock-ledger.component').then(
+            (m) => m.StockLedgerComponent,
+          ),
+        canActivate: [AuthGuard],
+      },
+      {
+        path: 'reports/inventory',
+        loadComponent: () =>
+          import('./features/store-inventory/stock-report/pages/stock-report.component').then(
+            (m) => m.StockReportComponent,
+          ),
+        canActivate: [AuthGuard],
+      },
+      {
         path: 'workflows/all',
         loadComponent: () =>
           import('./features/dashboard/pages/manager-approvals/all-workflows.component').then(

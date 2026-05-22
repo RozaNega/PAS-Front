@@ -18,22 +18,6 @@
         <div class="error-message" *ngIf="submitted() && workflowForm.get('description')?.errors?.['required']">Description is required</div>
       </div>
 
-      <div class="form-row">
-        <div class="form-field">
-          <label for="minAmount">Min Amount *</label>
-          <input id="minAmount" type="number" formControlName="minAmount" placeholder="0" />
-        </div>
-        <div class="form-field">
-          <label for="maxAmount">Max Amount *</label>
-          <input id="maxAmount" type="number" formControlName="maxAmount" placeholder="0" />
-        </div>
-      </div>
-
-      <div class="form-field">
-        <label for="approverLevels">Approver Levels *</label>
-        <input id="approverLevels" type="number" formControlName="approverLevels" placeholder="1" min="1" />
-      </div>
-
       <div class="form-actions">
         <button type="button" class="btn btn-secondary" (click)="cancel()" [disabled]="loading()">Cancel</button>
         <button type="submit" class="btn btn-primary" [disabled]="loading()">

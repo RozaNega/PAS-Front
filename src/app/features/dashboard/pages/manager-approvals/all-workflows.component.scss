@@ -1,9 +1,211 @@
-.all-workflows-container { padding: 2rem; width: 100%; }
-.page-header { margin-bottom: 2rem; h1 { font-size: 1.875rem; font-weight: 700; margin: 0 0 0.5rem 0; } .subtitle { font-size: 0.875rem; color: var(--text-color-muted); margin: 0; } }
-.workflows-list { display: flex; flex-direction: column; gap: 1rem; }
-.workflow-card { background: var(--surface-card); border-radius: 12px; padding: 1.5rem; border: 1px solid var(--surface-border); }
-.workflow-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
-.workflow-name { font-weight: 600; color: var(--text-color); }
-.status-badge { padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; background: var(--surface-section); &.active { background: #d1fae5; color: #065f46; } }
-.description { margin: 0 0 1rem 0; color: var(--text-color); }
-.workflow-details { .detail-row { display: flex; padding: 0.5rem 0; border-bottom: 1px solid var(--surface-border); &:last-child { border-bottom: none; } .label { font-weight: 500; color: var(--text-color-muted); width: 100px; flex-shrink: 0; } .value { color: var(--text-color); } } }
+.all-workflows-container {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.page-header {
+  margin-bottom: 2rem;
+
+  .header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+
+  h1 {
+    font-size: 1.875rem;
+    font-weight: 700;
+    margin: 0 0 0.5rem 0;
+  }
+
+  .subtitle {
+    font-size: 0.875rem;
+    color: var(--text-color-muted);
+    margin: 0;
+  }
+
+  .header-actions {
+    display: flex;
+    gap: 0.75rem;
+  }
+}
+
+.btn {
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.btn-primary {
+  background: var(--primary-color);
+  color: white;
+
+  &:hover:not(:disabled) {
+    opacity: 0.9;
+  }
+}
+
+.btn-secondary {
+  background: var(--surface-section);
+  color: var(--text-color);
+  border: 1px solid var(--surface-border);
+
+  &:hover:not(:disabled) {
+    background: var(--surface-hover);
+  }
+}
+
+.btn-icon {
+  padding: 0.5rem;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 6px;
+  color: var(--text-color);
+  transition: all 0.2s;
+
+  &:hover {
+    background: var(--surface-section);
+  }
+
+  &.btn-danger {
+    color: #dc3545;
+
+    &:hover {
+      background: #fee;
+    }
+  }
+}
+
+.loading-state,
+.error-state,
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  text-align: center;
+
+  i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    color: var(--text-color-muted);
+  }
+
+  h3 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.25rem;
+  }
+
+  p {
+    color: var(--text-color-muted);
+    margin: 0 0 1.5rem 0;
+  }
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid var(--surface-border);
+  border-top-color: var(--primary-color);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.workflows-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.workflow-card {
+  background: var(--surface-card);
+  border-radius: 12px;
+  padding: 1.5rem;
+  border: 1px solid var(--surface-border);
+  transition: all 0.2s;
+
+  &:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+}
+
+.workflow-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.workflow-info {
+  flex: 1;
+
+  .workflow-name {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-color);
+    margin: 0 0 0.5rem 0;
+  }
+
+  .workflow-description {
+    color: var(--text-color-muted);
+    margin: 0;
+    font-size: 0.875rem;
+  }
+}
+
+.workflow-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.workflow-meta {
+  display: flex;
+  gap: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--surface-border);
+
+  .meta-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--text-color-muted);
+
+    i {
+      font-size: 1rem;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .page-header .header-content {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .workflow-meta {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+}

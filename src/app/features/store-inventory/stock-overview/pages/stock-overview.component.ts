@@ -114,14 +114,25 @@ export class StockOverviewComponent {
 
   // Navigation methods
   viewWarehouseDetails(): void {
-    this.router.navigate(['/admin/warehouses']);
+    const role = this.getCurrentRole();
+    this.router.navigate([`/${role}/warehouses`]);
   }
 
   viewCategoryDetails(): void {
-    this.router.navigate(['/admin/inventory/current-stock']);
+    const role = this.getCurrentRole();
+    this.router.navigate([`/${role}/inventory/current-stock`]);
   }
 
   viewAllItems(): void {
-    this.router.navigate(['/admin/inventory/current-stock']);
+    const role = this.getCurrentRole();
+    this.router.navigate([`/${role}/inventory/current-stock`]);
+  }
+
+  private getCurrentRole(): string {
+    const url = this.router.url;
+    if (url.includes('/admin/')) return 'admin';
+    if (url.includes('/manager/')) return 'manager';
+    if (url.includes('/storekeeper/')) return 'storekeeper';
+    return 'admin'; // default fallback
   }
 }

@@ -13,6 +13,12 @@ interface StoreIssueVoucher {
   totalItems: number;
   totalValue: number;
   issuedBy: string;
+  items?: Array<{
+    itemName: string;
+    quantity: number;
+    unitPrice: number;
+    totalPrice: number;
+  }>;
 }
 
 @Component({
@@ -36,15 +42,61 @@ export class IssuedSIVsComponent {
       issueDate: '2024-01-20',
       totalItems: 3,
       totalValue: 5348,
-      issuedBy: 'Storekeeper'
+      issuedBy: 'Storekeeper',
+      items: [
+        { itemName: 'Dell Laptop', quantity: 2, unitPrice: 1200, totalPrice: 2400 },
+        { itemName: 'Wireless Mouse', quantity: 5, unitPrice: 25, totalPrice: 125 },
+        { itemName: 'USB Cable', quantity: 10, unitPrice: 15, totalPrice: 150 }
+      ]
     }
   ]);
 
-  viewDetails(id: string): void {
-    void this.router.navigate(['/manager/sivs/all']);
+  protected selectedSiv = signal<StoreIssueVoucher | null>(null);
+  protected showDetailsModal = signal(false);
+
+  viewDetails(siv: StoreIssueVoucher): void {
+    this.selectedSiv.set(siv);
+    this.showDetailsModal.set(true);
   }
 
-  downloadPdf(sivNumber: string): void {
-    alert(`Downloading PDF for ${sivNumber}...`);
+  closeDetailsModal(): void {
+    this.showDetailsModal.set(false);
+    this.selectedSiv.set(null);
+  }
+
+  downloadPdf(siv: StoreIssueVoucher): void {
+    console.log('Downloading PDF for:', siv.sivNumber);
+    
+    const content = `
+      STORE ISSUE VOUCHER
+      ==================
+      
+      SIV Number: ${siv.sivNumber}
+      Request Number: ${siv.requestNumber}
+      Requester: ${siv.requesterName}
+      Department: ${siv.department}
+      Status: ${siv.status}
+      Issue Date: ${siv.issueDate}
+      Issued By: ${siv.issuedBy}
+      
+      ITEMS:
+      ------
+      ${siv.items?.map(item => 
+        `${item.itemName} - Qty: ${item.quantity} - Unit Price: $${item.unitPrice} - Total: $${item.totalPrice}`
+      ).join('\n      ') || 'No items'}
+      
+      Total Items: ${siv.totalItems}
+      Total Value: $${siv.totalValue.toLocaleString()}
+    `;
+
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${siv.sivNumber}.txt`;
+    link.click();
+    window.URL.revokeObjectURL(url);
+    
+    alert(`Downloaded ${siv.sivNumber} as text file. In production, this would be a PDF.`);
   }
 }

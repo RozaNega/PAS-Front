@@ -296,4 +296,9 @@ export class DocumentsComponent {
   closeModal(): void {
     this.activeViewDoc.set(null);
   }
+
+  getDisplayName(documentName: string): string {
+    // Remove file extension for display
+    return documentName.replace(/\.(pdf|doc|docx|txt|xlsx|xls)$/i, '');
+  }
 }

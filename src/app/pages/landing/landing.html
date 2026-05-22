@@ -1,11 +1,18 @@
 <section class="landing-shell" id="top">
   <header class="topbar" [class.nav-open]="menuOpen()">
     <div class="container">
-      <a class="brand" href="#top" (click)="closeMenu()" aria-label="AFRICOM home">
-        <span class="brand-mark" aria-hidden="true">AF</span>
+      <a class="brand" href="#top" (click)="scrollToSection('top')" aria-label="AFRICOM home">
+        <img
+          class="brand-logo"
+          ngSrc="/assets/images/africom-logo.png"
+          width="200"
+          height="64"
+          priority
+          alt="AFRICOM Technologies"
+        />
         <span class="brand-text">
           <strong>AFRICOM</strong>
-          <small>Asset Management Platform</small>
+          <small>Technologies since 2004</small>
         </span>
       </a>
 
@@ -26,10 +33,10 @@
       </button>
 
       <nav id="landing-nav" class="top-nav" [class.open]="menuOpen()" aria-label="Main navigation">
-        <a href="#features" (click)="closeMenu()">Features</a>
-        <a href="#modules" (click)="closeMenu()">Modules</a>
-        <a href="#impact" (click)="closeMenu()">Impact</a>
-        <a href="#contact" (click)="closeMenu()">Contact</a>
+        <button type="button" (click)="scrollToSection('features')">Features</button>
+        <button type="button" (click)="scrollToSection('modules')">Modules</button>
+        <button type="button" (click)="scrollToSection('impact')">Impact</button>
+        <button type="button" (click)="scrollToSection('contact')">Contact</button>
       </nav>
 
       <div class="top-actions" [class.open]="menuOpen()">
@@ -65,34 +72,37 @@
           @if (themePanelOpen()) {
             <div class="theme-overlay" (click)="closeThemePanel()" aria-hidden="true"></div>
             <section id="landing-theme-panel" class="theme-panel" aria-label="Theme settings">
-              <h3>Primary</h3>
+              <div class="theme-panel-header">
+                <div>
+                  <p class="theme-panel-kicker">Brand palette</p>
+                  <h3>Choose a primary tone</h3>
+                </div>
+                <span class="theme-panel-note">Dark mode stays separate</span>
+              </div>
               <div class="primary-swatches" aria-label="Primary colors">
                 @for (option of primaryOptions; track option.id) {
                   <button
                     type="button"
-                    class="swatch"
-                    title="Set primary color"
+                    class="swatch-card"
                     [class.active]="selectedPrimary() === option.id"
-                    [style.background]="option.value"
-                    [attr.title]="'Set primary color ' + option.label"
                     [attr.aria-label]="'Set primary color ' + option.label"
+                    [style.background]="
+                      option.accent
+                        ? 'linear-gradient(135deg, ' + option.value + ', ' + option.accent + ')'
+                        : option.value
+                    "
                     (click)="setPrimary(option.id)"
-                  ></button>
+                  >
+                    <span class="swatch-meta">
+                      <strong>{{ option.label }}</strong>
+                      <small>{{ option.accent ? 'Brand pair' : option.value }}</small>
+                    </span>
+                  </button>
                 }
               </div>
-              <button 
-                type="button" 
-                class="btn ghost small" 
-                (click)="resetFirstVisit()"
-                title="Reset first visit flag for testing"
-                style="margin-top: 0.5rem; font-size: 0.75rem; padding: 0.25rem 0.5rem; width: 100%;"
-              >
-                🔄 Reset First Visit
-              </button>
             </section>
           }
         </div>
-
 
         <a class="btn ghost" routerLink="/auth/register" (click)="closeMenu()">Sign Up</a>
         <a class="btn solid" routerLink="/auth/login" (click)="closeMenu()">Login</a>
@@ -104,23 +114,34 @@
     <section class="hero">
       <div class="container hero-grid">
         <div class="hero-copy">
-          <p class="promo-pill"><span aria-hidden="true">●</span> Operations Platform 2026</p>
+          <p class="promo-pill"><span aria-hidden="true">●</span> Operations platform 2026</p>
 
-          <h1>
-            <span class="headline-line">AFRICOM'S </span>
-            <span class="headline-line2">-SINCE 2004-</span>
-
-            <span class="headline-line headline-gradient">Technologies</span>
+          <h1 class="hero-brand-lockup" aria-label="AFRICOM Technologies since 2004">
+            <span class="headline-africom">AFRICOM</span>
+            <span class="headline-meta">
+              <span class="headline-dash" aria-hidden="true"></span>
+              <span class="headline-since">SINCE 2004</span>
+              <span class="headline-dash" aria-hidden="true"></span>
+            </span>
+            <span class="headline-technologies">Technologies</span>
           </h1>
           <p>
             Coordinate assets, inventory, and requisitions from one command layer with policy-driven
-            workflows and real-time visibility for every department.
+            workflows, live visibility, and a brand system tuned to AFRICOM Blue and Green.
           </p>
+
+          <div class="brand-strip" aria-label="Platform highlights">
+            @for (item of logoItems; track item) {
+              <span class="brand-chip">{{ item }}</span>
+            }
+          </div>
 
           <div class="hero-actions">
             <a class="btn solid" routerLink="/auth/login">Login</a>
-
-            <a class="btn ghost subtle" href="#features">Explore Platform</a>
+            <a class="btn ghost" routerLink="/auth/register">Create account</a>
+            <button type="button" class="btn outline" (click)="scrollToSection('features')">
+              Explore platform
+            </button>
           </div>
 
           <div class="stat-row" aria-label="Platform highlights">
@@ -133,22 +154,77 @@
           </div>
         </div>
 
-        <aside class="hero-panel" aria-label="Live operational attendance">
-          <p class="panel-kicker">Live attendees</p>
-          <p class="live-total">14,666</p>
-          <ul class="countdown-grid" aria-label="Countdown to deployment week">
-            <li><strong>20</strong><span>Days</span></li>
-            <li><strong>14</strong><span>Hours</span></li>
-            <li><strong>06</strong><span>Minutes</span></li>
-            <li><strong>37</strong><span>Seconds</span></li>
-          </ul>
-          <p class="countdown-note">Until May 14th, 2026</p>
+        <aside class="hero-panel" aria-label="Live platform snapshot">
+          @if (snapshotLoading()) {
+            <div class="snapshot-skeleton" aria-live="polite" aria-busy="true">
+              <div class="skeleton-row skeleton-chip"></div>
+              <div class="skeleton-row skeleton-title"></div>
+              <div class="skeleton-row skeleton-total"></div>
+              <div class="skeleton-grid">
+                <span class="skeleton-tile"></span>
+                <span class="skeleton-tile"></span>
+                <span class="skeleton-tile"></span>
+                <span class="skeleton-tile"></span>
+              </div>
+            </div>
+          } @else {
+            <div class="snapshot-ready">
+              <div class="snapshot-header">
+                <div>
+                  <p class="panel-kicker">Live platform snapshot</p>
+                  <h2>AFRICOM command pulse</h2>
+                </div>
+                <span class="live-badge"><span aria-hidden="true"></span>Live</span>
+              </div>
+
+              <div class="snapshot-total">
+                <strong>{{ formattedLiveTotal() }}</strong>
+                <span>records visible right now</span>
+              </div>
+
+              <ul class="countdown-grid" aria-label="Countdown to deployment review">
+                <li>
+                  <strong>{{ countdownDays() }}</strong
+                  ><span>Days</span>
+                </li>
+                <li>
+                  <strong>{{ countdownHours() }}</strong
+                  ><span>Hours</span>
+                </li>
+                <li>
+                  <strong>{{ countdownMinutes() }}</strong
+                  ><span>Minutes</span>
+                </li>
+                <li>
+                  <strong>{{ countdownSeconds() }}</strong
+                  ><span>Seconds</span>
+                </li>
+              </ul>
+
+              <div class="snapshot-notes">
+                <p>
+                  Brand palette follows the logo: AFRICOM Blue for the primary tone and Green for
+                  the accent.
+                </p>
+                <p>Dark mode and the color swatches remain available from the top-right picker.</p>
+              </div>
+            </div>
+          }
         </aside>
       </div>
     </section>
 
     <section id="features" class="section features">
       <div class="container">
+        <div class="section-heading">
+          <p class="eyebrow">Core capabilities</p>
+          <h2>Everything needed for reliable asset operations</h2>
+          <p>
+            AFRICOM teams get a cleaner command layer, faster workflows, and a visual system that
+            now mirrors the brand mark instead of a generic palette.
+          </p>
+        </div>
+
         <div class="logo-strip" aria-label="AFRICOM trusted units">
           <div class="logo-track">
             @for (logo of logoItems; track logo) {
@@ -160,8 +236,6 @@
           </div>
         </div>
 
-        <p class="eyebrow">Core Capabilities</p>
-        <h2>Everything Needed For Reliable Asset Operations</h2>
         <div class="feature-grid">
           @for (feature of features; track feature.title) {
             <article class="feature-card">
@@ -176,8 +250,13 @@
 
     <section id="modules" class="section modules">
       <div class="container">
-        <p class="eyebrow">Integrated Modules</p>
-        <h2>Built Around How AFRICOM Teams Actually Work</h2>
+        <div class="section-heading compact">
+          <p class="eyebrow">Integrated modules</p>
+          <h2>Built around how AFRICOM teams actually work</h2>
+          <p>
+            Three focused modules cover property, storage, and workflow control without clutter.
+          </p>
+        </div>
 
         <div class="module-tabs" role="tablist" aria-label="Module tabs">
           @for (module of modules; track module.id) {
@@ -212,15 +291,20 @@
 
     <section id="impact" class="section impact">
       <div class="container impact-grid">
-        <article>
-          <h2>Measure What Matters</h2>
+        <article class="impact-card spotlight">
+          <p class="eyebrow">Measure what matters</p>
+          <h2>Operational clarity without visual noise</h2>
           <p>
             From unit-level stock confidence to command-level compliance reporting, AFRICOM teams
             stay aligned on one transparent operational baseline.
           </p>
+          <div class="impact-callout">
+            <strong>Brand-aligned</strong>
+            <span>Blue-led, green-accented, and ready for dark mode.</span>
+          </div>
         </article>
-        <article>
-          <h3>Typical Improvements</h3>
+        <article class="impact-card">
+          <p class="eyebrow">Typical improvements</p>
           <ul>
             <li>40% faster requisition turnaround</li>
             <li>75% less manual reconciliation</li>
@@ -232,15 +316,101 @@
   </main>
 
   <footer id="contact" class="footer">
-    <div class="container">
-      <div>
+    <div class="container contact-container">
+      <div class="contact-copy">
         <h2>Ready To Launch AFRICOM Across Your Organization?</h2>
         <p>Secure onboarding, role mapping, and operational setup can start immediately.</p>
+        <div class="contact-points">
+          <span>Secure onboarding</span>
+          <span>Role mapping</span>
+          <span>Operational setup</span>
+        </div>
       </div>
-      <div class="footer-actions">
-        <a class="btn ghost" routerLink="/auth/register">Book Onboarding</a>
-        <a class="btn solid" routerLink="/auth/login">Login</a>
+
+      <div class="contact-grid">
+        <div class="contact-details">
+          <h3>Contact Information</h3>
+          <p>
+            Prefer to reach us directly? Use any of the methods below and we'll respond promptly.
+          </p>
+          <ul>
+            <li class="contact-detail-item"><strong>Phone:</strong> +1 202-555-0146</li>
+            <li class="contact-detail-item"><strong>Email:</strong> contact@africom.example</li>
+            <li class="contact-detail-item">
+              <strong>Address:</strong> 123 Command Rd, Capital City
+            </li>
+            <li class="contact-detail-item"><strong>Hours:</strong> Mon–Fri, 08:00–17:00</li>
+          </ul>
+        </div>
+
+        <form
+          class="contact-form"
+          (submit)="submitContact(); $event.preventDefault()"
+          aria-label="Contact form"
+        >
+          <div class="form-row">
+            <label for="contact-name">Name</label>
+            <input
+              id="contact-name"
+              type="text"
+              [value]="contactName()"
+              (input)="contactName.set($any($event.target).value)"
+              required
+            />
+          </div>
+
+          <div class="form-row">
+            <label for="contact-email">Email</label>
+            <input
+              id="contact-email"
+              type="email"
+              [value]="contactEmail()"
+              (input)="contactEmail.set($any($event.target).value)"
+              required
+            />
+          </div>
+
+          <div class="form-row">
+            <label for="contact-phone">Phone</label>
+            <input
+              id="contact-phone"
+              type="tel"
+              [value]="contactPhone()"
+              (input)="contactPhone.set($any($event.target).value)"
+              placeholder="Optional"
+            />
+          </div>
+
+          <div class="form-row">
+            <label for="contact-message">Message</label>
+            <textarea
+              id="contact-message"
+              rows="4"
+              [value]="contactMessage()"
+              (input)="contactMessage.set($any($event.target).value)"
+              required
+            ></textarea>
+          </div>
+
+          <div class="form-row form-actions">
+            <button class="btn solid" type="submit" [disabled]="contactSubmitting()">
+              {{ contactSubmitting() ? 'Sending...' : 'Send Message' }}
+            </button>
+            <a class="btn ghost" routerLink="/auth/register">Book Onboarding</a>
+          </div>
+
+          <div class="form-status">
+            @if (contactSuccess()) {
+              <p class="success">{{ contactSuccess() }}</p>
+            }
+            @if (contactError()) {
+              <p class="error">{{ contactError() }}</p>
+            }
+          </div>
+        </form>
       </div>
+      <!-- close contact-grid -->
+
       <p class="copyright">© {{ year() }} AFRICOM. All rights reserved.</p>
     </div>
   </footer>

@@ -37,7 +37,7 @@ export class ErrorInterceptor implements HttpInterceptor {
           headers: error.headers.keys().map((key) => ({ key, value: error.headers.get(key) })),
         });
 
-        if (error.status === 401 && !this.router.url.includes('/auth/login')) {
+        if (error.status === 401 && !this.router.url.includes('/auth/login') && !this.router.url.includes('/landing')) {
           console.warn('Unauthorized request (401) to:', req.url, 'from page:', this.router.url);
           // Clear tokens directly instead of using AuthService to avoid circular dependency
           this.tokenService.removeToken();
@@ -45,8 +45,21 @@ export class ErrorInterceptor implements HttpInterceptor {
           this.tokenService.removeUser();
           this.router.navigate(['/auth/login']);
           this.toastService.error('Session expired. Please login again.');
+        } else if (error.status === 401 && this.router.url.includes('/landing')) {
+          console.warn('⚠️ API call failed from landing page (no backend connection) - staying on landing page');
+          // Don't redirect from landing page - just log the error
         } else if (!suppressErrorToast) {
-          if (error.status === 403) {
+          // Don't show error toast for Employee not found errors (managers don't have employee records)
+          const isEmployeeNotFound = error.status === 500 && 
+            error.error && 
+            typeof error.error === 'string' && 
+            error.error.includes('Entity "Employee"') && 
+            error.error.includes('was not found');
+          
+          if (isEmployeeNotFound) {
+            console.warn('⚠️ Employee record not found - this is expected for Manager users');
+            // Don't show error toast for this case
+          } else if (error.status === 403) {
             this.toastService.error('You do not have permission to perform this action.');
           } else if (error.status === 404) {
             this.toastService.error('Resource not found.');

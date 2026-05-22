@@ -1,22 +1,71 @@
 <div class="all-workflows-container">
   <div class="page-header">
-    <h1>All Workflows</h1>
-    <p class="subtitle">View all approval workflows</p>
+    <div class="header-content">
+      <div>
+        <h1>All Workflows</h1>
+        <p class="subtitle">Manage approval workflows</p>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-secondary" (click)="refreshWorkflows()" [disabled]="loading()">
+          <i class="bi bi-arrow-clockwise"></i> Refresh
+        </button>
+        <button class="btn btn-primary" (click)="createWorkflow()">
+          <i class="bi bi-plus-circle"></i> Create Workflow
+        </button>
+      </div>
+    </div>
   </div>
 
-  <div class="workflows-list">
-    @for (workflow of workflows(); track workflow.id) {
-      <div class="workflow-card">
-        <div class="workflow-header">
-          <div class="workflow-name">{{ workflow.name }}</div>
-          <div class="status-badge" [class.active]="workflow.status === 'Active'">{{ workflow.status }}</div>
+  @if (loading()) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading workflows...</p>
+    </div>
+  } @else if (error()) {
+    <div class="error-state">
+      <i class="bi bi-exclamation-triangle"></i>
+      <p>{{ error() }}</p>
+      <button class="btn btn-primary" (click)="refreshWorkflows()">Try Again</button>
+    </div>
+  } @else if (workflows().length === 0) {
+    <div class="empty-state">
+      <i class="bi bi-diagram-3"></i>
+      <h3>No workflows found</h3>
+      <p>Create your first approval workflow to get started</p>
+      <button class="btn btn-primary" (click)="createWorkflow()">
+        <i class="bi bi-plus-circle"></i> Create Workflow
+      </button>
+    </div>
+  } @else {
+    <div class="workflows-list">
+      @for (workflow of workflows(); track workflow.id) {
+        <div class="workflow-card">
+          <div class="workflow-header">
+            <div class="workflow-info">
+              <h3 class="workflow-name">{{ workflow.workflowName || 'Unnamed Workflow' }}</h3>
+              <p class="workflow-description">{{ workflow.description || 'No description' }}</p>
+            </div>
+            <div class="workflow-actions">
+              <button class="btn-icon" (click)="editWorkflow(workflow.id)" title="Edit">
+                <i class="bi bi-pencil"></i>
+              </button>
+              <button class="btn-icon btn-danger" (click)="deleteWorkflow(workflow.id)" title="Delete">
+                <i class="bi bi-trash"></i>
+              </button>
+            </div>
+          </div>
+          <div class="workflow-meta">
+            <div class="meta-item">
+              <i class="bi bi-calendar"></i>
+              <span>Created: {{ workflow.createdAt | date:'short' }}</span>
+            </div>
+            <div class="meta-item">
+              <i class="bi bi-person"></i>
+              <span>By: {{ workflow.createdBy || 'System' }}</span>
+            </div>
+          </div>
         </div>
-        <p class="description">{{ workflow.description }}</p>
-        <div class="workflow-details">
-          <div class="detail-row"><span class="label">Approvers:</span><span class="value">{{ workflow.approverCount }}</span></div>
-          <div class="detail-row"><span class="label">Created:</span><span class="value">{{ workflow.createdDate }}</span></div>
-        </div>
-      </div>
-    }
-  </div>
+      }
+    </div>
+  }
 </div>
