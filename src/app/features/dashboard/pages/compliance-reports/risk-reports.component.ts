@@ -27,25 +27,10 @@ interface RiskReport {
 export class RiskReportsComponent {
   private readonly workflowService = inject(WorkflowService);
 
-  private readonly defaultSeeds: RiskReport[] = [
-    {
-      id: 'seed-1',
-      reportName: 'Monthly Risk Assessment - Jan 2024',
-      riskLevel: 'Medium',
-      generatedDate: '2024-01-31',
-      highRiskItems: 3,
-      mediumRiskItems: 8,
-      lowRiskItems: 15,
-      riskAssessor: 'Senior Risk Advisor Liam Sterling',
-      mitigationStrategy: 'Active tracking & periodic isolation cages',
-      nextReviewDate: '2024-02-28',
-      safetyIndex: '88% Security Standard Index'
-    },
-  ];
 
   protected readonly reports = computed<RiskReport[]>(() => {
     const reqs = this.workflowService.getAllRequests();
-    if (reqs.length === 0) return this.defaultSeeds;
+    if (reqs.length === 0) return [];
 
     const high = reqs.filter(r => ['Urgent', 'High'].includes(r.priority)).length;
     const medium = reqs.filter(r => r.priority === 'Medium').length;
@@ -55,19 +40,19 @@ export class RiskReportsComponent {
 
     const liveReport: RiskReport = {
       id: 'live-risk-1',
-      reportName: 'Live Connected Risk Assessment',
+      reportName: 'Backend Risk Assessment',
       riskLevel: level,
       generatedDate: new Date().toISOString().split('T')[0],
       highRiskItems: high,
       mediumRiskItems: medium,
       lowRiskItems: low,
-      riskAssessor: 'Automated Compliance Risk Engine',
+      riskAssessor: 'Backend data',
       mitigationStrategy: 'Immediate isolation tags for high priority requests',
       nextReviewDate: new Date(Date.now() + 15 * 86400000).toISOString().split('T')[0],
       safetyIndex: `${safetyIndex}% Safety Index Rating`
     };
 
-    return [liveReport, ...this.defaultSeeds];
+    return [liveReport];
   });
 
   readonly activeViewReport = signal<RiskReport | null>(null);
@@ -119,3 +104,7 @@ export class RiskReportsComponent {
     this.activeViewReport.set(null);
   }
 }
+
+
+
+

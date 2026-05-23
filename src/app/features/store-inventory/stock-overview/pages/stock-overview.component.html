@@ -4,8 +4,9 @@
       <h1>Stock Overview</h1>
       <p class="subtitle">Real-time inventory status across all warehouses</p>
     </div>
-    <button class="btn btn-secondary" (click)="refreshData()">
-      <i class="bi bi-arrow-clockwise"></i> Refresh
+    <button class="btn btn-secondary" (click)="refreshData()" [disabled]="isLoading()">
+      <i class="bi bi-arrow-clockwise"></i>
+      {{ isLoading() ? 'Refreshing...' : 'Refresh' }}
     </button>
   </div>
 
@@ -14,7 +15,12 @@
     <span>🔄 Last Updated: {{ lastUpdated() }}</span>
   </div>
 
-  <!-- Quick Stats Dashboard -->
+  @if (loadError()) {
+    <div class="info-bar">
+      <span>⚠️ {{ loadError() }}</span>
+    </div>
+  }
+
   <div class="quick-stats-dashboard">
     <h2>📊 INVENTORY QUICK STATS</h2>
     <div class="quick-stats-grid">
@@ -22,60 +28,69 @@
         <h3>Today's Activity</h3>
         <div class="stat-row">
           <span class="stat-icon">📥</span>
-          <span class="stat-value">+124 units</span>
+          <span class="stat-value">+{{ formatNumber(todayActivity().inflow) }} units</span>
         </div>
         <div class="stat-row">
           <span class="stat-icon">📤</span>
-          <span class="stat-value">-89 units</span>
+          <span class="stat-value">-{{ formatNumber(todayActivity().outflow) }} units</span>
         </div>
         <div class="stat-row">
           <span class="stat-icon">🔄</span>
-          <span class="stat-value">+23 units</span>
+          <span class="stat-value"
+            >{{ todayActivity().net >= 0 ? '+' : ''
+            }}{{ formatNumber(todayActivity().net) }} units</span
+          >
         </div>
       </div>
       <div class="quick-stats-card">
         <h3>This Week Activity</h3>
         <div class="stat-row">
           <span class="stat-icon">📥</span>
-          <span class="stat-value">+567 units</span>
+          <span class="stat-value">+{{ formatNumber(weekActivity().inflow) }} units</span>
         </div>
         <div class="stat-row">
           <span class="stat-icon">📤</span>
-          <span class="stat-value">-432 units</span>
+          <span class="stat-value">-{{ formatNumber(weekActivity().outflow) }} units</span>
         </div>
         <div class="stat-row">
           <span class="stat-icon">🔄</span>
-          <span class="stat-value">+98 units</span>
+          <span class="stat-value"
+            >{{ weekActivity().net >= 0 ? '+' : ''
+            }}{{ formatNumber(weekActivity().net) }} units</span
+          >
         </div>
       </div>
       <div class="quick-stats-card">
         <h3>This Month Activity</h3>
         <div class="stat-row">
           <span class="stat-icon">📥</span>
-          <span class="stat-value">+2,345 units</span>
+          <span class="stat-value">+{{ formatNumber(monthActivity().inflow) }} units</span>
         </div>
         <div class="stat-row">
           <span class="stat-icon">📤</span>
-          <span class="stat-value">-1,876 units</span>
+          <span class="stat-value">-{{ formatNumber(monthActivity().outflow) }} units</span>
         </div>
         <div class="stat-row">
           <span class="stat-icon">🔄</span>
-          <span class="stat-value">+456 units</span>
+          <span class="stat-value"
+            >{{ monthActivity().net >= 0 ? '+' : ''
+            }}{{ formatNumber(monthActivity().net) }} units</span
+          >
         </div>
       </div>
       <div class="quick-stats-card pending-actions">
         <h3>Pending Actions</h3>
         <div class="stat-row">
           <span class="stat-icon">🟡</span>
-          <span class="stat-value">Pending Issues: 4</span>
+          <span class="stat-value">Pending Issues: {{ pendingActions().pendingIssues }}</span>
         </div>
         <div class="stat-row">
           <span class="stat-icon">🟢</span>
-          <span class="stat-value">Pending Receiving: 3</span>
+          <span class="stat-value">Pending Receiving: {{ pendingActions().pendingReceiving }}</span>
         </div>
         <div class="stat-row">
           <span class="stat-icon">🔴</span>
-          <span class="stat-value">Low Stock Alerts: 4</span>
+          <span class="stat-value">Low Stock Alerts: {{ pendingActions().lowStockAlerts }}</span>
         </div>
       </div>
     </div>
@@ -94,7 +109,7 @@
       <div class="stat-content">
         <div class="stat-label">Total Stock Value</div>
         <div class="stat-value">{{ formatValue(totalStockValue()) }}</div>
-        <div class="stat-change positive">{{ valueChange() }}</div>
+        <div class="stat-change positive">{{ valueChangeLabel() }}</div>
       </div>
     </div>
     <div class="stat-card">
@@ -102,7 +117,7 @@
       <div class="stat-content">
         <div class="stat-label">Avg. Turnover Rate</div>
         <div class="stat-value">{{ avgTurnoverRate() }}x</div>
-        <div class="stat-change positive">{{ turnoverChange() }}</div>
+        <div class="stat-change positive">{{ turnoverChangeLabel() }}</div>
       </div>
     </div>
     <div class="stat-card">
@@ -110,7 +125,7 @@
       <div class="stat-content">
         <div class="stat-label">Stock Turnover Days</div>
         <div class="stat-value">{{ stockTurnoverDays() }} days</div>
-        <div class="stat-change negative">{{ daysChange() }}</div>
+        <div class="stat-change negative">{{ daysChangeLabel() }}</div>
       </div>
     </div>
     <div class="stat-card critical">
@@ -118,32 +133,35 @@
       <div class="stat-content">
         <div class="stat-label">Low Stock Items</div>
         <div class="stat-value">{{ lowStockItems() }} items</div>
-        <div class="stat-label">🔴 Critical</div>
+        <div class="stat-label">🔴 From live backend inventory</div>
       </div>
     </div>
   </div>
 
   <div class="chart-section">
     <div class="section-header">
-      <h3>📈 Stock Level Trends</h3>
+      <h3>📈 Stock Activity Trends</h3>
     </div>
     <div class="chart-placeholder">
       <div class="chart-legend">
-        <span class="legend-item"><span class="dot blue"></span> Total Stock</span>
+        <span class="legend-item"><span class="dot blue"></span> Total Activity</span>
         <span class="legend-item"><span class="dot green"></span> Inflow</span>
         <span class="legend-item"><span class="dot orange"></span> Outflow</span>
-        <span class="legend-item"><span class="dot red"></span> Min Stock Level</span>
       </div>
-      <div class="chart-bars">
-        @for (height of barHeightsTotal(); track $index) {
-          <div class="bar-group">
-            <div class="bar total" [style.height.px]="height"></div>
-            <div class="bar inflow" [style.height.px]="barHeightsInflow()[$index]"></div>
-            <div class="bar outflow" [style.height.px]="barHeightsOutflow()[$index]"></div>
-            <div class="bar-label">{{ ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov'][$index] }}</div>
-          </div>
-        }
-      </div>
+      @if (hasTrendData()) {
+        <div class="chart-bars">
+          @for (bar of trendBars(); track bar.label) {
+            <div class="bar-group">
+              <div class="bar total" [style.height.px]="bar.totalHeight"></div>
+              <div class="bar inflow" [style.height.px]="bar.inflowHeight"></div>
+              <div class="bar outflow" [style.height.px]="bar.outflowHeight"></div>
+              <div class="bar-label">{{ bar.label }}</div>
+            </div>
+          }
+        </div>
+      } @else {
+        <p>No stock movement trend data was returned by the backend.</p>
+      }
     </div>
   </div>
 
@@ -151,70 +169,99 @@
     <div class="dashboard-card">
       <div class="card-header">
         <h3>🏭 Stock by Warehouse</h3>
-        <a class="view-link" (click)="viewWarehouseDetails()" style="cursor: pointer;">View Details →</a>
+        <a class="view-link" (click)="viewWarehouseDetails()" style="cursor: pointer"
+          >View Details →</a
+        >
       </div>
-      <div class="warehouse-list">
-        @for (wh of warehouseStock(); track wh.name) {
-          <div class="warehouse-item">
-            <span class="warehouse-name">{{ wh.name }}: {{ formatNumber(wh.items) }}</span>
-          </div>
-        }
-      </div>
+      @if (hasWarehouseData()) {
+        <div class="warehouse-list">
+          @for (wh of warehouseStock(); track wh.name) {
+            <div class="warehouse-item">
+              <span class="warehouse-name">{{ wh.name }}: {{ formatNumber(wh.items) }}</span>
+            </div>
+          }
+        </div>
+      } @else {
+        <p>No warehouse data available from the backend.</p>
+      }
     </div>
 
     <div class="dashboard-card">
       <div class="card-header">
         <h3>📂 Stock by Category</h3>
-        <a class="view-link" (click)="viewCategoryDetails()" style="cursor: pointer;">View Details →</a>
+        <a class="view-link" (click)="viewCategoryDetails()" style="cursor: pointer"
+          >View Details →</a
+        >
       </div>
-      <div class="category-list">
-        @for (cat of categoryStock(); track cat.name) {
-          <div class="category-item">
-            <div class="category-info">
-              <span class="category-name">{{ cat.name }}:</span>
-              <span class="category-count">{{ formatNumber(cat.items) }}</span>
+      @if (hasCategoryData()) {
+        <div class="category-list">
+          @for (cat of categoryStock(); track cat.name) {
+            <div class="category-item">
+              <div class="category-info">
+                <span class="category-name">{{ cat.name }}:</span>
+                <span class="category-count">{{ formatNumber(cat.items) }}</span>
+              </div>
+              <div class="progress-bar">
+                <div class="progress-fill" [style.width.%]="cat.percentage"></div>
+              </div>
             </div>
-            <div class="progress-bar">
-              <div class="progress-fill" [style.width.%]="cat.percentage"></div>
-            </div>
-          </div>
-        }
-      </div>
+          }
+        </div>
+      } @else {
+        <p>No category data available from the backend.</p>
+      }
     </div>
   </div>
 
   <div class="top-items-section">
     <div class="section-header">
       <h3>🔥 Top 10 Items by Stock Value</h3>
-      <a class="view-link" (click)="viewAllItems()" style="cursor: pointer;">View All Items →</a>
+      <a class="view-link" (click)="viewAllItems()" style="cursor: pointer">View All Items →</a>
     </div>
-    <div class="table-container">
-      <table class="top-items-table">
-        <thead>
-          <tr>
-            <th>Rank</th>
-            <th>Item Name</th>
-            <th>Stock Qty</th>
-            <th>Unit Price</th>
-            <th>Value</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (item of topItems(); track item.rank) {
+    @if (hasTopItems()) {
+      <div class="table-container">
+        <table class="top-items-table">
+          <thead>
             <tr>
-              <td>
-                <span class="rank-badge" [class.rank-1]="item.rank === 1" [class.rank-2]="item.rank === 2" [class.rank-3]="item.rank === 3">
-                  {{ item.rank === 1 ? '🥇' : item.rank === 2 ? '🥈' : item.rank === 3 ? '🥉' : item.rank }}
-                </span>
-              </td>
-              <td>{{ item.name }}</td>
-              <td>{{ item.stockQty }}</td>
-              <td>${{ item.unitPrice }}</td>
-              <td>{{ formatValue(item.value) }}</td>
+              <th>Rank</th>
+              <th>Item Name</th>
+              <th>Stock Qty</th>
+              <th>Unit Price</th>
+              <th>Value</th>
             </tr>
-          }
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody>
+            @for (item of topItems(); track item.rank) {
+              <tr>
+                <td>
+                  <span
+                    class="rank-badge"
+                    [class.rank-1]="item.rank === 1"
+                    [class.rank-2]="item.rank === 2"
+                    [class.rank-3]="item.rank === 3"
+                  >
+                    {{
+                      item.rank === 1
+                        ? '🥇'
+                        : item.rank === 2
+                          ? '🥈'
+                          : item.rank === 3
+                            ? '🥉'
+                            : item.rank
+                    }}
+                  </span>
+                </td>
+                <td>{{ item.name }}</td>
+                <td>{{ formatNumber(item.stockQty) }}</td>
+                <td>{{ formatValue(item.unitPrice) }}</td>
+                <td>{{ formatValue(item.value) }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    } @else {
+      <p>No top-item valuation data available from the backend.</p>
+    }
   </div>
 </div>

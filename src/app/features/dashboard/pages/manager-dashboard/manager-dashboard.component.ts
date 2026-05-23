@@ -23,7 +23,10 @@ import {
   ServiceRequest,
   NotificationMessage,
 } from '../../../../core/services/workflow.service';
-import { Subscription } from 'rxjs';
+import { Subscription, forkJoin, of, take } from 'rxjs';
+import { catchError } from 'rxjs/operators';
+import { EmployeesService } from '../../../../core/services/employees.service';
+import { UsersService } from '../../../../core/services/users.service';
 
 type RequestStatus = 'Pending' | 'Approved' | 'Rejected';
 type RequestFilter = 'All' | RequestStatus;
@@ -108,7 +111,11 @@ export class ManagerDashboardComponent implements OnInit, OnDestroy {
     joinDate: '',
   });
 
+  private readonly employeesService = inject(EmployeesService);
+  private readonly usersService = inject(UsersService);
+
   private setupProfileSubscription(): void {
+    // 1. Instantly show what is in the stored session (no flicker)
     this.currentUserService.getCurrentUser().subscribe((user) => {
       if (user) {
         this.userProfile.set({
@@ -125,6 +132,49 @@ export class ManagerDashboardComponent implements OnInit, OnDestroy {
         }
       }
     });
+
+    // 2. Fetch fresh profile data directly from the backend every time the dashboard loads.
+    //    This ensures department / phone / employeeCode are always populated.
+    const userId = this.currentUserService.getUserId();
+    if (userId) {
+      forkJoin({
+        employee: this.employeesService.getByUserId(userId).pipe(catchError(() => of(null))),
+        userDetail: this.usersService.getById(userId).pipe(catchError(() => of(null))),
+      })
+        .pipe(take(1))
+        .subscribe(({ employee, userDetail }) => {
+          const emp = employee?.data as any;
+          const usr = userDetail?.data as any;
+
+          const patch: Partial<UserProfile> = {};
+
+          const department = emp?.department?.trim() || emp?.Department?.trim() || undefined;
+          if (department) patch.department = department;
+
+          const phone =
+            emp?.phone?.trim() || emp?.Phone?.trim() || emp?.phoneNumber?.trim() || undefined;
+          if (phone) patch.phone = phone;
+
+          const position = emp?.position?.trim() || emp?.Position?.trim() || undefined;
+          if (position) patch.position = position;
+
+          const joinDate =
+            emp?.joinDate?.trim() || emp?.hireDate?.trim() || emp?.JoinDate?.trim() || undefined;
+          if (joinDate) patch.joinDate = joinDate;
+
+          const employeeCode =
+            emp?.employeeCode?.trim() ||
+            emp?.EmployeeCode?.trim() ||
+            usr?.employeeCode?.trim() ||
+            undefined;
+          if (employeeCode) patch.employeeCode = employeeCode;
+
+          if (Object.keys(patch).length > 0) {
+            this.userProfile.update((prev) => ({ ...prev, ...patch }));
+            this.currentUserService.updateUser(patch as any);
+          }
+        });
+    }
   }
   readonly filters: RequestFilter[] = ['All', 'Pending', 'Approved', 'Rejected'];
   readonly selectedFilter = signal<RequestFilter>('Pending');

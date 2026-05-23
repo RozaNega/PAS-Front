@@ -66,6 +66,28 @@
             </div>
           </div>
 
+          <div class="detail-section">
+            <h3>Decision Analytics</h3>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <span class="label">Total Decisions:</span>
+                <span class="value">{{ totalDecisions(selectedReport()!) }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">Approval Rate:</span>
+                <span class="value">{{ approvalRate(selectedReport()!) }}%</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">Approved Value:</span>
+                <span class="value">${{ totalApprovedValue(selectedReport()!).toLocaleString() }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">Rejected Value:</span>
+                <span class="value">${{ totalRejectedValue(selectedReport()!).toLocaleString() }}</span>
+              </div>
+            </div>
+          </div>
+
           @if (selectedReport()!.details?.approvedRequests && selectedReport()!.details!.approvedRequests.length > 0) {
             <div class="detail-section">
               <h3>Approved Requests</h3>

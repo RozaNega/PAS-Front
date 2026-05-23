@@ -297,6 +297,8 @@ tr:last-child td {
     height: 100%;
     object-fit: cover;
     border: 3px solid #f1f5f9;
+    image-rendering: auto;
+    transform: translateZ(0);
   }
 
   .photo-placeholder {

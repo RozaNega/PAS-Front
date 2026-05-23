@@ -78,7 +78,6 @@ export const complianceOfficerMenuConfig: MenuItem[] = [
         label: 'Pending Reviews',
         route: '/compliance-officer/audits/pending',
         icon: 'bi bi-clock',
-        badge: 3,
       },
       {
         label: 'Completed',

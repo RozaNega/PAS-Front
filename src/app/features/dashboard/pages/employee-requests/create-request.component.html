@@ -1,201 +1,376 @@
 <div class="create-request-wrapper">
   <div class="create-request-container">
     <div class="page-header">
-      <h1>Create Service Request (SR)</h1>
+      <h1>Create Service Request</h1>
+      <p class="step-indicator">
+        Step {{ currentStep }} of 3 —
+        @if (currentStep === 1) {
+          Basic Information
+        } @else if (currentStep === 2) {
+          Select Items
+        } @else {
+          Review & Submit
+        }
+      </p>
+    </div>
+
+    <div class="step-progress-bar">
+      <div class="step-progress-fill" [style.width.%]="(currentStep / 3) * 100"></div>
     </div>
 
     <div class="form-card">
-      <!-- Step 1: Basic Information -->
+      <!-- ═══════════════════════════════════════════════════════════════ -->
+      <!-- STEP 1 — Basic Information                                      -->
+      <!-- ═══════════════════════════════════════════════════════════════ -->
       @if (currentStep === 1) {
-        <div class="step-indicator">Step 1 of 3: Basic Information</div>
-
         <div class="form-section">
-          <label>SR NUMBER *</label>
-          <input type="text" [(ngModel)]="form.srNumber" placeholder="Enter SR Number" />
-        </div>
+          <div class="form-field">
+            <label for="sr-number">SR Number <span class="required">*</span></label>
+            <input
+              id="sr-number"
+              type="text"
+              [(ngModel)]="form.srNumber"
+              placeholder="e.g. SR-2026-001"
+            />
+          </div>
 
-        <div class="form-row">
-          <label>
-            Requester *
-            <input type="text" [(ngModel)]="form.requester" placeholder="Enter your name" />
-          </label>
-          <label>
-            Department *
-            <select [(ngModel)]="form.department">
-              <option>IT Department</option>
-              <option>HR Department</option>
-              <option>Finance Department</option>
-            </select>
-          </label>
-        </div>
+          <div class="form-row">
+            <div class="form-field">
+              <label for="requester">Your Name <span class="required">*</span></label>
+              <input
+                id="requester"
+                type="text"
+                [(ngModel)]="form.requester"
+                placeholder="Enter your full name"
+              />
+            </div>
+            <div class="form-field">
+              <label for="department">Department <span class="required">*</span></label>
+              <select id="department" [(ngModel)]="form.department">
+                <option value="IT Department">IT Department</option>
+                <option value="HR Department">HR Department</option>
+                <option value="Finance Department">Finance Department</option>
+                <option value="Operations Department">Operations Department</option>
+                <option value="Procurement Department">Procurement Department</option>
+                <option value="Administration">Administration</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+          </div>
 
-        <div class="form-row">
-          <label>
-            Required By Date *
-            <input type="date" [(ngModel)]="form.requiredBy" />
-          </label>
-        </div>
+          <div class="form-row">
+            <div class="form-field">
+              <label for="required-by">Required By Date <span class="required">*</span></label>
+              <input id="required-by" type="date" [(ngModel)]="form.requiredBy" />
+            </div>
+            <div class="form-field">
+              <label for="priority">Priority <span class="required">*</span></label>
+              <select id="priority" [(ngModel)]="form.priority">
+                <option value="Normal">🟢 Normal (3–5 days)</option>
+                <option value="Medium">🟡 Medium (1–3 days)</option>
+                <option value="High">🟠 High (Next day)</option>
+                <option value="Urgent">🔴 Urgent (Same day)</option>
+              </select>
+            </div>
+          </div>
 
-        <div class="form-section">
-          <label>Remarks / Justification *</label>
-          <textarea [(ngModel)]="form.remarks" rows="3" placeholder="Enter remarks or justification..."></textarea>
-        </div>
-
-        <div class="form-section">
-          <label>Priority *</label>
-          <select [(ngModel)]="form.priority">
-            <option value="Normal">🟢 Normal (3-5 days)</option>
-            <option value="Medium">🟡 Medium (1-3 days)</option>
-            <option value="Urgent">🔴 Urgent (Same day)</option>
-          </select>
+          <div class="form-field">
+            <label for="remarks">Reason / Justification <span class="required">*</span></label>
+            <textarea
+              id="remarks"
+              [(ngModel)]="form.remarks"
+              rows="3"
+              placeholder="Briefly explain why you need these items..."
+            ></textarea>
+          </div>
         </div>
       }
 
-      <!-- Step 2: Items Requested -->
+      <!-- ═══════════════════════════════════════════════════════════════ -->
+      <!-- STEP 2 — Select Items                                           -->
+      <!-- ═══════════════════════════════════════════════════════════════ -->
       @if (currentStep === 2) {
-        <div class="step-indicator">Step 2 of 3: Items Requested</div>
+        <!-- Item Catalog -->
+        <div class="catalog-section">
+          <h3 class="section-title">📦 Item Catalog</h3>
+          <p class="section-hint">
+            Search and add items below. Shelf locations are automatically resolved from live
+            inventory.
+          </p>
 
-        @if (isLoadingItems) {
-          <div class="loading-message">
-            <p>Loading available items...</p>
-          </div>
-        } @else {
           <div class="search-section">
+            <i class="bi bi-search search-icon"></i>
             <input
               type="text"
               [(ngModel)]="searchQuery"
-              placeholder="🔍 Search Items..."
+              placeholder="Search by item name, SKU, or category…"
               class="search-input"
             />
           </div>
 
-          <div class="items-table">
-            <table>
-              <thead>
-                <tr>
-                  <th>Item Name</th>
-                  <th>SKU</th>
-                  <th>Available</th>
-                  <th>UOM</th>
-                  <th>Requested</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (item of filteredItems; track item.id) {
-                  <tr>
-                    <td>{{ item.name }}</td>
-                    <td>{{ item.sku }}</td>
-                    <td>{{ item.available }}</td>
-                    <td>{{ item.uom }}</td>
-                    <td><input type="number" min="1" value="1" class="quantity-input" /></td>
-                    <td><button class="btn-add" (click)="addItem(item)">➕ Add</button></td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
-        }
-
-        <div class="selected-items-section">
-          <h5>SELECTED ITEMS</h5>
-          @if (selectedItems.length === 0) {
-            <p class="no-items">No items selected</p>
+          @if (isLoadingItems) {
+            <div class="loading-state">
+              <i class="bi bi-arrow-repeat spin"></i>
+              <span>Loading item catalog from the backend…</span>
+            </div>
+          } @else if (itemLoadError) {
+            <div class="catalog-empty-box">
+              <i class="bi bi-box-seam catalog-empty-icon"></i>
+              <p class="catalog-empty-title">Catalog unavailable</p>
+              <p class="catalog-empty-desc">{{ itemLoadError }}</p>
+              <button type="button" class="btn btn-secondary btn-sm" (click)="loadItems()">
+                <i class="bi bi-arrow-clockwise"></i> Retry
+              </button>
+            </div>
+          } @else if (filteredItems.length === 0 && searchQuery) {
+            <div class="empty-state-small">
+              <i class="bi bi-search"></i>
+              <span>No items match "{{ searchQuery }}" — try a different keyword</span>
+            </div>
           } @else {
-            <table class="selected-table">
-              <thead>
-                <tr>
-                   <th>Item Name</th>
-                   <th>Item ID</th>
-                   <th>Shelf ID</th>
-                   <th>Requested</th>
-                   <th>Notes</th>
-                   <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (item of selectedItems; track item.sku) {
+            <div class="items-table-wrap">
+              <table class="items-table">
+                <thead>
                   <tr>
-                     <td>{{ item.name }}</td>
-                     <td>
-                       <input type="text" [(ngModel)]="item.itemId" placeholder="Item ID" class="guid-input" />
-                     </td>
-                     <td>
-                       <input type="text" [(ngModel)]="item.preferredShelfId" placeholder="Shelf ID" class="guid-input" />
-                     </td>
-                     <td>
-                       <input
-                         type="number"
-                         [(ngModel)]="item.quantity"
-                         (ngModelChange)="updateItemQuantity(item.sku, $event)"
-                         min="1"
-                         class="quantity-input"
-                       />
-                     </td>
-                     <td>
-                       <input type="text" [(ngModel)]="item.notes" placeholder="Notes" class="notes-input" />
-                     </td>
-                     <td>
-                       <button class="icon-btn" (click)="removeItem(item.sku)">🗑️</button>
-                     </td>
+                    <th>Item Name</th>
+                    <th>SKU</th>
+                    <th>Category</th>
+                    <th>Available</th>
+                    <th>Unit</th>
+                    <th></th>
                   </tr>
-                }
-              </tbody>
-            </table>
-            <p class="items-summary">Total Items: {{ totalItems }} | Total Quantity: {{ totalQuantity }}</p>
+                </thead>
+                <tbody>
+                  @for (item of filteredItems; track item.id) {
+                    <tr [class.row-selected]="isItemSelected(item)">
+                      <td class="item-name-cell">{{ item.itemName }}</td>
+                      <td class="sku-cell">{{ item.sku }}</td>
+                      <td>{{ item.categoryName || '—' }}</td>
+                      <td>
+                        @if ((item.availableStock ?? item.currentStock ?? 0) > 0) {
+                          <span class="stock-ok">{{
+                            item.availableStock ?? item.currentStock
+                          }}</span>
+                        } @else {
+                          <span class="stock-low">Out of stock</span>
+                        }
+                      </td>
+                      <td>{{ item.unitOfMeasure || 'PCS' }}</td>
+                      <td>
+                        @if (isItemSelected(item)) {
+                          <span class="badge-added">✓ Added</span>
+                        } @else {
+                          <button type="button" class="btn-add" (click)="addItem(item)">
+                            ➕ Add
+                          </button>
+                        }
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </div>
+
+        <!-- Selected items -->
+        <div class="selected-section">
+          <h3 class="section-title">🛒 Selected Items</h3>
+
+          @if (selectedItems.length === 0) {
+            <p class="no-items-hint">No items added yet. Search the catalog above to add items.</p>
+          } @else {
+            <div class="selected-cards">
+              @for (item of selectedItems; track item.itemId) {
+                <div class="selected-card">
+                  <div class="selected-card-header">
+                    <div class="selected-item-name">{{ item.name }}</div>
+                    <div class="selected-item-sku">{{ item.sku }} · {{ item.uom }}</div>
+                    <button
+                      type="button"
+                      class="btn-remove"
+                      (click)="removeItem(item.itemId)"
+                      title="Remove {{ item.name }}"
+                    >
+                      <i class="bi bi-x-lg"></i>
+                    </button>
+                  </div>
+
+                  <div class="selected-card-body">
+                    <!-- Quantity -->
+                    <div class="card-field">
+                      <label [for]="'qty-' + item.itemId"
+                        >Quantity <span class="required">*</span></label
+                      >
+                      <input
+                        [id]="'qty-' + item.itemId"
+                        type="number"
+                        [ngModel]="item.quantity"
+                        (ngModelChange)="onQuantityChange(item, $event)"
+                        min="1"
+                        class="qty-input"
+                      />
+                    </div>
+
+                    <!-- Shelf location — friendly dropdown, no IDs shown -->
+                    <div class="card-field shelf-field">
+                      <label [for]="'shelf-' + item.itemId">
+                        Preferred Location <span class="required">*</span>
+                      </label>
+
+                      @if (item.loadingShelves) {
+                        <div class="shelf-loading">
+                          <i class="bi bi-arrow-repeat spin"></i>
+                          Looking up stock locations…
+                        </div>
+                      } @else if (item.shelfOptions.length === 0) {
+                        <div class="shelf-none">
+                          No stock locations found — please contact the storekeeper.
+                        </div>
+                      } @else {
+                        <select
+                          [id]="'shelf-' + item.itemId"
+                          [ngModel]="item.preferredShelfId"
+                          (ngModelChange)="onShelfChange(item, $event)"
+                          class="shelf-select"
+                        >
+                          @for (opt of item.shelfOptions; track opt.shelfId) {
+                            <option [value]="opt.shelfId">{{ opt.label }}</option>
+                          }
+                        </select>
+                      }
+                    </div>
+
+                    <!-- Notes (optional) -->
+                    <div class="card-field">
+                      <label [for]="'notes-' + item.itemId"
+                        >Notes <span class="optional">(optional)</span></label
+                      >
+                      <input
+                        [id]="'notes-' + item.itemId"
+                        type="text"
+                        [(ngModel)]="item.notes"
+                        placeholder="e.g. prefer black colour, urgent size M"
+                        class="notes-input"
+                      />
+                    </div>
+                  </div>
+                </div>
+              }
+            </div>
+
+            <p class="items-summary">
+              <strong>{{ totalItems }}</strong> item type(s) ·
+              <strong>{{ totalQuantity }}</strong> total unit(s)
+            </p>
           }
         </div>
       }
 
-      <!-- Step 3: Review & Submit -->
+      <!-- ═══════════════════════════════════════════════════════════════ -->
+      <!-- STEP 3 — Review & Submit                                        -->
+      <!-- ═══════════════════════════════════════════════════════════════ -->
       @if (currentStep === 3) {
-        <div class="step-indicator">Step 3 of 3: Review & Submit</div>
+        <div class="review-section">
+          <h3 class="section-title">📋 Request Summary</h3>
 
-        <div class="summary-section">
-          <h5>SUMMARY</h5>
-          <div class="summary-details">
-            <p><strong>• SR Number:</strong> {{ form.srNumber }}</p>
-            <p><strong>• Requester:</strong> {{ form.requester }} ({{ form.department }})</p>
-            <p><strong>• Total Items:</strong> {{ totalItems }} | <strong>Total Quantity:</strong> {{ totalQuantity }}</p>
-            <p><strong>• Required By:</strong> {{ form.requiredBy }}</p>
-            <p><strong>• Priority:</strong> {{ form.priority }}</p>
-            <p><strong>• Remarks:</strong> {{ form.remarks }}</p>
+          <div class="review-grid">
+            <div class="review-row">
+              <span class="review-label">SR Number</span>
+              <span class="review-value">{{ form.srNumber }}</span>
+            </div>
+            <div class="review-row">
+              <span class="review-label">Requester</span>
+              <span class="review-value">{{ form.requester }}</span>
+            </div>
+            <div class="review-row">
+              <span class="review-label">Department</span>
+              <span class="review-value">{{ form.department }}</span>
+            </div>
+            <div class="review-row">
+              <span class="review-label">Required By</span>
+              <span class="review-value">{{ form.requiredBy }}</span>
+            </div>
+            <div class="review-row">
+              <span class="review-label">Priority</span>
+              <span class="review-value">{{ form.priority }}</span>
+            </div>
+            <div class="review-row full-span">
+              <span class="review-label">Justification</span>
+              <span class="review-value">{{ form.remarks }}</span>
+            </div>
           </div>
+
+          <h3 class="section-title">📦 Items Requested</h3>
+          <table class="review-items-table">
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th>Qty</th>
+                <th>Preferred Location</th>
+                <th>Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (item of selectedItems; track item.itemId) {
+                <tr>
+                  <td>
+                    <strong>{{ item.name }}</strong>
+                    <br />
+                    <small class="text-muted">{{ item.sku }} · {{ item.uom }}</small>
+                  </td>
+                  <td>{{ item.quantity }}</td>
+                  <td>{{ item.preferredShelfLabel }}</td>
+                  <td>{{ item.notes || '—' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+
           <div class="warning-box">
-            ⚠️ Please review all information before submitting
+            ⚠️ Please review all information above before submitting. You will not be able to edit
+            the request once it has been sent to the manager.
           </div>
-        </div>
 
-        <div class="items-summary-section">
-          <h5>ITEMS TO BE REQUESTED</h5>
-          @for (item of selectedItems; track item.sku) {
-            <div class="item-summary-row">
-              <span>{{ item.name }} ({{ item.sku }})</span>
-              <span>Quantity: {{ item.quantity }}</span>
+          @if (submitError) {
+            <div class="error-box">
+              <i class="bi bi-exclamation-triangle"></i> {{ submitError }}
             </div>
           }
         </div>
       }
     </div>
 
+    <!-- ─── Fixed bottom action bar ─── -->
     <div class="form-actions">
-      @if (currentStep === 1) {
-        <button type="button" class="btn btn-secondary" (click)="cancel()">Cancel</button>
-        <button type="button" class="btn btn-secondary" (click)="saveDraft()">Save Draft</button>
-        <button type="button" class="btn btn-primary" (click)="nextStep()">
-          Next
+      @if (currentStep > 1) {
+        <button type="button" class="btn btn-secondary" (click)="previousStep()">
+          <i class="bi bi-chevron-left"></i> Back
         </button>
       }
 
-      @if (currentStep === 2) {
-        <button type="button" class="btn btn-secondary" (click)="previousStep()">Back</button>
-        <button type="button" class="btn btn-primary" (click)="nextStep()">Next</button>
+      <button type="button" class="btn btn-secondary" (click)="cancel()">Cancel</button>
+
+      @if (currentStep === 1) {
+        <button type="button" class="btn btn-secondary" (click)="saveDraft()">
+          {{ draftSaved ? '✓ Saved!' : 'Save Draft' }}
+        </button>
+      }
+
+      @if (currentStep < 3) {
+        <button type="button" class="btn btn-primary" (click)="nextStep()">
+          Next <i class="bi bi-chevron-right"></i>
+        </button>
       }
 
       @if (currentStep === 3) {
-        <button type="button" class="btn btn-secondary" (click)="previousStep()">Back</button>
-        <button type="button" class="btn btn-secondary" (click)="cancel()">Cancel</button>
-        <button type="button" class="btn btn-primary" (click)="submit()">Submit</button>
+        <button type="button" class="btn btn-primary" (click)="submit()" [disabled]="isSubmitting">
+          @if (isSubmitting) {
+            <i class="bi bi-arrow-repeat spin"></i> Submitting…
+          } @else {
+            <i class="bi bi-send"></i> Submit Request
+          }
+        </button>
       }
     </div>
   </div>

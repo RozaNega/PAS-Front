@@ -67,7 +67,7 @@ export class PhotoUploadModalComponent {
         const canvas = document.createElement('canvas');
         let width = img.width;
         let height = img.height;
-        const maxDimension = 400;
+        const maxDimension = 1024;
 
         if (width > height) {
           if (width > maxDimension) {
@@ -98,7 +98,7 @@ export class PhotoUploadModalComponent {
             }
           },
           'image/jpeg',
-          0.9,
+          0.95,
         );
       };
       img.src = URL.createObjectURL(file);

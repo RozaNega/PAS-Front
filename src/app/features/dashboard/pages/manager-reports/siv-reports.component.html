@@ -66,6 +66,24 @@
             </div>
           </div>
 
+          <div class="detail-section">
+            <h3>Issuance Analytics</h3>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <span class="label">Departments Covered:</span>
+                <span class="value">{{ departmentsCovered(selectedReport()!) }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">Average Items / SIV:</span>
+                <span class="value">{{ averageItemsPerSiv(selectedReport()!) }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">Average SIV Value:</span>
+                <span class="value">${{ averageSivValue(selectedReport()!).toLocaleString() }}</span>
+              </div>
+            </div>
+          </div>
+
           @if (selectedReport()!.details?.sivs && selectedReport()!.details!.sivs.length > 0) {
             <div class="detail-section">
               <h3>Store Issue Vouchers</h3>

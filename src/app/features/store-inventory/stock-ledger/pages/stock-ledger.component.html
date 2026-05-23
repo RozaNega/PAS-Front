@@ -2,55 +2,97 @@
   <div class="page-header">
     <div class="header-info">
       <h1>📖 Stock Ledger</h1>
-      <p class="subtitle">Complete transaction history for all inventory items</p>
+      <p class="subtitle">Complete transaction history from the backend ledger</p>
     </div>
-    <button class="btn btn-primary" (click)="exportLedger()">
+    <button
+      class="btn btn-primary"
+      (click)="exportLedger()"
+      [disabled]="filteredEntries().length === 0"
+    >
       <i class="bi bi-download"></i> Export Ledger
     </button>
   </div>
 
+  @if (loadError()) {
+    <div class="ledger-stats">
+      <div class="stat-card">
+        <div class="stat-content">
+          <div class="stat-label">⚠️ {{ loadError() }}</div>
+        </div>
+      </div>
+    </div>
+  }
+
   <div class="filters-section">
     <div class="filter-group">
-      <label>Search</label>
-      <input 
-        type="text" 
-        class="form-control" 
-        placeholder="Search by item name, code, or reference..." 
-        [(ngModel)]="searchTerm"
+      <label for="ledger-search">Search</label>
+      <input
+        id="ledger-search"
+        type="text"
+        class="form-control"
+        placeholder="Search by item name, code, warehouse, or reference..."
+        [ngModel]="searchTerm()"
+        (ngModelChange)="searchTerm.set($event)"
       />
     </div>
-    
+
     <div class="filter-group">
-      <label>Item</label>
-      <select class="form-control" [(ngModel)]="selectedItem">
+      <label for="ledger-item">Item</label>
+      <select
+        id="ledger-item"
+        class="form-control"
+        [ngModel]="selectedItem()"
+        (ngModelChange)="selectedItem.set($event)"
+      >
         <option value="">All Items</option>
-        @for (item of uniqueItems; track item) {
+        @for (item of uniqueItems(); track item) {
           <option [value]="item">{{ item }}</option>
         }
       </select>
     </div>
-    
+
     <div class="filter-group">
-      <label>Transaction Type</label>
-      <select class="form-control" [(ngModel)]="selectedType">
+      <label for="ledger-type">Transaction Type</label>
+      <select
+        id="ledger-type"
+        class="form-control"
+        [ngModel]="selectedType()"
+        (ngModelChange)="selectedType.set($event)"
+      >
         <option value="">All Types</option>
         <option value="IN">Goods In</option>
         <option value="OUT">Goods Out</option>
         <option value="ADJUSTMENT">Adjustment</option>
+        <option value="TRANSFER">Transfer</option>
       </select>
     </div>
-    
+
     <div class="filter-group">
-      <label>Date From</label>
-      <input type="date" class="form-control" [(ngModel)]="dateFrom" />
+      <label for="ledger-date-from">Date From</label>
+      <input
+        id="ledger-date-from"
+        type="date"
+        class="form-control"
+        [ngModel]="dateFrom()"
+        (ngModelChange)="dateFrom.set($event)"
+      />
     </div>
-    
+
     <div class="filter-group">
-      <label>Date To</label>
-      <input type="date" class="form-control" [(ngModel)]="dateTo" />
+      <label for="ledger-date-to">Date To</label>
+      <input
+        id="ledger-date-to"
+        type="date"
+        class="form-control"
+        [ngModel]="dateTo()"
+        (ngModelChange)="dateTo.set($event)"
+      />
     </div>
-    
+
     <div class="filter-actions">
+      <button class="btn btn-primary" (click)="loadData()" [disabled]="isLoading()">
+        {{ isLoading() ? 'Loading...' : 'Apply' }}
+      </button>
       <button class="btn btn-secondary" (click)="clearFilters()">
         <i class="bi bi-x-circle"></i> Clear
       </button>
@@ -62,7 +104,7 @@
       <div class="stat-icon">📊</div>
       <div class="stat-content">
         <div class="stat-label">Total Entries</div>
-        <div class="stat-value">{{ filteredEntries.length }}</div>
+        <div class="stat-value">{{ filteredEntries().length }}</div>
       </div>
     </div>
     <div class="stat-card">
@@ -89,7 +131,7 @@
   </div>
 
   <div class="ledger-table-container">
-    @if (filteredEntries.length > 0) {
+    @if (filteredEntries().length > 0) {
       <table class="ledger-table">
         <thead>
           <tr>
@@ -98,13 +140,14 @@
             <th>Item Name</th>
             <th>Type</th>
             <th>Quantity</th>
-            <th>Balance</th>
             <th>Reference</th>
             <th>User</th>
+            <th>Warehouse</th>
+            <th>Location</th>
           </tr>
         </thead>
         <tbody>
-          @for (entry of filteredEntries; track entry.reference) {
+          @for (entry of filteredEntries(); track entry.id) {
             <tr [class]="getTransactionClass(entry.transactionType)">
               <td>
                 <div class="date-time">
@@ -112,21 +155,32 @@
                   <div class="time">{{ entry.time }}</div>
                 </div>
               </td>
-              <td><span class="item-code">{{ entry.itemCode }}</span></td>
+              <td>
+                <span class="item-code">{{ entry.itemCode }}</span>
+              </td>
               <td>{{ entry.itemName }}</td>
               <td>
-                <span class="transaction-badge" [class]="getTransactionClass(entry.transactionType)">
+                <span
+                  class="transaction-badge"
+                  [class]="getTransactionClass(entry.transactionType)"
+                >
                   {{ getTransactionIcon(entry.transactionType) }} {{ entry.transactionType }}
                 </span>
               </td>
               <td>
-                <span [class.quantity-positive]="entry.quantity > 0" [class.quantity-negative]="entry.quantity < 0">
+                <span
+                  [class.quantity-positive]="entry.quantity > 0"
+                  [class.quantity-negative]="entry.quantity < 0"
+                >
                   {{ entry.quantity > 0 ? '+' : '' }}{{ entry.quantity }}
                 </span>
               </td>
-              <td><strong>{{ entry.balance }}</strong></td>
-              <td><span class="reference-link">{{ entry.reference }}</span></td>
+              <td>
+                <span class="reference-link">{{ entry.reference }}</span>
+              </td>
               <td>{{ entry.user }}</td>
+              <td>{{ entry.warehouse }}</td>
+              <td>{{ entry.location }}</td>
             </tr>
           }
         </tbody>
@@ -135,7 +189,7 @@
       <div class="empty-state">
         <i class="bi bi-inbox"></i>
         <h3>No Ledger Entries Found</h3>
-        <p>Try adjusting your filters or search criteria</p>
+        <p>Try adjusting your filters or date range</p>
       </div>
     }
   </div>

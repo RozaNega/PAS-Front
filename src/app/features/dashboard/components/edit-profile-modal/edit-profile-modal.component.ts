@@ -150,7 +150,7 @@ export class EditProfileModalComponent {
   async startCamera(): Promise<void> {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user', width: 400, height: 400 },
+        video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 1280 } },
       });
       this.cameraStream.set(stream);
       this.isCameraActive.set(true);
@@ -179,7 +179,7 @@ export class EditProfileModalComponent {
           const file = new File([blob], 'photo.jpg', { type: 'image/jpeg' });
           void this.handleFile(file).finally(() => this.stopCamera());
         }
-      }, 'image/jpeg');
+      }, 'image/jpeg', 0.95);
     }
   }
 

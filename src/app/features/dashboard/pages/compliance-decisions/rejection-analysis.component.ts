@@ -1,6 +1,7 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { WorkflowService } from '../../../../core/services/workflow.service';
+import { ComplianceDataService } from '../../../../core/services/compliance-data.service';
+import { ServiceRequestDto } from '../../../../core/services/requisitions.service';
 
 interface Rejection {
   id: string;
@@ -19,35 +20,38 @@ interface Rejection {
   templateUrl: './rejection-analysis.component.html',
   styleUrls: ['./rejection-analysis.component.scss']
 })
-export class RejectionAnalysisComponent {
-  private readonly workflowService = inject(WorkflowService);
+export class RejectionAnalysisComponent implements OnInit {
+  private readonly complianceData = inject(ComplianceDataService);
+  protected readonly rejections = signal<Rejection[]>([]);
 
-  private readonly defaultSeeds: Rejection[] = [
-    { id: 'seed-1', requestNumber: 'SR-2024-004', rejecter: 'Manager B', department: 'Finance', rejectionDate: '2024-01-19', value: 1200, reason: 'Budget exceeded' }
-  ];
-
-  protected readonly rejections = computed<Rejection[]>(() => {
-    const reqs = this.workflowService.getAllRequests();
-    
-    // Filter rejected or cancelled requests
-    const rejectedReqs = reqs.filter(r => ['Manager Rejected', 'Admin Rejected', 'Cancelled'].includes(r.status));
-
-    const mapped: Rejection[] = rejectedReqs.map(req => {
-      const decisionDate = req.managerReviewDate || req.submittedDate;
-      const totalQty = req.items.reduce((s, it) => s + it.quantity, 0);
-      const estimatedCost = req.estimatedCost || (totalQty * 120);
-
-      return {
-        id: `rej_${req.id}`,
-        requestNumber: req.srNumber,
-        rejecter: req.managerName || 'System Reviewer',
-        department: req.department || 'Operations',
-        rejectionDate: new Date(decisionDate).toISOString().split('T')[0],
-        value: estimatedCost,
-        reason: req.managerComments || 'Budget re-prioritization / asset technical specifications mismatch'
-      };
+  ngOnInit(): void {
+    this.complianceData.getServiceRequests().subscribe((requests) => {
+      this.rejections.set(
+        requests
+          .filter((request) => this.isRejected(request.status))
+          .map((request) => this.toRejection(request)),
+      );
     });
+  }
 
-    return [...mapped, ...this.defaultSeeds];
-  });
+  private toRejection(request: ServiceRequestDto): Rejection {
+    return {
+      id: `rej_${request.id}`,
+      requestNumber: request.requestNumber || request.id,
+      rejecter: request.approvedBy || 'Reviewer',
+      department: request.department || 'Unassigned',
+      rejectionDate: this.toDateOnly(request.approvedDate || request.requestDate),
+      value: request.quantity ?? 0,
+      reason: request.reason || request.status,
+    };
+  }
+
+  private isRejected(status: string): boolean {
+    const normalized = status?.toLowerCase() ?? '';
+    return normalized.includes('rejected') || normalized.includes('denied') || normalized.includes('cancel');
+  }
+
+  private toDateOnly(value?: string): string {
+    return value ? new Date(value).toISOString().split('T')[0] : '';
+  }
 }

@@ -1,25 +1,11 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-
-interface StoreIssueVoucher {
-  id: string;
-  sivNumber: string;
-  requestNumber: string;
-  requesterName: string;
-  department: string;
-  status: 'Pending' | 'Issued';
-  issueDate: string;
-  totalItems: number;
-  totalValue: number;
-  issuedBy: string;
-  items?: Array<{
-    itemName: string;
-    quantity: number;
-    unitPrice: number;
-    totalPrice: number;
-  }>;
-}
+import {
+  ManagerDataService,
+  ManagerSivRow as StoreIssueVoucher,
+} from '../../../../core/services/manager-data.service';
+import { downloadReportPdf } from '../compliance-reports/report-actions.util';
 
 @Component({
   selector: 'app-issued-sivs',
@@ -28,31 +14,20 @@ interface StoreIssueVoucher {
   templateUrl: './issued-sivs.component.html',
   styleUrls: ['./issued-sivs.component.scss']
 })
-export class IssuedSIVsComponent {
+export class IssuedSIVsComponent implements OnInit {
   private readonly router = inject(Router);
+  private readonly managerData = inject(ManagerDataService);
 
-  protected readonly sivs = signal<StoreIssueVoucher[]>([
-    {
-      id: '1',
-      sivNumber: 'SIV-2024-001',
-      requestNumber: 'SR-2024-001',
-      requesterName: 'John Doe',
-      department: 'IT',
-      status: 'Issued',
-      issueDate: '2024-01-20',
-      totalItems: 3,
-      totalValue: 5348,
-      issuedBy: 'Storekeeper',
-      items: [
-        { itemName: 'Dell Laptop', quantity: 2, unitPrice: 1200, totalPrice: 2400 },
-        { itemName: 'Wireless Mouse', quantity: 5, unitPrice: 25, totalPrice: 125 },
-        { itemName: 'USB Cable', quantity: 10, unitPrice: 15, totalPrice: 150 }
-      ]
-    }
-  ]);
+  protected readonly sivs = signal<StoreIssueVoucher[]>([]);
 
   protected selectedSiv = signal<StoreIssueVoucher | null>(null);
   protected showDetailsModal = signal(false);
+
+  ngOnInit(): void {
+    this.managerData
+      .getSivs()
+      .subscribe((sivs) => this.sivs.set(sivs.filter((siv) => siv.status === 'Issued')));
+  }
 
   viewDetails(siv: StoreIssueVoucher): void {
     this.selectedSiv.set(siv);
@@ -64,39 +39,17 @@ export class IssuedSIVsComponent {
     this.selectedSiv.set(null);
   }
 
-  downloadPdf(siv: StoreIssueVoucher): void {
-    console.log('Downloading PDF for:', siv.sivNumber);
-    
-    const content = `
-      STORE ISSUE VOUCHER
-      ==================
-      
-      SIV Number: ${siv.sivNumber}
-      Request Number: ${siv.requestNumber}
-      Requester: ${siv.requesterName}
-      Department: ${siv.department}
-      Status: ${siv.status}
-      Issue Date: ${siv.issueDate}
-      Issued By: ${siv.issuedBy}
-      
-      ITEMS:
-      ------
-      ${siv.items?.map(item => 
-        `${item.itemName} - Qty: ${item.quantity} - Unit Price: $${item.unitPrice} - Total: $${item.totalPrice}`
-      ).join('\n      ') || 'No items'}
-      
-      Total Items: ${siv.totalItems}
-      Total Value: $${siv.totalValue.toLocaleString()}
-    `;
-
-    const blob = new Blob([content], { type: 'text/plain' });
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${siv.sivNumber}.txt`;
-    link.click();
-    window.URL.revokeObjectURL(url);
-    
-    alert(`Downloaded ${siv.sivNumber} as text file. In production, this would be a PDF.`);
+  async downloadPdf(siv: StoreIssueVoucher): Promise<void> {
+    await downloadReportPdf('Store Issue Voucher', siv.sivNumber, [
+      { label: 'SIV Number', value: siv.sivNumber },
+      { label: 'Request Number', value: siv.requestNumber },
+      { label: 'Requester', value: siv.requesterName },
+      { label: 'Department', value: siv.department },
+      { label: 'Status', value: siv.status },
+      { label: 'Issue Date', value: siv.issueDate },
+      { label: 'Issued By', value: siv.issuedBy || 'N/A' },
+      { label: 'Total Items', value: siv.totalItems },
+      { label: 'Total Value', value: `$${siv.totalValue.toLocaleString()}` },
+    ]);
   }
 }

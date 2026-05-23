@@ -15,7 +15,11 @@ export interface EmployeeDetailDto {
   employeeCode?: string;
   fullName?: string;
   department?: string;
+  position?: string;
   email?: string;
+  phone?: string;
+  hireDate?: string;
+  joinDate?: string;
   isActive: boolean;
   userAccount?: UserAccountSummaryDto;
   recentActivities: EmployeeActivityDto[];
@@ -63,7 +67,11 @@ export interface UpdateEmployeeCommand {
 export class EmployeesService {
   constructor(private apiService: ApiService) {}
 
-  getAll(params?: { department?: string; searchTerm?: string; withUserAccountOnly?: boolean }): Observable<ApiResponseModel<EmployeeDto[]>> {
+  getAll(params?: {
+    department?: string;
+    searchTerm?: string;
+    withUserAccountOnly?: boolean;
+  }): Observable<ApiResponseModel<EmployeeDto[]>> {
     return this.apiService.get<ApiResponseModel<EmployeeDto[]>>('Employees', params);
   }
 

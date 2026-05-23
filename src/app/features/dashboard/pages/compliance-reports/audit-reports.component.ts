@@ -26,24 +26,10 @@ interface AuditReport {
 export class AuditReportsComponent {
   private readonly workflowService = inject(WorkflowService);
 
-  private readonly defaultSeeds: AuditReport[] = [
-    {
-      id: 'seed-1',
-      reportName: 'Monthly Audit Summary - Jan 2024',
-      generatedDate: '2024-01-31',
-      totalAudits: 25,
-      completedAudits: 22,
-      findings: 8,
-      auditorName: 'Lead Auditor Sarah Jenkins',
-      complianceLevel: '94% Compliant',
-      scopePeriod: 'Jan 1, 2024 - Jan 31, 2024',
-      status: 'Approved'
-    }
-  ];
 
   protected readonly reports = computed<AuditReport[]>(() => {
     const reqs = this.workflowService.getAllRequests();
-    if (reqs.length === 0) return this.defaultSeeds;
+    if (reqs.length === 0) return [];
 
     const total = reqs.length;
     const completed = reqs.filter(r => ['Completed', 'Manager Approved', 'Admin Approved'].includes(r.status)).length;
@@ -56,18 +42,18 @@ export class AuditReportsComponent {
 
     const liveReport: AuditReport = {
       id: 'live-audit-1',
-      reportName: 'Live Connected Audit Summary',
+      reportName: 'Backend Audit Summary',
       generatedDate: new Date().toISOString().split('T')[0],
       totalAudits: total,
       completedAudits: completed,
       findings: findings,
-      auditorName: 'Compliance Automated Audit Bot',
+      auditorName: 'Backend data',
       complianceLevel: `${percentage}% Compliant`,
       scopePeriod: `${minDate} - ${maxDate}`,
       status: 'Approved'
     };
 
-    return [liveReport, ...this.defaultSeeds];
+    return [liveReport];
   });
 
   readonly activeViewReport = signal<AuditReport | null>(null);
@@ -118,3 +104,7 @@ export class AuditReportsComponent {
     this.activeViewReport.set(null);
   }
 }
+
+
+
+

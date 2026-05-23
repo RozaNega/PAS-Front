@@ -1,20 +1,13 @@
-import { Component, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-
-interface ServiceRequest {
-  id: string;
-  requestNumber: string;
-  requesterName: string;
-  requesterId: string;
-  department: string;
-  priority: 'Low' | 'Medium' | 'High' | 'Urgent';
-  status: string;
-  requestedDate: string;
-  requiredDate: string;
-  itemCount: number;
-  estimatedValue: number;
-  description: string;
-}
+import { Subscription, take } from 'rxjs';
+import {
+  ManagerDataService,
+  ManagerRequestRow,
+} from '../../../../core/services/manager-data.service';
+import { WorkflowService } from '../../../../core/services/workflow.service';
+import { CurrentUserService } from '../../../../core/services/current-user.service';
+import { ServiceRequestService } from '../../../requisition/service-requests/services/service-request.service';
 
 @Component({
   selector: 'app-pending-approvals',
@@ -23,47 +16,68 @@ interface ServiceRequest {
   templateUrl: './pending-approvals.component.html',
   styleUrls: ['./pending-approvals.component.scss']
 })
-export class PendingApprovalsComponent {
-  protected readonly pendingRequests = signal<ServiceRequest[]>([
-    {
-      id: '1',
-      requestNumber: 'SR-2024-001',
-      requesterName: 'John Doe',
-      requesterId: 'EMP-001',
-      department: 'IT',
-      priority: 'Urgent',
-      status: 'Pending',
-      requestedDate: '2024-01-15',
-      requiredDate: '2024-01-18',
-      itemCount: 3,
-      estimatedValue: 5348,
-      description: 'Laptop and accessories for new developer'
-    },
-    {
-      id: '2',
-      requestNumber: 'SR-2024-002',
-      requesterName: 'Peter Chen',
-      requesterId: 'EMP-002',
-      department: 'Operations',
-      priority: 'High',
-      status: 'Pending',
-      requestedDate: '2024-01-16',
-      requiredDate: '2024-01-20',
-      itemCount: 1,
-      estimatedValue: 2800,
-      description: 'Office chair replacement'
-    }
-  ]);
+export class PendingApprovalsComponent implements OnInit, OnDestroy {
+  private readonly managerData = inject(ManagerDataService);
+  private readonly workflowService = inject(WorkflowService);
+  private readonly currentUserService = inject(CurrentUserService);
+  private readonly serviceRequestService = inject(ServiceRequestService);
+  private readonly subs: Subscription[] = [];
+
+  protected readonly pendingRequests = signal<ManagerRequestRow[]>([]);
+
+  ngOnInit(): void {
+    this.loadRequests();
+    this.subs.push(this.workflowService.getRequestUpdates().subscribe(() => this.loadRequests()));
+  }
+
+  ngOnDestroy(): void {
+    this.subs.forEach((sub) => sub.unsubscribe());
+  }
 
   protected approve(id: string): void {
-    alert(`Approving request ${id}`);
+    const user = this.currentUserService.getCurrentUserValue();
+    this.workflowService.managerReviewRequest(
+      id,
+      'approve',
+      'Approved from pending approvals',
+      this.workflowService.getManagerQueueIdForCurrentUser(),
+      user?.fullName || user?.username || 'Manager',
+    );
+    this.serviceRequestService
+      .approveServiceRequest({ id, remarks: 'Approved from pending approvals' })
+      .pipe(take(1))
+      .subscribe({ error: () => {} });
+    this.loadRequests();
   }
 
   protected reject(id: string): void {
-    alert(`Rejecting request ${id}`);
+    const reason = prompt('Please enter a reason for rejection:');
+    if (reason === null) return;
+    const user = this.currentUserService.getCurrentUserValue();
+    this.workflowService.managerReviewRequest(
+      id,
+      'reject',
+      reason || 'Rejected from pending approvals',
+      this.workflowService.getManagerQueueIdForCurrentUser(),
+      user?.fullName || user?.username || 'Manager',
+    );
+    this.serviceRequestService
+      .rejectServiceRequest({ id, reason: reason || 'Rejected from pending approvals' })
+      .pipe(take(1))
+      .subscribe({ error: () => {} });
+    this.loadRequests();
   }
 
   protected viewDetails(id: string): void {
-    alert(`Viewing details for request ${id}`);
+    const request = this.pendingRequests().find((item) => item.id === id);
+    if (request) {
+      alert(`${request.requestNumber}\n${request.requesterName}\n${request.description}`);
+    }
+  }
+
+  private loadRequests(): void {
+    this.managerData.syncServiceRequests().subscribe(() => {
+      this.pendingRequests.set(this.managerData.requestRows('pending'));
+    });
   }
 }

@@ -1,6 +1,7 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { WorkflowService } from '../../../../core/services/workflow.service';
+import { ComplianceDataService } from '../../../../core/services/compliance-data.service';
+import { ServiceRequestDto } from '../../../../core/services/requisitions.service';
 
 interface Audit {
   id: string;
@@ -19,32 +20,42 @@ interface Audit {
   templateUrl: './completed-audits.component.html',
   styleUrls: ['./completed-audits.component.scss']
 })
-export class CompletedAuditsComponent {
-  private readonly workflowService = inject(WorkflowService);
+export class CompletedAuditsComponent implements OnInit {
+  private readonly complianceData = inject(ComplianceDataService);
+  protected readonly audits = signal<Audit[]>([]);
 
-  private readonly defaultSeeds: Audit[] = [
-    { id: 'seed-1', auditId: 'AUD-2024-001', type: 'Request Review', completedBy: 'Officer A', completedDate: '2024-01-20', findings: 2, riskLevel: 'Low' }
-  ];
-
-  protected readonly audits = computed<Audit[]>(() => {
-    const reqs = this.workflowService.getAllRequests();
-    
-    // Filter completed/approved requests
-    const completedReqs = reqs.filter(r => ['Completed', 'Manager Approved', 'Admin Approved'].includes(r.status));
-
-    const mapped: Audit[] = completedReqs.map(req => {
-      const reviewDate = req.managerReviewDate || req.submittedDate;
-      return {
-        id: `aud_comp_${req.id}`,
-        auditId: `AUD-${req.srNumber.replace('SR-', '')}`,
-        type: 'Requisition Clearance',
-        completedBy: req.managerName || 'System Clearance Officer',
-        completedDate: new Date(reviewDate).toISOString().split('T')[0],
-        findings: 0,
-        riskLevel: req.priority === 'Urgent' || req.priority === 'High' ? 'High' : 'Low'
-      };
+  ngOnInit(): void {
+    this.complianceData.getServiceRequests().subscribe((requests) => {
+      this.audits.set(
+        requests
+          .filter((request) => this.isCompleted(request.status))
+          .map((request) => this.toAudit(request)),
+      );
     });
+  }
 
-    return [...mapped, ...this.defaultSeeds];
-  });
+  private toAudit(request: ServiceRequestDto): Audit {
+    return {
+      id: `aud_comp_${request.id}`,
+      auditId: `AUD-${(request.requestNumber || request.id).replace(/^SR-/, '')}`,
+      type: 'Requisition Clearance',
+      completedBy: request.approvedBy || 'Approver',
+      completedDate: this.toDateOnly(request.approvedDate || request.requestDate),
+      findings: 0,
+      riskLevel: this.riskFromQuantity(request.quantity),
+    };
+  }
+
+  private isCompleted(status: string): boolean {
+    const normalized = status?.toLowerCase() ?? '';
+    return normalized.includes('complete') || normalized.includes('approved') || normalized.includes('issued');
+  }
+
+  private riskFromQuantity(quantity: number): string {
+    return quantity > 10 ? 'High' : 'Low';
+  }
+
+  private toDateOnly(value?: string): string {
+    return value ? new Date(value).toISOString().split('T')[0] : '';
+  }
 }

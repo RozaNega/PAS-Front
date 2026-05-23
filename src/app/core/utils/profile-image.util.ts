@@ -1,8 +1,8 @@
 /** Max edge length for avatars persisted in localStorage. */
-const MAX_AVATAR_DIMENSION = 256;
-const JPEG_QUALITY = 0.72;
-/** Skip re-compression for already-small payloads (~50KB). */
-const SKIP_COMPRESS_BELOW_CHARS = 50_000;
+const MAX_AVATAR_DIMENSION = 768;
+const JPEG_QUALITY = 0.9;
+/** Skip re-compression for already-small payloads (~250KB). */
+const SKIP_COMPRESS_BELOW_CHARS = 250_000;
 
 export function isBrowserEnvironment(): boolean {
   return typeof window !== 'undefined' && typeof document !== 'undefined';
@@ -13,7 +13,7 @@ export function isInlineImageData(url: string): boolean {
 }
 
 /**
- * Compress a data-URL image for localStorage (JPEG, max 256px).
+ * Compress a data-URL image for localStorage without visibly softening profile views.
  * HTTP URLs are returned unchanged.
  */
 export async function compressProfileImageDataUrl(dataUrl: string): Promise<string> {
@@ -36,8 +36,8 @@ export async function compressProfileImageDataUrl(dataUrl: string): Promise<stri
   let quality = JPEG_QUALITY;
   let result = await resizeToJpegDataUrl(dataUrl, MAX_AVATAR_DIMENSION, quality);
 
-  while (result.length > 120_000 && quality > 0.45) {
-    quality -= 0.1;
+  while (result.length > 650_000 && quality > 0.7) {
+    quality -= 0.05;
     result = await resizeToJpegDataUrl(dataUrl, MAX_AVATAR_DIMENSION, quality);
   }
 

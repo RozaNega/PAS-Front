@@ -71,6 +71,28 @@
             </div>
           </div>
 
+          <div class="detail-section">
+            <h3>Operational Details</h3>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <span class="label">Departments Covered:</span>
+                <span class="value">{{ departmentsCovered(selectedReport()!) }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">Approval Rate:</span>
+                <span class="value">{{ approvalRate(selectedReport()!) }}%</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">Other/Completed:</span>
+                <span class="value">{{ completedRequests(selectedReport()!) }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">Average Request Value:</span>
+                <span class="value">${{ averageRequestValue(selectedReport()!).toLocaleString() }}</span>
+              </div>
+            </div>
+          </div>
+
           @if (selectedReport()!.details?.requests && selectedReport()!.details!.requests.length > 0) {
             <div class="detail-section">
               <h3>Requests</h3>

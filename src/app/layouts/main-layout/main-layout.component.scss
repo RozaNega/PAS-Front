@@ -635,6 +635,13 @@
   background: var(--surface-card);
   border-right: 1px solid var(--surface-border);
   padding: 0.9rem;
+  min-height: 0;
+  height: 100%;
+  max-height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
   transition:
     width var(--theme-transition-fast),
     padding var(--theme-transition-fast),
@@ -658,6 +665,8 @@
 .sakai-nav {
   display: grid;
   gap: 0.35rem;
+  min-height: min-content;
+  padding-bottom: 0.75rem;
 }
 
 .sakai-nav-link {
