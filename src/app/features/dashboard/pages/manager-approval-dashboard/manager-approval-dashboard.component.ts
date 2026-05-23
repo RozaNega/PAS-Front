@@ -261,10 +261,7 @@ export class ManagerApprovalDashboardComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (res) => {
           const items = (res as { data?: { items?: ApiServiceRequestRow[] } })?.data?.items ?? [];
-          const pending = items.filter(
-            (r) => (r.status || '').toLowerCase() === 'pending',
-          );
-          this.workflowService.mergeApiServiceRequests(pending, {
+          this.workflowService.mergeApiServiceRequests(items, {
             managerQueueId: this.workflowService.getManagerQueueIdForCurrentUser(),
           });
           this.cdr.markForCheck();

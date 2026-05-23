@@ -1,17 +1,9 @@
-import { Component, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-
-interface StoreIssueVoucher {
-  id: string;
-  sivNumber: string;
-  requestNumber: string;
-  requesterName: string;
-  department: string;
-  status: 'Pending' | 'Issued';
-  issueDate: string;
-  totalItems: number;
-  totalValue: number;
-}
+import {
+  ManagerDataService,
+  ManagerSivRow as StoreIssueVoucher,
+} from '../../../../core/services/manager-data.service';
 
 @Component({
   selector: 'app-pending-sivs',
@@ -20,25 +12,21 @@ interface StoreIssueVoucher {
   templateUrl: './pending-sivs.component.html',
   styleUrls: ['./pending-sivs.component.scss']
 })
-export class PendingSIVsComponent {
-  protected readonly sivs = signal<StoreIssueVoucher[]>([
-    {
-      id: '1',
-      sivNumber: 'SIV-2024-002',
-      requestNumber: 'SR-2024-002',
-      requesterName: 'Peter Chen',
-      department: 'Operations',
-      status: 'Pending',
-      issueDate: '2024-01-21',
-      totalItems: 1,
-      totalValue: 2800
-    }
-  ]);
+export class PendingSIVsComponent implements OnInit {
+  private readonly managerData = inject(ManagerDataService);
+
+  protected readonly sivs = signal<StoreIssueVoucher[]>([]);
+
+  ngOnInit(): void {
+    this.managerData
+      .getSivs()
+      .subscribe((sivs) => this.sivs.set(sivs.filter((siv) => siv.status === 'Pending')));
+  }
 
   issueSiv(id: string): void {
     if (confirm('Are you sure you want to issue this SIV?')) {
       this.sivs.update((sivs) => sivs.filter((s) => s.id !== id));
-      alert('SIV has been successfully issued.');
+      alert('This SIV should be issued from the backend/storekeeper workflow.');
     }
   }
 }

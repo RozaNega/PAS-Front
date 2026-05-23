@@ -19,7 +19,7 @@ export class CurrentUserService {
   );
 
   /** Prevents repeated Employees/by-user calls per user id in one session. */
-  private lastEmployeePhoneHydrateUserId = '';
+  private lastEmployeeProfileHydrateUserId = '';
 
   constructor(
     private readonly tokenService: TokenService,
@@ -69,7 +69,7 @@ export class CurrentUserService {
       if (typeof localStorage !== 'undefined') {
         localStorage.removeItem(USER_STORAGE_KEY);
       }
-      this.lastEmployeePhoneHydrateUserId = '';
+      this.lastEmployeeProfileHydrateUserId = '';
       this.currentUserSubject.next(null);
       return;
     }
@@ -84,7 +84,7 @@ export class CurrentUserService {
     this.userStorage.writeUser(withPhoto);
     this.tokenService.setUser(this.stripForTokenStorage(withPhoto));
     this.currentUserSubject.next(withPhoto);
-    this.scheduleEmployeePhoneHydrationIfNeeded(withPhoto);
+    this.scheduleEmployeeProfileHydrationIfNeeded(withPhoto);
   }
 
   updateUser(data: Partial<CurrentUser>): void {
@@ -140,7 +140,7 @@ export class CurrentUserService {
     if (typeof localStorage !== 'undefined') {
       localStorage.removeItem(USER_STORAGE_KEY);
     }
-    this.lastEmployeePhoneHydrateUserId = '';
+    this.lastEmployeeProfileHydrateUserId = '';
     this.currentUserSubject.next(null);
   }
 
@@ -180,7 +180,7 @@ export class CurrentUserService {
       this.currentUserSubject.next(merged);
       this.userStorage.writeUser(merged);
       this.tokenService.setUser(merged);
-      this.scheduleEmployeePhoneHydrationIfNeeded(merged);
+      this.scheduleEmployeeProfileHydrationIfNeeded(merged);
     }
   }
 
@@ -195,31 +195,68 @@ export class CurrentUserService {
   }
 
   /**
-   * If auth user still has no phone, try `Employees/by-user/{userId}` once per session per id.
+   * Fetch all missing profile fields (department, employeeCode, phone, position, joinDate)
+   * from `Employees/by-user/{userId}` once per session per user id.
    */
-  private scheduleEmployeePhoneHydrationIfNeeded(user: CurrentUser): void {
+  private scheduleEmployeeProfileHydrationIfNeeded(user: CurrentUser): void {
     const id = user.id?.trim();
-    if (!id || user.phone?.trim()) {
-      return;
-    }
-    if (this.lastEmployeePhoneHydrateUserId === id) {
-      return;
-    }
-    this.lastEmployeePhoneHydrateUserId = id;
+    if (!id) return;
+
+    // Skip if all key profile fields are already set
+    const allPresent = user.phone?.trim() && user.department?.trim() && user.employeeCode?.trim();
+    if (allPresent) return;
+
+    // Prevent duplicate calls for the same user in one session
+    if (this.lastEmployeeProfileHydrateUserId === id) return;
+    this.lastEmployeeProfileHydrateUserId = id;
 
     this.employeesService
       .getByUserId(id)
       .pipe(take(1))
       .subscribe({
         next: (res) => {
-          const detail = res.data as unknown;
-          const dAny = detail as any;
-          const fromExplicit =
-            typeof dAny?.phone === 'string' && dAny.phone.trim() ? dAny.phone.trim() : '';
-          const nested = this.extractContactPhone(detail as unknown as Record<string, unknown>);
-          const phone = fromExplicit || nested?.trim();
-          if (phone) {
-            this.updateUser({ phone });
+          const d = res.data as any;
+          if (!d) return;
+
+          // Build a partial update with only the fields we got back and the user is still missing
+          const update: Partial<CurrentUser> = {};
+
+          const phone =
+            d.phone?.trim() ||
+            d.Phone?.trim() ||
+            d.phoneNumber?.trim() ||
+            d.PhoneNumber?.trim() ||
+            d.mobile?.trim() ||
+            this.extractContactPhone(d as Record<string, unknown>);
+          if (phone && !user.phone?.trim()) {
+            update.phone = phone;
+          }
+
+          const department = d.department?.trim() || d.Department?.trim();
+          if (department && !user.department?.trim()) {
+            update.department = department;
+          }
+
+          const employeeCode =
+            d.employeeCode?.trim() || d.EmployeeCode?.trim() || d.employee_code?.trim();
+          if (employeeCode && !user.employeeCode?.trim()) {
+            update.employeeCode = employeeCode;
+          }
+
+          const position =
+            d.position?.trim() || d.Position?.trim() || d.jobTitle?.trim() || d.JobTitle?.trim();
+          if (position && !user.position?.trim()) {
+            update.position = position;
+          }
+
+          const joinDate =
+            d.joinDate?.trim() || d.JoinDate?.trim() || d.hireDate?.trim() || d.HireDate?.trim();
+          if (joinDate && !user.joinDate?.trim()) {
+            update.joinDate = joinDate;
+          }
+
+          if (Object.keys(update).length > 0) {
+            this.updateUser(update);
           }
         },
         error: () => {},

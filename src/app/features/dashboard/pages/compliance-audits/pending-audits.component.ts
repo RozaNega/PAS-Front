@@ -1,6 +1,7 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { WorkflowService } from '../../../../core/services/workflow.service';
+import { ComplianceDataService } from '../../../../core/services/compliance-data.service';
+import { ServiceRequestDto } from '../../../../core/services/requisitions.service';
 
 interface Audit {
   id: string;
@@ -18,31 +19,44 @@ interface Audit {
   templateUrl: './pending-audits.component.html',
   styleUrls: ['./pending-audits.component.scss']
 })
-export class PendingAuditsComponent {
-  private readonly workflowService = inject(WorkflowService);
+export class PendingAuditsComponent implements OnInit {
+  private readonly complianceData = inject(ComplianceDataService);
+  protected readonly audits = signal<Audit[]>([]);
 
-  private readonly defaultSeeds: Audit[] = [
-    { id: 'seed-1', auditId: 'AUD-2024-003', type: 'Request Review', priority: 'High', assignedTo: 'Officer A', dueDate: '2024-01-25' }
-  ];
-
-  protected readonly audits = computed<Audit[]>(() => {
-    const reqs = this.workflowService.getAllRequests();
-    
-    // Filter pending/under review requests
-    const pendingReqs = reqs.filter(r => ['Submitted', 'Under Review'].includes(r.status));
-
-    const mapped: Audit[] = pendingReqs.map(req => {
-      const due = new Date(new Date(req.submittedDate).getTime() + 5 * 86400000);
-      return {
-        id: `aud_pend_${req.id}`,
-        auditId: `AUD-${req.srNumber.replace('SR-', '')}`,
-        type: 'Active Asset Review',
-        priority: req.priority,
-        assignedTo: req.managerName || 'System Inspector',
-        dueDate: due.toISOString().split('T')[0]
-      };
+  ngOnInit(): void {
+    this.complianceData.getServiceRequests().subscribe((requests) => {
+      this.audits.set(
+        requests
+          .filter((request) => this.isPending(request.status))
+          .map((request) => this.toAudit(request)),
+      );
     });
+  }
 
-    return [...mapped, ...this.defaultSeeds];
-  });
+  private toAudit(request: ServiceRequestDto): Audit {
+    const requestDate = request.requestDate ? new Date(request.requestDate) : new Date();
+    const dueDate = new Date(requestDate.getTime() + 5 * 86400000);
+    return {
+      id: `aud_pend_${request.id}`,
+      auditId: `AUD-${(request.requestNumber || request.id).replace(/^SR-/, '')}`,
+      type: 'Service Request Review',
+      priority: this.priorityFromStatus(request.status),
+      assignedTo: request.approvedBy || 'Compliance Officer',
+      dueDate: dueDate.toISOString().split('T')[0],
+    };
+  }
+
+  private isPending(status: string): boolean {
+    const normalized = status?.toLowerCase() ?? '';
+    return (
+      normalized.includes('pending') ||
+      normalized.includes('submitted') ||
+      normalized.includes('review') ||
+      normalized.includes('awaiting')
+    );
+  }
+
+  private priorityFromStatus(status: string): string {
+    return status?.toLowerCase().includes('overdue') ? 'High' : 'Normal';
+  }
 }

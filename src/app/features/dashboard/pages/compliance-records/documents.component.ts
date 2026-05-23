@@ -1,6 +1,7 @@
-import { Component, signal, computed, inject } from '@angular/core';
+import { Component, OnInit, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { WorkflowService } from '../../../../core/services/workflow.service';
+import { ComplianceDataService } from '../../../../core/services/compliance-data.service';
+import { ServiceRequestDto } from '../../../../core/services/requisitions.service';
 
 interface Document {
   id: string;
@@ -29,105 +30,57 @@ interface Document {
   templateUrl: './documents.component.html',
   styleUrls: ['./documents.component.scss']
 })
-export class DocumentsComponent {
-  private readonly workflowService = inject(WorkflowService);
+export class DocumentsComponent implements OnInit {
+  private readonly complianceData = inject(ComplianceDataService);
 
-  private readonly defaultSeeds: Document[] = [
-    {
-      id: 'seed-1',
-      documentName: 'Disposal_Approval_001.pdf',
-      entityType: 'DisposalRecord',
-      entityId: 'DISP-2024-001',
-      uploadedDate: '2024-01-25',
-      uploadedBy: 'Officer A',
-      fileSize: '2.5 MB',
-      fileType: 'PDF',
-      hash: 'SHA256: 8f3b23c9e8104d4f6c7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e',
-      retentionPeriod: '7 Years (Expires 2031-01-25)',
-      classification: 'Confidential',
-      uploaderIp: '192.168.1.104',
-      status: 'Verified',
-      storageLocation: 'Secure AWS S3 Bucket: /records/disposal/2024/001',
-      description: 'Official authorization letter signed by Director of Asset Management approving the high-value equipment disposal protocol.',
-      mockContent: [
-        '--- ASSET DISPOSAL AUTHORIZATION FORM ---',
-        'Reference ID: DISP-2024-001',
-        'Pursuant to Section 12.4 of the Corporate Asset Disposal Policy,',
-        'the listed IT Hardware at Headquarters has been evaluated and deemed',
-        'obsolete. Approved for immediate secure eco-friendly recycling.',
-        'Authorized Signatory: Director Henok Abera',
-        'Digital Signature Stamp Checked & Verified.'
-      ]
-    },
-    {
-      id: 'seed-2',
-      documentName: 'Inspection_Report_001.pdf',
-      entityType: 'Inspection',
-      entityId: 'INS-2024-001',
-      uploadedDate: '2024-01-20',
-      uploadedBy: 'Inspector B',
-      fileSize: '1.2 MB',
-      fileType: 'PDF',
-      hash: 'SHA256: 3c9e8f9a0b1c2d3e4f5a6b7c8d9e8f3b23c9e8104d4f6c7a8b9c0d1e2f3a4b5c',
-      retentionPeriod: '5 Years (Expires 2029-01-20)',
-      classification: 'Internal',
-      uploaderIp: '192.168.2.15',
-      status: 'Verified',
-      storageLocation: 'AWS S3 Cold Storage: /records/inspections/2024/INS-001',
-      description: 'Comprehensive physical quality and quantitative check list on the received shipment of professional workspace monitors.',
-      mockContent: [
-        '--- GOODS PHYSICAL INSPECTION LOG ---',
-        'Inspection Reference: INS-2024-001',
-        'Batch received matches Packing Slip GRN-2024-001.',
-        '50 units scrutinized under standard lighting test conditions.',
-        '48 displays passed performance, color accuracy & pixel verification.',
-        '2 units rejected due to corner back-light bleed & physical bezel scuffs.',
-        'Report compiled by Senior Quality Assurance Inspector.'
-      ]
-    }
-  ];
+  protected readonly documents = signal<Document[]>([]);
 
-  // Dynamic connected documents
-  protected readonly documents = computed<Document[]>(() => {
-    const reqs = this.workflowService.getAllRequests();
-    
-    const mapped = reqs.map(req => {
-      const hashStr = `SHA256: ${this.generateSimpleHash(req.id)}`;
-      return {
-        id: `doc_${req.id}`,
-        documentName: `Request_Report_${req.srNumber}.pdf`,
-        entityType: 'ServiceRequest',
-        entityId: req.id,
-        uploadedDate: new Date(req.submittedDate).toISOString().split('T')[0],
-        uploadedBy: req.employeeName,
-        fileSize: '1.5 MB',
-        fileType: 'PDF' as const,
-        hash: hashStr,
-        retentionPeriod: '5 Years (Expires 2029)',
-        classification: (req.priority === 'Urgent' ? 'Confidential' : 'Internal') as 'Confidential' | 'Internal' | 'Public',
-        uploaderIp: '192.168.2.44',
-        status: (req.status === 'Completed' || req.status === 'Manager Approved' || req.status === 'Admin Approved' ? 'Verified' : 'Pending Review') as 'Verified' | 'Pending Review' | 'Archived',
-        storageLocation: `Secure AWS S3 Bucket: /records/requisitions/${req.srNumber}`,
-        description: `Official digital audit trail document for service request ${req.srNumber} submitted under department ${req.department}. Justification: ${req.justification}`,
-        mockContent: [
-          `--- SERVICE REQUEST AUDIT RECORD ---`,
-          `Reference Number: ${req.srNumber}`,
-          `Requester Name: ${req.employeeName}`,
-          `Department Unit: ${req.department}`,
-          `Priority Level: ${req.priority}`,
-          `Current Status: ${req.status}`,
-          `Submitted Date: ${new Date(req.submittedDate).toLocaleDateString()}`,
-          `Items Requested:`,
-          ...req.items.map(item => `  - ${item.name} [Qty: ${item.quantity}]`),
-          `Justification Remarks:`,
-          `  ${req.justification}`
-        ]
-      };
+  ngOnInit(): void {
+    this.complianceData.getServiceRequests().subscribe((requests) => {
+      this.documents.set(requests.map((request) => this.toDocument(request)));
     });
+  }
 
-    return [...mapped, ...this.defaultSeeds];
-  });
+  private toDocument(request: ServiceRequestDto): Document {
+    const requestNumber = request.requestNumber || request.id;
+    return {
+      id: `doc_${request.id}`,
+      documentName: `Service_Request_${requestNumber}.pdf`,
+      entityType: 'ServiceRequest',
+      entityId: request.id,
+      uploadedDate: this.toDateOnly(request.requestDate),
+      uploadedBy: request.requesterName || request.requesterId,
+      fileSize: 'Generated from backend record',
+      fileType: 'PDF',
+      hash: '',
+      retentionPeriod: '',
+      classification: 'Internal',
+      uploaderIp: '',
+      status: this.isVerified(request.status) ? 'Verified' : 'Pending Review',
+      storageLocation: '',
+      description: request.reason || `Backend service request record ${requestNumber}`,
+      mockContent: [
+        '--- SERVICE REQUEST RECORD ---',
+        `Reference Number: ${requestNumber}`,
+        `Requester Name: ${request.requesterName || request.requesterId}`,
+        `Department: ${request.department || ''}`,
+        `Item: ${request.itemName || request.itemId}`,
+        `Quantity: ${request.quantity}`,
+        `Current Status: ${request.status}`,
+        `Request Date: ${this.toDateOnly(request.requestDate)}`,
+        `Reason: ${request.reason || ''}`,
+      ],
+    };
+  }
 
+  private isVerified(status: string): boolean {
+    const normalized = status?.toLowerCase() ?? '';
+    return normalized.includes('approved') || normalized.includes('complete') || normalized.includes('issued');
+  }
+
+  private toDateOnly(value?: string): string {
+    return value ? new Date(value).toISOString().split('T')[0] : '';
+  }
   readonly activeViewDoc = signal<Document | null>(null);
   readonly downloadingDocId = signal<string | null>(null);
   readonly downloadProgress = signal<number>(0);
@@ -296,4 +249,10 @@ export class DocumentsComponent {
   closeModal(): void {
     this.activeViewDoc.set(null);
   }
+
+  getDisplayName(documentName: string): string {
+    // Remove file extension for display
+    return documentName.replace(/\.(pdf|doc|docx|txt|xlsx|xls)$/i, '');
+  }
 }
+

@@ -11,6 +11,8 @@ export class LoginComponent implements OnInit {
   private readonly router = inject(Router);
 
   ngOnInit(): void {
-    void this.router.navigateByUrl('/auth/login');
+    // REMOVED AUTO-REDIRECT: Landing page should stay visible until user clicks
+    // void this.router.navigateByUrl('/auth/login');
+    console.log('⚠️ Old LoginComponent loaded - this should not happen with standalone bootstrap');
   }
 }

@@ -267,7 +267,7 @@ export class OfficerProfilePageComponent implements OnInit, OnDestroy {
   async startCamera(): Promise<void> {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user', width: 400, height: 400 },
+        video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 1280 } },
       });
       this.cameraStream.set(stream);
       this.isCameraActive.set(true);
@@ -306,7 +306,7 @@ export class OfficerProfilePageComponent implements OnInit, OnDestroy {
           this.handleFile(file);
           this.stopCamera();
         }
-      }, 'image/jpeg');
+      }, 'image/jpeg', 0.95);
     }
   }
 

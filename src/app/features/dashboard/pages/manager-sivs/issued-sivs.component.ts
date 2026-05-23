@@ -1,19 +1,11 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-
-interface StoreIssueVoucher {
-  id: string;
-  sivNumber: string;
-  requestNumber: string;
-  requesterName: string;
-  department: string;
-  status: 'Pending' | 'Issued';
-  issueDate: string;
-  totalItems: number;
-  totalValue: number;
-  issuedBy: string;
-}
+import {
+  ManagerDataService,
+  ManagerSivRow as StoreIssueVoucher,
+} from '../../../../core/services/manager-data.service';
+import { downloadReportPdf } from '../compliance-reports/report-actions.util';
 
 @Component({
   selector: 'app-issued-sivs',
@@ -22,29 +14,42 @@ interface StoreIssueVoucher {
   templateUrl: './issued-sivs.component.html',
   styleUrls: ['./issued-sivs.component.scss']
 })
-export class IssuedSIVsComponent {
+export class IssuedSIVsComponent implements OnInit {
   private readonly router = inject(Router);
+  private readonly managerData = inject(ManagerDataService);
 
-  protected readonly sivs = signal<StoreIssueVoucher[]>([
-    {
-      id: '1',
-      sivNumber: 'SIV-2024-001',
-      requestNumber: 'SR-2024-001',
-      requesterName: 'John Doe',
-      department: 'IT',
-      status: 'Issued',
-      issueDate: '2024-01-20',
-      totalItems: 3,
-      totalValue: 5348,
-      issuedBy: 'Storekeeper'
-    }
-  ]);
+  protected readonly sivs = signal<StoreIssueVoucher[]>([]);
 
-  viewDetails(id: string): void {
-    void this.router.navigate(['/manager/sivs/all']);
+  protected selectedSiv = signal<StoreIssueVoucher | null>(null);
+  protected showDetailsModal = signal(false);
+
+  ngOnInit(): void {
+    this.managerData
+      .getSivs()
+      .subscribe((sivs) => this.sivs.set(sivs.filter((siv) => siv.status === 'Issued')));
   }
 
-  downloadPdf(sivNumber: string): void {
-    alert(`Downloading PDF for ${sivNumber}...`);
+  viewDetails(siv: StoreIssueVoucher): void {
+    this.selectedSiv.set(siv);
+    this.showDetailsModal.set(true);
+  }
+
+  closeDetailsModal(): void {
+    this.showDetailsModal.set(false);
+    this.selectedSiv.set(null);
+  }
+
+  async downloadPdf(siv: StoreIssueVoucher): Promise<void> {
+    await downloadReportPdf('Store Issue Voucher', siv.sivNumber, [
+      { label: 'SIV Number', value: siv.sivNumber },
+      { label: 'Request Number', value: siv.requestNumber },
+      { label: 'Requester', value: siv.requesterName },
+      { label: 'Department', value: siv.department },
+      { label: 'Status', value: siv.status },
+      { label: 'Issue Date', value: siv.issueDate },
+      { label: 'Issued By', value: siv.issuedBy || 'N/A' },
+      { label: 'Total Items', value: siv.totalItems },
+      { label: 'Total Value', value: `$${siv.totalValue.toLocaleString()}` },
+    ]);
   }
 }

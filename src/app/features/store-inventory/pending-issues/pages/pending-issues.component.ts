@@ -1,6 +1,7 @@
-import { Component, signal, computed } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, ChangeDetectionStrategy, signal, computed, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { CrossRoleService, FlowRequest } from '../../../../core/services/cross-role.service';
+import { ServiceRequestDetail } from '../../../requisition/service-requests/models/service-request.model';
 
 interface IssueItem {
   name: string;
@@ -17,6 +18,8 @@ interface PendingIssue {
   department: string;
   requestedDate: string;
   waitingTime: string;
+  /** Numeric days for average calculation — not accessed by the template. */
+  waitingDays: number;
   priority: 'Urgent' | 'Medium' | 'Normal';
   requiredBy: string;
   items: IssueItem[];
@@ -24,199 +27,279 @@ interface PendingIssue {
 
 @Component({
   selector: 'app-pending-issues',
-  standalone: true,
-  imports: [CommonModule, FormsModule],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [FormsModule],
   templateUrl: './pending-issues.component.html',
-  styleUrls: ['./pending-issues.component.scss']
+  styleUrls: ['./pending-issues.component.scss'],
 })
 export class PendingIssuesComponent {
-  searchTerm = signal('');
-  dateRange = { start: '2024-12-01', end: '2024-12-15' };
-  priorityFilter = signal('All');
-  departmentFilter = signal('All Departments');
+  private readonly crossRoleService = inject(CrossRoleService);
 
-  priorities = ['All', 'Urgent', 'Medium', 'Normal'];
-  departments = ['All Departments', 'IT', 'HR', 'Finance', 'Operations', 'Marketing'];
+  // ── Filter state ──────────────────────────────────────────────────────
+  // Plain string properties so [(ngModel)] two-way binding works without issues.
+  priorityFilter = 'All';
+  departmentFilter = 'All Departments';
+  dateRange = { start: '', end: '' };
 
-  pendingIssues = signal<PendingIssue[]>([
-    {
-      id: '1',
-      srNumber: 'SR-2024-123',
-      requester: 'John Doe',
-      department: 'IT Department',
-      requestedDate: 'Dec 15, 2024',
-      waitingTime: '2 hours',
-      priority: 'Urgent',
-      requiredBy: 'Dec 18',
-      items: [
-        { name: 'Dell XPS Laptop', requested: 2, available: 45, location: 'WH A - A-01-S-03', status: '✅ In Stock' },
-        { name: 'HP Monitor', requested: 1, available: 67, location: 'WH A - A-01-S-05', status: '✅ In Stock' }
-      ]
-    },
-    {
-      id: '2',
-      srNumber: 'SR-2024-119',
-      requester: 'Peter Chen',
-      department: 'Finance Department',
-      requestedDate: 'Dec 13, 2024',
-      waitingTime: '2 days',
-      priority: 'Urgent',
-      requiredBy: 'Dec 19',
-      items: [
-        { name: 'Printer', requested: 1, available: 12, location: 'WH B - B-01-S-02', status: '✅ In Stock' },
-        { name: 'Toner Cartridge', requested: 5, available: 8, location: 'WH A - A-02-S-01', status: '✅ In Stock' }
-      ]
-    },
-    {
-      id: '3',
-      srNumber: 'SR-2024-118',
-      requester: 'Sarah Smith',
-      department: 'HR Department',
-      requestedDate: 'Dec 12, 2024',
-      waitingTime: '3 days',
-      priority: 'Medium',
-      requiredBy: 'Dec 25',
-      items: [
-        { name: 'Office Chair', requested: 2, available: 23, location: 'WH B - B-02-S-01', status: '✅ In Stock' },
-        { name: 'Desk', requested: 1, available: 15, location: 'WH B - B-02-S-03', status: '✅ In Stock' }
-      ]
-    },
-    {
-      id: '4',
-      srNumber: 'SR-2024-117',
-      requester: 'Mike Wilson',
-      department: 'Operations Department',
-      requestedDate: 'Dec 11, 2024',
-      waitingTime: '4 days',
-      priority: 'Normal',
-      requiredBy: 'Dec 28',
-      items: [
-        { name: 'USB Cables', requested: 50, available: 55, location: 'WH A - A-03-S-02', status: '✅ In Stock' },
-        { name: 'A4 Paper', requested: 10, available: 120, location: 'WH B - B-01-S-04', status: '✅ In Stock' }
-      ]
-    }
-  ]);
+  readonly searchTerm = signal('');
 
-  showProcessModal = signal(false);
-  selectedIssue = signal<PendingIssue | null>(null);
-  currentStep = signal(1);
+  readonly priorities = ['All', 'Urgent', 'Medium', 'Normal'];
+  readonly departments = ['All Departments', 'IT', 'HR', 'Finance', 'Operations', 'Marketing'];
 
-  // Computed summary statistics
-  pendingCount = computed(() => this.pendingIssues().length);
-  urgentCount = computed(() => this.pendingIssues().filter(i => i.priority === 'Urgent').length);
-  readyToIssue = computed(() => this.pendingIssues().length);
-  awaitingStock = computed(() => 1);
-  avgWaitTime = computed(() => '1.5 days');
+  // ── Data state ────────────────────────────────────────────────────────
+  readonly isLoading = signal(false);
+  readonly errorMessage = signal('');
 
-  urgentIssues = computed(() => this.pendingIssues().filter(i => i.priority === 'Urgent'));
-  mediumIssues = computed(() => this.pendingIssues().filter(i => i.priority === 'Medium'));
-  normalIssues = computed(() => this.pendingIssues().filter(i => i.priority === 'Normal'));
+  private readonly allIssues = signal<PendingIssue[]>([]);
+  readonly filteredIssues = signal<PendingIssue[]>([]);
 
-  filteredIssues = signal<PendingIssue[]>([]);
+  // ── Modal state ───────────────────────────────────────────────────────
+  readonly showProcessModal = signal(false);
+  readonly selectedIssue = signal<PendingIssue | null>(null);
+  readonly selectedIssueDetail = signal<ServiceRequestDetail | null>(null);
+  readonly isProcessing = signal(false);
+  readonly currentStep = signal(1);
+
+  // ── Computed statistics ───────────────────────────────────────────────
+  readonly pendingCount = computed(() => this.filteredIssues().length);
+  readonly urgentCount = computed(
+    () => this.filteredIssues().filter((i) => i.priority === 'Urgent').length,
+  );
+  readonly readyToIssue = computed(() => this.filteredIssues().length);
+  readonly awaitingStock = computed(() => 0);
+  readonly avgWaitTime = computed(() => {
+    const issues = this.filteredIssues();
+    if (issues.length === 0) return 'N/A';
+    const total = issues.reduce((sum, i) => sum + i.waitingDays, 0);
+    return `${(total / issues.length).toFixed(1)} days`;
+  });
+
+  readonly urgentIssues = computed(() =>
+    this.filteredIssues().filter((i) => i.priority === 'Urgent'),
+  );
+  readonly mediumIssues = computed(() =>
+    this.filteredIssues().filter((i) => i.priority === 'Medium'),
+  );
+  readonly normalIssues = computed(() =>
+    this.filteredIssues().filter((i) => i.priority === 'Normal'),
+  );
 
   constructor() {
-    this.filterIssues();
+    this.loadData();
   }
 
-  filterIssues(): void {
+  // ── Data loading ──────────────────────────────────────────────────────
+
+  private loadData(): void {
+    this.isLoading.set(true);
+    this.crossRoleService.getApprovedRequests().subscribe({
+      next: (requests) => {
+        this.allIssues.set(requests.map((r) => this.mapToPendingIssue(r)));
+        this.applyFilter();
+        this.isLoading.set(false);
+      },
+      error: () => {
+        this.errorMessage.set('Failed to load pending issues. Please refresh.');
+        this.isLoading.set(false);
+      },
+    });
+  }
+
+  private mapToPendingIssue(r: FlowRequest): PendingIssue {
+    const priority: 'Urgent' | 'Medium' | 'Normal' =
+      r.urgency === 'Urgent' || r.urgency === 'High'
+        ? 'Urgent'
+        : r.urgency === 'Medium'
+          ? 'Medium'
+          : 'Normal';
+
+    const waitingDays = r.waitingDays;
+    const waitingTime =
+      waitingDays === 0 ? 'Today' : waitingDays === 1 ? '1 day' : `${waitingDays} days`;
+
+    return {
+      id: r.id,
+      srNumber: r.srNumber,
+      requester: r.requesterName,
+      department: r.department,
+      requestedDate: r.requestDate,
+      waitingTime,
+      waitingDays,
+      priority,
+      requiredBy: 'N/A',
+      items: [
+        {
+          name: `${r.totalItems} item(s) — ${r.purpose}`,
+          requested: r.totalQuantity,
+          available: 0,
+          location: '—',
+          status: '📋 Approved',
+        },
+      ],
+    };
+  }
+
+  // ── Filtering ─────────────────────────────────────────────────────────
+
+  private applyFilter(): void {
     const search = this.searchTerm().toLowerCase();
-    const priority = this.priorityFilter();
-    const department = this.departmentFilter();
+    const priority = this.priorityFilter;
+    const department = this.departmentFilter;
 
     this.filteredIssues.set(
-      this.pendingIssues().filter(issue => {
-        const matchesSearch = issue.srNumber.toLowerCase().includes(search) ||
-                              issue.requester.toLowerCase().includes(search) ||
-                              issue.department.toLowerCase().includes(search);
+      this.allIssues().filter((issue) => {
+        const matchesSearch =
+          !search ||
+          issue.srNumber.toLowerCase().includes(search) ||
+          issue.requester.toLowerCase().includes(search) ||
+          issue.department.toLowerCase().includes(search);
         const matchesPriority = priority === 'All' || issue.priority === priority;
-        const matchesDepartment = department === 'All Departments' || issue.department.includes(department);
+        const matchesDepartment =
+          department === 'All Departments' ||
+          issue.department.toLowerCase().includes(department.toLowerCase());
         return matchesSearch && matchesPriority && matchesDepartment;
-      })
+      }),
     );
+  }
+
+  /** Kept for template compatibility; delegates to applyFilter. */
+  filterIssues(): void {
+    this.applyFilter();
   }
 
   onSearchChange(value: string): void {
     this.searchTerm.set(value);
-    this.filterIssues();
+    this.applyFilter();
   }
 
   onPriorityChange(value: string): void {
-    this.priorityFilter.set(value);
-    this.filterIssues();
+    this.priorityFilter = value;
+    this.applyFilter();
   }
 
   onDepartmentChange(value: string): void {
-    this.departmentFilter.set(value);
-    this.filterIssues();
+    this.departmentFilter = value;
+    this.applyFilter();
   }
 
+  // ── Modal ─────────────────────────────────────────────────────────────
+
   openProcessModal(issue: PendingIssue): void {
-    this.selectedIssue.set(issue);
+    this.selectedIssue.set({ ...issue });
+    this.selectedIssueDetail.set(null);
     this.currentStep.set(1);
     this.showProcessModal.set(true);
+
+    this.crossRoleService.getRequestDetail(issue.id).subscribe((detail) => {
+      this.selectedIssueDetail.set(detail);
+      if (detail) {
+        const items: IssueItem[] = detail.items.map((item) => ({
+          name: item.itemName,
+          requested: item.requestedQty,
+          available: 0,
+          location: item.shelfLocation || '—',
+          status: item.pendingQty > 0 ? '✅ Available' : '📋 Pending',
+        }));
+        const current = this.selectedIssue();
+        if (current) {
+          this.selectedIssue.set({ ...current, items });
+        }
+      }
+    });
   }
 
   closeProcessModal(): void {
     this.showProcessModal.set(false);
     this.selectedIssue.set(null);
+    this.selectedIssueDetail.set(null);
+    this.isProcessing.set(false);
+    this.currentStep.set(1);
   }
 
   nextStep(): void {
     if (this.currentStep() < 3) {
-      this.currentStep.set(this.currentStep() + 1);
+      this.currentStep.update((s) => s + 1);
     }
   }
 
   previousStep(): void {
     if (this.currentStep() > 1) {
-      this.currentStep.set(this.currentStep() - 1);
+      this.currentStep.update((s) => s - 1);
     }
   }
 
   processIssue(): void {
-    console.log('Processing issue:', this.selectedIssue()?.srNumber);
-    this.closeProcessModal();
+    const issue = this.selectedIssue();
+    const detail = this.selectedIssueDetail();
+    if (!issue) return;
+
+    const items = (detail?.items ?? []).map((item) => ({
+      srDetailId: item.id,
+      issuedQty: item.pendingQty || item.requestedQty,
+    }));
+
+    this.isProcessing.set(true);
+    this.crossRoleService.issueRequest(issue.id, items).subscribe((success) => {
+      this.isProcessing.set(false);
+      if (success) {
+        this.allIssues.update((list) => list.filter((i) => i.id !== issue.id));
+        this.applyFilter();
+        this.closeProcessModal();
+      }
+    });
   }
+
+  // ── Card actions ──────────────────────────────────────────────────────
 
   viewDetails(issue: PendingIssue): void {
-    console.log('View details:', issue.srNumber);
+    this.openProcessModal(issue);
   }
 
-  addNote(issue: PendingIssue): void {
-    console.log('Add note:', issue.srNumber);
+  addNote(_issue: PendingIssue): void {
+    // Placeholder — note functionality can be wired to a notes API later.
   }
 
-  snooze(issue: PendingIssue): void {
-    console.log('Snooze:', issue.srNumber);
+  snooze(_issue: PendingIssue): void {
+    // Placeholder — snooze/reminder functionality can be wired later.
   }
 
   bulkProcess(): void {
-    console.log('Bulk process selected issues');
+    // Placeholder — bulk issue can be wired later.
   }
 
   printPickingList(): void {
-    console.log('Print picking list');
+    // Placeholder — picking list print can be wired later.
   }
 
   exportList(): void {
-    console.log('Export list');
+    // Placeholder — CSV/PDF export can be wired later.
   }
 
+  // ── Helpers ───────────────────────────────────────────────────────────
+
   getPriorityColor(priority: string): string {
-    switch(priority) {
-      case 'Urgent': return '🔴';
-      case 'Medium': return '🟡';
-      case 'Normal': return '🟢';
-      default: return '⚪';
+    switch (priority) {
+      case 'Urgent':
+        return '🔴';
+      case 'Medium':
+        return '🟡';
+      case 'Normal':
+        return '🟢';
+      default:
+        return '⚪';
     }
   }
 
   getStepTitle(): string {
-    switch(this.currentStep()) {
-      case 1: return 'Review Requisition';
-      case 2: return 'Select Items & Quantities';
-      case 3: return 'SIV Details & Signature';
-      default: return '';
+    switch (this.currentStep()) {
+      case 1:
+        return 'Review Requisition';
+      case 2:
+        return 'Select Items & Quantities';
+      case 3:
+        return 'SIV Details & Signature';
+      default:
+        return '';
     }
   }
 }

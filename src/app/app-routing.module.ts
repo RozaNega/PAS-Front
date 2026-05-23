@@ -18,14 +18,15 @@ const routes: Routes = [
     pathMatch: 'full',
   },
 
-  {
-    path: '',
-    component: AuthLayoutComponent,
-    children: [
-      { path: 'login', component: LoginComponent },
-      { path: '', redirectTo: 'login', pathMatch: 'full' },
-    ],
-  },
+  // REMOVED: This was causing conflicts with the landing page
+  // {
+  //   path: '',
+  //   component: AuthLayoutComponent,
+  //   children: [
+  //     { path: 'login', component: LoginComponent },
+  //     { path: '', redirectTo: 'login', pathMatch: 'full' },
+  //   ],
+  // },
 
   // 🏠 MAIN APP (PROTECTED)
   {

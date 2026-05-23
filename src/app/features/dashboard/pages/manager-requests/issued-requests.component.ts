@@ -1,6 +1,10 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { WorkflowService } from '../../../../core/services/workflow.service';
+import { Subscription } from 'rxjs';
+import {
+  ManagerDataService,
+  ManagerRequestRow,
+} from '../../../../core/services/manager-data.service';
 
 @Component({
   selector: 'app-issued-requests',
@@ -9,34 +13,25 @@ import { WorkflowService } from '../../../../core/services/workflow.service';
   templateUrl: './issued-requests.component.html',
   styleUrls: ['./issued-requests.component.scss']
 })
-export class IssuedRequestsComponent implements OnInit {
-  private readonly workflowService = inject(WorkflowService);
+export class IssuedRequestsComponent implements OnInit, OnDestroy {
+  private readonly managerData = inject(ManagerDataService);
+  private readonly subs: Subscription[] = [];
 
-  protected readonly requests = signal<any[]>([]);
+  protected readonly requests = signal<ManagerRequestRow[]>([]);
 
   ngOnInit(): void {
     this.loadRequests();
   }
 
+  ngOnDestroy(): void {
+    this.subs.forEach((sub) => sub.unsubscribe());
+  }
+
   loadRequests(): void {
-    const mgr = this.workflowService.getDefaultManagerQueueId();
-    const issuedRequests = this.workflowService.getAllRequests().filter(req => 
-      req.managerId === mgr && 
-      req.status === 'Completed'
+    this.subs.push(
+      this.managerData.syncServiceRequests().subscribe(() => {
+        this.requests.set(this.managerData.requestRows('issued'));
+      }),
     );
-    this.requests.set(issuedRequests.map(req => ({
-      id: req.id,
-      requestNumber: req.srNumber,
-      sivNumber: 'SIV-' + req.srNumber.split('-').slice(1).join('-'), // Mock SIV number
-      requesterName: req.employeeName,
-      department: req.department,
-      status: 'Issued',
-      requestedDate: req.submittedDate.toLocaleDateString(),
-      issuedDate: req.completedDate ? req.completedDate.toLocaleDateString() : 'N/A',
-      itemCount: req.items.length,
-      estimatedValue: req.estimatedCost || 0,
-      description: req.justification,
-      issuedBy: 'Storekeeper'
-    })));
   }
 }

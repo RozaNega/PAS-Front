@@ -26,24 +26,10 @@ interface InspectionReport {
 export class InspectionReportsComponent {
   private readonly workflowService = inject(WorkflowService);
 
-  private readonly defaultSeeds: InspectionReport[] = [
-    {
-      id: 'seed-1',
-      reportName: 'Monthly Inspection Report - Jan 2024',
-      generatedDate: '2024-01-31',
-      totalInspections: 15,
-      passedInspections: 12,
-      failedInspections: 3,
-      inspectedBy: 'Chief Inspector David Kovac',
-      standardsUsed: 'ISO 2859-1 Sampling Standards',
-      warehouseSectors: 'Main Depot Sectors A, B, and C',
-      defectRate: '2.4% Defect Threshold'
-    },
-  ];
 
   protected readonly reports = computed<InspectionReport[]>(() => {
     const reqs = this.workflowService.getAllRequests();
-    if (reqs.length === 0) return this.defaultSeeds;
+    if (reqs.length === 0) return [];
 
     const total = reqs.length;
     const passed = reqs.filter(r => ['Completed', 'Manager Approved', 'Admin Approved'].includes(r.status)).length;
@@ -52,18 +38,18 @@ export class InspectionReportsComponent {
 
     const liveReport: InspectionReport = {
       id: 'live-inspection-1',
-      reportName: 'Live Connected Inspection Report',
+      reportName: 'Backend Inspection Report',
       generatedDate: new Date().toISOString().split('T')[0],
       totalInspections: total,
       passedInspections: passed,
       failedInspections: failed,
-      inspectedBy: 'Chief Automated Compliance Inspector',
+      inspectedBy: 'Backend data',
       standardsUsed: 'ISO 9001:2015 & MIL-STD-105E QA Protocol',
       warehouseSectors: 'Active Store Inventory and Receiving Sectors',
       defectRate: `${rate}% Defect Rate`
     };
 
-    return [liveReport, ...this.defaultSeeds];
+    return [liveReport];
   });
 
   readonly activeViewReport = signal<InspectionReport | null>(null);
@@ -114,3 +100,7 @@ export class InspectionReportsComponent {
     this.activeViewReport.set(null);
   }
 }
+
+
+
+

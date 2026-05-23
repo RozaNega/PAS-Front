@@ -27,25 +27,10 @@ interface StatusReport {
 export class StatusReportsComponent {
   private readonly workflowService = inject(WorkflowService);
 
-  private readonly defaultSeeds: StatusReport[] = [
-    {
-      id: 'seed-1',
-      reportName: 'Compliance Status - Jan 2024',
-      generatedDate: '2024-01-31',
-      complianceScore: 92,
-      totalItems: 100,
-      compliantItems: 92,
-      nonCompliantItems: 8,
-      complianceAuditor: 'Officer Michael Scott',
-      generalSummary: 'Outstanding performance matching the standard threshold limit set by ISO 9001.',
-      lastAuditRef: 'AUD-REF-2023-Q4',
-      actionsRequired: '8 Non-compliant hardware assets scheduled for Eco disposal'
-    },
-  ];
 
   protected readonly reports = computed<StatusReport[]>(() => {
     const reqs = this.workflowService.getAllRequests();
-    if (reqs.length === 0) return this.defaultSeeds;
+    if (reqs.length === 0) return [];
 
     const totalItems = reqs.reduce((sum, r) => sum + r.items.length, 0);
     const compliant = reqs.filter(r => ['Completed', 'Manager Approved', 'Admin Approved'].includes(r.status))
@@ -57,19 +42,19 @@ export class StatusReportsComponent {
 
     const liveReport: StatusReport = {
       id: 'live-status-1',
-      reportName: 'Live Connected Compliance Status',
+      reportName: 'Backend Compliance Status',
       generatedDate: new Date().toISOString().split('T')[0],
       complianceScore: score,
-      totalItems: totalItems || 10,
-      compliantItems: compliant || 9,
-      nonCompliantItems: nonCompliant || 1,
-      complianceAuditor: 'Automated System Integrity Monitor',
+      totalItems: totalItems,
+      compliantItems: compliant,
+      nonCompliantItems: nonCompliant,
+      complianceAuditor: 'Backend data',
       generalSummary: `Live analysis of ${totalItems} requested assets. Overall policy adherence remains stable.`,
       lastAuditRef: 'AUD-LIVE-TRACK',
       actionsRequired: nonCompliant > 0 ? `${nonCompliant} rejected assets isolated for disposal audit.` : 'All assets compliant'
     };
 
-    return [liveReport, ...this.defaultSeeds];
+    return [liveReport];
   });
 
   readonly activeViewReport = signal<StatusReport | null>(null);
@@ -121,3 +106,7 @@ export class StatusReportsComponent {
     this.activeViewReport.set(null);
   }
 }
+
+
+
+

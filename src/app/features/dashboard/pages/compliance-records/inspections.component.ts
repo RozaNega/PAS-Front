@@ -1,6 +1,7 @@
-import { Component, signal, computed, inject } from '@angular/core';
+import { Component, OnInit, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { WorkflowService } from '../../../../core/services/workflow.service';
+import { ComplianceDataService } from '../../../../core/services/compliance-data.service';
+import { InspectionDto } from '../../../../core/services/inspections.service';
 
 interface InspectionChecklistItem {
   task: string;
@@ -35,76 +36,56 @@ interface Inspection {
   templateUrl: './inspections.component.html',
   styleUrls: ['./inspections.component.scss']
 })
-export class InspectionsComponent {
-  private readonly workflowService = inject(WorkflowService);
+export class InspectionsComponent implements OnInit {
+  private readonly complianceData = inject(ComplianceDataService);
 
-  private readonly defaultSeeds: Inspection[] = [
-    {
-      id: 'seed-1',
-      inspectionNumber: 'INS-2024-001',
-      receivingNoteNumber: 'GRN-2024-001',
-      inspectionDate: '2024-01-20',
-      inspector: 'Inspector A',
-      status: 'Passed',
-      itemsInspected: 50,
-      itemsPassed: 48,
-      itemsFailed: 2,
-      supplierName: 'Alpha Tech Logistics Ltd.',
-      warehouseLocation: 'Main Depot - Shelf Sector B-4',
-      calibrationDate: '2024-01-05 (Certified)',
-      temperatureLog: '19.4 °C (Within range)',
-      referenceStandard: 'ISO-9001:2015 Quality Management Protocol',
-      quarantineAction: '2 Defective items tagged and moved to Quarantine Cage C.',
-      notes: 'Excellent batch with negligible deviation. The two failed monitors exhibited corner back-light bleed exceeding the 5% tolerance threshold. Recommended action: Proceed with storage for the 48 passed units.',
-      checklist: [
-        { task: 'Verifying shipment dimensions & packing slips match SIV', passed: true },
-        { task: 'Physical inspection for frame fractures or screen damage', passed: true },
-        { task: 'Backlight uniformity & pixel stress test run for 10 minutes', passed: true },
-        { task: 'Power supply calibration and electric safety ground check', passed: true },
-        { task: 'Sealing of compliant devices with verified security label tags', passed: true }
-      ]
-    }
-  ];
+  protected readonly inspections = signal<Inspection[]>([]);
 
-  // Dynamic connected inspections
-  protected readonly inspections = computed<Inspection[]>(() => {
-    const reqs = this.workflowService.getAllRequests();
-
-    const mapped = reqs.map(req => {
-      // Sum requested quantity
-      const totalQty = req.items.reduce((sum, it) => sum + it.quantity, 0);
-      const isCompliant = req.status === 'Completed' || req.status === 'Manager Approved' || req.status === 'Admin Approved';
-      
-      const checklist: InspectionChecklistItem[] = req.items.flatMap(item => [
-        { task: `Verify technical specifications for ${item.name}`, passed: true },
-        { task: `Confirm received quantity of ${item.quantity} units for ${item.name}`, passed: true },
-        { task: `Electrical integrity & circuit check for ${item.name}`, passed: isCompliant }
-      ]);
-
-      return {
-        id: `insp_${req.id}`,
-        inspectionNumber: `INS-${req.srNumber.replace('SR-', '')}`,
-        receivingNoteNumber: `GRN-${req.srNumber.replace('SR-', '')}`,
-        inspectionDate: new Date(req.submittedDate).toISOString().split('T')[0],
-        inspector: req.managerName || 'System Inspector',
-        status: (isCompliant ? 'Passed' : 'Pending') as 'Pending' | 'Passed' | 'Failed',
-        itemsInspected: totalQty,
-        itemsPassed: isCompliant ? totalQty : 0,
-        itemsFailed: 0,
-        supplierName: 'Global Tech Distributors Inc.',
-        warehouseLocation: `Main Depot - ${req.department}`,
-        calibrationDate: '2024-01-10 (Verified)',
-        temperatureLog: '20.4 °C (Stable)',
-        referenceStandard: 'ISO-9001 Quality Standard & Corporate Assets Directive',
-        quarantineAction: isCompliant ? 'None required' : 'Held under initial warehouse review status',
-        notes: `Quality assurance inspection conducted for service request ${req.srNumber} submitted by ${req.employeeName}. Justification remarks: ${req.justification}`,
-        checklist
-      };
+  ngOnInit(): void {
+    this.complianceData.getInspections().subscribe((records) => {
+      this.inspections.set(records.map((record) => this.toInspection(record)));
     });
+  }
 
-    return [...mapped, ...this.defaultSeeds];
-  });
+  private toInspection(record: InspectionDto): Inspection {
+    const itemsInspected = record.items.reduce((sum, item) => sum + item.inspectedQuantity, 0);
+    const itemsPassed = record.items.reduce((sum, item) => sum + item.acceptedQuantity, 0);
+    const itemsFailed = record.items.reduce((sum, item) => sum + item.rejectedQuantity, 0);
 
+    return {
+      id: record.id,
+      inspectionNumber: `INS-${record.id}`,
+      receivingNoteNumber: record.grnNumber || record.receivingNoteId,
+      inspectionDate: this.toDateOnly(record.inspectionDate),
+      inspector: record.inspectorName || record.inspectorId,
+      status: record.status ? this.toStatus(record.status) : record.isPassed ? 'Passed' : 'Failed',
+      itemsInspected,
+      itemsPassed,
+      itemsFailed,
+      supplierName: '',
+      warehouseLocation: '',
+      calibrationDate: '',
+      temperatureLog: '',
+      referenceStandard: '',
+      quarantineAction: itemsFailed > 0 ? `${itemsFailed} rejected item(s) recorded.` : 'None required',
+      notes: record.deviationNotes || '',
+      checklist: record.items.map((item) => ({
+        task: `${item.itemName || item.itemId}: accepted ${item.acceptedQuantity}, rejected ${item.rejectedQuantity}`,
+        passed: item.isPassed,
+      })),
+    };
+  }
+
+  private toStatus(status: string): Inspection['status'] {
+    const normalized = status.toLowerCase();
+    if (normalized.includes('pass') || normalized.includes('approved')) return 'Passed';
+    if (normalized.includes('fail') || normalized.includes('reject')) return 'Failed';
+    return 'Pending';
+  }
+
+  private toDateOnly(value?: string): string {
+    return value ? new Date(value).toISOString().split('T')[0] : '';
+  }
   readonly activeViewInspection = signal<Inspection | null>(null);
   readonly downloadingInspectionId = signal<string | null>(null);
   readonly downloadProgress = signal<number>(0);
@@ -271,3 +252,4 @@ export class InspectionsComponent {
     this.activeViewInspection.set(null);
   }
 }
+

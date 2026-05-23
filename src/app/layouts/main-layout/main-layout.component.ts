@@ -12,6 +12,8 @@ import { getMenuConfigForRole, MenuItem } from '../../config/menu.config';
 import { User } from '../../core/services/auth.service';
 import { DEFAULT_AVATAR_PATH } from '../../core/models/stored-user.model';
 import { WorkflowService, UserRole } from '../../core/services/workflow.service';
+import { ComplianceDataService } from '../../core/services/compliance-data.service';
+import { ManagerDataService } from '../../core/services/manager-data.service';
 
 interface ThemeOption {
   id: string;
@@ -46,6 +48,8 @@ export class MainLayoutComponent implements OnInit {
   private readonly sanitizer = inject(DomSanitizer);
   private readonly router = inject(Router);
   private readonly workflowService = inject(WorkflowService);
+  private readonly complianceData = inject(ComplianceDataService);
+  private readonly managerData = inject(ManagerDataService);
 
   protected menuItems: MenuItem[] = [];
   private readonly workflowNotificationTick = signal(0);
@@ -467,11 +471,13 @@ export class MainLayoutComponent implements OnInit {
 
     if (this.isManagerRoute()) {
       this.menuItems = getMenuConfigForRole('manager');
+      this.loadManagerMenuBadges();
       return;
     }
 
     if (this.isComplianceOfficerRoute()) {
       this.menuItems = getMenuConfigForRole('compliance-officer');
+      this.loadComplianceMenuBadges();
       return;
     }
 
@@ -603,6 +609,89 @@ export class MainLayoutComponent implements OnInit {
       return 'Admin';
     }
     return null;
+  }
+
+  private loadComplianceMenuBadges(): void {
+    this.complianceData.getServiceRequests().subscribe((requests) => {
+      const pendingCount = requests.filter((request) => {
+        const status = request.status?.toLowerCase() ?? '';
+        return (
+          status.includes('pending') ||
+          status.includes('submitted') ||
+          status.includes('review') ||
+          status.includes('awaiting')
+        );
+      }).length;
+
+      this.menuItems = this.menuItems.map((item) => ({
+        ...item,
+        children: item.children?.map((child) =>
+          child.route === '/compliance-officer/audits/pending'
+            ? { ...child, badge: pendingCount || undefined }
+            : child,
+        ),
+      }));
+    });
+  }
+
+  private loadManagerMenuBadges(): void {
+    this.managerData.menuBadgeCounts().subscribe((counts) => {
+      this.menuItems = this.menuItems.map((item) => {
+        if (item.label === 'Service Requests') {
+          const pendingRequests = counts.pendingRequests || undefined;
+          return {
+            ...item,
+            badge: pendingRequests,
+            children: item.children?.map((child) => {
+              if (child.route === '/manager/requests/pending') {
+                return { ...child, badge: counts.pendingRequests || undefined };
+              }
+              if (child.route === '/manager/requests/approved') {
+                return { ...child, badge: counts.approvedRequests || undefined };
+              }
+              if (child.route === '/manager/requests/rejected') {
+                return { ...child, badge: counts.rejectedRequests || undefined };
+              }
+              if (child.route === '/manager/requests/issued') {
+                return { ...child, badge: counts.issuedRequests || undefined };
+              }
+              return child;
+            }),
+          };
+        }
+
+        if (item.label === 'Store Issue Vouchers') {
+          return {
+            ...item,
+            badge: counts.allSivs || undefined,
+            children: item.children?.map((child) => {
+              if (child.route === '/manager/sivs/all') {
+                return { ...child, badge: counts.allSivs || undefined };
+              }
+              if (child.route === '/manager/sivs/issued') {
+                return { ...child, badge: counts.issuedSivs || undefined };
+              }
+              return child;
+            }),
+          };
+        }
+
+        if (item.label === 'Inventory') {
+          return {
+            ...item,
+            badge: counts.lowStockItems || undefined,
+            children: item.children?.map((child) => {
+              if (child.route === '/manager/inventory/low-stock') {
+                return { ...child, badge: counts.lowStockItems || undefined };
+              }
+              return child;
+            }),
+          };
+        }
+
+        return item;
+      });
+    });
   }
 
   private formatNotificationTime(date: Date): string {

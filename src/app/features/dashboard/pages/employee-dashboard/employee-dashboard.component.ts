@@ -25,7 +25,10 @@ import {
   NotificationMessage,
   ApiServiceRequestRow,
 } from '../../../../core/services/workflow.service';
-import { Subscription, take, filter } from 'rxjs';
+import { Subscription, take, filter, forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
+import { EmployeesService } from '../../../../core/services/employees.service';
+import { UsersService } from '../../../../core/services/users.service';
 import { ServiceRequestService } from '../../../requisition/service-requests/services/service-request.service';
 import {
   RequisitionsService,
@@ -615,8 +618,11 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
     }, 5000);
   }
 
+  private readonly employeesService = inject(EmployeesService);
+  private readonly usersService = inject(UsersService);
+
   private setupProfileSubscription(): void {
-    // 1. Sync User Details reactively (Photo is now handled by toSignal)
+    // 1. Sync User Details reactively from stored session first (instant, no flicker)
     const userSub = this.currentUserService.currentUser$.subscribe((user: CurrentUser | null) => {
       if (user) {
         this.userProfile.set({
@@ -637,7 +643,61 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
       }
     });
 
-    // 2. Reactively handle route navigation changes to force change detection
+    // 2. Always fetch fresh profile data from the backend on every dashboard load.
+    //    This fills in department / phone / employeeCode even when the login response
+    //    or JWT did not carry those fields.
+    const userId = this.currentUserService.getUserId();
+    if (userId) {
+      forkJoin({
+        employee: this.employeesService.getByUserId(userId).pipe(catchError(() => of(null))),
+        userDetail: this.usersService.getById(userId).pipe(catchError(() => of(null))),
+      })
+        .pipe(take(1))
+        .subscribe(({ employee, userDetail }) => {
+          const emp = employee?.data as any;
+          const usr = userDetail?.data as any;
+
+          // Build a patch from both sources — employee record wins on profile fields
+          const patch: Partial<UserProfile> = {};
+
+          const department = emp?.department?.trim() || emp?.Department?.trim() || undefined;
+          if (department) patch.department = department;
+
+          const phone =
+            emp?.phone?.trim() || emp?.Phone?.trim() || emp?.phoneNumber?.trim() || undefined;
+          if (phone) patch.phone = phone;
+
+          const position = emp?.position?.trim() || emp?.Position?.trim() || undefined;
+          if (position) patch.position = position;
+
+          const joinDate =
+            emp?.joinDate?.trim() ||
+            emp?.hireDate?.trim() ||
+            emp?.JoinDate?.trim() ||
+            emp?.HireDate?.trim() ||
+            undefined;
+          if (joinDate) patch.joinDate = joinDate;
+
+          const employeeCode =
+            emp?.employeeCode?.trim() ||
+            emp?.EmployeeCode?.trim() ||
+            usr?.employeeCode?.trim() ||
+            undefined;
+          if (employeeCode) patch.employeeCode = employeeCode;
+
+          if (Object.keys(patch).length > 0) {
+            // Apply to UI immediately
+            this.userProfile.update((prev) => ({ ...prev, ...patch }));
+
+            // Persist into CurrentUserService so other parts of the app see it
+            this.currentUserService.updateUser(patch as any);
+
+            this.cdr.markForCheck();
+          }
+        });
+    }
+
+    // 3. Reactively handle route navigation changes to force change detection
     const routeSub = this.router.events
       .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
       .subscribe(() => {

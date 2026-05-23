@@ -1,0 +1,312 @@
+.stock-ledger-container {
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #e2e8f0;
+
+  .header-info {
+    h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #1e293b;
+      margin: 0 0 0.5rem 0;
+    }
+
+    .subtitle {
+      color: #64748b;
+      margin: 0;
+    }
+  }
+
+  .btn {
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s;
+
+    &.btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+      }
+    }
+  }
+}
+
+.filters-section {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+
+  .filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+
+    label {
+      font-weight: 600;
+      color: #475569;
+      font-size: 0.875rem;
+    }
+
+    .form-control {
+      padding: 0.625rem;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      transition: all 0.2s;
+
+      &:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+      }
+    }
+  }
+
+  .filter-actions {
+    display: flex;
+    align-items: flex-end;
+
+    .btn-secondary {
+      padding: 0.625rem 1rem;
+      background: #f1f5f9;
+      color: #475569;
+      border: none;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.2s;
+
+      &:hover {
+        background: #e2e8f0;
+      }
+    }
+  }
+}
+
+.ledger-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+
+  .stat-card {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    transition: all 0.2s;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .stat-icon {
+      font-size: 2rem;
+    }
+
+    .stat-content {
+      .stat-label {
+        font-size: 0.875rem;
+        color: #64748b;
+        margin-bottom: 0.25rem;
+      }
+
+      .stat-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #1e293b;
+      }
+    }
+  }
+}
+
+.ledger-table-container {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+
+  .ledger-table {
+    width: 100%;
+    border-collapse: collapse;
+
+    thead {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+
+      th {
+        padding: 1rem;
+        text-align: left;
+        font-weight: 600;
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+    }
+
+    tbody {
+      tr {
+        border-bottom: 1px solid #f1f5f9;
+        transition: all 0.2s;
+
+        &:hover {
+          background: #f8fafc;
+        }
+
+        &.transaction-in {
+          border-left: 4px solid #10b981;
+        }
+
+        &.transaction-out {
+          border-left: 4px solid #ef4444;
+        }
+
+        &.transaction-adjustment {
+          border-left: 4px solid #f59e0b;
+        }
+
+        td {
+          padding: 1rem;
+          font-size: 0.875rem;
+          color: #475569;
+
+          .date-time {
+            .date {
+              font-weight: 600;
+              color: #1e293b;
+            }
+
+            .time {
+              font-size: 0.75rem;
+              color: #94a3b8;
+            }
+          }
+
+          .item-code {
+            font-family: 'Courier New', monospace;
+            background: #f1f5f9;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-weight: 600;
+          }
+
+          .transaction-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+
+            &.transaction-in {
+              background: #d1fae5;
+              color: #065f46;
+            }
+
+            &.transaction-out {
+              background: #fee2e2;
+              color: #991b1b;
+            }
+
+            &.transaction-adjustment {
+              background: #fef3c7;
+              color: #92400e;
+            }
+          }
+
+          .quantity-positive {
+            color: #10b981;
+            font-weight: 600;
+          }
+
+          .quantity-negative {
+            color: #ef4444;
+            font-weight: 600;
+          }
+
+          .reference-link {
+            color: #667eea;
+            font-weight: 600;
+            cursor: pointer;
+
+            &:hover {
+              text-decoration: underline;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: #94a3b8;
+
+    i {
+      font-size: 4rem;
+      margin-bottom: 1rem;
+    }
+
+    h3 {
+      font-size: 1.5rem;
+      color: #475569;
+      margin-bottom: 0.5rem;
+    }
+
+    p {
+      font-size: 1rem;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .stock-ledger-container {
+    padding: 1rem;
+  }
+
+  .filters-section {
+    grid-template-columns: 1fr;
+  }
+
+  .ledger-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .ledger-table-container {
+    overflow-x: auto;
+
+    .ledger-table {
+      min-width: 800px;
+    }
+  }
+}

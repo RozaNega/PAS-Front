@@ -18,7 +18,8 @@ export class ToastService {
 
   error(message: string): void {
     console.error('❌ ERROR:', message);
-    this.showToast(message, 'error');
+    // Disabled popup - only log to console
+    // this.showToast(message, 'error');
   }
 
   warning(message: string): void {

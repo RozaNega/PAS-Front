@@ -24,6 +24,12 @@ export interface User {
   roles: string[];
   permissions: string[];
   isActive?: boolean;
+  // Extended profile fields — populated from login response or Employees API
+  department?: string;
+  employeeCode?: string;
+  phone?: string;
+  position?: string;
+  joinDate?: string;
 }
 
 export interface LoginRequest {
@@ -157,6 +163,33 @@ export class AuthService {
                       : [],
                 permissions: Array.isArray(userData.permissions) ? userData.permissions : [],
                 isActive: userData.isActive !== false,
+                // Extended profile fields — map every variant the backend might return
+                department: userData.department || userData.Department || undefined,
+                employeeCode:
+                  userData.employeeCode ||
+                  userData.EmployeeCode ||
+                  userData.employee_code ||
+                  undefined,
+                phone:
+                  userData.phone ||
+                  userData.Phone ||
+                  userData.phoneNumber ||
+                  userData.PhoneNumber ||
+                  userData.mobile ||
+                  userData.Mobile ||
+                  undefined,
+                position:
+                  userData.position ||
+                  userData.Position ||
+                  userData.jobTitle ||
+                  userData.JobTitle ||
+                  undefined,
+                joinDate:
+                  userData.joinDate ||
+                  userData.JoinDate ||
+                  userData.hireDate ||
+                  userData.HireDate ||
+                  undefined,
               }
             : {
                 id: '',
