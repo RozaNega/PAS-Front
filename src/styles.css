@@ -15,6 +15,9 @@
 html,
 body {
   height: 100%;
+  /* Prevent overscroll bounce and white background */
+  overscroll-behavior: none;
+  -webkit-overscroll-behavior: none;
 }
 
 body {
