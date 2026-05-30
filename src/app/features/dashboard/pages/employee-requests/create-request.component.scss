@@ -597,6 +597,18 @@
   }
 }
 
+.quick-add {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.quick-add-input {
+  flex: 1;
+  min-width: 200px;
+}
+
 .items-table-wrap {
   overflow-x: auto;
   border: 1px solid var(--surface-border);
@@ -770,6 +782,23 @@
 
 .shelf-none {
   color: #dc2626;
+}
+
+.btn-seed {
+  appearance: none;
+  border: 1px solid #dc2626;
+  background: transparent;
+  color: #dc2626;
+  padding: 0.3rem 0.55rem;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.btn-seed:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .items-summary {

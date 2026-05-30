@@ -5,7 +5,6 @@ import { take } from 'rxjs';
 import {
   WorkflowService,
   ServiceRequest,
-  ApiServiceRequestRow,
 } from '../../../../core/services/workflow.service';
 import { ServiceRequestService } from '../../../requisition/service-requests/services/service-request.service';
 import { CurrentUserService } from '../../../../core/services/current-user.service';
@@ -46,11 +45,8 @@ export class PendingRequestsComponent implements OnInit, OnDestroy {
       .pipe(take(1))
       .subscribe({
         next: (res) => {
-          const items = (res as { data?: { items?: ApiServiceRequestRow[] } })?.data?.items ?? [];
-          const pending = items.filter(
-            (r) => (r.status || '').toLowerCase() === 'pending',
-          );
-          this.workflowService.mergeApiServiceRequests(pending, {
+          const items = this.workflowService.extractApiServiceRequestRows(res);
+          this.workflowService.mergeApiServiceRequests(items, {
             managerQueueId: this.workflowService.getManagerQueueIdForCurrentUser(),
           });
           this.loadRequests();
@@ -77,7 +73,10 @@ export class PendingRequestsComponent implements OnInit, OnDestroy {
     this.serviceRequestService
       .approveServiceRequest({ id, remarks: 'Approved from pending list' })
       .pipe(take(1))
-      .subscribe({ error: () => {} });
+      .subscribe({
+        next: () => this.syncFromApi(),
+        error: () => {},
+      });
     this.loadRequests();
   }
 
@@ -96,7 +95,10 @@ export class PendingRequestsComponent implements OnInit, OnDestroy {
     this.serviceRequestService
       .rejectServiceRequest({ id, reason: reason || 'Rejected from pending list' })
       .pipe(take(1))
-      .subscribe({ error: () => {} });
+      .subscribe({
+        next: () => this.syncFromApi(),
+        error: () => {},
+      });
     this.loadRequests();
   }
 }

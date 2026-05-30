@@ -65,7 +65,7 @@ export interface RequestItem {
   sku: string;
   quantity: number;
   requestedQty: number;
-  preferredShelfId: string;
+  preferredShelfId: string | null;
   notes: string;
   approved?: number;
   issued?: number;
@@ -76,11 +76,12 @@ export interface ApiRequestItem {
   itemId: string;
   srDetailId: string;
   requestedQty: number;
-  preferredShelfId: string;
+  preferredShelfId: string | null;
   notes: string;
 }
 
 export interface ApiServiceRequest {
+  srNumber?: string;
   items: ApiRequestItem[];
   remarks: string;
 }

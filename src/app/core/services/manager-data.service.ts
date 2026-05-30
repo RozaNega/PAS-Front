@@ -2,7 +2,6 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, forkJoin, of } from 'rxjs';
 import { catchError, map, tap } from 'rxjs/operators';
 import {
-  ApiServiceRequestRow,
   ServiceRequest as WorkflowRequest,
   WorkflowService,
 } from './workflow.service';
@@ -64,9 +63,9 @@ export class ManagerDataService {
 
   syncServiceRequests(): Observable<WorkflowRequest[]> {
     return this.serviceRequestService.getServiceRequests().pipe(
-      map((res) => res.data?.items ?? []),
+      map((res) => this.workflowService.extractApiServiceRequestRows(res)),
       tap((items) => {
-        this.workflowService.mergeApiServiceRequests(items as ApiServiceRequestRow[], {
+        this.workflowService.mergeApiServiceRequests(items, {
           managerQueueId: this.workflowService.getManagerQueueIdForCurrentUser(),
         });
       }),
@@ -159,15 +158,14 @@ export class ManagerDataService {
   displayRequestStatus(status: string): 'Pending' | 'Approved' | 'Rejected' | 'Issued' {
     const normalized = (status || '').toLowerCase();
     if (normalized.includes('reject') || normalized.includes('denied')) return 'Rejected';
+    if (normalized.includes('approve') || normalized.includes('accepted') || normalized.includes('complete')) return 'Approved';
     if (
-      normalized.includes('complete') ||
       normalized.includes('issued') ||
       normalized.includes('fulfilled') ||
       normalized.includes('closed')
     ) {
       return 'Issued';
     }
-    if (normalized.includes('approve') || normalized.includes('accepted')) return 'Approved';
     return 'Pending';
   }
 

@@ -132,18 +132,53 @@ const STORAGE_NOTIFICATIONS = 'pas_workflow_notifications_v1';
 /** API list row shape (from ServiceRequestService) — loose to tolerate backend variants. */
 export interface ApiServiceRequestRow {
   id: string;
-  srNumber: string;
+  srNumber?: string;
+  requestNumber?: string;
+  srNo?: string;
+  serviceRequestNumber?: string;
   requesterId?: string;
+  requesterEmail?: string;
+  email?: string;
+  employeeCode?: string;
   requesterName?: string;
   department?: string;
   purpose?: string;
   notes?: string;
+  remarks?: string;
+  reason?: string;
+  rejectionReason?: string;
+  approvedById?: string;
+  approvedByName?: string;
+  approvedBy?: string;
+  rejectedByName?: string;
+  rejectedBy?: string;
+  approvedDate?: string;
+  rejectedDate?: string;
+  managerRemarks?: string;
+  managerComments?: string;
   urgency?: string;
   requestDate: string;
   status: string;
   totalItems?: number;
   totalQuantity?: number;
+  items?: {
+    id?: string;
+    itemId?: string;
+    itemName?: string;
+    name?: string;
+    description?: string;
+    requestedQty?: number;
+    quantity?: number;
+    unitOfMeasure?: string;
+  }[];
 }
+
+type EmployeeIdentity = {
+  email?: string;
+  fullName?: string;
+  username?: string;
+  employeeCode?: string;
+};
 
 @Injectable({
   providedIn: 'root',
@@ -162,6 +197,79 @@ export class WorkflowService {
   constructor() {
     this.restoreFromStorage();
     this.listenForCrossTabUpdates();
+    this.clearStaleSeededStorage();
+  }
+
+  private clearStaleSeededStorage(): void {
+    if (typeof localStorage === 'undefined') return;
+    try {
+      localStorage.removeItem(STORAGE_REQUESTS);
+      localStorage.removeItem(STORAGE_NOTIFICATIONS);
+      this.requests.set([]);
+      this.notifications.set([]);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  private seedSampleData(): void {
+    const now = Date.now();
+    const day = 86400000;
+    const empId = 'emp_001';
+    const empName = 'Employee';
+    const empEmail = 'employee@africom.com';
+    const dept = 'IT Department';
+    const mgrId = 'mgr_001';
+
+    const approvedStatuses: RequestStatus[] = ['Manager Approved', 'Admin Approved', 'Completed'];
+    const baseRequest = (i: number, status: RequestStatus, daysAgo: number): ServiceRequest => {
+      const d = new Date(now - daysAgo * day);
+      const completed = status === 'Completed' ? new Date(now - (daysAgo - 1) * day) : undefined;
+      return {
+        id: `seed_${i}`,
+        srNumber: `SR-2026-${String(i).padStart(4, '0')}`,
+        employeeId: empId,
+        employeeName: empName,
+        employeeEmail: empEmail,
+        department: dept,
+        managerId: mgrId,
+        managerName: 'Manager',
+        items: [
+          { id: `item_${i}_1`, name: 'Dell Latitude 5420 Laptop', description: 'Laptop', quantity: 1, unitCost: 1200, totalCost: 1200, category: 'Electronics' },
+        ],
+        priority: i % 3 === 0 ? 'Urgent' : i % 3 === 1 ? 'High' : 'Medium',
+        status,
+        justification: 'Official request for office equipment',
+        submittedDate: d,
+        requiredDate: new Date(d.getTime() + 7 * day),
+        estimatedCost: 1200,
+        completedDate: completed,
+        workflowHistory: [
+          { id: `wh_${i}_1`, action: 'Request Submitted', performedBy: empName, performedByRole: 'Employee', timestamp: d, previousStatus: 'Draft', newStatus: 'Submitted' },
+        ],
+      };
+    };
+
+    const samples: ServiceRequest[] = [];
+
+    for (let i = 1; i <= 6; i++) {
+      samples.push(baseRequest(i, 'Manager Approved', 5 + i));
+    }
+    for (let i = 7; i <= 8; i++) {
+      samples.push(baseRequest(i, 'Admin Approved', 10 + i));
+    }
+    for (let i = 9; i <= 10; i++) {
+      samples.push(baseRequest(i, 'Completed', 15 + i));
+    }
+    for (let i = 11; i <= 12; i++) {
+      samples.push(baseRequest(i, 'Manager Rejected', 3 + i));
+    }
+    for (let i = 13; i <= 15; i++) {
+      samples.push(baseRequest(i, 'Submitted', i - 12));
+    }
+
+    this.requests.set(samples);
+    this.persist();
   }
 
   /** Reload workflow data when another tab updates localStorage (e.g. employee submit → manager tab). */
@@ -218,14 +326,23 @@ export class WorkflowService {
     return this.notificationUpdates$.asObservable();
   }
 
-  getRequestsForEmployee(employeeId: string, identity?: { email?: string }): ServiceRequest[] {
+  getRequestsForEmployee(
+    employeeId: string,
+    identity?: EmployeeIdentity,
+  ): ServiceRequest[] {
     const id = employeeId?.trim();
     const email = identity?.email?.trim().toLowerCase();
+    const fullName = identity?.fullName?.trim().toLowerCase();
+    const username = identity?.username?.trim().toLowerCase();
     return this.requests().filter((req) => {
       if (id && req.employeeId === id) {
         return true;
       }
       if (email && req.employeeEmail?.trim().toLowerCase() === email) {
+        return true;
+      }
+      const requesterName = req.employeeName?.trim().toLowerCase();
+      if (requesterName && (requesterName === fullName || requesterName === username)) {
         return true;
       }
       return false;
@@ -246,7 +363,7 @@ export class WorkflowService {
 
   getPendingRequestsForEmployee(
     employeeId: string,
-    identity?: { email?: string },
+    identity?: EmployeeIdentity,
   ): ServiceRequest[] {
     return this.getRequestsForEmployee(employeeId, identity).filter((req) =>
       WORKFLOW_PENDING_STATUSES.includes(req.status),
@@ -255,7 +372,7 @@ export class WorkflowService {
 
   getApprovedRequestsForEmployee(
     employeeId: string,
-    identity?: { email?: string },
+    identity?: EmployeeIdentity,
   ): ServiceRequest[] {
     return this.getRequestsForEmployee(employeeId, identity).filter((req) =>
       WORKFLOW_APPROVED_STATUSES.includes(req.status),
@@ -264,7 +381,7 @@ export class WorkflowService {
 
   getRejectedRequestsForEmployee(
     employeeId: string,
-    identity?: { email?: string },
+    identity?: EmployeeIdentity,
   ): ServiceRequest[] {
     return this.getRequestsForEmployee(employeeId, identity).filter((req) =>
       WORKFLOW_REJECTED_STATUSES.includes(req.status),
@@ -694,7 +811,7 @@ export class WorkflowService {
     options: {
       managerQueueId: string;
       employeeIdFilter?: string | null;
-      employeeIdentity?: { email?: string; fullName?: string; username?: string };
+      employeeIdentity?: EmployeeIdentity;
     },
   ): void {
     const managerQueueId = options.managerQueueId;
@@ -705,6 +822,9 @@ export class WorkflowService {
       if (!empFilter) return true;
       return this.apiRowBelongsToEmployee(r, empFilter, identity);
     });
+
+    const existingById = new Map(this.requests().map((r) => [r.id, r]));
+    const existingIds = new Set(existingById.keys());
 
     this.requests.update((existing) => {
       const byId = new Map(existing.map((r) => [r.id, r]));
@@ -720,6 +840,70 @@ export class WorkflowService {
       return Array.from(byId.values());
     });
     this.persist();
+
+    const currentUser = this.currentUserService.getCurrentUserValue();
+    const userRole = currentUser ? this.authService.mapUserToDashboardRole(currentUser) : null;
+
+    // Create notifications for new pending requests (for manager)
+    if (userRole === 'manager') {
+      for (const sr of filtered) {
+        const mapped = this.mapApiRowToServiceRequest(sr, managerQueueId);
+        if (!existingIds.has(mapped.id) && ['Submitted', 'Under Review'].includes(mapped.status)) {
+          const hasExistingNotification = this.notifications().some(
+            (n) => n.requestId === mapped.id,
+          );
+          if (!hasExistingNotification) {
+            this.createNotification({
+              recipientId: managerQueueId,
+              recipientRole: 'Manager',
+              type: 'info',
+              title: 'New request submitted',
+              message: `${mapped.employeeName} submitted ${mapped.srNumber} for your review.`,
+              requestId: mapped.id,
+              actionRequired: true,
+              actionUrl: `/manager/dashboard`,
+            });
+          }
+        }
+      }
+    }
+
+    // Create notifications for employee when their request status changes (approved/rejected)
+    const employeeId = currentUser?.id || '';
+    for (const sr of filtered) {
+      const prior = existingById.get(sr.id);
+      const mapped = this.mapApiRowToServiceRequest(sr, managerQueueId);
+      if (!prior) continue;
+
+      const priorStatus = prior.status;
+      const newStatus = mapped.status;
+
+      if (priorStatus === newStatus) continue;
+
+      const isApproved = WORKFLOW_APPROVED_STATUSES.includes(newStatus);
+      const isRejected = WORKFLOW_REJECTED_STATUSES.includes(newStatus);
+
+      if (!isApproved && !isRejected) continue;
+
+      const hasExistingNotification = this.notifications().some((n) => {
+        const title = n.title.toLowerCase();
+        return n.requestId === sr.id && (title.includes('approved') || title.includes('rejected'));
+      });
+      if (hasExistingNotification) continue;
+
+      const reviewerName = mapped.managerName || 'Manager';
+      this.createNotification({
+        recipientId: employeeId,
+        recipientRole: 'Employee',
+        type: isApproved ? 'success' : 'error',
+        title: isApproved ? 'Request approved' : 'Request rejected',
+        message: `Your request ${mapped.srNumber} was ${isApproved ? 'approved' : 'rejected'} by ${reviewerName}.`,
+        requestId: mapped.id,
+        actionRequired: false,
+        actionUrl: `/employee/dashboard`,
+      });
+    }
+
     const last = this.requests().find((r) => filtered.some((f) => f.id === r.id));
     if (last) this.requestUpdates$.next(last);
   }
@@ -730,6 +914,27 @@ export class WorkflowService {
 
   getAllNotifications(): NotificationMessage[] {
     return this.notifications();
+  }
+
+  extractApiServiceRequestRows(response: unknown): ApiServiceRequestRow[] {
+    const body = response as any;
+    const data = body?.data ?? body;
+    const candidates = [
+      data?.items,
+      data?.Items,
+      data?.records,
+      data?.Records,
+      data?.results,
+      data?.Results,
+      data?.data?.items,
+      data?.data?.Items,
+      data,
+    ];
+
+    const rows = candidates.find((candidate) => Array.isArray(candidate));
+    return (rows ?? []).filter((row: unknown): row is ApiServiceRequestRow => {
+      return !!row && typeof row === 'object' && 'id' in (row as Record<string, unknown>);
+    });
   }
 
   getRequestById(id: string): ServiceRequest | undefined {
@@ -778,6 +983,7 @@ export class WorkflowService {
       managerReviewDate: existing.managerReviewDate ?? incoming.managerReviewDate,
       managerComments: existing.managerComments ?? incoming.managerComments,
       adminReviewDate: existing.adminReviewDate ?? incoming.adminReviewDate,
+      adminComments: existing.adminComments ?? incoming.adminComments,
       completedDate: existing.completedDate ?? incoming.completedDate,
       workflowHistory:
         existing.workflowHistory.length >= incoming.workflowHistory.length
@@ -790,35 +996,59 @@ export class WorkflowService {
     sr: ApiServiceRequestRow,
     managerQueueId: string,
   ): ServiceRequest {
+    const srNumber = this.apiSrNumber(sr);
     const wfStatus = this.mapApiStatusToWorkflowStatus(sr.status);
     const submitted = sr.requestDate ? new Date(sr.requestDate) : new Date();
     const required = new Date(submitted.getTime() + 7 * 86400000);
-    const totalItems = sr.totalItems ?? 1;
-    const items: RequestItem[] = [
-      {
-        id: `api_item_${sr.id}`,
-        name: `Line items (${totalItems})`,
-        description: sr.purpose || sr.notes || 'Service request',
-        quantity: sr.totalQuantity ?? totalItems,
-        category: 'General',
-      },
-    ];
+    const totalItems = sr.totalItems ?? sr.items?.length ?? 1;
+    const items: RequestItem[] =
+      sr.items && sr.items.length > 0
+        ? sr.items.map((item, index) => ({
+            id: String(item.id || item.itemId || `api_item_${sr.id}_${index}`),
+            name: item.itemName || item.name || item.description || `Item ${index + 1}`,
+            description: item.description || item.itemName || item.name || 'Service request item',
+            quantity: Number(item.requestedQty ?? item.quantity ?? 1),
+            category: 'General',
+            specifications: item.unitOfMeasure,
+          }))
+        : [
+            {
+              id: `api_item_${sr.id}`,
+              name: `Line items (${totalItems})`,
+              description: sr.purpose || sr.notes || sr.remarks || 'Service request',
+              quantity: sr.totalQuantity ?? totalItems,
+              category: 'General',
+            },
+          ];
+    const reviewDate = this.parseApiDate(
+      wfStatus === 'Manager Rejected' ? sr.rejectedDate : sr.approvedDate,
+    );
+    const reviewComments =
+      sr.managerComments || sr.managerRemarks || sr.rejectionReason || sr.reason || sr.remarks;
+    const reviewerName =
+      sr.approvedByName || sr.approvedBy || sr.rejectedByName || sr.rejectedBy || 'Manager';
 
     return {
       id: String(sr.id),
-      srNumber: sr.srNumber || `SR-${sr.id}`,
-      employeeId: String(sr.requesterId || ''),
+      srNumber,
+      employeeId: String(sr.requesterId || sr.employeeCode || sr.requesterEmail || sr.email || ''),
       employeeName: sr.requesterName || 'Employee',
-      employeeEmail: '',
+      employeeEmail: sr.requesterEmail || sr.email || '',
       department: sr.department || '',
       managerId: managerQueueId,
-      managerName: 'Manager',
+      managerName: reviewerName,
       items,
       priority: this.mapUrgencyToPriority(sr.urgency),
       status: wfStatus,
-      justification: sr.purpose || sr.notes || '',
+      justification: sr.purpose || sr.notes || sr.remarks || '',
       submittedDate: submitted,
       requiredDate: required,
+      managerReviewDate:
+        WORKFLOW_APPROVED_STATUSES.includes(wfStatus) ||
+        WORKFLOW_REJECTED_STATUSES.includes(wfStatus)
+          ? reviewDate ?? new Date()
+          : undefined,
+      managerComments: reviewComments,
       estimatedCost: 0,
       workflowHistory: [
         {
@@ -834,19 +1064,44 @@ export class WorkflowService {
     };
   }
 
+  private apiSrNumber(row: ApiServiceRequestRow): string {
+    const candidate =
+      row.srNumber || row.requestNumber || row.srNo || row.serviceRequestNumber || '';
+    const normalized = String(candidate || '').trim();
+    return normalized || `SR-${row.id}`;
+  }
+
   private apiRowBelongsToEmployee(
     row: ApiServiceRequestRow,
     employeeId: string,
-    identity?: { email?: string; fullName?: string; username?: string },
+    identity?: EmployeeIdentity,
   ): boolean {
-    if (String(row.requesterId || '') === String(employeeId)) {
+    const directKeys = [
+      row.requesterId,
+      row.requesterEmail,
+      row.email,
+      row.employeeCode,
+      row.requesterName,
+    ]
+      .map((value) => String(value || '').trim().toLowerCase())
+      .filter(Boolean);
+
+    const userKeys = [
+      employeeId,
+      identity?.email,
+      identity?.email?.split('@')[0],
+      identity?.fullName,
+      identity?.username,
+      identity?.employeeCode,
+    ]
+      .map((value) => String(value || '').trim().toLowerCase())
+      .filter(Boolean);
+
+    if (directKeys.some((key) => userKeys.includes(key))) {
       return true;
     }
     const requesterName = (row.requesterName || '').trim().toLowerCase();
-    const keys = [identity?.fullName, identity?.username, identity?.email?.split('@')[0]]
-      .map((v) => v?.trim().toLowerCase())
-      .filter((v): v is string => !!v);
-    return keys.some((key) => requesterName === key || requesterName.includes(key));
+    return userKeys.some((key) => requesterName === key || requesterName.includes(key));
   }
 
   private mapApiStatusToWorkflowStatus(status: string): RequestStatus {
@@ -871,6 +1126,12 @@ export class WorkflowService {
     if (s === 'cancelled' || s === 'canceled') return 'Cancelled';
     if (s === 'compliance review' || s === 'in review') return 'Compliance Review';
     return 'Submitted';
+  }
+
+  private parseApiDate(value?: string): Date | undefined {
+    if (!value) return undefined;
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? undefined : parsed;
   }
 
   private mapUrgencyToPriority(urgency?: string): RequestPriority {

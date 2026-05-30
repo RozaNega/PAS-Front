@@ -20,6 +20,7 @@ export class CreateRequestModalComponent {
   readonly modal = inject(NgbActiveModal);
   private currentUserService = inject(CurrentUserService);
   private pasApi = inject(PasApiService);
+  readonly srNumber = this.generateSrNumber();
 
   currentStep: WizardStep = 1;
   readonly form: NewRequestForm = {
@@ -43,7 +44,7 @@ export class CreateRequestModalComponent {
   searchQuery = '';
   selectedItems: RequestItem[] = [];
 
-  get srNumber(): string {
+  private generateSrNumber(): string {
     const year = new Date().getFullYear();
     const random = Math.floor(Math.random() * 900) + 100;
     return `SR-${year}-${random}`;
@@ -113,6 +114,7 @@ export class CreateRequestModalComponent {
     this.form.items = this.selectedItems;
     
     const apiPayload: ApiServiceRequest = {
+      srNumber: this.srNumber?.trim() || undefined,
       items: this.selectedItems.map(item => ({
         itemId: item.itemId,
         srDetailId: item.srDetailId,
@@ -128,7 +130,13 @@ export class CreateRequestModalComponent {
     this.pasApi.createServiceRequest(apiPayload).subscribe({
       next: (response) => {
         console.log('Request saved successfully:', response);
-        this.modal.close(this.form);
+        const created = this.extractCreatedRequestMeta(response);
+        this.modal.close({
+          ...this.form,
+          id: created.id,
+          srNumber: created.srNumber || this.srNumber,
+          items: this.selectedItems,
+        });
       },
       error: (err) => {
         console.error('Error saving request:', err);
@@ -139,5 +147,35 @@ export class CreateRequestModalComponent {
 
   cancel(): void {
     this.modal.dismiss();
+  }
+
+  private extractCreatedRequestMeta(response: unknown): { id?: string; srNumber?: string } {
+    if (!response || typeof response !== 'object') {
+      return { srNumber: this.srNumber };
+    }
+
+    const root = response as Record<string, unknown>;
+    const data = root['data'] ?? root['Data'];
+
+    if (typeof data === 'string' && data.trim()) {
+      return { id: data.trim(), srNumber: this.srNumber };
+    }
+
+    if (data && typeof data === 'object') {
+      const row = data as Record<string, unknown>;
+      const srNumber =
+        row['srNumber'] ??
+        row['requestNumber'] ??
+        row['srNo'] ??
+        row['serviceRequestNumber'] ??
+        row['number'];
+      return {
+        id: row['id'] != null ? String(row['id']) : undefined,
+        srNumber: srNumber != null ? String(srNumber) : this.srNumber,
+      };
+    }
+
+    const id = root['id'] ?? root['Id'];
+    return { id: id != null ? String(id) : undefined, srNumber: this.srNumber };
   }
 }

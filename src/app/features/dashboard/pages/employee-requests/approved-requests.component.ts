@@ -5,9 +5,6 @@ import { Subscription, take } from 'rxjs';
 import { ServiceRequestService } from '../../../../features/requisition/service-requests/services/service-request.service';
 import {
   WorkflowService,
-  ServiceRequest,
-  ApiServiceRequestRow,
-  NotificationMessage,
 } from '../../../../core/services/workflow.service';
 import { CurrentUserService } from '../../../../core/services/current-user.service';
 import {
@@ -173,10 +170,17 @@ export class ApprovedRequestsComponent implements OnInit, OnDestroy {
       .pipe(take(1))
       .subscribe({
         next: (res) => {
-          const items = (res as { data?: { items?: ApiServiceRequestRow[] } })?.data?.items ?? [];
+          const items = this.workflowService.extractApiServiceRequestRows(res);
+          const user = this.currentUserService.getCurrentUserValue();
           this.workflowService.mergeApiServiceRequests(items, {
             managerQueueId: this.workflowService.getAssignedManagerQueueId(),
-            employeeIdFilter: null,
+            employeeIdFilter: this.currentUserId || user?.id || null,
+            employeeIdentity: {
+              email: user?.email,
+              fullName: user?.fullName,
+              username: user?.username,
+              employeeCode: user?.employeeCode,
+            },
           });
           this.loadRequests();
         },
@@ -190,81 +194,29 @@ export class ApprovedRequestsComponent implements OnInit, OnDestroy {
     this.isLoading.set(true);
     this.error.set(null);
 
-    const approvedStatuses = ['Manager Approved', 'Admin Approved', 'Completed'];
     const currentUser = this.currentUserService.getCurrentUserValue();
-    const approvedNotifications = this.workflowService
-      .getNotificationsForUser(currentUser?.id || '', 'Employee')
-      .filter((notification) => {
-        const title = notification.title.toLowerCase();
-        const message = notification.message.toLowerCase();
-        const isApprovedLike =
-          title.includes('approved') ||
-          message.includes('approved') ||
-          message.includes('completed');
-        const isRejectedLike = title.includes('rejected') || message.includes('rejected');
-        return isApprovedLike && !isRejectedLike;
-      });
+    const employeeId = this.currentUserId || currentUser?.id || '';
+    const identity = {
+      email: currentUser?.email,
+      fullName: currentUser?.fullName,
+      username: currentUser?.username,
+      employeeCode: currentUser?.employeeCode,
+    };
 
-    const approvedFromNotificationIds = new Set(
-      approvedNotifications
-        .map((notification) => notification.requestId)
-        .filter((requestId): requestId is string => !!requestId),
-    );
+    const approvedRequests = this.workflowService.getApprovedRequestsForEmployee(employeeId, identity);
 
-    const approvedFromNotificationSrNumbers = new Set(
-      approvedNotifications
-        .map(
-          (notification) =>
-            this.extractSrNumber(notification.requestId) ||
-            this.extractSrNumber(notification.message),
-        )
-        .filter((srNumber): srNumber is string => !!srNumber),
-    );
-
-    const employeeKeys = [
-      this.currentUserId,
-      currentUser?.email,
-      currentUser?.fullName,
-      currentUser?.username,
-    ]
-      .map((value) => value?.trim())
-      .filter((value): value is string => !!value);
-
-    const mappedRequests: Request[] = this.workflowService
-      .getAllRequests()
-      .filter((sr: ServiceRequest) => {
-        if (!approvedStatuses.includes(sr.status)) {
-          return false;
-        }
-
-        const isNotificationMatched =
-          approvedFromNotificationIds.has(sr.id) ||
-          approvedFromNotificationSrNumbers.has(sr.srNumber);
-
-        if (isNotificationMatched) {
-          return true;
-        }
-
-        return (
-          employeeKeys.includes(sr.employeeId) ||
-          employeeKeys.includes(sr.employeeEmail) ||
-          employeeKeys.includes(sr.employeeName)
-        );
-      })
-      .map((sr: ServiceRequest) => ({
+    this.requests.set(
+      approvedRequests.map((sr) => ({
         id: sr.id,
         srNumber: sr.srNumber,
         title: sr.items[0]?.name || 'Approved Request',
-        description:
-          sr.justification || sr.items[0]?.description || 'Approved request from workflow',
+        description: sr.justification || sr.items[0]?.description || 'Approved request from workflow',
         priority: sr.priority,
         status: sr.status,
-        canCancel:
-          sr.status === 'Draft' || sr.status === 'Submitted' || sr.status === 'Under Review',
+        canCancel: sr.status === 'Draft' || sr.status === 'Submitted' || sr.status === 'Under Review',
         currentStep: this.getCurrentStepFromStatus(sr.status),
         totalSteps: 5,
-        approvedDate:
-          sr.managerReviewDate?.toLocaleDateString() || sr.adminReviewDate?.toLocaleDateString(),
+        approvedDate: sr.managerReviewDate?.toLocaleDateString() || sr.adminReviewDate?.toLocaleDateString(),
         items: sr.items.map((item) => ({
           name: item.name,
           quantity: item.quantity,
@@ -276,57 +228,9 @@ export class ApprovedRequestsComponent implements OnInit, OnDestroy {
           action: h.action,
           performedBy: h.performedBy,
         })),
-      }));
-
-    const existingRequestKeys = new Set(
-      mappedRequests
-        .flatMap((request) => [request.id, request.srNumber])
-        .filter((v): v is string => !!v),
+      })),
     );
-
-    const notificationOnlyRequests: Request[] = approvedNotifications
-      .map((notification: NotificationMessage) => {
-        const srNumber =
-          this.extractSrNumber(notification.requestId) ||
-          this.extractSrNumber(notification.message);
-        if (!srNumber || existingRequestKeys.has(srNumber)) {
-          return null;
-        }
-
-        return {
-          id: `notif_${notification.id}`,
-          srNumber,
-          title: 'Request approved',
-          description: notification.message,
-          priority: 'N/A',
-          status: 'Manager Approved',
-          approvedDate: notification.createdDate?.toLocaleDateString(),
-          canCancel: false,
-          currentStep: this.getCurrentStepFromStatus('Manager Approved'),
-          totalSteps: 5,
-          items: [],
-          activityLog: [
-            {
-              timestamp: notification.createdDate?.toLocaleString() || '',
-              action: notification.title,
-              performedBy: 'Manager',
-            },
-          ],
-        } as Request;
-      })
-      .filter((request): request is Request => !!request);
-
-    this.requests.set([...mappedRequests, ...notificationOnlyRequests]);
     this.isLoading.set(false);
-  }
-
-  private extractSrNumber(value?: string): string | null {
-    if (!value) {
-      return null;
-    }
-
-    const match = value.match(/SR-\d{8}-\d{4}/i);
-    return match ? match[0].toUpperCase() : null;
   }
 
   private getCurrentStepFromStatus(status: string): number {

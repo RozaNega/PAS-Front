@@ -408,7 +408,6 @@ export const employeeMenuConfig: MenuItem[] = [
   {
     label: 'My Requests',
     icon: 'bi bi-card-list',
-    badge: 0,
     children: [
       {
         label: 'Create New Request',
@@ -419,7 +418,6 @@ export const employeeMenuConfig: MenuItem[] = [
         label: 'Pending Approval',
         route: '/employee/requests/pending',
         icon: 'bi bi-clock',
-        badge: 0,
       },
       {
         label: 'Approved Requests',

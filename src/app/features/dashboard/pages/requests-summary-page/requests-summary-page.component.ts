@@ -1,7 +1,17 @@
 import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ServiceRequest, WorkflowService } from '../../../../core/services/workflow.service';
-import { Subscription } from 'rxjs';
+import {
+  ApiServiceRequestRow,
+  ServiceRequest,
+  WorkflowService,
+  WORKFLOW_APPROVED_ACTIVE_STATUSES,
+  WORKFLOW_APPROVED_STATUSES,
+  WORKFLOW_PENDING_STATUSES,
+  WORKFLOW_REJECTED_STATUSES,
+} from '../../../../core/services/workflow.service';
+import { CurrentUserService } from '../../../../core/services/current-user.service';
+import { Subscription, take } from 'rxjs';
+import { ServiceRequestService } from '../../../requisition/service-requests/services/service-request.service';
 
 export interface RequestStats {
   total: number;
@@ -33,6 +43,8 @@ export interface ValueSummary {
 })
 export class RequestsSummaryPageComponent implements OnInit, OnDestroy {
   private readonly workflowService = inject(WorkflowService);
+  private readonly currentUserService = inject(CurrentUserService);
+  private readonly serviceRequestService = inject(ServiceRequestService);
   private requestSub?: Subscription;
   readonly summaryYear = new Date().getFullYear();
   private readonly valueFormatter = new Intl.NumberFormat('en-US', {
@@ -85,6 +97,7 @@ export class RequestsSummaryPageComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.syncFromApi();
     this.recomputeStats();
 
     this.requestSub = this.workflowService.getRequestUpdates().subscribe(() => {
@@ -100,20 +113,55 @@ export class RequestsSummaryPageComponent implements OnInit, OnDestroy {
     this.requestSub?.unsubscribe();
   }
 
+  private syncFromApi(): void {
+    this.serviceRequestService
+      .getServiceRequests(undefined, { headers: { 'X-Suppress-Error-Toast': 'true' } })
+      .pipe(take(1))
+      .subscribe({
+        next: (res) => {
+          const items = (res as { data?: { items?: unknown[] } })?.data?.items ?? [];
+          const user = this.currentUserService.getCurrentUserValue();
+          const employeeId = this.currentUserService.getUserId() || 'emp_001';
+          const identity = {
+            email: user?.email,
+            fullName: user?.fullName,
+            username: user?.username,
+          };
+
+          this.workflowService.mergeApiServiceRequests(items as ApiServiceRequestRow[], {
+            managerQueueId: this.workflowService.getAssignedManagerQueueId(),
+            employeeIdFilter: employeeId,
+            employeeIdentity: identity,
+          });
+
+          this.recomputeStats();
+        },
+        error: () => {},
+      });
+  }
+
   private recomputeStats(): void {
-    const requests = this.workflowService.getAllRequests();
+    const employeeId = this.currentUserService.getUserId() || 'emp_001';
+    const email = this.currentUserService.getCurrentUserValue()?.email;
+    const user = this.currentUserService.getCurrentUserValue();
+
+    const requests = this.workflowService.getRequestsForEmployee(employeeId, {
+      email,
+      fullName: user?.fullName,
+      username: user?.username,
+    });
     const countedRequests = requests.filter((request) => this.isCountedRequest(request));
     const valueRequests = requests.filter((request) => this.isValuedRequest(request));
 
     this.stats.total = countedRequests.length;
     this.stats.pending = countedRequests.filter((request) =>
-      ['Submitted', 'Under Review'].includes(request.status),
+      WORKFLOW_PENDING_STATUSES.includes(request.status),
     ).length;
     this.stats.approved = countedRequests.filter((request) =>
-      ['Manager Approved', 'Admin Approved', 'Completed'].includes(request.status),
+      WORKFLOW_APPROVED_ACTIVE_STATUSES.includes(request.status),
     ).length;
     this.stats.rejected = countedRequests.filter((request) =>
-      ['Manager Rejected', 'Admin Rejected'].includes(request.status),
+      WORKFLOW_REJECTED_STATUSES.includes(request.status),
     ).length;
     this.stats.completed = countedRequests.filter(
       (request) => request.status === 'Completed',
@@ -168,7 +216,7 @@ export class RequestsSummaryPageComponent implements OnInit, OnDestroy {
   }
 
   private isValuedRequest(request: ServiceRequest): boolean {
-    return ['Manager Approved', 'Admin Approved', 'Completed'].includes(request.status);
+    return WORKFLOW_APPROVED_STATUSES.includes(request.status);
   }
 
   private getRequestValue(request: ServiceRequest): number {

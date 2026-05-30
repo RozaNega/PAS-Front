@@ -124,7 +124,7 @@ export class UserStorageService {
 
       if (key.startsWith(PROFILE_IMAGE_PREFIX) && key !== `${PROFILE_IMAGE_PREFIX}`) {
         const value = localStorage.getItem(key);
-        if (value && value.length > 200_000) {
+        if (value && value.length > 500_000) {
           keysToRemove.push(key);
         }
       }
@@ -142,7 +142,7 @@ export class UserStorageService {
       if (img && isInlineImageData(img) && img.length > 20_000) {
         const slim = this.stripInlineImageFromUser(user);
         this.safeSetItem(USER_STORAGE_KEY, JSON.stringify(slim));
-        if (user.id && img.length < 200_000) {
+        if (user.id && img.length < 500_000) {
           this.safeSetItem(`${PROFILE_IMAGE_PREFIX}${user.id}`, img);
         }
       }

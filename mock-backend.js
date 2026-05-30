@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 
 const app = express();
-const PORT = 4000;
+const PORT = Number(process.env.PORT || 4000);
 
 app.use(cors());
 app.use(express.json());
@@ -112,9 +112,32 @@ app.get('/api/Dashboard/statistics', (req, res) => {
   res.status(200).json(dashboardStatisticsResponse);
 });
 
+// Mock Landing/contact endpoint (logs request)
+app.post('/api/landing/contact', (req, res) => {
+  const { name, email, message } = req.body || {};
+
+  if (!email || !message || String(message).trim().length < 10) {
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid request.',
+      data: null,
+    });
+  }
+
+  const id = `contact-${Date.now()}`;
+  console.log('📩 [Mock Backend] Contact submission:', { id, name, email });
+
+  return res.status(200).json({
+    success: true,
+    message: 'Thanks — we received your message.',
+    data: { id },
+  });
+});
+
 app.listen(PORT, () => {
   console.log(`🚀 Mock Backend Server running on http://localhost:${PORT}`);
   console.log(`📡 API Endpoints available:`);
   console.log(`   POST http://localhost:${PORT}/api/Auth/login`);
   console.log(`   GET  http://localhost:${PORT}/api/Dashboard/statistics`);
+  console.log(`   POST http://localhost:${PORT}/api/landing/contact`);
 });

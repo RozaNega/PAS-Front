@@ -18,13 +18,13 @@ import { AuthService } from '../../../../core/services/auth.service';
   styleUrl: './login.css',
 })
 export class Login {
-    protected readonly quickRoles = [
-      { label: 'Admin', slug: 'property-admin' },
-      { label: 'Storekeeper', slug: 'storekeeper' },
-      { label: 'Employee', slug: 'employee' },
-      { label: 'Manager', slug: 'manager' },
-      { label: 'Compliance Officer', slug: 'compliance' },
-    ];
+  protected readonly quickRoles = [
+    { label: 'Admin', slug: 'property-admin' },
+    { label: 'Storekeeper', slug: 'storekeeper' },
+    { label: 'Employee', slug: 'employee' },
+    { label: 'Manager', slug: 'manager' },
+    { label: 'Compliance Officer', slug: 'compliance' },
+  ];
   private readonly formBuilder = inject(FormBuilder);
   private readonly authService = inject(AuthService);
   private readonly registrationService = inject(RegistrationService);
@@ -90,7 +90,8 @@ export class Login {
           let errorMessage = 'Unable to sign in. Verify your credentials and try again.';
 
           if (err?.status === 0) {
-            errorMessage = 'Unable to connect to the server. Please ensure the backend API is running on port 5028.';
+            errorMessage =
+              'Unable to connect to the server. Please ensure the backend API is running on port 5028.';
           } else if (err?.status === 404) {
             errorMessage = 'Login endpoint not found. Please check API configuration.';
           } else if (err?.status === 500) {
@@ -117,45 +118,48 @@ export class Login {
     this.statusMessage.set('Searching for account...');
 
     // 1. Search for user by searchTerm to get the actual GUID ID
-    this.usersService.getAll({ searchTerm: username }).pipe(
-      switchMap((response) => {
-        if (response.success && response.data?.items?.length) {
-          // Find exact match by username
-          const exactMatch = response.data.items.find(
-            (u) => u.username.toLowerCase() === username.toLowerCase()
+    this.usersService
+      .getAll({ searchTerm: username })
+      .pipe(
+        switchMap((response) => {
+          if (response.success && response.data?.items?.length) {
+            // Find exact match by username
+            const exactMatch = response.data.items.find(
+              (u) => u.username.toLowerCase() === username.toLowerCase(),
+            );
+            const userId = exactMatch?.id || response.data.items[0].id;
+            this.statusMessage.set('Force activating account...');
+            return this.usersService.activate(userId);
+          }
+
+          // Fallback: If getAll is not matching or returns empty, try direct getById(username)
+          return this.usersService.getById(username).pipe(
+            switchMap((directRes) => {
+              if (directRes.success && directRes.data?.id) {
+                return this.usersService.activate(directRes.data.id);
+              }
+              throw new Error('User not found in system.');
+            }),
           );
-          const userId = exactMatch?.id || response.data.items[0].id;
-          this.statusMessage.set('Force activating account...');
-          return this.usersService.activate(userId);
-        }
-        
-        // Fallback: If getAll is not matching or returns empty, try direct getById(username)
-        return this.usersService.getById(username).pipe(
-          switchMap((directRes) => {
-            if (directRes.success && directRes.data?.id) {
-              return this.usersService.activate(directRes.data.id);
-            }
-            throw new Error('User not found in system.');
-          })
-        );
-      }),
-      finalize(() => this.activating.set(false))
-    ).subscribe({
-      next: (response) => {
-        if (response.success) {
-          this.statusTone.set('success');
-          this.statusMessage.set('Account activated successfully! You can now sign in.');
-        } else {
+        }),
+        finalize(() => this.activating.set(false)),
+      )
+      .subscribe({
+        next: (response) => {
+          if (response.success) {
+            this.statusTone.set('success');
+            this.statusMessage.set('Account activated successfully! You can now sign in.');
+          } else {
+            this.statusTone.set('error');
+            this.statusMessage.set(response.message || 'Activation failed.');
+          }
+        },
+        error: (err) => {
+          console.error('Force activation failed:', err);
           this.statusTone.set('error');
-          this.statusMessage.set(response.message || 'Activation failed.');
-        }
-      },
-      error: (err) => {
-        console.error('Force activation failed:', err);
-        this.statusTone.set('error');
-        this.statusMessage.set('Could not activate account. The user may not exist.');
-      }
-    });
+          this.statusMessage.set('Could not activate account. The user may not exist.');
+        },
+      });
   }
 
   protected toggleDarkMode(): void {

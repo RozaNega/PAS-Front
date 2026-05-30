@@ -6,6 +6,8 @@ import {
 } from '@angular/ssr/node';
 import express from 'express';
 import { join } from 'node:path';
+import { promises as fs } from 'node:fs';
+import { randomUUID } from 'node:crypto';
 
 const browserDistFolder = join(import.meta.dirname, '../browser');
 const workspaceAssetsFolder = join(process.cwd(), 'src', 'assets');
@@ -13,6 +15,9 @@ const publicAssetsFolder = join(process.cwd(), 'public');
 
 const app = express();
 const angularApp = new AngularNodeAppEngine();
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 const dashboardStatisticsResponse = {
   success: true,
@@ -72,6 +77,45 @@ const dashboardStatisticsResponse = {
  */
 app.get('/api/Dashboard/statistics', (_req, res) => {
   res.status(200).json(dashboardStatisticsResponse);
+});
+
+app.post('/api/landing/contact', async (req, res) => {
+  const name = String(req.body?.name ?? '').trim();
+  const email = String(req.body?.email ?? '').trim();
+  const message = String(req.body?.message ?? '').trim();
+
+  if (!email || message.length < 10) {
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid request.',
+      data: null,
+    });
+  }
+
+  const id = randomUUID();
+  const entry = {
+    id,
+    name,
+    email,
+    message,
+    createdAt: new Date().toISOString(),
+  };
+
+  try {
+    const outDir = join(process.cwd(), '.tmp');
+    const outFile = join(outDir, 'contact-submissions.jsonl');
+    await fs.mkdir(outDir, { recursive: true });
+    await fs.appendFile(outFile, JSON.stringify(entry) + '\n', 'utf8');
+  } catch (err) {
+    // Non-fatal: still return success, but log server-side.
+    console.error('Failed to persist contact submission', err);
+  }
+
+  return res.status(200).json({
+    success: true,
+    message: 'Thanks — we received your message.',
+    data: { id },
+  });
 });
 
 /**
