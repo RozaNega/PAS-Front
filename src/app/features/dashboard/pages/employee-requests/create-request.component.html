@@ -98,6 +98,25 @@
             inventory.
           </p>
 
+          <div class="quick-add">
+            <div class="quick-add-input">
+              <input
+                type="text"
+                [(ngModel)]="quickAddQuery"
+                list="item-suggestions"
+                placeholder="Type item name or SKU, then Add…"
+                class="search-input"
+                (keydown.enter)="$event.preventDefault(); addItemByNameOrSku()"
+              />
+              <datalist id="item-suggestions">
+                @for (item of availableItems; track item.id) {
+                  <option [value]="item.sku || ''">{{ item.itemName }}</option>
+                }
+              </datalist>
+            </div>
+            <button type="button" class="btn-add" (click)="addItemByNameOrSku()">➕ Add</button>
+          </div>
+
           <div class="search-section">
             <i class="bi bi-search search-icon"></i>
             <input
@@ -215,7 +234,10 @@
                     <!-- Shelf location — friendly dropdown, no IDs shown -->
                     <div class="card-field shelf-field">
                       <label [for]="'shelf-' + item.itemId">
-                        Preferred Location <span class="required">*</span>
+                        Preferred Location
+                        @if (item.shelfOptions.length > 0) {
+                          <span class="required">*</span>
+                        }
                       </label>
 
                       @if (item.loadingShelves) {
@@ -225,15 +247,33 @@
                         </div>
                       } @else if (item.shelfOptions.length === 0) {
                         <div class="shelf-none">
-                          No stock locations found — please contact the storekeeper.
+                          @if (shelfLoadError) {
+                            <span>{{ shelfLoadError }}</span>
+                          } @else {
+                            <span>
+                              No stock locations found for this item — the storekeeper can assign a
+                              location.
+                            </span>
+                          }
+                          @if (isDev) {
+                            <button
+                              type="button"
+                              class="btn-seed"
+                              (click)="seedSampleShelfLocation(item)"
+                              [disabled]="isSeedingShelfLocation"
+                            >
+                              Add sample shelf location
+                            </button>
+                          }
                         </div>
                       } @else {
                         <select
                           [id]="'shelf-' + item.itemId"
-                          [ngModel]="item.preferredShelfId"
+                          [ngModel]="item.preferredShelfId || ''"
                           (ngModelChange)="onShelfChange(item, $event)"
                           class="shelf-select"
                         >
+                          <option value="">Let storekeeper choose</option>
                           @for (opt of item.shelfOptions; track opt.shelfId) {
                             <option [value]="opt.shelfId">{{ opt.label }}</option>
                           }

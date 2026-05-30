@@ -10,7 +10,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
-import { catchError, map } from 'rxjs/operators';
+import { catchError, finalize, map, switchMap } from 'rxjs/operators';
 import { PasApiService } from '../../../../shared/services/pas-api.service';
 import { ApiService } from '../../../../core/services/api.service';
 import { InventoryService, ShelfLocationDto } from '../../../../core/services/inventory.service';
@@ -21,6 +21,7 @@ import {
 } from '../../../../core/services/item-master.service';
 import { WorkflowService } from '../../../../core/services/workflow.service';
 import { CurrentUserService } from '../../../../core/services/current-user.service';
+import { environment } from '../../../../../environments/environment';
 
 type WizardStep = 1 | 2 | 3;
 type ShelfOption = { shelfId: string; label: string; available: number };
@@ -49,7 +50,7 @@ interface SelectedItem {
   /** Quantity the employee wants */
   quantity: number;
   /** Selected shelf ID (invisible to employee, sent to backend) */
-  preferredShelfId: string;
+  preferredShelfId: string | null;
   /** Human-readable shelf label shown in the dropdown */
   preferredShelfLabel: string;
   /** Shelf options for this specific item */
@@ -81,6 +82,8 @@ export class CreateRequestComponent implements OnInit, OnDestroy {
   private autoSaveInterval: ReturnType<typeof setInterval> | null = null;
 
   currentStep: WizardStep = 1;
+  readonly isDev = !environment.production;
+  isSeedingShelfLocation = false;
 
   form: NewRequestForm = {
     srNumber: '',
@@ -99,7 +102,9 @@ export class CreateRequestComponent implements OnInit, OnDestroy {
 
   isLoadingItems = false;
   itemLoadError = '';
+  shelfLoadError = '';
   searchQuery = '';
+  quickAddQuery = '';
   selectedItems: SelectedItem[] = [];
   draftSaved = false;
   submitError = '';
@@ -158,6 +163,7 @@ export class CreateRequestComponent implements OnInit, OnDestroy {
   private loadAvailableItems(): void {
     this.isLoadingItems = true;
     this.itemLoadError = '';
+    this.shelfLoadError = '';
 
     // Load items and fallback shelves in parallel
     forkJoin({
@@ -184,14 +190,29 @@ export class CreateRequestComponent implements OnInit, OnDestroy {
           }
 
           // Normalize each item — backend may use `name` OR `itemName`
-          return rawItems.map(
-            (item: any): ItemMasterListDto => ({
+          return rawItems.map((item: any): ItemMasterListDto => {
+            const rawUom =
+              item.unitOfMeasure ?? item.UnitOfMeasure ?? item.uom ?? item.unit ?? item.Unit;
+            const normalizedUom =
+              typeof rawUom === 'string' &&
+              rawUom.trim() &&
+              !/^(yes|no)$/i.test(rawUom.trim())
+                ? rawUom.trim()
+                : 'PCS';
+
+            const rawName = item.itemName ?? item.ItemName ?? item.name ?? item.Name;
+            const itemName = typeof rawName === 'string' ? rawName : String(rawName ?? '');
+
+            const rawSku = item.sku ?? item.Sku;
+            const sku = typeof rawSku === 'string' ? rawSku : String(rawSku ?? '');
+
+            return {
               id: item.id ?? item.itemId ?? '',
-              sku: item.sku ?? item.Sku ?? '',
-              itemName: item.itemName ?? item.ItemName ?? item.name ?? item.Name ?? '',
+              sku,
+              itemName,
               categoryId: item.categoryId ?? item.CategoryId ?? '',
               categoryName: item.categoryName ?? item.CategoryName ?? item.category ?? '',
-              unitOfMeasure: item.unitOfMeasure ?? item.UnitOfMeasure ?? item.uom ?? 'PCS',
+              unitOfMeasure: normalizedUom,
               currentStock:
                 item.currentStock ?? item.CurrentStock ?? item.stockQuantity ?? item.quantity ?? 0,
               availableStock:
@@ -199,14 +220,24 @@ export class CreateRequestComponent implements OnInit, OnDestroy {
               reservedStock: item.reservedStock ?? 0,
               isLowStock: item.isLowStock ?? false,
               isActive: item.isActive ?? true,
-            }),
-          );
+            };
+          });
         }),
         catchError(() => of([] as ItemMasterListDto[])),
       ),
       shelves: this.inventoryService.getAllShelves().pipe(
         map((res) => res.data ?? []),
-        catchError(() => of([] as ShelfLocationDto[])),
+        catchError((err: any) => {
+          const status = err?.status ?? 0;
+          if (status === 401 || status === 403) {
+            this.shelfLoadError =
+              'Shelf locations are not available for your account. You can still submit the request and let the storekeeper choose.';
+          } else {
+            this.shelfLoadError = 'Failed to load shelf locations. You can still submit the request.';
+          }
+          this.cdr.markForCheck();
+          return of([] as ShelfLocationDto[]);
+        }),
       ),
     }).subscribe({
       next: ({ items, shelves }) => {
@@ -277,6 +308,9 @@ export class CreateRequestComponent implements OnInit, OnDestroy {
           selected.preferredShelfId = best.shelfId;
           selected.preferredShelfLabel = best.label;
           selected.available = best.available;
+        } else {
+          selected.preferredShelfId = null;
+          selected.preferredShelfLabel = 'No location selected';
         }
 
         selected.loadingShelves = false;
@@ -325,19 +359,88 @@ export class CreateRequestComponent implements OnInit, OnDestroy {
     return parts.length > 0 ? parts.join(' / ') : `Shelf ${shelf.id.slice(0, 8)}`;
   }
 
+  seedSampleShelfLocation(item: SelectedItem): void {
+    if (!this.isDev) return;
+    if (this.isSeedingShelfLocation) return;
+
+    this.isSeedingShelfLocation = true;
+    this.submitError = '';
+    this.cdr.markForCheck();
+
+    const ensureShelfExists$ = this.inventoryService.getAllShelves().pipe(
+      map((res) => res.data ?? []),
+      catchError(() => of([] as ShelfLocationDto[])),
+      switchMap((shelves) => {
+        if (shelves.length > 0) return of(shelves);
+        return this.inventoryService.getAllWarehouses().pipe(
+          map((res) => res.data ?? []),
+          catchError(() => of([])),
+          switchMap((warehouses: any[]) => {
+            const first = warehouses.find((w) => w?.isActive !== false) ?? warehouses[0];
+            if (first?.id) return of(String(first.id));
+            return this.inventoryService
+              .createWarehouse({ name: 'Main Warehouse', location: 'HQ', isActive: true })
+              .pipe(map((res) => String(res.data ?? '')));
+          }),
+          switchMap((warehouseId) => {
+            if (!warehouseId) return of(null);
+            return this.inventoryService.createShelf({
+              warehouseId,
+              aisle: 'A-01',
+              rack: 'R-01',
+              shelfNumber: 'S-01',
+              zone: 'Z-01',
+              binType: 'Standard',
+              length: 0,
+              width: 0,
+              height: 0,
+              maxWeight: 0,
+              capacity: 0,
+            });
+          }),
+          switchMap(() =>
+            this.inventoryService.getAllShelves().pipe(
+              map((res) => res.data ?? []),
+              catchError(() => of([] as ShelfLocationDto[])),
+            ),
+          ),
+        );
+      }),
+      finalize(() => {
+        this.isSeedingShelfLocation = false;
+        this.cdr.markForCheck();
+      }),
+    );
+
+    ensureShelfExists$.subscribe({
+      next: (shelves) => {
+        this.fallbackShelves = shelves;
+        this.loadShelvesForItem(item);
+      },
+      error: (err: { error?: { message?: string; detail?: string } }) => {
+        this.submitError =
+          err.error?.message ?? err.error?.detail ?? 'Failed to add sample shelf location.';
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
   // ── Item selection ────────────────────────────────────────────────────────
 
   addItem(item: ItemMasterListDto): void {
     if (this.isItemSelected(item)) return;
 
+    const rawUom = item.unitOfMeasure?.trim() || '';
+    const uom = rawUom && !/^(yes|no)$/i.test(rawUom) ? rawUom : 'PCS';
+
     const selected: SelectedItem = {
       itemId: item.id,
       name: item.itemName?.trim() || 'Unknown Item',
       sku: item.sku?.trim() || item.id,
-      uom: item.unitOfMeasure?.trim() || 'PCS',
+      uom,
       available: item.availableStock ?? item.currentStock ?? 0,
       quantity: 1,
-      preferredShelfId: '',
+      preferredShelfId: null,
       preferredShelfLabel: 'Loading locations...',
       shelfOptions: [],
       loadingShelves: true,
@@ -356,12 +459,52 @@ export class CreateRequestComponent implements OnInit, OnDestroy {
     this.cdr.markForCheck();
   }
 
+  addItemByNameOrSku(): void {
+    const q = this.quickAddQuery.trim().toLowerCase();
+    if (!q) return;
+
+    const bySku = this.availableItems.find((i) => (i.sku ?? '').trim().toLowerCase() === q);
+    if (bySku) {
+      this.addItem(bySku);
+      this.quickAddQuery = '';
+      this.cdr.markForCheck();
+      return;
+    }
+
+    const byName = this.availableItems.find((i) => (i.itemName ?? '').trim().toLowerCase() === q);
+    if (byName) {
+      this.addItem(byName);
+      this.quickAddQuery = '';
+      this.cdr.markForCheck();
+      return;
+    }
+
+    const partial = this.availableItems.filter(
+      (i) =>
+        (i.itemName ?? '').toLowerCase().includes(q) || (i.sku ?? '').toLowerCase().includes(q),
+    );
+
+    if (partial.length === 1) {
+      this.addItem(partial[0]);
+      this.quickAddQuery = '';
+      this.cdr.markForCheck();
+      return;
+    }
+
+    alert('Select an item from the suggestions (or type an exact SKU).');
+  }
+
   onShelfChange(item: SelectedItem, shelfId: string): void {
-    const chosen = item.shelfOptions.find((opt) => opt.shelfId === shelfId);
+    const nextShelfId = shelfId?.trim() ? shelfId : null;
+    const chosen = nextShelfId ? item.shelfOptions.find((opt) => opt.shelfId === nextShelfId) : null;
     if (chosen) {
       item.preferredShelfId = chosen.shelfId;
       item.preferredShelfLabel = chosen.label;
       item.available = chosen.available;
+    } else {
+      item.preferredShelfId = null;
+      item.preferredShelfLabel = 'No location selected';
+      item.available = 0;
     }
     this.autoSaveDraft();
   }
@@ -404,7 +547,9 @@ export class CreateRequestComponent implements OnInit, OnDestroy {
         alert('Please wait — shelf locations are still loading for some items.');
         return;
       }
-      const itemsMissingShelf = this.selectedItems.filter((item) => !item.preferredShelfId);
+      const itemsMissingShelf = this.selectedItems.filter(
+        (item) => item.shelfOptions.length > 0 && !item.preferredShelfId,
+      );
       if (itemsMissingShelf.length > 0) {
         alert(
           `Please select a shelf location for: ${itemsMissingShelf.map((i) => i.name).join(', ')}`,
@@ -453,11 +598,25 @@ export class CreateRequestComponent implements OnInit, OnDestroy {
       };
       this.form = draft.form;
       // Re-build shelf options for restored items
-      this.selectedItems = (draft.selectedItems ?? []).map((item) => ({
-        ...item,
-        shelfOptions: [],
-        loadingShelves: true,
-      }));
+      this.selectedItems = (draft.selectedItems ?? []).map((item) => {
+        const rawShelfId = (item as any).preferredShelfId as unknown;
+        const normalizedShelfId =
+          typeof rawShelfId === 'string' ? (rawShelfId.trim() ? rawShelfId.trim() : null) : null;
+
+        const rawUom = (item as any).uom as unknown;
+        const normalizedUom =
+          typeof rawUom === 'string' && rawUom.trim() && !/^(yes|no)$/i.test(rawUom.trim())
+            ? rawUom.trim()
+            : 'PCS';
+
+        return {
+          ...item,
+          preferredShelfId: normalizedShelfId,
+          uom: normalizedUom,
+          shelfOptions: [],
+          loadingShelves: true,
+        };
+      });
       this.currentStep = draft.currentStep ?? 1;
       this.selectedItems.forEach((item) => this.loadShelvesForItem(item));
     } catch {
@@ -506,11 +665,12 @@ export class CreateRequestComponent implements OnInit, OnDestroy {
     this.cdr.markForCheck();
 
     const apiPayload = {
+      srNumber: this.form.srNumber?.trim() || undefined,
       items: this.selectedItems.map((item) => ({
         itemId: item.itemId,
         srDetailId: '',
         requestedQty: item.quantity,
-        preferredShelfId: item.preferredShelfId,
+        preferredShelfId: item.preferredShelfId ?? null,
         notes: item.notes,
       })),
       remarks: this.form.remarks || this.form.justification,
@@ -518,32 +678,34 @@ export class CreateRequestComponent implements OnInit, OnDestroy {
 
     this.pasApi.createServiceRequest(apiPayload).subscribe({
       next: (response) => {
-        const userId = this.currentUserService.getUserId() || 'emp_001';
-        const userName = this.form.requester || 'Employee';
-        const userEmail =
-          this.currentUserService.getCurrentUserValue()?.email || 'employee@africom.com';
         const created = this.extractCreatedRequestMeta(response);
-
+        const user = this.currentUserService.getCurrentUserValue();
         this.workflowService.submitRequest(
           {
-            employeeId: userId,
-            employeeName: userName,
-            employeeEmail: userEmail,
-            department: this.form.department,
+            employeeId: user?.id || '',
+            employeeName: this.form.requester || user?.fullName || user?.username || 'Employee',
+            employeeEmail: user?.email || '',
+            department: this.form.department || user?.department || '',
             managerId: this.workflowService.getAssignedManagerQueueId(),
+            managerName: 'Manager',
             items: this.selectedItems.map((item) => ({
               id: item.itemId,
               name: item.name,
-              description: item.notes || item.name,
+              description: item.name,
               quantity: item.quantity,
               category: 'General',
+              specifications: item.notes,
             })),
-            priority: this.form.priority as 'Low' | 'Medium' | 'High' | 'Urgent',
-            status: 'Submitted',
-            justification: this.form.justification || this.form.remarks,
+            priority: (this.form.priority || 'Medium') as any,
+            status: 'Draft' as any,
+            justification: this.form.remarks || this.form.justification || 'Service request',
             requiredDate: this.form.requiredBy ? new Date(this.form.requiredBy) : new Date(),
+            estimatedCost: 0,
           },
-          { id: created.id, srNumber: created.srNumber || this.form.srNumber },
+          {
+            id: created.id,
+            srNumber: created.srNumber || this.form.srNumber,
+          },
         );
 
         if (typeof localStorage !== 'undefined') {
@@ -589,9 +751,15 @@ export class CreateRequestComponent implements OnInit, OnDestroy {
     }
     if (data && typeof data === 'object') {
       const row = data as Record<string, unknown>;
+      const srNumber =
+        row['srNumber'] ??
+        row['requestNumber'] ??
+        row['srNo'] ??
+        row['serviceRequestNumber'] ??
+        row['number'];
       return {
         id: row['id'] != null ? String(row['id']) : undefined,
-        srNumber: row['srNumber'] != null ? String(row['srNumber']) : this.form.srNumber,
+        srNumber: srNumber != null ? String(srNumber) : this.form.srNumber,
       };
     }
     const id = root['id'] ?? root['Id'];

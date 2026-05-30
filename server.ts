@@ -3,6 +3,8 @@ import { CommonEngine } from '@angular/ssr/node';
 import express from 'express';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve } from 'node:path';
+import { promises as fs } from 'node:fs';
+import { randomUUID } from 'node:crypto';
 import AppServerModule from './src/main.server';
 
 const dashboardStatisticsResponse = {
@@ -61,6 +63,9 @@ export function app(): express.Express {
 
   const commonEngine = new CommonEngine();
 
+  server.use(express.json());
+  server.use(express.urlencoded({ extended: true }));
+
   server.set('view engine', 'html');
   server.set('views', browserDistFolder);
 
@@ -68,6 +73,44 @@ export function app(): express.Express {
   // server.get('/api/**', (req, res) => { });
   server.get('/api/Dashboard/statistics', (_req, res) => {
     res.status(200).json(dashboardStatisticsResponse);
+  });
+
+  server.post('/api/landing/contact', async (req, res) => {
+    const name = String(req.body?.name ?? '').trim();
+    const email = String(req.body?.email ?? '').trim();
+    const message = String(req.body?.message ?? '').trim();
+
+    if (!email || message.length < 10) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid request.',
+        data: null,
+      });
+    }
+
+    const id = randomUUID();
+    const entry = {
+      id,
+      name,
+      email,
+      message,
+      createdAt: new Date().toISOString(),
+    };
+
+    try {
+      const outDir = resolve(process.cwd(), '.tmp');
+      const outFile = resolve(outDir, 'contact-submissions.jsonl');
+      await fs.mkdir(outDir, { recursive: true });
+      await fs.appendFile(outFile, JSON.stringify(entry) + '\n', 'utf8');
+    } catch (err) {
+      console.error('Failed to persist contact submission', err);
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Thanks — we received your message.',
+      data: { id },
+    });
   });
 
   // Mock Auth/login endpoint for development

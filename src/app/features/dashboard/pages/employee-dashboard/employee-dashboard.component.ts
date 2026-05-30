@@ -23,7 +23,6 @@ import {
   WorkflowService,
   ServiceRequest,
   NotificationMessage,
-  ApiServiceRequestRow,
 } from '../../../../core/services/workflow.service';
 import { Subscription, take, filter, forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
@@ -183,22 +182,25 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
 
   readonly requestSummary = computed<RequestSummarySnapshot>(() => {
     const requests = this.workflowRequests();
-    const pending = requests.filter((request) =>
+    const countedRequests = requests.filter(
+      (request) => request.status !== 'Draft' && request.status !== 'Cancelled',
+    );
+    const pending = countedRequests.filter((request) =>
       EmployeeDashboardComponent.PENDING_STATUSES.includes(request.status),
     ).length;
-    const approved = requests.filter((request) =>
+    const approved = countedRequests.filter((request) =>
       EmployeeDashboardComponent.APPROVED_STATUSES.includes(request.status),
     ).length;
-    const rejected = requests.filter((request) =>
+    const rejected = countedRequests.filter((request) =>
       EmployeeDashboardComponent.REJECTED_STATUSES.includes(request.status),
     ).length;
-    const completed = requests.filter((request) => request.status === 'Completed').length;
-    const latestRequest = [...requests].sort(
+    const completed = countedRequests.filter((request) => request.status === 'Completed').length;
+    const latestRequest = [...countedRequests].sort(
       (a, b) => new Date(b.submittedDate).getTime() - new Date(a.submittedDate).getTime(),
     )[0];
 
     return {
-      total: requests.length,
+      total: countedRequests.length,
       pending,
       approved,
       rejected,
@@ -496,7 +498,7 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
         requests = requests.filter((r) => ['Submitted', 'Under Review'].includes(r.status));
       } else if (statusFilter === 'Approved') {
         requests = requests.filter((r) =>
-          ['Manager Approved', 'Admin Approved', 'Compliance Review'].includes(r.status),
+          EmployeeDashboardComponent.APPROVED_STATUSES.includes(r.status),
         );
       } else if (statusFilter === 'Rejected') {
         requests = requests.filter((r) =>
@@ -740,16 +742,18 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
       .pipe(take(1))
       .subscribe({
         next: (res) => {
-          const items = (res as { data?: { items?: unknown[] } })?.data?.items ?? [];
           const user = this.currentUserService.getCurrentUserValue();
-          this.workflowService.mergeApiServiceRequests(items as ApiServiceRequestRow[], {
+          const identity = {
+            email: user?.email,
+            fullName: user?.fullName,
+            username: user?.username,
+            employeeCode: user?.employeeCode,
+          };
+          const rows = this.workflowService.extractApiServiceRequestRows(res);
+          this.workflowService.mergeApiServiceRequests(rows, {
             managerQueueId: this.workflowService.getAssignedManagerQueueId(),
             employeeIdFilter: this.currentUserId,
-            employeeIdentity: {
-              email: user?.email,
-              fullName: user?.fullName,
-              username: user?.username,
-            },
+            employeeIdentity: identity,
           });
           this.loadWorkflowData();
           this.cdr.markForCheck();
@@ -762,6 +766,9 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
     const user = this.currentUserService.getCurrentUserValue();
     const requests = this.workflowService.getRequestsForEmployee(this.currentUserId, {
       email: user?.email,
+      fullName: user?.fullName,
+      username: user?.username,
+      employeeCode: user?.employeeCode,
     });
     this.workflowRequests.set(requests);
 
@@ -968,30 +975,38 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
 
   private createWorkflowRequest(modalResult: any): void {
     const currentUser = this.userProfile();
-    const newRequest = this.workflowService.submitRequest({
-      employeeId: this.currentUserId,
-      employeeName: currentUser.fullName || 'Employee',
-      employeeEmail: currentUser.email || 'employee@africom.com',
-      department: currentUser.department || 'IT Department',
-      managerId: this.workflowService.getAssignedManagerQueueId(),
-      managerName: 'Manager',
-      items:
-        modalResult.items?.map((item: any) => ({
-          id: 'item_' + Math.random().toString(36).substr(2, 9),
-          name: item.name,
-          description: item.name,
-          quantity: item.quantity || item.requestedQty || 1,
-          unitCost: 0,
-          totalCost: 0,
-          category: 'General',
-          specifications: item.notes || '',
-        })) || [],
-      priority: (modalResult.priority || 'Medium') as any,
-      status: 'Draft' as any,
-      justification: modalResult.remarks || modalResult.justification || 'Service request',
-      requiredDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-      estimatedCost: 0,
-    });
+    const newRequest = this.workflowService.submitRequest(
+      {
+        employeeId: this.currentUserId,
+        employeeName: currentUser.fullName || 'Employee',
+        employeeEmail: currentUser.email || 'employee@africom.com',
+        department: currentUser.department || 'IT Department',
+        managerId: this.workflowService.getAssignedManagerQueueId(),
+        managerName: 'Manager',
+        items:
+          modalResult.items?.map((item: any) => ({
+            id: item.itemId || 'item_' + Math.random().toString(36).substr(2, 9),
+            name: item.name,
+            description: item.name,
+            quantity: item.quantity || item.requestedQty || 1,
+            unitCost: 0,
+            totalCost: 0,
+            category: 'General',
+            specifications: item.notes || '',
+          })) || [],
+        priority: (modalResult.priority || 'Medium') as any,
+        status: 'Draft' as any,
+        justification: modalResult.remarks || modalResult.justification || 'Service request',
+        requiredDate: modalResult.requiredBy
+          ? new Date(modalResult.requiredBy)
+          : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        estimatedCost: 0,
+      },
+      {
+        id: modalResult.id,
+        srNumber: modalResult.srNumber,
+      },
+    );
     this.loadWorkflowData();
     this.cdr.markForCheck();
     alert(`Request ${newRequest.srNumber} submitted successfully!`);

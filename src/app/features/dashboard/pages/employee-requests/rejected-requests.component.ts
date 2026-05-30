@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Subscription, take } from 'rxjs';
-import { WorkflowService, ApiServiceRequestRow } from '../../../../core/services/workflow.service';
+import { WorkflowService } from '../../../../core/services/workflow.service';
 import { CurrentUserService } from '../../../../core/services/current-user.service';
 import { ServiceRequestService } from '../../../../features/requisition/service-requests/services/service-request.service';
 
@@ -57,10 +57,17 @@ export class RejectedRequestsComponent implements OnInit, OnDestroy {
       .pipe(take(1))
       .subscribe({
         next: (res) => {
-          const items = (res as { data?: { items?: ApiServiceRequestRow[] } })?.data?.items ?? [];
+          const items = this.workflowService.extractApiServiceRequestRows(res);
+          const user = this.currentUserService.getCurrentUserValue();
           this.workflowService.mergeApiServiceRequests(items, {
             managerQueueId: this.workflowService.getAssignedManagerQueueId(),
-            employeeIdFilter: null,
+            employeeIdFilter: this.currentUserId || user?.id || null,
+            employeeIdentity: {
+              email: user?.email,
+              fullName: user?.fullName,
+              username: user?.username,
+              employeeCode: user?.employeeCode,
+            },
           });
           this.loadRequests();
         },
@@ -71,41 +78,16 @@ export class RejectedRequestsComponent implements OnInit, OnDestroy {
   }
 
   private loadRequests(): void {
-    const rejectedStatuses = ['Manager Rejected', 'Admin Rejected'];
     const currentUser = this.currentUserService.getCurrentUserValue();
-    const rejectedFromNotifications = new Set(
-      this.workflowService
-        .getNotificationsForUser(currentUser?.id || '', 'Employee')
-        .filter(
-          (notification) =>
-            !!notification.requestId &&
-            (notification.title.toLowerCase().includes('rejected') ||
-              notification.message.toLowerCase().includes('rejected')),
-        )
-        .map((notification) => notification.requestId as string),
-    );
+    const employeeId = this.currentUserId || currentUser?.id || '';
+    const identity = {
+      email: currentUser?.email,
+      fullName: currentUser?.fullName,
+      username: currentUser?.username,
+      employeeCode: currentUser?.employeeCode,
+    };
 
-    const employeeKeys = [
-      this.currentUserId,
-      currentUser?.email,
-      currentUser?.fullName,
-      currentUser?.username,
-    ]
-      .map((value) => value?.trim())
-      .filter((value): value is string => !!value);
-
-    const rejectedRequests = this.workflowService.getAllRequests().filter((req) => {
-      if (!rejectedStatuses.includes(req.status)) {
-        return false;
-      }
-
-      return (
-        rejectedFromNotifications.has(req.id) ||
-        employeeKeys.includes(req.employeeId) ||
-        employeeKeys.includes(req.employeeEmail) ||
-        employeeKeys.includes(req.employeeName)
-      );
-    });
+    const rejectedRequests = this.workflowService.getRejectedRequestsForEmployee(employeeId, identity);
 
     this.requests.set(
       rejectedRequests.map((req) => ({

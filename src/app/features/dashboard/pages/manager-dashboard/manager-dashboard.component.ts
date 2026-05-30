@@ -27,6 +27,7 @@ import { Subscription, forkJoin, of, take } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { EmployeesService } from '../../../../core/services/employees.service';
 import { UsersService } from '../../../../core/services/users.service';
+import { ServiceRequestService } from '../../../requisition/service-requests/services/service-request.service';
 
 type RequestStatus = 'Pending' | 'Approved' | 'Rejected';
 type RequestFilter = 'All' | RequestStatus;
@@ -87,13 +88,14 @@ export class ManagerDashboardComponent implements OnInit, OnDestroy {
   private readonly sanitizer = inject(DomSanitizer);
   private readonly currentUserService = inject(CurrentUserService);
   private readonly workflowService = inject(WorkflowService);
+  private readonly serviceRequestService = inject(ServiceRequestService);
   private readonly modalService = inject(NgbModal);
 
   // Subscriptions for real-time updates
   private subscriptions: Subscription[] = [];
 
   // Current manager info
-  private currentManagerId = 'mgr_001'; // This would come from auth service
+  private currentManagerId = 'mgr_001';
 
   // Workflow-related signals
   readonly workflowRequests = signal<ServiceRequest[]>([]);
@@ -130,6 +132,9 @@ export class ManagerDashboardComponent implements OnInit, OnDestroy {
         if (user.photoUrl) {
           this.profilePhoto.set(this.sanitizer.bypassSecurityTrustUrl(user.photoUrl));
         }
+        this.currentManagerId =
+          user.id || this.workflowService.getManagerQueueIdForCurrentUser();
+        this.loadWorkflowData();
       }
     });
 
@@ -218,50 +223,19 @@ export class ManagerDashboardComponent implements OnInit, OnDestroy {
 
   readonly currentView = signal<'home' | 'profile'>('home');
 
-  readonly recentActivity = signal<ActivityItem[]>([
-    {
-      title: 'Emma Collins submitted a request for Laptop',
-      detail: 'Pending manager review',
-      time: 'Apr 25, 2026 08:15 AM',
-      avatar: 'EC',
-    },
-    {
-      title: 'John Smith submitted a request for Office Chair',
-      detail: 'Waiting in the approval queue',
-      time: 'Apr 25, 2026 09:10 AM',
-      avatar: 'JS',
-    },
-    {
-      title: 'You approved request REQ-123',
-      detail: 'Approval completed successfully',
-      time: 'Apr 24, 2026 04:45 PM',
-      avatar: 'YM',
-    },
-  ]);
+  readonly recentActivity = signal<ActivityItem[]>([]);
 
-  readonly approvals = signal<ApprovalItem[]>([
-    {
-      id: 'REQ-123',
-      employeeName: 'Emma Collins',
-      itemName: 'Laptop',
-      status: 'Approved',
-      date: 'Apr 24',
-    },
-    {
-      id: 'REQ-124',
-      employeeName: 'John Smith',
-      itemName: 'Monitor',
-      status: 'Rejected',
-      date: 'Apr 24',
-    },
-    {
-      id: 'REQ-125',
-      employeeName: 'Emma Collins',
-      itemName: 'Laptop',
-      status: 'Pending',
-      date: 'Apr 25',
-    },
-  ]);
+  readonly approvals = computed<ApprovalItem[]>(() =>
+    this.requests()
+      .map((request) => ({
+        id: request.requestNumber,
+        employeeName: request.employeeName,
+        itemName: request.itemName,
+        status: request.status,
+        date: request.date,
+      }))
+      .slice(0, 5),
+  );
 
   readonly summaryCards = computed<SummaryCard[]>(() => {
     const requests = this.requests();
@@ -369,7 +343,7 @@ export class ManagerDashboardComponent implements OnInit, OnDestroy {
   }
 
   refresh(): void {
-    this.prependActivity('You refreshed the approval queue', 'Queue refreshed', 'YM');
+    this.syncServiceRequestsFromApi();
   }
 
   viewAllRequests(): void {
@@ -445,15 +419,17 @@ export class ManagerDashboardComponent implements OnInit, OnDestroy {
   }
 
   private prependActivity(title: string, detail: string, avatar: string): void {
-    this.recentActivity.update((items) => [
-      {
-        title,
-        detail,
-        time: this.formatActivityTime(),
-        avatar,
-      },
-      ...items,
-    ]);
+    this.recentActivity.update((items) =>
+      [
+        {
+          title,
+          detail,
+          time: this.formatActivityTime(),
+          avatar,
+        },
+        ...items,
+      ].slice(0, 8),
+    );
   }
 
   private formatActivityTime(): string {
@@ -481,7 +457,25 @@ export class ManagerDashboardComponent implements OnInit, OnDestroy {
       this.currentTime.set(this.getCurrentTime());
     }, 1000);
     this.setupWorkflowSubscriptions();
+    this.syncServiceRequestsFromApi();
     this.loadWorkflowData();
+  }
+
+  private syncServiceRequestsFromApi(): void {
+    this.serviceRequestService
+      .getServiceRequests(undefined, { headers: { 'X-Suppress-Error-Toast': 'true' } })
+      .pipe(take(1))
+      .subscribe({
+        next: (res) => {
+          const items = this.workflowService.extractApiServiceRequestRows(res);
+          this.workflowService.mergeApiServiceRequests(items, {
+            managerQueueId: this.workflowService.getManagerQueueIdForCurrentUser(),
+          });
+          this.loadWorkflowData();
+          this.cdr.markForCheck();
+        },
+        error: () => {},
+      });
   }
 
   private setupWorkflowSubscriptions(): void {
@@ -522,6 +516,7 @@ export class ManagerDashboardComponent implements OnInit, OnDestroy {
 
     // Update requests signal with workflow data
     this.updateRequestsFromWorkflow();
+    this.updateActivityFromWorkflow();
   }
 
   private updateRequestsFromWorkflow(): void {
@@ -540,6 +535,33 @@ export class ManagerDashboardComponent implements OnInit, OnDestroy {
     this.requests.set(managerRequests);
   }
 
+  private updateActivityFromWorkflow(): void {
+    const workflowActivity = this.workflowRequests()
+      .flatMap((request) =>
+        request.workflowHistory.map((step) => ({
+          title: `${step.action} - ${request.srNumber}`,
+          detail: `${request.employeeName} • ${request.items[0]?.name || 'Service request'}`,
+          time: new Date(step.timestamp).toLocaleString(),
+          avatar: this.initials(step.performedBy || request.employeeName),
+          timestamp: new Date(step.timestamp).getTime(),
+        })),
+      )
+      .sort((a, b) => b.timestamp - a.timestamp)
+      .slice(0, 8)
+      .map(({ timestamp, ...activity }) => activity);
+
+    this.recentActivity.set(workflowActivity);
+  }
+
+  private initials(name: string): string {
+    return name
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase())
+      .join('') || 'U';
+  }
+
   private mapWorkflowStatusToManagerStatus(status: string): RequestStatus {
     switch (status) {
       case 'Submitted':
@@ -547,6 +569,8 @@ export class ManagerDashboardComponent implements OnInit, OnDestroy {
         return 'Pending';
       case 'Manager Approved':
       case 'Admin Approved':
+      case 'Compliance Review':
+      case 'Completed':
         return 'Approved';
       case 'Manager Rejected':
       case 'Admin Rejected':

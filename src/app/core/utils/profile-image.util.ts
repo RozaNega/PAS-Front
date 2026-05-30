@@ -36,7 +36,7 @@ export async function compressProfileImageDataUrl(dataUrl: string): Promise<stri
   let quality = JPEG_QUALITY;
   let result = await resizeToJpegDataUrl(dataUrl, MAX_AVATAR_DIMENSION, quality);
 
-  while (result.length > 650_000 && quality > 0.7) {
+  while (result.length > 450_000 && quality > 0.6) {
     quality -= 0.05;
     result = await resizeToJpegDataUrl(dataUrl, MAX_AVATAR_DIMENSION, quality);
   }

@@ -11,7 +11,11 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { getMenuConfigForRole, MenuItem } from '../../config/menu.config';
 import { User } from '../../core/services/auth.service';
 import { DEFAULT_AVATAR_PATH } from '../../core/models/stored-user.model';
-import { WorkflowService, UserRole } from '../../core/services/workflow.service';
+import {
+  WorkflowService,
+  UserRole,
+  WORKFLOW_PENDING_STATUSES,
+} from '../../core/services/workflow.service';
 import { ComplianceDataService } from '../../core/services/compliance-data.service';
 import { ManagerDataService } from '../../core/services/manager-data.service';
 
@@ -76,13 +80,15 @@ export class MainLayoutComponent implements OnInit {
   protected readonly notifications = toSignal(
     this.signalRService.notifications$.pipe(
       map((items) =>
-        items.map<PopoverNotificationItem>((item) => ({
-          id: item.id || Math.random().toString(36).substr(2, 9),
-          type: item.type || 'info',
-          title: item.type === 'error' ? 'Error' : item.type === 'success' ? 'Success' : 'Info',
-          message: item.message,
-          time: this.formatNotificationTime(item.sentDate),
-        })),
+        items
+          .filter((item) => !item.isRead)
+          .map<PopoverNotificationItem>((item) => ({
+            id: item.id || Math.random().toString(36).substr(2, 9),
+            type: item.type || 'info',
+            title: item.type === 'error' ? 'Error' : item.type === 'success' ? 'Success' : 'Info',
+            message: item.message,
+            time: this.formatNotificationTime(item.sentDate),
+          })),
       ),
     ),
     { initialValue: [] as PopoverNotificationItem[] },
@@ -289,12 +295,14 @@ export class MainLayoutComponent implements OnInit {
   protected markWorkflowNotificationAsRead(id: string): void {
     if (!id) return;
     this.workflowService.markNotificationAsRead(id);
+    this.signalRService.markNotificationAsRead(id);
     this.workflowNotificationTick.update((v) => v + 1);
   }
 
   protected dismissWorkflowNotification(id: string): void {
     if (!id) return;
     this.workflowService.dismissNotification(id);
+    this.signalRService.dismissNotification(id);
     this.workflowNotificationTick.update((v) => v + 1);
   }
 
@@ -305,6 +313,7 @@ export class MainLayoutComponent implements OnInit {
       this.workflowService.markAllNotificationsAsRead(user.id, role);
       this.workflowNotificationTick.update((v) => v + 1);
     }
+    this.signalRService.markAllNotificationsAsRead();
   }
 
   protected toggleDarkMode(): void {
@@ -483,6 +492,7 @@ export class MainLayoutComponent implements OnInit {
 
     if (this.router.url.startsWith('/employee')) {
       this.menuItems = getMenuConfigForRole('employee');
+      this.loadEmployeeMenuBadges();
       return;
     }
 
@@ -638,23 +648,9 @@ export class MainLayoutComponent implements OnInit {
     this.managerData.menuBadgeCounts().subscribe((counts) => {
       this.menuItems = this.menuItems.map((item) => {
         if (item.label === 'Service Requests') {
-          const pendingRequests = counts.pendingRequests || undefined;
           return {
             ...item,
-            badge: pendingRequests,
             children: item.children?.map((child) => {
-              if (child.route === '/manager/requests/pending') {
-                return { ...child, badge: counts.pendingRequests || undefined };
-              }
-              if (child.route === '/manager/requests/approved') {
-                return { ...child, badge: counts.approvedRequests || undefined };
-              }
-              if (child.route === '/manager/requests/rejected') {
-                return { ...child, badge: counts.rejectedRequests || undefined };
-              }
-              if (child.route === '/manager/requests/issued') {
-                return { ...child, badge: counts.issuedRequests || undefined };
-              }
               return child;
             }),
           };
@@ -691,6 +687,23 @@ export class MainLayoutComponent implements OnInit {
 
         return item;
       });
+    });
+  }
+
+  private loadEmployeeMenuBadges(): void {
+    const user = this.currentUserService.getCurrentUserValue();
+    const employeeId = this.currentUserService.getUserId();
+    if (!employeeId) return;
+
+    this.menuItems = this.menuItems.map((item) => {
+      if (item.label !== 'My Requests') return item;
+
+      return {
+        ...item,
+        children: item.children?.map((child) => {
+          return child;
+        }),
+      };
     });
   }
 
