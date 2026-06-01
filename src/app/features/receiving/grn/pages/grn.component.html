@@ -1,324 +1,341 @@
-<div class="grn-container">
-  <div class="page-header">
-    <div class="header-info">
-      <h1>Goods Receipt Notes (GRN)</h1>
-      <p class="subtitle">Track all incoming shipments and deliveries</p>
+<section class="grn-page">
+  <header class="page-header">
+    <div class="header-content">
+      <div class="header-icon">
+        <i class="bi bi-truck"></i>
+      </div>
+      <div class="header-text">
+        <h1>Goods Receipt Notes</h1>
+        <p>Track all incoming shipments and supplier deliveries</p>
+      </div>
     </div>
-    <div class="header-actions" style="display:flex;gap:0.5rem;flex-wrap:wrap;">
-      <button type="button" class="btn btn-secondary" (click)="exportGrn()">
-        <i class="bi bi-download"></i> Export
+    <div class="header-actions">
+      <span class="count-badge">{{ allNotes().length }} GRN(s)</span>
+      <button type="button" class="action-btn secondary" (click)="exportCsv()">
+        <i class="bi bi-download"></i> Export CSV
       </button>
-      <button type="button" class="btn btn-primary" (click)="openCreateModal()">
+      <button type="button" class="action-btn primary" (click)="openCreateModal()">
         <i class="bi bi-plus-lg"></i> New GRN
       </button>
     </div>
-  </div>
+  </header>
 
-  @if (loading()) {
-    <p class="text-muted">Loading GRNs…</p>
-  }
-  @if (error()) {
-    <div class="alert alert-danger">{{ error() }}</div>
-  }
+  <main class="page-content">
 
-  <div class="filter-bar">
-    <div class="search-box">
-      <i class="bi bi-search"></i>
-      <input type="text" [ngModel]="searchTerm()" (ngModelChange)="onSearchChange($event)" placeholder="Search by GRN#, PO#, Supplier...">
-    </div>
-    <div class="filter-group">
-      <label>📅 Date:</label>
-      <input type="date" [value]="dateRange.start">
-      <span>to</span>
-      <input type="date" [value]="dateRange.end">
-      <button class="btn btn-sm btn-secondary">Apply Filters</button>
-    </div>
-    <div class="filter-group">
-      <label>🏷️ Status:</label>
-      <select [ngModel]="statusFilter()" (ngModelChange)="onStatusFilterChange($event)">
-        @for (status of statuses; track status) {
-          <option [value]="status">{{ status }}</option>
-        }
-      </select>
-    </div>
-    <div class="filter-group">
-      <label>🏭 Supplier:</label>
-      <select [ngModel]="supplierFilter()" (ngModelChange)="onSupplierFilterChange($event)">
-        <option value="All Suppliers">All Suppliers</option>
-        @for (s of suppliers(); track s.id) {
-          <option [value]="s.name">{{ s.name }}</option>
-        }
-      </select>
-    </div>
-  </div>
+    @if (notification(); as n) {
+      <div class="notification-banner" [class.success]="n.type === 'success'" [class.error]="n.type === 'error'">
+        <i class="bi" [class.bi-check-circle-fill]="n.type === 'success'" [class.bi-exclamation-triangle-fill]="n.type === 'error'"></i>
+        <span>{{ n.message }}</span>
+        <button type="button" class="dismiss-btn" (click)="dismissNotification()"><i class="bi bi-x"></i></button>
+      </div>
+    }
 
-  <div class="summary-grid">
-    <div class="summary-card">
-      <div class="summary-label">Total GRNs</div>
-      <div class="summary-value">{{ summary().totalGRNs }}</div>
-      <div class="summary-sub">this month</div>
-    </div>
-    <div class="summary-card">
-      <div class="summary-label">Total Items</div>
-      <div class="summary-value">{{ summary().totalItems.toLocaleString() }}</div>
-      <div class="summary-sub">units</div>
-    </div>
-    <div class="summary-card">
-      <div class="summary-label">Total Value</div>
-      <div class="summary-value">${{ summary().totalValue.toLocaleString() }}</div>
-      <div class="summary-sub">▲ +12%</div>
-    </div>
-    <div class="summary-card pending">
-      <div class="summary-label">Pending Inspection</div>
-      <div class="summary-value">{{ summary().pendingInspection }}</div>
-      <div class="summary-sub">⚠️</div>
-    </div>
-    <div class="summary-card">
-      <div class="summary-label">This Week</div>
-      <div class="summary-value">{{ summary().thisWeek }}</div>
-      <div class="summary-sub">▲ +2</div>
-    </div>
-  </div>
-
-  <div class="table-section">
-    <div class="table-container">
-      <table class="grn-table">
-        <thead>
-          <tr>
-            <th>GRN #</th>
-            <th>Date</th>
-            <th>Supplier</th>
-            <th>Items</th>
-            <th>Status</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (grn of filteredGRNs(); track grn.id) {
-            <tr>
-              <td>{{ grn.grnNumber }}</td>
-              <td>{{ grn.date }}</td>
-              <td>{{ grn.supplier }}</td>
-              <td>{{ grn.items }}</td>
-              <td>
-                <span class="status-badge" [class]="getStatusColor(grn.status)">
-                  {{ getStatusIcon(grn.status) }} {{ grn.status.substring(0, 4) }}
-                </span>
-              </td>
-              <td>
-                <div class="actions-cell">
-                  <button type="button" class="action-btn" title="View" (click)="viewGrn(grn.id)">
-                    <i class="bi bi-eye"></i>
-                  </button>
-                  @if (grn.status === 'Pending Inspection') {
-                    <button class="action-btn" title="Edit">
-                      <i class="bi bi-pencil"></i>
-                    </button>
-                  }
-                </div>
-              </td>
-            </tr>
-          }
-        </tbody>
-      </table>
-    </div>
-    <div class="pagination-bar">
-      <div class="pagination-info">Showing {{ filteredGRNs().length }} GRN(s) loaded</div>
-      <div class="pagination-controls">
-        <button class="page-btn" disabled>Previous</button>
-        <button class="page-btn active">1</button>
-        <button class="page-btn">2</button>
-        <button class="page-btn">→</button>
-        <button class="page-btn">2</button>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon blue"><i class="bi bi-receipt"></i></div>
+        <div class="stat-info">
+          <span class="stat-label">Total GRNs</span>
+          <span class="stat-value">{{ summaryStats().total }}</span>
+          <span class="stat-trend positive">All received shipments</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon orange"><i class="bi bi-clock"></i></div>
+        <div class="stat-info">
+          <span class="stat-label">Pending Inspection</span>
+          <span class="stat-value">{{ summaryStats().pendingCount }}</span>
+          <span class="stat-trend">Awaiting QA</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon green"><i class="bi bi-check-circle"></i></div>
+        <div class="stat-info">
+          <span class="stat-label">Passed</span>
+          <span class="stat-value">{{ summaryStats().passedCount }}</span>
+          <span class="stat-trend positive">Approved</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon red"><i class="bi bi-x-circle"></i></div>
+        <div class="stat-info">
+          <span class="stat-label">Failed</span>
+          <span class="stat-value">{{ summaryStats().failedCount }}</span>
+          <span class="stat-trend negative">Rejected</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon purple"><i class="bi bi-calendar-week"></i></div>
+        <div class="stat-info">
+          <span class="stat-label">This Week</span>
+          <span class="stat-value">{{ summaryStats().thisWeekCount }}</span>
+          <span class="stat-trend">Current period</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon cyan"><i class="bi bi-currency-dollar"></i></div>
+        <div class="stat-info">
+          <span class="stat-label">Total Value</span>
+          <span class="stat-value">${{ summaryStats().totalValue.toLocaleString() }}</span>
+          <span class="stat-trend">All time</span>
+        </div>
       </div>
     </div>
-  </div>
-</div>
 
-@if (showModal()) {
-  <div class="modal-overlay" (click)="closeModal()">
-    <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="filter-bar">
+      <div class="filter-group">
+        <div class="filter-field"><i class="bi bi-search"></i><input type="text" placeholder="Search by GRN#, supplier..." [value]="searchTerm()" (input)="onSearch($any($event.target).value)"></div>
+        <div class="filter-field"><i class="bi bi-funnel"></i>
+          <select [value]="statusFilter()" (change)="onStatusFilter($any($event.target).value)">
+            @for (s of statuses; track s) { <option [value]="s">{{ s }}</option> }
+          </select>
+        </div>
+        <div class="filter-field"><i class="bi bi-building"></i>
+          <select [value]="supplierFilter()" (change)="onSupplierFilter($any($event.target).value)">
+            <option value="All">All Suppliers</option>
+            @for (s of uniqueSuppliers(); track s) { <option [value]="s">{{ s }}</option> }
+          </select>
+        </div>
+        <div class="filter-field"><i class="bi bi-calendar"></i><input type="date" placeholder="Start date"></div>
+        <div class="filter-field"><span class="date-sep">—</span><input type="date" placeholder="End date"></div>
+      </div>
+      <div class="filter-actions">
+        <button type="button" class="btn-filter" (click)="resetFilters()"><i class="bi bi-x-circle"></i> Clear</button>
+      </div>
+    </div>
+
+    @if (loading()) {
+      <div class="loading-state"><i class="bi bi-arrow-repeat spin"></i> Loading GRNs…</div>
+    }
+
+    <div class="panel">
+      <div class="panel-header">
+        <h3><i class="bi bi-box-seam"></i> Receiving Notes</h3>
+        <span class="result-count">{{ filteredGRNs().length }} result(s)</span>
+      </div>
+      <div class="panel-body no-padding">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>GRN #</th>
+              <th>Date</th>
+              <th>Supplier</th>
+              <th>PO #</th>
+              <th>Items</th>
+              <th>Status</th>
+              <th class="actions-col">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (grn of pagedGRNs(); track grn.id) {
+              <tr>
+                <td><span class="grn-number">{{ grn.grnNumber }}</span></td>
+                <td class="time-cell">{{ formatDate(grn.grnDate) }}</td>
+                <td><span class="supplier-name">{{ grn.supplierName }}</span></td>
+                <td class="time-cell">{{ grn.poNumber || '—' }}</td>
+                <td><span class="items-count">{{ grn.items.length }} item(s)</span></td>
+                <td><span class="status-badge" [class]="getStatusBadgeClass(grn.status)">{{ grn.status }}</span></td>
+                <td>
+                  <div class="action-buttons">
+                    <button type="button" class="icon-btn" title="View" (click)="openDetailModal(grn)"><i class="bi bi-eye"></i></button>
+                    <button type="button" class="icon-btn danger" title="Delete" (click)="confirmDelete(grn)"><i class="bi bi-trash"></i></button>
+                  </div>
+                </td>
+              </tr>
+            } @empty {
+              <tr><td colspan="7" class="empty-state"><i class="bi bi-inbox"></i> No receiving notes found matching your filters</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="pagination-bar">
+      <div class="pagination-info">Showing {{ displayRange().start }}–{{ displayRange().end }} of {{ filteredGRNs().length }}</div>
+      <div class="pagination-controls">
+        <button class="page-btn" [disabled]="currentPage() === 1" (click)="goToPage(currentPage() - 1)"><i class="bi bi-chevron-left"></i></button>
+        @for (page of [].constructor(totalPages()); track $index) {
+          <button class="page-btn" [class.active]="currentPage() === $index + 1" (click)="goToPage($index + 1)">{{ $index + 1 }}</button>
+        }
+        <button class="page-btn" [disabled]="currentPage() === totalPages()" (click)="goToPage(currentPage() + 1)"><i class="bi bi-chevron-right"></i></button>
+      </div>
+      <div class="rows-per-page">
+        <select [value]="rowsPerPage()" (change)="onRowsPerPageChange($any($event.target).value)">
+          <option value="10">10</option><option value="20">20</option><option value="50">50</option>
+        </select> per page
+      </div>
+    </div>
+
+  </main>
+</section>
+
+<!-- Detail Modal -->
+@if (showDetailModal() && selectedGrn(); as grn) {
+  <div class="modal-overlay" (click)="closeDetailModal()">
+    <div class="modal-card modal-lg" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <h3>Create Goods Receipt Note (GRN)</h3>
-        <button class="btn-close" (click)="closeModal()">
-          <i class="bi bi-x-lg"></i>
-        </button>
+        <div class="modal-header-left">
+          <div class="modal-avatar"><i class="bi bi-truck"></i></div>
+          <div>
+            <h3>{{ grn.grnNumber }}</h3>
+            <p>Created {{ formatDate(grn.createdAt) }}</p>
+          </div>
+        </div>
+        <button type="button" class="modal-close" (click)="closeDetailModal()"><i class="bi bi-x-lg"></i></button>
       </div>
       <div class="modal-body">
-        <div class="step-indicator">
-          <div class="step" [class.active]="modalStep() >= 1">1</div>
-          <div class="step-line" [class.active]="modalStep() >= 2"></div>
-          <div class="step" [class.active]="modalStep() >= 2">2</div>
-          <div class="step-line" [class.active]="modalStep() >= 3"></div>
-          <div class="step" [class.active]="modalStep() >= 3">3</div>
+        <div class="detail-section">
+          <h4>Shipment Information</h4>
+          <div class="detail-grid">
+            <div class="detail-item"><span class="label">Supplier</span><span class="value">{{ grn.supplierName }}</span></div>
+            <div class="detail-item"><span class="label">PO Number</span><span class="value">{{ grn.poNumber || '—' }}</span></div>
+            <div class="detail-item"><span class="label">Delivery Note</span><span class="value">{{ grn.deliveryNoteNumber || '—' }}</span></div>
+            <div class="detail-item"><span class="label">Received By</span><span class="value">{{ grn.receivedBy }}</span></div>
+            <div class="detail-item"><span class="label">Date Received</span><span class="value">{{ formatDate(grn.grnDate) }}</span></div>
+            <div class="detail-item"><span class="label">Status</span><span class="value"><span class="status-badge" [class]="getStatusBadgeClass(grn.status)">{{ grn.status }}</span></span></div>
+          </div>
         </div>
-
-        @if (modalStep() === 1) {
-          <div class="step-content">
-            <h4>Step 1 of 3: Shipment Information</h4>
-            <div class="form-section">
-              <h5>SHIPMENT DETAILS</h5>
-              <div class="form-grid">
-                <div class="form-field">
-                  <label>GRN Number *</label>
-                  <input type="text" [(ngModel)]="modalDraft.grnNumber" name="grnNum">
-                </div>
-                <div class="form-field">
-                  <label>Date Received *</label>
-                  <input type="date" [(ngModel)]="modalDraft.dateReceived" name="dr">
-                </div>
-              </div>
-              <div class="form-field">
-                <label>Supplier *</label>
-                <select [(ngModel)]="modalDraft.supplierId" name="sup">
-                  @for (s of suppliers(); track s.id) {
-                    <option [value]="s.id">{{ s.name }}</option>
-                  }
-                </select>
-              </div>
-              @if (catalogItems().length) {
-                <div class="form-field">
-                  <label>Catalog line item *</label>
-                  <p class="text-muted" style="font-size:0.85rem;margin:0 0 0.35rem;">
-                    One line is sent with quantity 1 so the receiving note passes validation. Edit quantities on the backend or extend this form later.
-                  </p>
-                  <select [(ngModel)]="modalDraft.defaultItemId" name="catItem">
-                    @for (it of catalogItems(); track it.id) {
-                      <option [value]="it.id">{{ it.name }}</option>
-                    }
-                  </select>
-                </div>
-              } @else {
-                <p class="text-warning" style="font-size:0.9rem;">No items loaded from Item Masters. Create will fail until catalog items exist.</p>
-              }
-              <div class="form-grid">
-                <div class="form-field">
-                  <label>PO Number (Optional)</label>
-                  <input type="text" [(ngModel)]="modalDraft.poNumber" name="po" placeholder="PO-2024-1234">
-                </div>
-                <div class="form-field">
-                  <label>Delivery Note No.</label>
-                  <input type="text" [(ngModel)]="modalDraft.deliveryNote" name="dn" placeholder="DN-45678">
-                </div>
-              </div>
-              <div class="form-field">
-                <label>Received By *</label>
-                <input type="text" [(ngModel)]="modalDraft.receivedBy" name="rb" placeholder="Name or staff ID">
-              </div>
-            </div>
+        <div class="detail-section">
+          <h4>Items Received</h4>
+          <div class="grn-detail-items">
+            <table>
+              <thead>
+                <tr>
+                  <th>Item Name</th>
+                  <th>Unit</th>
+                  <th>Ordered Qty</th>
+                  <th>Received Qty</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (item of grn.items; track $index) {
+                  <tr>
+                    <td>{{ item.itemName }}</td>
+                    <td>{{ item.unit }}</td>
+                    <td>{{ item.quantity }}</td>
+                    <td>{{ item.received }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
           </div>
-        }
-
-        @if (modalStep() === 2) {
-          <div class="step-content">
-            <h4>Step 2 of 3: Items Received</h4>
-            <button class="btn btn-secondary btn-sm">+ Add Item</button>
-            <div class="items-table">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Item Name</th>
-                    <th>PO Qty</th>
-                    <th>Received</th>
-                    <th>Unit Price</th>
-                    <th>Inspect</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td>Dell XPS Laptop</td>
-                    <td>10</td>
-                    <td><input type="number" value="10"></td>
-                    <td>$2,499</td>
-                    <td><input type="checkbox" checked></td>
-                  </tr>
-                  <tr>
-                    <td>HP Monitor</td>
-                    <td>15</td>
-                    <td><input type="number" value="15"></td>
-                    <td>$350</td>
-                    <td><input type="checkbox" checked></td>
-                  </tr>
-                  <tr>
-                    <td>USB Cables</td>
-                    <td>100</td>
-                    <td><input type="number" value="100"></td>
-                    <td>$5</td>
-                    <td><input type="checkbox"></td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            <div class="items-summary">Total Items: 3 | Total Quantity: 125 | Total Value: $30,235</div>
-          </div>
-        }
-
-        @if (modalStep() === 3) {
-          <div class="step-content">
-            <h4>Step 3 of 3: Documents & Submit</h4>
-            <div class="form-section">
-              <h5>ATTACHMENTS</h5>
-              <div class="attachments-list">
-                <div class="attachment-item">
-                  <span>📎 Delivery Note.pdf</span>
-                  <button class="btn-sm btn-secondary">View</button>
-                  <button class="btn-sm btn-secondary">Remove</button>
-                </div>
-                <div class="attachment-item">
-                  <span>📎 Invoice.pdf</span>
-                  <button class="btn-sm btn-secondary">View</button>
-                  <button class="btn-sm btn-secondary">Remove</button>
-                </div>
-              </div>
-              <button class="btn btn-secondary btn-sm">+ Add File</button>
-            </div>
-            <div class="form-section">
-              <h5>NOTES</h5>
-              <textarea [(ngModel)]="modalDraft.notes" name="notes" rows="2" placeholder="All items received in good condition"></textarea>
-            </div>
+          <div class="items-summary">Total orders: {{ getTotalOrdered(grn.items) }} | Total received: {{ getTotalReceived(grn.items) }}</div>
+        </div>
+        @if (grn.notes) {
+          <div class="detail-section">
+            <h4>Notes</h4>
+            <p class="notes-text">{{ grn.notes }}</p>
           </div>
         }
       </div>
       <div class="modal-footer">
-        <button class="btn btn-secondary" (click)="closeModal()">Cancel</button>
-        <button class="btn btn-secondary">Save Draft</button>
-        @if (modalStep() > 1) {
-          <button class="btn btn-secondary" (click)="prevStep()">Previous</button>
-        }
-        @if (modalStep() < 3) {
-          <button class="btn btn-primary" (click)="nextStep()">Next</button>
-        } @else {
-          <button class="btn btn-primary" (click)="submitGRN()">Submit</button>
-        }
+        <button type="button" class="action-btn secondary" (click)="closeDetailModal()">Close</button>
       </div>
     </div>
   </div>
 }
 
-@if (showDetail()) {
-  <div class="modal-overlay" (click)="closeDetail()">
-    <div class="modal-content" (click)="$event.stopPropagation()" style="max-width:640px;">
+<!-- Create Modal -->
+@if (showCreateModal()) {
+  <div class="modal-overlay" (click)="closeCreateModal()">
+    <div class="modal-card modal-lg" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <h3>GRN details</h3>
-        <button type="button" class="btn-close" (click)="closeDetail()"><i class="bi bi-x-lg"></i></button>
+        <h3><i class="bi bi-plus-circle"></i> Create Goods Receipt Note</h3>
+        <button type="button" class="modal-close" (click)="closeCreateModal()"><i class="bi bi-x-lg"></i></button>
       </div>
       <div class="modal-body">
-        @if (detailLoading()) {
-          <p>Loading…</p>
-        } @else if (detailNote(); as n) {
-          <p><strong>Number:</strong> {{ n.noteNumber || n.grnNumber || n.id }}</p>
-          <p><strong>Supplier:</strong> {{ n.supplierName || '—' }}</p>
-          <p><strong>Date:</strong> {{ n.receivingDate }}</p>
-          <p><strong>Received by:</strong> {{ n.receivedBy }}</p>
-          <p><strong>Status:</strong> {{ n.status }}</p>
-          <p><strong>Items:</strong> {{ (n.items && n.items.length) || n.totalQuantity || 0 }}</p>
-          <pre style="max-height:240px;overflow:auto;font-size:12px;">{{ n | json }}</pre>
-        } @else {
-          <p>Could not load details.</p>
-        }
+        <div class="form-grid">
+          <div class="form-group">
+            <label>GRN Number *</label>
+            <input class="form-input" [value]="createForm().grnNumber" (input)="updateCreateFormGrnNumber($any($event.target).value)">
+          </div>
+          <div class="form-group">
+            <label>Date Received *</label>
+            <input class="form-input" type="date" [value]="createForm().grnDate" (input)="updateCreateFormGrnDate($any($event.target).value)">
+          </div>
+          <div class="form-group">
+            <label>Supplier Name *</label>
+            <input class="form-input" placeholder="Enter supplier name" [value]="createForm().supplierName" (input)="updateCreateFormSupplierName($any($event.target).value)">
+          </div>
+          <div class="form-group">
+            <label>PO Number</label>
+            <input class="form-input" placeholder="PO-2026-xxxx" [value]="createForm().poNumber" (input)="updateCreateFormPoNumber($any($event.target).value)">
+          </div>
+          <div class="form-group">
+            <label>Delivery Note</label>
+            <input class="form-input" placeholder="DN-xxxxx" [value]="createForm().deliveryNoteNumber" (input)="updateCreateFormDeliveryNote($any($event.target).value)">
+          </div>
+          <div class="form-group">
+            <label>Received By</label>
+            <input class="form-input" placeholder="Staff name" [value]="createForm().receivedBy" (input)="updateCreateFormReceivedBy($any($event.target).value)">
+          </div>
+        </div>
+
+        <div class="detail-section">
+          <h4>Line Items</h4>
+          <div class="create-items-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>Item Name</th>
+                  <th>Unit</th>
+                  <th>Ordered</th>
+                  <th>Received</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (item of createForm().items; track $index) {
+                  <tr>
+                    <td><input class="form-input" placeholder="Item name" [value]="item.itemName" (input)="updateCreateFormItemName($index, $any($event.target).value)"></td>
+                    <td>
+                      <select class="form-input" [value]="item.unit" (change)="updateCreateFormItemUnit($index, $any($event.target).value)">
+                        <option>pcs</option><option>boxes</option><option>kg</option><option>bags</option><option>bottles</option><option>liters</option>
+                      </select>
+                    </td>
+                    <td><input class="form-input qty-input" type="number" min="1" [value]="item.quantity" (input)="updateCreateFormItemQuantity($index, +$any($event.target).value)"></td>
+                    <td><input class="form-input qty-input" type="number" min="0" [value]="item.received" (input)="updateCreateFormItemReceived($index, +$any($event.target).value)"></td>
+                    <td><button type="button" class="icon-btn danger" (click)="removeCreateFormItem($index)" [disabled]="createForm().items.length === 1"><i class="bi bi-trash"></i></button></td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <button type="button" class="action-btn secondary btn-sm" (click)="addCreateFormItem()"><i class="bi bi-plus-lg"></i> Add Item</button>
+        </div>
+
+        <div class="form-group">
+          <label>Notes</label>
+          <textarea class="form-input" rows="3" placeholder="Additional notes…" [value]="createForm().notes" (input)="updateCreateFormNotes($any($event.target).value)"></textarea>
+        </div>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" (click)="closeDetail()">Close</button>
+        <button type="button" class="action-btn secondary" (click)="closeCreateModal()">Cancel</button>
+        <button type="button" class="action-btn primary" (click)="createGrn()"><i class="bi bi-check-lg"></i> Save GRN</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Delete Confirmation Modal -->
+@if (showDeleteConfirm() && deleteTargetGrn(); as grn) {
+  <div class="modal-overlay" (click)="cancelDelete()">
+    <div class="modal-card modal-sm" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3><i class="bi bi-exclamation-triangle"></i> Delete GRN</h3>
+        <button type="button" class="modal-close" (click)="cancelDelete()"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="confirm-content">
+          <div class="confirm-icon"><i class="bi bi-trash"></i></div>
+          <p>Are you sure you want to delete this Goods Receipt Note?</p>
+          <strong class="confirm-email">{{ grn.grnNumber }}</strong>
+          <p class="confirm-user">for <strong>{{ grn.supplierName }}</strong> · {{ grn.items.length }} item(s)</p>
+          <p class="confirm-warning">This action cannot be undone.</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="action-btn secondary" (click)="cancelDelete()">Cancel</button>
+        <button type="button" class="action-btn danger" (click)="executeDelete()"><i class="bi bi-trash"></i> Delete</button>
       </div>
     </div>
   </div>

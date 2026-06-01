@@ -737,6 +737,107 @@
   margin-top: 0.5rem;
 }
 
+/* Form Fields Styling */
+.create-subtitle {
+  margin: 0.35rem 0 0;
+  color: var(--text-color-muted);
+  font-size: 0.95rem;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-field.error .form-input {
+  border-color: var(--danger-color);
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.field-label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-color-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.required-indicator {
+  color: var(--danger-color);
+  margin-left: 0.25rem;
+}
+
+.form-input {
+  padding: 0.85rem 1rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--surface-border);
+  background: var(--surface-section);
+  color: var(--text-color);
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+}
+
+.form-input:focus {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+  border-color: var(--primary-color);
+  background: var(--surface-card);
+}
+
+.form-input::placeholder {
+  color: var(--text-color-muted);
+  opacity: 0.7;
+}
+
+.error-message {
+  font-size: 0.75rem;
+  color: var(--danger-color);
+  font-weight: 600;
+  margin-top: 0.25rem;
+}
+
+.help-text {
+  font-size: 0.8rem;
+  color: var(--text-color-muted);
+  margin-top: 0.25rem;
+  display: block;
+  font-weight: 500;
+}
+
+.form-checkboxes {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin: 1.5rem 0;
+  padding: 1.5rem;
+  background: var(--surface-section);
+  border-radius: 1rem;
+  border: 1px solid var(--surface-border);
+}
+
+.create-form .checkbox-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.create-form .checkbox-label input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin-top: 0.15rem;
+  cursor: pointer;
+  accent-color: var(--primary-color);
+}
+
+.create-form .checkbox-label span:first-of-type {
+  font-weight: 600;
+  color: var(--text-color);
+  margin: 0;
+}
+
 @media (max-width: 960px) {
   .sheet-topbar,
   .search-row,
@@ -761,6 +862,10 @@
   .premium-table {
     display: block;
     overflow-x: auto;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
   }
 }
 

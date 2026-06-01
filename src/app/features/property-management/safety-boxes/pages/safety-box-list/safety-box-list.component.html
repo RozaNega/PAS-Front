@@ -1,180 +1,557 @@
-﻿<div class="safety-boxes-container">
-  <div class="page-header">
-    <div class="header-info">
-      <h1>Safety Box Management</h1>
-      <p class="subtitle">Manage secure storage units and their contents</p>
-    </div>
-    <button class="btn btn-primary" (click)="openAddModal()">
-      <i class="bi bi-plus-lg"></i> Add Box
-    </button>
-  </div>
+﻿<section class="safety-boxes-page">
 
-  <div class="filter-bar">
-    <div class="search-box">
-      <i class="bi bi-search"></i>
-      <input type="text" [value]="searchTerm()" (input)="onSearchChange($any($event.target).value)" placeholder="Search safety boxes...">
+  @if (notification(); as note) {
+    <div class="notification-banner" [class]="note.type" (click)="notification.set(null)">
+      <i class="bi {{ notificationIcon(note.type) }}"></i>
+      <span>{{ note.message }}</span>
+      <i class="bi bi-x close-notif"></i>
     </div>
-    <div class="filter-group">
-      <label>🏷️ Filter by Location:</label>
-      <select [(ngModel)]="locationFilter" (ngModelChange)="onLocationFilterChange($event)">
-        @for (loc of locations; track loc) {
-          <option [value]="loc">{{ loc }}</option>
-        }
-      </select>
-    </div>
-  </div>
+  }
 
-  <div class="grid-view">
-    @for (box of filteredBoxes(); track box.id) {
-      <div class="safety-box-card" (click)="openEditModal(box)">
-        <div class="box-icon">🔒</div>
-        <div class="box-number">{{ box.boxNumber }}</div>
-        <div class="box-location">{{ box.location }}</div>
-        <div class="box-shelves">{{ box.occupiedShelves }}/{{ box.totalShelves }} Shelves</div>
-        <div class="box-occupancy" [class.occupancy-gray]="getOccupancyPercentage(box) === 0" [class.occupancy-green]="getOccupancyPercentage(box) > 0 && getOccupancyPercentage(box) <= 30" [class.occupancy-yellow]="getOccupancyPercentage(box) > 30 && getOccupancyPercentage(box) <= 60" [class.occupancy-orange]="getOccupancyPercentage(box) > 60 && getOccupancyPercentage(box) <= 80" [class.occupancy-red]="getOccupancyPercentage(box) > 80">
-          {{ getOccupancyPercentage(box) }}%
+  <header class="page-header">
+    <div class="header-icon">
+      <i class="bi bi-safe"></i>
+    </div>
+    <div class="header-content">
+      <div class="header-text">
+        <h1>Safety Boxes</h1>
+        <p>{{ totalBoxes() }} secure unit{{ totalBoxes() !== 1 ? 's' : '' }} across the organization</p>
+      </div>
+      @if (isMockBadge()) {
+        <div class="mock-badge">
+          <i class="bi bi-database-fill"></i> Sample Data
+        </div>
+      }
+    </div>
+    <div class="header-actions">
+      <button type="button" class="action-btn secondary" (click)="exportCSV()">
+        <i class="bi bi-download"></i> Export CSV
+      </button>
+      <button type="button" class="action-btn primary" (click)="openAddModal()">
+        <i class="bi bi-plus-lg"></i> Add Box
+      </button>
+    </div>
+  </header>
+
+  @if (isLoading()) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading safety boxes...</p>
+    </div>
+  }
+
+  @if (!isLoading()) {
+
+    <section class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon violet">
+          <i class="bi bi-safe"></i>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Total Boxes</span>
+          <span class="stat-value">{{ totalBoxes() }}</span>
+        </div>
+        <div class="micro-bar"><div class="micro-fill violet-fill" [style.width.%]="avgOccupancy()"></div></div>
+        <span class="stat-trend">{{ totalShelves() }} total shelves · {{ avgOccupancy() }}% occ</span>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon blue">
+          <i class="bi bi-box-seam"></i>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Occupied Shelves</span>
+          <span class="stat-value">{{ occupiedShelves() }}/{{ totalShelves() }}</span>
+        </div>
+        <div class="micro-bar"><div class="micro-fill blue-fill" [style.width.%]="occupiedPct()"></div></div>
+        <span class="stat-trend">{{ occupiedPct() }}% occupied</span>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon emerald">
+          <i class="bi bi-shield-check"></i>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Secure Units</span>
+          <span class="stat-value">{{ secureBoxes() }}</span>
+        </div>
+        <div class="micro-bar"><div class="micro-fill emerald-fill" [style.width.%]="securePct()"></div></div>
+        <span class="stat-trend">{{ securePct() }}% of total</span>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon amber">
+          <i class="bi bi-emoji-smile"></i>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Empty</span>
+          <span class="stat-value">{{ statusDistribution().empty }}</span>
+        </div>
+        <div class="micro-bar"><div class="micro-fill gray-fill" [style.width.%]="statusPct('empty')"></div></div>
+        <span class="stat-trend">{{ statusPct('empty') }}% of total</span>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon rose">
+          <i class="bi bi-exclamation-triangle"></i>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Full / High</span>
+          <span class="stat-value">{{ statusDistribution().full + statusDistribution().high }}</span>
+        </div>
+        <div class="micro-bar"><div class="micro-fill rose-fill" [style.width.%]="fullHighPct()"></div></div>
+        <span class="stat-trend">{{ fullHighPct() }}% need attention</span>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon cyan">
+          <i class="bi bi-pie-chart"></i>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Moderate</span>
+          <span class="stat-value">{{ statusDistribution().moderate }}</span>
+        </div>
+        <div class="micro-bar"><div class="micro-fill cyan-fill" [style.width.%]="statusPct('moderate')"></div></div>
+        <span class="stat-trend">{{ statusPct('moderate') }}% available</span>
+      </div>
+    </section>
+
+    <section class="chart-section">
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3><i class="bi bi-pie-chart"></i> Status Distribution</h3>
+        </div>
+        <div class="chart-body">
+          <div class="donut-wrap">
+            <svg viewBox="0 0 120 120" class="donut-svg">
+              <circle cx="60" cy="60" r="50" fill="none" stroke="var(--surface-ground)" stroke-width="16"/>
+              @for (seg of donutData(); track seg.label; let i = $index) {
+                @if (seg.value > 0) {
+                  <circle cx="60" cy="60" r="50" fill="none"
+                    [attr.stroke]="seg.color"
+                    stroke-width="16"
+                    stroke-dasharray="314.159"
+                    [attr.stroke-dashoffset]="getDonutOffset(i)"
+                    transform="rotate(-90 60 60)"
+                    class="donut-segment"/>
+                }
+              }
+            </svg>
+            <div class="donut-center">
+              <span class="donut-total">{{ totalBoxes() }}</span>
+              <span class="donut-label">Boxes</span>
+            </div>
+          </div>
+          <div class="donut-legend">
+            @for (seg of donutData(); track seg.label) {
+              @if (seg.value > 0) {
+                <div class="legend-item">
+                  <span class="legend-dot" [style.background]="seg.color"></span>
+                  <span class="legend-label">{{ seg.label }}</span>
+                  <span class="legend-value">{{ seg.value }}</span>
+                  <span class="legend-pct">{{ seg.pct }}%</span>
+                </div>
+              }
+            }
+          </div>
         </div>
       </div>
-    }
-    <div class="safety-box-card add-new" (click)="openAddModal()">
-      <div class="box-icon">+</div>
-      <div class="box-number">New Box</div>
-      <div class="box-location">Add Safety Box</div>
-    </div>
-  </div>
-
-  <div class="table-container">
-    <table class="safety-boxes-table">
-      <thead>
-        <tr>
-          <th>Box No.</th>
-          <th>Location</th>
-          <th>Shelves</th>
-          <th>Occupancy</th>
-          <th>Status</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (box of filteredBoxes(); track box.id) {
-          <tr>
-            <td>{{ box.boxNumber }}</td>
-            <td>{{ box.location }}</td>
-            <td>{{ box.totalShelves }}</td>
-            <td>{{ box.occupiedShelves }}/{{ box.totalShelves }} ({{ getOccupancyPercentage(box) }}%)</td>
-            <td>{{ getStatusLabel(box.status) }}</td>
-            <td>
-              <div class="actions-cell">
-                <button class="action-btn" (click)="openEditModal(box)" title="Edit">
-                  <i class="bi bi-pencil"></i>
-                </button>
-                <button class="action-btn delete" (click)="deleteBox(box.id)" title="Delete">
-                  <i class="bi bi-trash"></i>
-                </button>
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3><i class="bi bi-shield-check"></i> Security Features</h3>
+        </div>
+        <div class="chart-body bars-vertical">
+          @for (sec of securityData(); track sec.label) {
+            <div class="horiz-row">
+              <span class="horiz-label">{{ sec.label }}</span>
+              <div class="horiz-track">
+                <div class="horiz-fill" [style.width.%]="sec.total > 0 ? (sec.value / sec.total * 100) : 0" [style.background]="sec.color"></div>
               </div>
-            </td>
-          </tr>
+              <span class="horiz-value">{{ sec.value }}/{{ sec.total }}</span>
+            </div>
+          }
+        </div>
+      </div>
+    </section>
+
+    <section class="filter-bar">
+      <div class="filter-row">
+        <div class="search-box">
+          <i class="bi bi-search"></i>
+          <input type="text" placeholder="Search by box number or location..."
+            [ngModel]="searchTerm()" (ngModelChange)="onSearchInput($event)">
+        </div>
+        <div class="filter-group">
+          <label>Location</label>
+          <select class="filter-select" [ngModel]="locationFilter()" (ngModelChange)="onLocationFilterChange($event)">
+            @for (loc of locationOptions(); track loc) {
+              <option [value]="loc">{{ loc }}</option>
+            }
+          </select>
+        </div>
+        <div class="view-toggles">
+          <button class="btn-toggle" [class.active]="viewMode() === 'grid'" (click)="setViewMode('grid')">
+            <i class="bi bi-grid-3x3-gap-fill"></i> Grid
+          </button>
+          <button class="btn-toggle" [class.active]="viewMode() === 'list'" (click)="setViewMode('list')">
+            <i class="bi bi-list-ul"></i> List
+          </button>
+        </div>
+        <button type="button" class="icon-btn" (click)="clearFilters()" title="Clear filters">
+          <i class="bi bi-x-circle"></i>
+        </button>
+      </div>
+      @if (hasActiveFilters()) {
+        <div class="active-filters">
+          <span class="filter-chip">{{ filteredBoxes().length }} result{{ filteredBoxes().length !== 1 ? 's' : '' }}</span>
+        </div>
+      }
+    </section>
+
+    @if (viewMode() === 'grid') {
+      @if (filteredBoxes().length === 0) {
+        <div class="empty-state-card">
+          <i class="bi bi-inbox"></i>
+          <h3>No safety boxes found</h3>
+          <p>Try adjusting your filters or add a new safety box.</p>
+          @if (hasActiveFilters()) {
+            <button class="action-btn secondary" (click)="clearFilters()">Clear Filters</button>
+          }
+        </div>
+      } @else {
+        <div class="grid-view">
+          @for (box of pagedBoxes(); track box.id) {
+            <div class="box-card" (click)="openDetailModal(box)">
+              <div class="box-card-header">
+                <div class="box-icon">
+                  <i class="bi bi-safe-fill"></i>
+                </div>
+                <span class="box-number">{{ box.boxNumber }}</span>
+              </div>
+              <div class="box-location">{{ box.location }}</div>
+              <div class="box-occupancy-bar">
+                <div class="occ-track">
+                  <div class="occ-fill" [style.width.%]="getOccupancyPct(box)" [style.background]="getOccupancyColor(getOccupancyPct(box))"></div>
+                </div>
+                <span class="occ-text">{{ box.occupiedShelves }}/{{ box.totalShelves }}</span>
+              </div>
+              <div class="box-card-footer">
+                <span class="status-badge {{ getStatusBadgeClass(box.status) }}">
+                  <i class="bi {{ getStatusIcon(box.status) }}"></i>
+                  {{ box.status }}
+                </span>
+                <div class="box-actions">
+                  <button class="icon-btn sm" (click)="$event.stopPropagation(); openEditModal(box)" title="Edit"><i class="bi bi-pencil"></i></button>
+                  <button class="icon-btn sm danger" (click)="$event.stopPropagation(); openDeleteModal(box)" title="Delete"><i class="bi bi-trash"></i></button>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+        @if (totalPages() > 1) {
+          <div class="pagination-bar">
+            <span class="page-info">Page {{ page() }} of {{ totalPages() }} ({{ filteredBoxes().length }} total)</span>
+            <div class="page-controls">
+              <button class="icon-btn" [disabled]="page() === 1" (click)="goToPage(page() - 1)">
+                <i class="bi bi-chevron-left"></i>
+              </button>
+              @for (p of [].constructor(totalPages()); track $index) {
+                <button class="page-btn" [class.active]="page() === $index + 1" (click)="goToPage($index + 1)">
+                  {{ $index + 1 }}
+                </button>
+              }
+              <button class="icon-btn" [disabled]="page() === totalPages()" (click)="goToPage(page() + 1)">
+                <i class="bi bi-chevron-right"></i>
+              </button>
+            </div>
+          </div>
         }
-      </tbody>
-    </table>
-  </div>
-  <div class="pagination-bar">
-    <div class="pagination-info">Showing 1-{{ filteredBoxes().length }} of {{ filteredBoxes().length }} safety boxes</div>
-    <div class="pagination-controls">
-      <button class="page-btn" disabled>Previous</button>
-      <button class="page-btn active">1</button>
-      <button class="page-btn" disabled>Next</button>
-    </div>
-  </div>
-</div>
+      }
+    }
+
+    @if (viewMode() === 'list') {
+      <div class="panel">
+        <div class="data-table">
+          <table>
+            <thead>
+              <tr>
+                <th>Box Number</th>
+                <th>Location</th>
+                <th>Shelves</th>
+                <th>Occupancy</th>
+                <th>Security</th>
+                <th>Status</th>
+                <th class="text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (box of pagedBoxes(); track box.id) {
+                <tr>
+                  <td>
+                    <div class="cell-name" (click)="openDetailModal(box)" style="cursor:pointer">
+                      <div class="cell-icon"><i class="bi bi-safe-fill"></i></div>
+                      <span class="name">{{ box.boxNumber }}</span>
+                    </div>
+                  </td>
+                  <td>{{ box.location }}</td>
+                  <td>{{ box.totalShelves }}</td>
+                  <td>
+                    <div class="occ-bar-mini">
+                      <div class="occ-track">
+                        <div class="occ-fill" [style.width.%]="getOccupancyPct(box)" [style.background]="getOccupancyColor(getOccupancyPct(box))"></div>
+                      </div>
+                      <span class="occ-text">{{ box.occupiedShelves }}/{{ box.totalShelves }}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="security-icons">
+                      @if (box.keyCardRequired) { <i class="bi bi-credit-card-2-front" title="Key card"></i> }
+                      @if (box.biometricAccess) { <i class="bi bi-fingerprint" title="Biometric"></i> }
+                      @if (box.cctvMonitored) { <i class="bi bi-camera-video" title="CCTV"></i> }
+                      @if (!box.keyCardRequired && !box.biometricAccess && !box.cctvMonitored) { <span class="text-muted">—</span> }
+                    </div>
+                  </td>
+                  <td>
+                    <span class="status-badge {{ getStatusBadgeClass(box.status) }}">
+                      <i class="bi {{ getStatusIcon(box.status) }}"></i>
+                      {{ box.status }}
+                    </span>
+                  </td>
+                  <td class="text-right">
+                    <div class="row-actions">
+                      <button class="icon-btn" (click)="openEditModal(box)" title="Edit"><i class="bi bi-pencil"></i></button>
+                      <button class="icon-btn danger" (click)="openDeleteModal(box)" title="Delete"><i class="bi bi-trash"></i></button>
+                    </div>
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="7" class="empty-state">
+                    <i class="bi bi-inbox"></i>
+                    <p>No safety boxes found</p>
+                    @if (hasActiveFilters()) {
+                      <button class="action-btn secondary" (click)="clearFilters()">Clear Filters</button>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        @if (totalPages() > 1) {
+          <div class="pagination-bar">
+            <span class="page-info">Page {{ page() }} of {{ totalPages() }} ({{ filteredBoxes().length }} total)</span>
+            <div class="page-controls">
+              <button class="icon-btn" [disabled]="page() === 1" (click)="goToPage(page() - 1)">
+                <i class="bi bi-chevron-left"></i>
+              </button>
+              @for (p of [].constructor(totalPages()); track $index) {
+                <button class="page-btn" [class.active]="page() === $index + 1" (click)="goToPage($index + 1)">
+                  {{ $index + 1 }}
+                </button>
+              }
+              <button class="icon-btn" [disabled]="page() === totalPages()" (click)="goToPage(page() + 1)">
+                <i class="bi bi-chevron-right"></i>
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  }
+
+  @if (loadError(); as err) {
+    @if (!isLoading()) {
+      <div class="error-banner">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+        <span>{{ err }}</span>
+        <button class="action-btn secondary" (click)="loadData()">
+          <i class="bi bi-arrow-clockwise"></i> Retry
+        </button>
+      </div>
+    }
+  }
+
+</section>
 
 @if (showModal()) {
   <div class="modal-overlay" (click)="closeModal()">
-    <div class="modal-content" (click)="$event.stopPropagation()">
-      <div class="modal-header">
-        <h3>{{ selectedBox() ? 'Edit Safety Box' : 'Add New Safety Box' }}</h3>
-        <button class="btn-close" (click)="closeModal()">
-          <i class="bi bi-x-lg"></i>
-        </button>
-      </div>
-      <div class="modal-body">
-        <div class="form-section">
-          <h4>Safety Box Details</h4>
-          <div class="form-grid">
-            <div class="form-field full-width">
-              <label>Box Number <span class="required">*</span></label>
-              <input type="text" [(ngModel)]="modalFormData().boxNumber" placeholder="SAF-_____">
-            </div>
-            <div class="form-field full-width">
-              <label>Location <span class="required">*</span></label>
-              <select [(ngModel)]="modalFormData().locationId" (ngModelChange)="onLocationSelect($event)">
-                <option value="">Select Location</option>
-                @for (loc of backendLocations(); track loc.id) {
-                  <option [value]="loc.id">{{ loc.name }}</option>
-                }
-              </select>
-            </div>
-            <div class="form-field full-width">
-              <label>Total Shelves <span class="required">*</span></label>
-              <input type="number" [(ngModel)]="modalFormData().totalShelves" placeholder="12">
-            </div>
-            <div class="form-field full-width">
-              <label>Description</label>
-              <textarea [(ngModel)]="modalFormData().description" rows="2" placeholder="Enter description"></textarea>
-            </div>
-          </div>
-        </div>
+    <div class="modal-card" (click)="$event.stopPropagation()">
 
-        <div class="form-section">
-          <h4>Security Settings</h4>
-          <div class="checkbox-group">
-            <label class="checkbox-item">
-              <input type="checkbox" [(ngModel)]="modalFormData().keyCardRequired">
-              <span>Key card required</span>
-            </label>
-            <label class="checkbox-item">
-              <input type="checkbox" [(ngModel)]="modalFormData().biometricAccess">
-              <span>Biometric access</span>
-            </label>
-            <label class="checkbox-item">
-              <input type="checkbox" [(ngModel)]="modalFormData().cctvMonitored">
-              <span>CCTV monitored</span>
-            </label>
-            <label class="checkbox-item">
-              <input type="checkbox" [(ngModel)]="modalFormData().access247">
-              <span>24/7 access</span>
-            </label>
+      @if (modalMode() === 'add-edit') {
+        <div class="modal-header">
+          <h2><i class="bi bi-safe"></i> {{ isEditing() ? 'Edit Safety Box' : 'Add Safety Box' }}</h2>
+          <button class="icon-btn" (click)="closeModal()"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <div class="modal-body">
+          <div class="form-section">
+            <h4><i class="bi bi-info-circle"></i> Box Details</h4>
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Box Number <span class="required">*</span></label>
+                <input type="text" [(ngModel)]="modalForm.boxNumber" placeholder="SB-001">
+                @if (fieldError('boxNumber')) { <span class="form-error">{{ fieldError('boxNumber') }}</span> }
+              </div>
+              <div class="form-group">
+                <label>Total Shelves <span class="required">*</span></label>
+                <input type="number" [(ngModel)]="modalForm.totalShelves" min="1" max="100" placeholder="12">
+                @if (fieldError('totalShelves')) { <span class="form-error">{{ fieldError('totalShelves') }}</span> }
+              </div>
+              <div class="form-group full-width">
+                <label>Location <span class="required">*</span></label>
+                <select [(ngModel)]="modalForm.location">
+                  <option value="">Select location</option>
+                  @for (loc of locationOptions(); track loc) {
+                    @if (loc !== 'All') {
+                      <option [value]="loc">{{ loc }}</option>
+                    }
+                  }
+                </select>
+                @if (fieldError('location')) { <span class="form-error">{{ fieldError('location') }}</span> }
+              </div>
+              <div class="form-group full-width">
+                <label>Description</label>
+                <textarea [(ngModel)]="modalForm.description" rows="2" placeholder="Purpose and contents"></textarea>
+              </div>
+            </div>
           </div>
-          <div class="form-field" style="margin-top: 1rem;">
-            <label>Access Code / Key Holder</label>
-            <select [(ngModel)]="modalFormData().accessCode">
-              <option value="">Select Employee</option>
-              <option value="1">John Doe</option>
-              <option value="2">Sarah Smith</option>
-            </select>
+          <div class="form-section">
+            <h4><i class="bi bi-shield-lock"></i> Security Settings</h4>
+            <div class="toggle-section">
+              <label class="toggle-row">
+                <span>Key card required</span>
+                <label class="toggle-switch">
+                  <input type="checkbox" [(ngModel)]="modalForm.keyCardRequired">
+                  <span class="toggle-slider"></span>
+                </label>
+              </label>
+              <label class="toggle-row">
+                <span>Biometric access</span>
+                <label class="toggle-switch">
+                  <input type="checkbox" [(ngModel)]="modalForm.biometricAccess">
+                  <span class="toggle-slider"></span>
+                </label>
+              </label>
+              <label class="toggle-row">
+                <span>CCTV monitored</span>
+                <label class="toggle-switch">
+                  <input type="checkbox" [(ngModel)]="modalForm.cctvMonitored">
+                  <span class="toggle-slider"></span>
+                </label>
+              </label>
+              <label class="toggle-row">
+                <span>24/7 access</span>
+                <label class="toggle-switch">
+                  <input type="checkbox" [(ngModel)]="modalForm.access247">
+                  <span class="toggle-slider"></span>
+                </label>
+              </label>
+            </div>
+            <div class="form-group" style="margin-top:1rem">
+              <label>Access Code / Key Holder</label>
+              <input type="text" [(ngModel)]="modalForm.accessCode" placeholder="Employee ID or code">
+            </div>
           </div>
         </div>
+        <div class="modal-footer">
+          <button class="action-btn secondary" (click)="closeModal()">Cancel</button>
+          <button class="action-btn primary" (click)="saveBox()">
+            <i class="bi bi-check-lg"></i> {{ isEditing() ? 'Update' : 'Create' }}
+          </button>
+        </div>
+      }
 
-        <div class="form-section">
-          <h4>Auto-Create Shelves</h4>
-          <div class="checkbox-group">
-            <label class="checkbox-item">
-              <input type="checkbox" [(ngModel)]="modalFormData().autoCreateShelves">
-              <span>Automatically create {{ modalFormData().totalShelves }} shelves for this safety box</span>
-            </label>
+      @if (modalMode() === 'detail') {
+        @let box = selectedBox();
+        @if (box) {
+          <div class="modal-header">
+            <h2><i class="bi bi-safe-fill"></i> {{ box.boxNumber }}</h2>
+            <button class="icon-btn" (click)="closeModal()"><i class="bi bi-x-lg"></i></button>
           </div>
-          <div class="form-field" style="margin-top: 1rem;">
-            <label>Shelf naming convention</label>
-            <input type="text" [(ngModel)]="modalFormData().shelfNamingConvention" placeholder="Shelf-01, Shelf-02...">
+          <div class="modal-body">
+            <div class="detail-grid">
+              <div class="detail-field">
+                <span class="detail-label">Location</span>
+                <span class="detail-value">{{ box.location }}</span>
+              </div>
+              <div class="detail-field">
+                <span class="detail-label">Status</span>
+                <span class="detail-value">
+                  <span class="status-badge {{ getStatusBadgeClass(box.status) }}">
+                    <i class="bi {{ getStatusIcon(box.status) }}"></i> {{ box.status }}
+                  </span>
+                </span>
+              </div>
+              <div class="detail-field">
+                <span class="detail-label">Total Shelves</span>
+                <span class="detail-value">{{ box.totalShelves }}</span>
+              </div>
+              <div class="detail-field">
+                <span class="detail-label">Occupied</span>
+                <span class="detail-value">{{ box.occupiedShelves }} ({{ getOccupancyPct(box) }}%)</span>
+              </div>
+              <div class="detail-field full-width">
+                <span class="detail-label">Occupancy</span>
+                <span class="detail-value" style="display:block">
+                  <div class="occ-bar-mini full">
+                    <div class="occ-track">
+                      <div class="occ-fill" [style.width.%]="getOccupancyPct(box)" [style.background]="getOccupancyColor(getOccupancyPct(box))"></div>
+                    </div>
+                    <span class="occ-text">{{ getOccupancyPct(box) }}%</span>
+                  </div>
+                </span>
+              </div>
+              <div class="detail-field">
+                <span class="detail-label">Key Card</span>
+                <span class="detail-value"><i class="bi" [ngClass]="box.keyCardRequired ? 'bi-check-lg text-green' : 'bi-x-lg text-red'"></i> {{ box.keyCardRequired ? 'Yes' : 'No' }}</span>
+              </div>
+              <div class="detail-field">
+                <span class="detail-label">Biometric</span>
+                <span class="detail-value"><i class="bi" [ngClass]="box.biometricAccess ? 'bi-check-lg text-green' : 'bi-x-lg text-red'"></i> {{ box.biometricAccess ? 'Yes' : 'No' }}</span>
+              </div>
+              <div class="detail-field">
+                <span class="detail-label">CCTV</span>
+                <span class="detail-value"><i class="bi" [ngClass]="box.cctvMonitored ? 'bi-check-lg text-green' : 'bi-x-lg text-red'"></i> {{ box.cctvMonitored ? 'Yes' : 'No' }}</span>
+              </div>
+              <div class="detail-field">
+                <span class="detail-label">24/7 Access</span>
+                <span class="detail-value"><i class="bi" [ngClass]="box.access247 ? 'bi-check-lg text-green' : 'bi-x-lg text-red'"></i> {{ box.access247 ? 'Yes' : 'No' }}</span>
+              </div>
+              <div class="detail-field">
+                <span class="detail-label">Access Code</span>
+                <span class="detail-value">{{ box.accessCode || '—' }}</span>
+              </div>
+              <div class="detail-field">
+                <span class="detail-label">Created</span>
+                <span class="detail-value">{{ formatDate(box.createdAt) }}</span>
+              </div>
+              <div class="detail-field full-width">
+                <span class="detail-label">Description</span>
+                <span class="detail-value">{{ box.description || 'No description' }}</span>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" (click)="closeModal()">Cancel</button>
-        <button class="btn btn-secondary" (click)="closeModal()">Save as Draft</button>
-        <button class="btn btn-primary" (click)="saveBox()">{{ selectedBox() ? 'Save' : 'Create' }}</button>
-      </div>
+          <div class="modal-footer">
+            <button class="action-btn secondary" (click)="closeModal()">Close</button>
+            <button class="action-btn primary" (click)="openEditModal(box)"><i class="bi bi-pencil"></i> Edit</button>
+          </div>
+        }
+      }
+
+      @if (modalMode() === 'delete') {
+        @let box = boxToDelete();
+        @if (box) {
+          <div class="modal-header">
+            <h2><i class="bi bi-exclamation-triangle" style="color:#dc2626"></i> Confirm Delete</h2>
+            <button class="icon-btn" (click)="closeModal()"><i class="bi bi-x-lg"></i></button>
+          </div>
+          <div class="modal-body delete-body">
+            <div class="delete-icon"><i class="bi bi-trash3-fill"></i></div>
+            <p class="delete-warning">Delete <strong>"{{ box.boxNumber }}"</strong>?</p>
+            <p class="delete-hint">This action cannot be undone. All shelf data associated with this safety box will be affected.</p>
+          </div>
+          <div class="modal-footer">
+            <button class="action-btn secondary" (click)="closeModal()">Cancel</button>
+            <button class="action-btn danger" (click)="confirmDelete()"><i class="bi bi-trash"></i> Delete</button>
+          </div>
+        }
+      }
+
     </div>
   </div>
 }
-

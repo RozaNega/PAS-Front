@@ -1,257 +1,335 @@
-<div class="stock-movements-container">
-  <div class="page-header">
-    <div class="header-info">
-      <h1>Stock Movements</h1>
-      <p class="subtitle">Complete transaction log of all inventory changes</p>
-    </div>
-    <button class="btn btn-primary" (click)="exportData()">
-      <i class="bi bi-download"></i> Export
-    </button>
-  </div>
-
-  @if (loadError()) {
-    <div class="error-alert">
-      <i class="bi bi-exclamation-triangle"></i>
-      <div>
-        <strong>Unable to load stock movements</strong>
-        <p>{{ loadError() }}</p>
+<section class="stock-page">
+  <header class="page-header">
+    <div class="header-content">
+      <div class="header-icon">
+        <i class="bi bi-arrow-left-right"></i>
       </div>
+      <div class="header-text">
+        <h1>Stock Movements</h1>
+        <p>Complete transaction log of inventory changes across all warehouses</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      @if (isUsingMock()) {
+        <span class="mock-badge" title="API unavailable - showing sample data"><i class="bi bi-database"></i> Sample</span>
+      }
+      <button type="button" class="action-btn secondary" (click)="loadMovements()">
+        <i class="bi bi-arrow-clockwise"></i> Refresh
+      </button>
+      <button type="button" class="action-btn primary" (click)="exportToCsv()">
+        <i class="bi bi-download"></i> Export CSV
+      </button>
+    </div>
+  </header>
+
+  @if (notification(); as n) {
+    <div class="notification-banner" [class.success]="n.type === 'success'" [class.error]="n.type === 'error'">
+      <i class="bi" [class.bi-check-circle-fill]="n.type === 'success'" [class.bi-exclamation-triangle-fill]="n.type === 'error'" [class.bi-info-circle-fill]="n.type === 'info'"></i>
+      <span>{{ n.message }}</span>
+      <button type="button" class="dismiss-btn" (click)="dismissNotification()"><i class="bi bi-x"></i></button>
     </div>
   }
 
   @if (loading()) {
     <div class="loading-state">
       <div class="spinner"></div>
-      <p>Loading stock movements...</p>
+      <span>Loading stock movements...</span>
+    </div>
+  }
+
+  @if (loadError(); as err) {
+    <div class="error-state">
+      <i class="bi bi-exclamation-triangle-fill"></i>
+      <span>{{ err }}</span>
+      <button type="button" class="action-btn secondary" (click)="loadMovements()">Retry</button>
     </div>
   }
 
   @if (!loading()) {
-    <!-- Quick Stats -->
-    <div class="quick-stats">
-      <div class="stat-card inflow">
-        <div class="stat-icon">
-          <i class="bi bi-arrow-down-circle-fill"></i>
-        </div>
-        <div class="stat-content">
-          <div class="stat-label">Total Inflow</div>
-          <div class="stat-value">{{ summary().inflow.units }}</div>
-          <div class="stat-amount">{{ formatValue(summary().inflow.value) }}</div>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon blue"><i class="bi bi-arrow-left-right"></i></div>
+        <div class="stat-info">
+          <span class="stat-label">Total Movements</span>
+          <span class="stat-value">{{ formatNumber(summaryStats().totalMovements) }}</span>
+          <span class="stat-trend">All transactions</span>
         </div>
       </div>
-
-      <div class="stat-card outflow">
-        <div class="stat-icon">
-          <i class="bi bi-arrow-up-circle-fill"></i>
-        </div>
-        <div class="stat-content">
-          <div class="stat-label">Total Outflow</div>
-          <div class="stat-value">{{ summary().outflow.units }}</div>
-          <div class="stat-amount">{{ formatValue(summary().outflow.value) }}</div>
+      <div class="stat-card">
+        <div class="stat-icon green"><i class="bi bi-arrow-down"></i></div>
+        <div class="stat-info">
+          <span class="stat-label">Total Inflow</span>
+          <span class="stat-value">{{ formatNumber(summaryStats().inflow) }}</span>
+          <span class="stat-trend positive">Goods received</span>
         </div>
       </div>
-
-      <div class="stat-card transfer">
-        <div class="stat-icon">
-          <i class="bi bi-arrow-left-right-circle-fill"></i>
-        </div>
-        <div class="stat-content">
-          <div class="stat-label">Transfers</div>
-          <div class="stat-value">{{ summary().transfer.units }}</div>
-          <div class="stat-amount">{{ formatValue(summary().transfer.value) }}</div>
+      <div class="stat-card">
+        <div class="stat-icon red"><i class="bi bi-arrow-up"></i></div>
+        <div class="stat-info">
+          <span class="stat-label">Total Outflow</span>
+          <span class="stat-value">{{ formatNumber(summaryStats().outflow) }}</span>
+          <span class="stat-trend negative">Goods issued</span>
         </div>
       </div>
-
-      <div class="stat-card adjustment">
-        <div class="stat-icon">
-          <i class="bi bi-pencil-square"></i>
-        </div>
-        <div class="stat-content">
-          <div class="stat-label">Adjustments</div>
-          <div class="stat-value">{{ summary().adjustment.units }}</div>
-          <div class="stat-amount">{{ formatValue(summary().adjustment.value) }}</div>
+      <div class="stat-card">
+        <div class="stat-icon teal"><i class="bi bi-arrow-left-right-circle"></i></div>
+        <div class="stat-info">
+          <span class="stat-label">Transfers</span>
+          <span class="stat-value">{{ formatNumber(summaryStats().transfer) }}</span>
+          <span class="stat-trend">Cross-warehouse</span>
         </div>
       </div>
-
-      <div class="stat-card net-change">
-        <div class="stat-icon">
-          <i class="bi bi-graph-up-arrow"></i>
+      <div class="stat-card">
+        <div class="stat-icon orange"><i class="bi bi-pencil-square"></i></div>
+        <div class="stat-info">
+          <span class="stat-label">Adjustments</span>
+          <span class="stat-value">{{ formatNumber(summaryStats().adjustment) }}</span>
+          <span class="stat-trend">Count corrections</span>
         </div>
-        <div class="stat-content">
-          <div class="stat-label">Net Change</div>
-          <div class="stat-value positive">+{{ 258 }}</div>
-          <div class="stat-amount positive">+$33,440</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon blue"><i class="bi bi-graph-up-arrow"></i></div>
+        <div class="stat-info">
+          <span class="stat-label">Net Change</span>
+          <span class="stat-value" [class.positive]="summaryStats().netChange >= 0" [class.negative]="summaryStats().netChange < 0">
+            {{ summaryStats().netChange >= 0 ? '+' : '' }}{{ formatNumber(summaryStats().netChange) }}
+          </span>
+          <span class="stat-trend" [class.positive]="summaryStats().netChange >= 0" [class.negative]="summaryStats().netChange < 0">
+            {{ summaryStats().netChange >= 0 ? 'Net positive' : 'Net negative' }}
+          </span>
         </div>
       </div>
     </div>
 
-    <!-- Chart Section -->
-    <div class="chart-section">
-      <div class="section-header">
-        <div>
-          <h3>
-            <i class="bi bi-graph-up"></i> Movement Trend
-          </h3>
-          <p>Stock movement analysis over 8 weeks</p>
+    <div class="charts-grid">
+      <div class="chart-card">
+        <div class="section-header">
+          <h3><i class="bi bi-bar-chart"></i> 12-Week Movement Trend</h3>
         </div>
-      </div>
-      <div class="chart-container">
-        <div class="chart-legend">
-          <span class="legend-item inflow">
-            <span class="indicator"></span> Inflow
-          </span>
-          <span class="legend-item outflow">
-            <span class="indicator"></span> Outflow
-          </span>
-          <span class="legend-item net-change">
-            <span class="indicator"></span> Net
-          </span>
-        </div>
-        <div class="chart-bars">
-          @for (height of barHeightsInflow(); track $index) {
-            <div class="bar-group">
-              <div class="bars-container">
-                <div class="bar inflow" [style.height.%]="(height / 100) * 100" [title]="'Inflow: ' + height | number"></div>
-                <div class="bar outflow" [style.height.%]="(barHeightsOutflow()[$index] / 100) * 100" [title]="'Outflow: ' + barHeightsOutflow()[$index] | number"></div>
-                <div class="bar net-change" [style.height.%]="(barHeightsNet()[$index] / 100) * 100" [title]="'Net: ' + barHeightsNet()[$index] | number"></div>
+        <div class="chart-body">
+          <div class="chart-legend">
+            <span class="legend-item"><span class="dot green"></span> Inflow</span>
+            <span class="legend-item"><span class="dot red"></span> Outflow</span>
+          </div>
+          <div class="weekly-bars">
+            @for (week of weeklyTrends(); track $index) {
+              <div class="weekly-bar-group">
+                <div class="weekly-bar-stack">
+                  <div class="weekly-bar inflow" [style.height.%]="getBarPercent(week.inflow, getMaxTrendValue())" [title]="'Inflow: ' + formatNumber(week.inflow)"></div>
+                  <div class="weekly-bar outflow" [style.height.%]="getBarPercent(week.outflow, getMaxTrendValue())" [title]="'Outflow: ' + formatNumber(week.outflow)"></div>
+                </div>
+                <div class="weekly-bar-label">{{ week.weekLabel }}</div>
               </div>
-              <div class="bar-label">W{{ $index + 1 }}</div>
-            </div>
-          }
+            }
+          </div>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <div class="section-header">
+          <h3><i class="bi bi-pie-chart"></i> Movement Type Distribution</h3>
+        </div>
+        <div class="chart-body">
+          <div class="horiz-bar-list">
+            @for (dist of typeDistribution(); track dist.type) {
+              <div class="horiz-bar-item">
+                <div class="horiz-bar-info">
+                  <span class="horiz-bar-name"><i [class]="getTypeIconClass(dist.type)"></i> {{ dist.type }}</span>
+                  <span class="horiz-bar-count">{{ formatNumber(dist.count) }}</span>
+                </div>
+                <div class="horiz-bar-track">
+                  <div class="horiz-bar-fill" [style.width.%]="dist.percentage" [class.bar-fill-inflow]="dist.type === 'Inflow'" [class.bar-fill-outflow]="dist.type === 'Outflow'" [class.bar-fill-transfer]="dist.type === 'Transfer'" [class.bar-fill-adjustment]="dist.type === 'Adjustment'"></div>
+                </div>
+              </div>
+            }
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Filters -->
-    <div class="filters-section">
-      <div class="section-header">
-        <h3>
-          <i class="bi bi-funnel"></i> Filters
-        </h3>
-      </div>
-      <div class="filter-bar">
-        <div class="search-box">
+    <div class="filter-bar">
+      <div class="filter-group">
+        <div class="filter-field search-field">
           <i class="bi bi-search"></i>
-          <input
-            type="text"
-            [value]="searchTerm()"
-            (input)="onSearchChange($any($event.target).value)"
-            placeholder="Search item, SKU, reference...">
+          <input type="text" placeholder="Search by item, SKU, or reference..." [value]="searchTerm()" (input)="onSearch($event)">
         </div>
-
-        <select [ngModel]="typeFilter()" (ngModelChange)="onTypeFilterChange($event)" class="filter-select">
-          @for (type of movementTypes; track type) {
-            <option [value]="type">{{ type }}</option>
-          }
-        </select>
-
-        <select [ngModel]="warehouseFilter()" (ngModelChange)="onWarehouseFilterChange($event)" class="filter-select">
-          @for (wh of warehouses(); track wh) {
-            <option [value]="wh">{{ wh }}</option>
-          }
-        </select>
-
-        <select [ngModel]="userFilter()" (ngModelChange)="onUserFilterChange($event)" class="filter-select">
-          @for (u of userOptions(); track u) {
-            <option [value]="u">{{ u }}</option>
-          }
-        </select>
-
-        <div class="date-filters">
-          <input
-            type="date"
-            [ngModel]="dateFrom()"
-            (ngModelChange)="onDateFromChange($event)"
-            class="date-input">
-          <span>to</span>
-          <input
-            type="date"
-            [ngModel]="dateTo()"
-            (ngModelChange)="onDateToChange($event)"
-            class="date-input">
-          <button type="button" class="btn btn-sm btn-secondary" (click)="applyDateFilters()">
-            <i class="bi bi-check"></i> Apply
-          </button>
-          <button type="button" class="btn btn-sm btn-secondary" (click)="resetDateFilters()">
-            <i class="bi bi-arrow-clockwise"></i> Reset
-          </button>
+        <div class="filter-field">
+          <i class="bi bi-funnel"></i>
+          <select [value]="typeFilter()" (change)="onTypeChange($event)">
+            @for (opt of typeOptions; track opt) {
+              <option [value]="opt">{{ opt }}</option>
+            }
+          </select>
         </div>
+        <div class="filter-field">
+          <i class="bi bi-calendar"></i>
+          <input type="date" [value]="dateFrom()" (change)="onDateFromChange($event)">
+        </div>
+        <div class="filter-field">
+          <span class="date-separator">to</span>
+          <input type="date" [value]="dateTo()" (change)="onDateToChange($event)">
+        </div>
+      </div>
+      <div class="filter-actions">
+        <button type="button" class="btn-filter" (click)="clearFilters()"><i class="bi bi-x-circle"></i> Clear</button>
       </div>
     </div>
 
-    <!-- Table Section -->
-    <div class="table-section">
-      <div class="section-header">
-        <h3>
-          <i class="bi bi-table"></i> Movement Log
-        </h3>
-        <p>{{ filteredMovements().length }} transaction(s)</p>
+    <div class="panel">
+      <div class="panel-header">
+        <h3><i class="bi bi-table"></i> Movement Log</h3>
+        <span class="result-count">{{ displayRange().total }} result(s)</span>
       </div>
-
-      @if (filteredMovements().length === 0) {
-        <div class="empty-state">
-          <i class="bi bi-inbox"></i>
-          <h4>No stock movements found</h4>
-          <p>Try adjusting your filters to view stock movements.</p>
-        </div>
-      } @else {
-        <div class="table-wrapper">
-          <table class="movements-table">
-            <thead>
+      <div class="panel-body no-padding">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th class="sortable" (click)="setSort('dateTime')">
+                Date/Time <i [class]="getSortIndicator('dateTime')"></i>
+              </th>
+              <th>Type</th>
+              <th>Item / SKU</th>
+              <th class="text-right sortable" (click)="setSort('quantity')">
+                Quantity <i [class]="getSortIndicator('quantity')"></i>
+              </th>
+              <th>Reference #</th>
+              <th>Performed By</th>
+              <th>Notes</th>
+              <th class="actions-col"></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (mov of paginatedMovements(); track mov.id) {
               <tr>
-                <th>Date/Time</th>
-                <th>Type</th>
-                <th>Item</th>
-                <th class="text-right">Qty</th>
-                <th>Reference</th>
-                <th>User</th>
-                <th class="text-right">Balance</th>
+                <td class="time-cell">{{ formatDateTime(mov.dateTime) }}</td>
+                <td>
+                  <span class="type-badge" [class]="getTypeBadgeClass(mov.type)">
+                    <i [class]="getTypeIconClass(mov.type)"></i>
+                    {{ mov.type }}
+                  </span>
+                </td>
+                <td>
+                  <div class="item-cell">
+                    <div class="item-avatar">{{ mov.item.charAt(0) }}</div>
+                    <div>
+                      <div class="item-name">{{ mov.item }}</div>
+                      <div class="item-meta mono">{{ mov.sku }}</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="text-right">
+                  <span class="qty-value" [class.positive]="isPositive(mov.quantity)" [class.negative]="!isPositive(mov.quantity)">
+                    {{ formatQuantity(mov.quantity) }}
+                  </span>
+                </td>
+                <td><span class="mono">{{ mov.refNumber }}</span></td>
+                <td>{{ mov.performedBy }}</td>
+                <td><span class="notes-cell">{{ mov.notes || '\u2014' }}</span></td>
+                <td>
+                  <div class="action-buttons">
+                    <button type="button" class="icon-btn" title="View Details" (click)="openDetail(mov)"><i class="bi bi-eye"></i></button>
+                  </div>
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              @for (mov of filteredMovements(); track mov.id) {
-                <tr>
-                  <td>
-                    <span class="date-time">{{ mov.dateTime }}</span>
-                  </td>
-                  <td>
-                    <span
-                      class="type-badge"
-                      [ngClass]="{
-                        'badge-inflow': mov.type === 'Inflow',
-                        'badge-outflow': mov.type === 'Outflow',
-                        'badge-transfer': mov.type === 'Transfer',
-                        'badge-adjustment': mov.type === 'Adjustment'
-                      }">
-                      <i [ngClass]="getMovementIconClass(mov.type)"></i>
-                      {{ mov.type }}
-                    </span>
-                  </td>
-                  <td>
-                    <strong>{{ mov.item }}</strong>
-                  </td>
-                  <td class="text-right">
-                    <span class="qty" [ngClass]="mov.quantity > 0 ? 'positive' : 'negative'">
-                      {{ mov.quantity > 0 ? '+' : '' }}{{ mov.quantity }}
-                    </span>
-                  </td>
-                  <td>
-                    <code>{{ mov.refNumber }}</code>
-                  </td>
-                  <td>{{ mov.user }}</td>
-                  <td class="text-right">
-                    <strong>{{ mov.balance }}</strong>
-                  </td>
-                </tr>
-              }
-            </tbody>
-          </table>
-        </div>
-
-        <div class="pagination-bar">
-          <div class="pagination-info">Showing {{ filteredMovements().length }} movement(s)</div>
-        </div>
-      }
+            } @empty {
+              <tr>
+                <td colspan="8" class="empty-state">
+                  <i class="bi bi-inbox"></i>
+                  <span>No stock movements found. Try adjusting your filters.</span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
     </div>
+
+    @if (displayRange().total > 0) {
+      <div class="pagination-bar">
+        <div class="pagination-info">
+          Showing {{ displayRange().start }}&ndash;{{ displayRange().end }} of {{ displayRange().total }}
+        </div>
+        <div class="pagination-controls">
+          <button type="button" class="page-btn" [disabled]="currentPage() === 1" (click)="goToPage(currentPage() - 1)"><i class="bi bi-chevron-left"></i></button>
+          @for (p of getPageArray(); track $index) {
+            <button type="button" class="page-btn" [class.active]="currentPage() === p" (click)="goToPage(p)">{{ p }}</button>
+          }
+          <button type="button" class="page-btn" [disabled]="currentPage() === totalPages()" (click)="goToPage(currentPage() + 1)"><i class="bi bi-chevron-right"></i></button>
+        </div>
+        <div class="rows-per-page">
+          <select [value]="pageSize()" (change)="onRowsPerPageChange($event)">
+            @for (opt of pageSizeOptions; track opt) {
+              <option [value]="opt">{{ opt }}</option>
+            }
+          </select> per page
+        </div>
+      </div>
+    }
   }
-</div>
+</section>
+
+@if (selectedMovement(); as sel) {
+  <div class="modal-overlay" (click)="closeDetail()">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3><i [class]="getTypeFillIconClass(sel.type)"></i> Movement Details</h3>
+        <button type="button" class="modal-close" (click)="closeDetail()"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="detail-section">
+          <h4>Transaction Information</h4>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="label">Date / Time</span>
+              <span class="value">{{ formatDateTime(sel.dateTime) }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="label">Type</span>
+              <span class="value">
+                <span class="type-badge" [class]="getTypeBadgeClass(sel.type)">
+                  <i [class]="getTypeIconClass(sel.type)"></i>
+                  {{ sel.type }}
+                </span>
+              </span>
+            </div>
+            <div class="detail-item">
+              <span class="label">Item Name</span>
+              <span class="value">{{ sel.item }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="label">SKU</span>
+              <span class="value mono">{{ sel.sku }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="label">Quantity</span>
+              <span class="value" [class.positive]="isPositive(sel.quantity)" [class.negative]="!isPositive(sel.quantity)">
+                {{ formatQuantity(sel.quantity) }}
+              </span>
+            </div>
+            <div class="detail-item">
+              <span class="label">Reference Number</span>
+              <span class="value mono">{{ sel.refNumber }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="label">Performed By</span>
+              <span class="value">{{ sel.performedBy }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="label">Movement ID</span>
+              <span class="value mono">{{ sel.id }}</span>
+            </div>
+          </div>
+        </div>
+        @if (sel.notes) {
+          <div class="detail-section">
+            <h4>Notes</h4>
+            <p class="detail-notes">{{ sel.notes }}</p>
+          </div>
+        }
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="action-btn secondary" (click)="closeDetail()">Close</button>
+      </div>
+    </div>
+  </div>
+}

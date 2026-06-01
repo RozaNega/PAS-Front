@@ -1,16 +1,15 @@
-<section class="admin-dashboard" aria-label="Administrator dashboard">
-  @if (isLoading() && !hasLoadedOnce()) {
-    <div class="loading-overlay" aria-busy="true" aria-live="polite">
-      <div class="loading-card">
-        <div class="spinner" aria-hidden="true"></div>
-        <p class="loading-text">Updating metrics…</p>
-      </div>
+<section class="admin-dashboard">
+
+  @if (isMockData()) {
+    <div class="mock-notice">
+      <i class="bi bi-database-fill"></i>
+      <span>Showing sample data. Connect to the API for live metrics.</span>
     </div>
   }
 
-  @if (loadError()) {
+  @if (loadError() && !isMockData()) {
     <div class="dashboard-alert" role="alert">
-      <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+      <i class="bi bi-exclamation-triangle-fill"></i>
       <div class="dashboard-alert__body">
         <strong>Data unavailable</strong>
         <p>{{ loadError() }}</p>
@@ -20,81 +19,80 @@
     </div>
   }
 
+  @if (isLoading() && !hasLoadedOnce()) {
+    <div class="loading-overlay">
+      <div class="loading-card">
+        <div class="spinner"></div>
+        <p class="loading-text">Loading dashboard metrics…</p>
+      </div>
+    </div>
+  }
+
   <header class="dashboard-hero">
     <div class="dashboard-hero__main">
-      <p class="dashboard-hero__eyebrow">AFRICOM · Command operations</p>
-      <h1 class="dashboard-hero__title">Operations dashboard</h1>
+      <p class="dashboard-hero__eyebrow">Property Administration System</p>
+      <h1 class="dashboard-hero__title">Admin Dashboard</h1>
       <p class="dashboard-hero__subtitle">
-        Consolidated view of property, inventory, requisitions, and compliance signals.
+        Consolidated overview of properties, inventory, requisitions, and compliance across all facilities.
       </p>
     </div>
     <div class="dashboard-hero__meta">
       <div class="meta-chip">
-        <i class="bi bi-calendar3" aria-hidden="true"></i>
+        <i class="bi bi-calendar3"></i>
         <span>{{ currentDate() }}</span>
       </div>
       <div class="meta-chip">
-        <i class="bi bi-clock" aria-hidden="true"></i>
+        <i class="bi bi-clock"></i>
         <span>{{ currentTime() }}</span>
       </div>
       <div class="meta-chip">
-        <i class="bi bi-geo-alt" aria-hidden="true"></i>
+        <i class="bi bi-geo-alt"></i>
         <span>{{ location() }}</span>
       </div>
       @if (lastRefreshed()) {
         <div class="meta-chip meta-chip--muted">
-          <i class="bi bi-arrow-repeat" aria-hidden="true"></i>
-          <span>Metrics: {{ lastRefreshed() }}</span>
+          <i class="bi bi-arrow-repeat"></i>
+          <span>{{ lastRefreshed() }}</span>
         </div>
       }
       @if (isLoading() && hasLoadedOnce()) {
-        <div class="meta-chip meta-chip--pulse" aria-live="polite">
-          <i class="bi bi-arrow-clockwise admin-spin-inline" aria-hidden="true"></i>
-          <span>Refreshing metrics…</span>
+        <div class="meta-chip meta-chip--pulse">
+          <i class="bi bi-arrow-clockwise admin-spin-inline"></i>
+          <span>Refreshing…</span>
         </div>
       }
-      <button type="button" class="meta-toggle" (click)="toggleAutoRefresh()" [class.is-on]="isAutoRefreshEnabled()">
-        <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
-        {{ isAutoRefreshEnabled() ? 'Auto-refresh on' : 'Auto-refresh off' }}
+      <button type="button" class="meta-toggle" [class.is-on]="isAutoRefreshEnabled()" (click)="toggleAutoRefresh()">
+        <i class="bi bi-arrow-clockwise"></i>
+        {{ isAutoRefreshEnabled() ? 'Auto-refresh on' : 'Auto' }}
       </button>
     </div>
   </header>
 
-  <nav class="dashboard-shortcuts" aria-label="Dashboard shortcuts">
+  <nav class="dashboard-shortcuts">
     <a class="shortcut" routerLink="/admin/dashboard" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: true }">
-      <i class="bi bi-speedometer2" aria-hidden="true"></i> Overview
+      <i class="bi bi-speedometer2"></i> Overview
     </a>
-    <a class="shortcut" routerLink="/admin/notifications">
-      <i class="bi bi-bell" aria-hidden="true"></i> Notifications
-    </a>
-    <a class="shortcut" routerLink="/admin/properties">
-      <i class="bi bi-buildings" aria-hidden="true"></i> Properties
-    </a>
-    <a class="shortcut" routerLink="/admin/requisitions">
-      <i class="bi bi-inboxes" aria-hidden="true"></i> Requisitions
-    </a>
-    <a class="shortcut" routerLink="/admin/inventory">
-      <i class="bi bi-boxes" aria-hidden="true"></i> Inventory
-    </a>
-    <a class="shortcut" routerLink="/admin/users">
-      <i class="bi bi-people" aria-hidden="true"></i> Users
-    </a>
-    <a class="shortcut" routerLink="/admin/reports/valuation">
-      <i class="bi bi-graph-up-arrow" aria-hidden="true"></i> Reports
-    </a>
+    <a class="shortcut" routerLink="/admin/properties"><i class="bi bi-buildings"></i> Properties</a>
+    <a class="shortcut" routerLink="/admin/requisitions"><i class="bi bi-inboxes"></i> Requisitions</a>
+    <a class="shortcut" routerLink="/admin/inventory"><i class="bi bi-boxes"></i> Inventory</a>
+    <a class="shortcut" routerLink="/admin/notifications"><i class="bi bi-bell"></i> Notifications</a>
+    <a class="shortcut" routerLink="/admin/users"><i class="bi bi-people"></i> Users</a>
+    <a class="shortcut" routerLink="/admin/reports/valuation"><i class="bi bi-graph-up-arrow"></i> Reports</a>
   </nav>
 
-  <section class="summary" aria-labelledby="summary-heading">
-    <h2 id="summary-heading" class="section-heading">Key metrics</h2>
+  <section class="summary">
     <div class="card-grid executive-cards">
       @for (card of summaryCards(); track card.title) {
         <article class="summary-card {{ card.color }}">
-          <div class="card-icon" aria-hidden="true">
+          <div class="card-icon">
             <i [class]="card.icon"></i>
           </div>
           <div class="card-content">
             <p class="card-title">{{ card.title }}</p>
             <p class="card-value">{{ card.value }}</p>
+            <div class="micro-bar">
+              <div class="micro-fill" [style.width.%]="card.microPct" [style.background]="getCategoryColor(card.title)"></div>
+            </div>
             @if (card.trend !== '—') {
               <span class="card-trend">{{ card.trend }}</span>
             }
@@ -104,283 +102,352 @@
     </div>
   </section>
 
-  <section class="quick-actions" aria-labelledby="quick-actions-heading">
-    <h2 id="quick-actions-heading" class="section-heading">Quick actions</h2>
-    <div class="actions-row">
-      <a class="action-btn primary" routerLink="/admin/properties/add">
-        <i class="bi bi-plus-lg" aria-hidden="true"></i>
-        Add property
-      </a>
-      <a class="action-btn secondary" routerLink="/admin/users/add">
-        <i class="bi bi-person-plus" aria-hidden="true"></i>
-        Add user
-      </a>
-      <a class="action-btn secondary" routerLink="/admin/notifications">
-        <i class="bi bi-bell" aria-hidden="true"></i>
-        Notifications
-      </a>
-      <a class="action-btn secondary" routerLink="/admin/reports/valuation">
-        <i class="bi bi-file-earmark-bar-graph" aria-hidden="true"></i>
-        Reports
-      </a>
-      <a class="action-btn secondary" routerLink="/admin/settings/backup">
-        <i class="bi bi-database" aria-hidden="true"></i>
-        Backup
-      </a>
+  <div class="actions-bar">
+    <a class="action-btn primary" routerLink="/admin/properties/add">
+      <i class="bi bi-plus-lg"></i> Add Property
+    </a>
+    <a class="action-btn primary" routerLink="/admin/locations">
+      <i class="bi bi-geo-alt"></i> Manage Locations
+    </a>
+    <a class="action-btn primary" routerLink="/admin/requisitions">
+      <i class="bi bi-inboxes"></i> View Requisitions
+    </a>
+    <a class="action-btn secondary" routerLink="/admin/reports/valuation">
+      <i class="bi bi-file-bar-graph"></i> Reports
+    </a>
+    <a class="action-btn secondary" routerLink="/admin/notifications">
+      <i class="bi bi-bell"></i> Notifications
+    </a>
+  </div>
+
+  <section class="charts-row">
+    <div class="chart-card">
+      <div class="chart-header">
+        <h3><i class="bi bi-bar-chart-line"></i> Monthly Requisitions</h3>
+        <span class="chart-badge">{{ totalMonthlyRequests() }} total</span>
+      </div>
+      <div class="chart-body">
+        @if (monthlyTrend().length === 0) {
+          <div class="chart-empty">No trend data available.</div>
+        } @else {
+          <div class="monthly-chart">
+            @for (m of monthlyTrend(); track m.month) {
+              <div class="month-col">
+                <div class="month-bars">
+                  <div class="bar-stack">
+                    <div class="bar-bar bar-requests" [style.height.%]="(m.requests / monthlyMax()) * 100"
+                      [title]="'Requests: ' + m.requests"></div>
+                    <div class="bar-bar bar-approved" [style.height.%]="(m.approved / monthlyMax()) * 100"
+                      [title]="'Approved: ' + m.approved"></div>
+                    <div class="bar-bar bar-completed" [style.height.%]="(m.completed / monthlyMax()) * 100"
+                      [title]="'Completed: ' + m.completed"></div>
+                  </div>
+                </div>
+                <div class="month-label">{{ m.month }}</div>
+                <div class="month-value">{{ m.requests }}</div>
+              </div>
+            }
+          </div>
+          <div class="chart-legend-row">
+            <span class="legend-dot" style="background:#3b82f6"></span> Requests
+            <span class="legend-dot" style="background:#10b981"></span> Approved
+            <span class="legend-dot" style="background:#8b5cf6"></span> Completed
+            <span class="legend-spacer"></span>
+            <span class="trend-badge" [class.trend-up]="trendDirection() === 'up'" [class.trend-down]="trendDirection() === 'down'">
+              <i class="bi {{ trendDirection() === 'up' ? 'bi-arrow-up-short' : trendDirection() === 'down' ? 'bi-arrow-down-short' : 'bi-dash' }}"></i>
+              {{ trendDirection() === 'up' ? 'Rising' : trendDirection() === 'down' ? 'Declining' : 'Stable' }}
+            </span>
+          </div>
+        }
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-header">
+        <h3><i class="bi bi-pie-chart"></i> Requisition Status</h3>
+        <span class="chart-badge">{{ totalRequisitions() }} total</span>
+      </div>
+      <div class="chart-body chart-body--center">
+        @if (requisitionStatus().length === 0) {
+          <div class="chart-empty">No status data available.</div>
+        } @else {
+          <div class="donut-chart">
+            <svg viewBox="0 0 160 160" class="donut-svg">
+              @let total = totalRequisitions();
+              @for (s of requisitionStatus(); track s.label; let i = $index) {
+                <circle cx="80" cy="80" r="64"
+                  fill="none"
+                  [attr.stroke]="s.color"
+                  stroke-width="28"
+                  [attr.stroke-dasharray]="(s.value / (total || 1)) * 402 + ' 402'"
+                  [attr.stroke-dashoffset]="getCumulativeOffset(i)"
+                  transform="rotate(-90 80 80)"
+                  class="donut-ring"
+                />
+              }
+            </svg>
+            <div class="donut-center">
+              <span class="donut-total">{{ totalRequisitions() }}</span>
+              <span class="donut-label">Total</span>
+            </div>
+          </div>
+          <div class="chart-legend-column">
+            @for (s of requisitionStatus(); track s.label) {
+              <div class="legend-item">
+                <span class="legend-color" [style.background]="s.color"></span>
+                <span class="legend-label">{{ s.label }}</span>
+                <span class="legend-pct">{{ totalRequisitions() > 0 ? Math.round((s.value / totalRequisitions()) * 100) : 0 }}%</span>
+                <span class="legend-value">{{ s.value }}</span>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-header">
+        <h3><i class="bi bi-shield-check"></i> Compliance Score</h3>
+        <span class="chart-badge" [class.text-green]="complianceScore() >= 85" [class.text-amber]="complianceScore() >= 70 && complianceScore() < 85" [class.text-red]="complianceScore() < 70">
+          {{ complianceScore() >= 85 ? 'Good' : complianceScore() >= 70 ? 'Fair' : 'Needs work' }}
+        </span>
+      </div>
+      <div class="chart-body chart-body--center">
+        <div class="gauge-wrapper-compact">
+          <div class="gauge-ring">
+            <svg viewBox="0 0 180 90" class="gauge-svg">
+              <path d="M 10 80 A 80 80 0 0 1 170 80" fill="none" stroke="#e5e7eb" stroke-width="16" stroke-linecap="round"/>
+              <path d="M 10 80 A 80 80 0 0 1 170 80" fill="none" stroke="#10b981" stroke-width="16" stroke-linecap="round"
+                [attr.stroke-dasharray]="(complianceScore() / 100) * 251 + ' 251'"/>
+            </svg>
+            <div class="gauge-value-compact">
+              <span class="gauge-num">{{ complianceScore() }}%</span>
+              <span class="gauge-desc">Compliance</span>
+            </div>
+          </div>
+        </div>
+        <div class="gauge-meta">
+          <div class="gauge-stat">
+            <span class="gauge-stat-label">Pending</span>
+            <span class="gauge-stat-value">{{ requisitionStatus().find(s => s.label === 'Pending')?.value || 0 }}</span>
+          </div>
+          <div class="gauge-stat">
+            <span class="gauge-stat-label">Approved</span>
+            <span class="gauge-stat-value">{{ requisitionStatus().find(s => s.label === 'Approved')?.value || 0 }}</span>
+          </div>
+          <div class="gauge-stat">
+            <span class="gauge-stat-label">Completed</span>
+            <span class="gauge-stat-value">{{ requisitionStatus().find(s => s.label === 'Completed')?.value || 0 }}</span>
+          </div>
+        </div>
+      </div>
     </div>
   </section>
 
-  <section class="content-grid">
-    <section class="requests-panel" aria-labelledby="requisitions-heading">
+  <div class="content-grid">
+    <section class="panel requests-panel">
       <div class="panel-header">
         <div>
-          <h2 id="requisitions-heading" class="panel-title">Recent requisitions</h2>
+          <h3 class="panel-title"><i class="bi bi-inboxes"></i> Recent Requisitions</h3>
           <p class="panel-desc">
-            @if (requisitionsFromApi()) {
-              Latest service requests from the API (first page).
-            } @else if (requisitionsLoading()) {
-              Loading requisitions…
-            } @else {
-              Live feed unavailable — showing sample rows. Open Requisitions for the full list.
-            }
+            @if (requisitionsFromApi()) { Latest from API } @else { Showing sample data }
           </p>
         </div>
-        <div class="actions-row actions-row--tight">
+        <div class="panel-actions">
           <button type="button" class="action-btn secondary small" (click)="loadRecentServiceRequests()" [disabled]="requisitionsLoading()">
-            <i class="bi bi-arrow-repeat" [class.admin-spin-inline]="requisitionsLoading()" aria-hidden="true"></i>
-            Refresh data
+            <i class="bi bi-arrow-repeat" [class.admin-spin-inline]="requisitionsLoading()"></i>
+            Refresh
           </button>
           <button type="button" class="action-btn primary small" (click)="viewAllRequisitions()">
-            <i class="bi bi-list-ul" aria-hidden="true"></i>
-            View all
+            <i class="bi bi-list-ul"></i> View All
           </button>
         </div>
       </div>
-
       <div class="table-wrap">
         <table>
           <thead>
             <tr>
-              <th scope="col">Requestor</th>
-              <th scope="col">Item</th>
-              <th scope="col">Qty</th>
-              <th scope="col">Date</th>
-              <th scope="col">Status</th>
-              <th scope="col">Actions</th>
+              <th>Requestor</th>
+              <th>Item</th>
+              <th class="text-center">Qty</th>
+              <th>Date</th>
+              <th>Status</th>
+              <th class="text-center">Action</th>
             </tr>
           </thead>
           <tbody>
             @for (req of recentRequisitions(); track req.id) {
-              <tr
-                class="req-row"
-                (click)="openRequisition(req.id)"
-                (keydown.enter)="openRequisition(req.id)"
-                (keydown.space)="$event.preventDefault(); openRequisition(req.id)"
-                tabindex="0"
-                role="button"
-              >
-                <td>{{ req.requestor }}</td>
-                <td>{{ req.item }}</td>
-                <td>{{ req.quantity }}</td>
-                <td>{{ req.date }}</td>
+              <tr class="req-row" (click)="openRequisition(req.id)" tabindex="0" role="button"
+                (keydown.enter)="openRequisition(req.id)" (keydown.space)="$event.preventDefault(); openRequisition(req.id)">
+                <td>
+                  <div class="req-user">
+                    <div class="req-avatar">{{ req.requestor.charAt(0) }}</div>
+                    <span>{{ req.requestor }}</span>
+                  </div>
+                </td>
+                <td class="req-item-cell">{{ req.item }}</td>
+                <td class="text-center"><span class="qty-badge">{{ req.quantity }}</span></td>
+                <td class="req-date">{{ req.date }}</td>
                 <td>
                   <span class="status-pill" [class]="getStatusClass(req.status)">{{ req.status }}</span>
                 </td>
-                <td>
-                  <div class="actions-inline" (click)="$event.stopPropagation()">
-                    <button type="button" class="table-btn open" (click)="openRequisition(req.id)" title="Open detail">
-                      <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
-                    </button>
-                    @if (isPendingStatus(req.status)) {
-                      <button type="button" class="table-btn approve" (click)="approveRequisition(req.id)" title="Approve">
-                        <i class="bi bi-check-lg" aria-hidden="true"></i>
-                      </button>
-                      <button type="button" class="table-btn reject" (click)="rejectRequisition(req.id)" title="Reject">
-                        <i class="bi bi-x-lg" aria-hidden="true"></i>
-                      </button>
-                    }
-                  </div>
+                <td class="text-center">
+                  <button class="table-btn open" (click)="$event.stopPropagation(); openRequisition(req.id)" title="Open">
+                    <i class="bi bi-eye"></i>
+                  </button>
                 </td>
               </tr>
+            } @empty {
+              <tr><td colspan="6" class="empty-cell">No requisitions found.</td></tr>
             }
           </tbody>
         </table>
       </div>
     </section>
 
-    <aside class="activity-panel" aria-labelledby="activity-heading">
-      <div class="panel-header panel-header--stack">
-        <h2 id="activity-heading" class="panel-title">Recent activity</h2>
-        <p class="panel-desc">Latest actions across the platform.</p>
+    <section class="panel activity-panel">
+      <div class="panel-header">
+        <h3 class="panel-title"><i class="bi bi-activity"></i> Recent Activity</h3>
       </div>
       @if (recentActivities().length === 0) {
-        <div class="empty-state">
-          <i class="bi bi-activity" aria-hidden="true"></i>
-          <p>No recent activity yet.</p>
-          <span class="empty-hint">Activity will appear here when the API returns audit events.</span>
-        </div>
+        <div class="chart-empty">No recent activity.</div>
       } @else {
-        <div class="activity-list" role="list">
-          @for (activity of recentActivities(); track activity.id) {
-            <div class="activity-item" role="listitem">
-              <div class="activity-icon" aria-hidden="true">
-                <i [class]="activity.icon"></i>
-              </div>
+        <div class="activity-list">
+          @for (a of recentActivities(); track a.id) {
+            <div class="activity-item">
+              <div class="activity-icon"><i [class]="a.icon"></i></div>
               <div class="activity-content">
-                <h4>{{ activity.title }}</h4>
-                <p>{{ activity.description }}</p>
-                <span class="activity-time">{{ activity.time }}</span>
+                <h4>{{ a.title }}</h4>
+                <p>{{ a.description }}</p>
+                <span class="activity-time">{{ a.time }}</span>
               </div>
             </div>
           }
         </div>
       }
-    </aside>
-  </section>
+    </section>
+  </div>
 
-  <section class="analytics-grid">
-    <section class="panel chart-panel" aria-labelledby="status-chart-heading">
-      <div class="panel-header">
-        <h2 id="status-chart-heading" class="panel-title">Requisition status</h2>
+  <section class="analytics-row">
+    <div class="chart-card">
+      <div class="chart-header">
+        <h3><i class="bi bi-pie-chart-fill"></i> Property Categories</h3>
+        <span class="chart-badge">{{ categoryBreakdown().reduce((s, c) => s + c.count, 0) }} items</span>
       </div>
-      @if (requisitionStatus().length === 0) {
-        <div class="empty-state empty-state--compact">
-          <p>No status breakdown available.</p>
-        </div>
-      } @else {
-        <div class="chart-placeholder donut-chart">
-          <div class="donut-segments">
-            @for (status of requisitionStatus(); track status.label) {
-              <div class="donut-segment" [style.background-color]="status.color" [style.flex-grow]="status.value"></div>
+      <div class="chart-body">
+        @if (categoryBreakdown().length === 0) {
+          <div class="chart-empty">No category data.</div>
+        } @else {
+          <div class="category-chart">
+            <div class="category-stacked-bar">
+              @for (cat of categoryBreakdown(); track cat.name) {
+                @let total = categoryBreakdown().reduce((s, c) => s + c.count, 0);
+                <div class="stacked-segment" [style.width.%]="(cat.count / (total || 1)) * 100" [style.background]="cat.color"
+                  [title]="cat.name + ': ' + cat.count"></div>
+              }
+            </div>
+            <div class="category-legend">
+              @for (cat of categoryBreakdown(); track cat.name) {
+                <div class="category-item">
+                  <span class="cat-dot" [style.background]="cat.color"></span>
+                  <span class="cat-name">{{ cat.name }}</span>
+                  <span class="cat-count">{{ cat.count }}</span>
+                  @let total = categoryBreakdown().reduce((s, c) => s + c.count, 0);
+                  <span class="cat-pct">{{ Math.round((cat.count / (total || 1)) * 100) }}%</span>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-header">
+        <h3><i class="bi bi-people-fill"></i> Requests by Department</h3>
+        <span class="chart-badge">{{ departmentActivity().length }} depts</span>
+      </div>
+      <div class="chart-body">
+        @if (departmentActivity().length === 0) {
+          <div class="chart-empty">No department data.</div>
+        } @else {
+          <div class="dept-chart">
+            @for (dept of departmentActivity(); track dept.department) {
+              <div class="dept-row">
+                <span class="dept-label">{{ dept.department }}</span>
+                <div class="dept-bar-track">
+                  <div class="dept-bar-fill" [style.width.%]="(dept.requests / maxDeptRequests()) * 100"
+                    [style.background]="getCategoryColor(dept.department)"></div>
+                </div>
+                <span class="dept-value">{{ dept.requests }}</span>
+                <span class="dept-pct">{{ dept.pct }}%</span>
+              </div>
             }
           </div>
-          <div class="donut-center">
-            <span class="total">{{ requisitionStatus().reduce((sum, s) => sum + s.value, 0) }}</span>
-            <span class="label">Total</span>
-          </div>
-        </div>
-        <div class="chart-legend">
-          @for (status of requisitionStatus(); track status.label) {
-            <div class="legend-item">
-              <span class="legend-color" [style.background-color]="status.color"></span>
-              <span class="legend-label">{{ status.label }}</span>
-              <span class="legend-value">{{ status.value }}</span>
-            </div>
-          }
-        </div>
-      }
-    </section>
-
-    <section class="panel chart-panel" aria-labelledby="location-chart-heading">
-      <div class="panel-header">
-        <h2 id="location-chart-heading" class="panel-title">Location distribution</h2>
+        }
       </div>
-      @if (locationDistribution().length === 0) {
-        <div class="empty-state empty-state--compact">
-          <p>No warehouse distribution from the API yet.</p>
-          <span class="empty-hint">Appears when statistics include a location chart.</span>
-        </div>
-      } @else {
-        <div class="chart-placeholder bar-chart">
-          @for (loc of locationDistribution(); track loc.name) {
-            <div class="bar-item">
-              <span class="bar-label">{{ loc.name }}</span>
-              <div class="bar-wrapper">
-                <div class="bar-fill" [style.width.%]="(loc.value / locationBarMax()) * 100"></div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-header">
+        <h3><i class="bi bi-box-seam-fill"></i> Top Requested Items</h3>
+        <span class="chart-badge">{{ topRequestedItems().length }} items</span>
+      </div>
+      <div class="chart-body">
+        <div class="top-items-compact">
+          @for (item of topRequestedItems(); track item.id) {
+            <div class="top-item-row">
+              <div class="top-item-icon" [style.background]="getCategoryColor(item.category) + '20'" [style.color]="getCategoryColor(item.category)">
+                <i class="bi bi-box-seam"></i>
               </div>
-              <span class="bar-value">{{ loc.value }}</span>
+              <div class="top-item-info">
+                <span class="top-item-name">{{ item.name }}</span>
+                <span class="top-item-cat">{{ item.category }}</span>
+              </div>
+              <div class="top-item-stats">
+                <span class="top-item-qty">{{ item.quantity }}</span>
+                <span class="top-item-reqs">{{ item.requests }} req</span>
+              </div>
             </div>
           }
         </div>
-      }
-    </section>
-
-    <section class="panel chart-panel" aria-labelledby="compliance-heading">
-      <div class="panel-header">
-        <h2 id="compliance-heading" class="panel-title">Compliance score</h2>
       </div>
-      <div class="chart-placeholder gauge-chart">
-        <div class="gauge-wrapper">
-          <div class="gauge-arc" [style.background]="'conic-gradient(#10b981 0% ' + complianceScore() + '%, #e5e7eb ' + complianceScore() + '% 100%)'"></div>
-          <div class="gauge-center">
-            <span class="gauge-value">{{ complianceScore() }}%</span>
-            <span class="gauge-label">Score</span>
-          </div>
-        </div>
-        <div class="gauge-labels">
-          <span class="label-good">Excellent</span>
-          <span class="label-warn">Needs attention</span>
-        </div>
-      </div>
-    </section>
-  </section>
-
-  <section class="panel panel--flush" aria-labelledby="top-items-heading">
-    <div class="panel-header">
-      <div>
-        <h2 id="top-items-heading" class="panel-title">Top requested items</h2>
-        <p class="panel-desc">By requisition volume (illustrative).</p>
-      </div>
-      <a class="action-btn secondary small" routerLink="/admin/inventory">View inventory</a>
-    </div>
-    <div class="top-items-grid">
-      @for (item of topRequestedItems; track item.id) {
-        <div class="top-item-card">
-          <div class="item-icon" aria-hidden="true">
-            <i class="bi bi-box-seam"></i>
-          </div>
-          <div class="item-details">
-            <h4>{{ item.name }}</h4>
-            <p class="item-category">{{ item.category }}</p>
-            <div class="item-stats">
-              <span class="stat">
-                <i class="bi bi-box" aria-hidden="true"></i>
-                {{ item.quantity }}
-              </span>
-              <span class="stat">
-                <i class="bi bi-list-check" aria-hidden="true"></i>
-                {{ item.requests }} requests
-              </span>
-            </div>
-          </div>
-        </div>
-      }
     </div>
   </section>
 
-  <section class="panel panel--flush" aria-labelledby="low-stock-heading">
+  <section class="panel">
     <div class="panel-header">
       <div>
-        <h2 id="low-stock-heading" class="panel-title">Low stock alerts</h2>
-        <p class="panel-desc">From dashboard API when low-stock data is provided.</p>
+        <h3 class="panel-title"><i class="bi bi-exclamation-triangle"></i> Low Stock Alerts</h3>
+        <p class="panel-desc">
+          @if (lowStockAlerts().length === 0) { No low-stock items — well stocked. }
+          @else { Items below minimum stock levels. }
+        </p>
       </div>
-      <a class="action-btn secondary small" routerLink="/admin/inventory/low-stock">View all</a>
+      @if (lowStockAlerts().length > 0) {
+        <a class="action-btn secondary small" routerLink="/admin/inventory/low-stock">
+          <i class="bi bi-eye"></i> View All
+        </a>
+      }
     </div>
     @if (lowStockAlerts().length === 0) {
-      <div class="empty-state">
-        <i class="bi bi-check-circle" aria-hidden="true"></i>
-        <p>No low-stock alerts</p>
-        <span class="empty-hint">You are fully stocked, or inventory thresholds are not configured.</span>
+      <div class="empty-state-compact">
+        <i class="bi bi-check-circle" style="color:#10b981"></i>
+        <p>No low-stock alerts. Inventory levels are healthy.</p>
       </div>
     } @else {
       <div class="alerts-grid">
         @for (alert of lowStockAlerts(); track alert.id) {
           <div class="alert-card {{ getAlertClass(alert.level) }}">
-            <div class="alert-icon" aria-hidden="true">
-              <i class="bi bi-exclamation-triangle-fill"></i>
-            </div>
+            <div class="alert-icon"><i class="bi bi-exclamation-triangle-fill"></i></div>
             <div class="alert-details">
               <h4>{{ alert.item }}</h4>
-              <p class="alert-sku">SKU: {{ alert.sku }}</p>
-              <div class="alert-stats">
-                <span class="stat">
-                  <i class="bi bi-box-seam" aria-hidden="true"></i>
-                  Stock: {{ alert.currentStock }} / Min: {{ alert.minLevel }}
-                </span>
-                <span class="stat">
-                  <i class="bi bi-geo-alt" aria-hidden="true"></i>
-                  {{ alert.location }}
-                </span>
+              <p class="alert-sku">SKU: {{ alert.sku }} · {{ alert.location }}</p>
+              <div class="alert-stock-row">
+                <div class="alert-stock-bar">
+                  <div class="alert-stock-fill" [style.width.%]="inStockPct(alert.currentStock, alert.minLevel)"></div>
+                </div>
+                <span class="alert-stock-text">{{ alert.currentStock }} / {{ alert.minLevel }}</span>
               </div>
               <span class="alert-level">{{ alert.level }}</span>
             </div>
@@ -389,4 +456,5 @@
       </div>
     }
   </section>
+
 </section>

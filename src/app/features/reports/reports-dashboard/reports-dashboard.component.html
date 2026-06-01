@@ -1,0 +1,209 @@
+<section class="reports-dashboard">
+  <header class="page-header">
+    <div class="header-content">
+      <div class="header-icon">
+        <i class="bi bi-bar-chart-fill"></i>
+      </div>
+      <div class="header-text">
+        <h1>Reports Dashboard</h1>
+        <p>Comprehensive analytics and reporting for all business areas</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <div class="date-filter">
+        <i class="bi bi-calendar3"></i>
+        <select [(ngModel)]="dateRange" class="filter-select">
+          <option value="today">Today</option>
+          <option value="this-week">This Week</option>
+          <option value="this-month" selected>This Month</option>
+          <option value="this-quarter">This Quarter</option>
+          <option value="this-year">This Year</option>
+          <option value="custom">Custom Range</option>
+        </select>
+      </div>
+      <button type="button" class="action-btn secondary" (click)="exportReport()">
+        <i class="bi bi-download"></i>
+        Export
+      </button>
+      <button type="button" class="action-btn secondary" (click)="printReport()">
+        <i class="bi bi-printer"></i>
+        Print
+      </button>
+    </div>
+  </header>
+
+  <nav class="report-tabs">
+    @for (tab of tabs; track tab.id) {
+      <button
+        type="button"
+        class="tab-btn"
+        [class.active]="activeTab === tab.id"
+        [style.--tab-color]="tab.color"
+        (click)="setActiveTab(tab.id)"
+      >
+        <i [class]="tab.icon"></i>
+        <span>{{ tab.label }}</span>
+      </button>
+    }
+  </nav>
+
+  <main class="page-content">
+    <div class="summary-cards">
+      @for (card of kpiCards; track card.label) {
+        <div class="kpi-card" [style.--card-color]="card.color">
+          <div class="kpi-icon">
+            <i [class]="card.icon"></i>
+          </div>
+          <div class="kpi-info">
+            <span class="kpi-label">{{ card.label }}</span>
+            <span class="kpi-value">{{ card.value }}</span>
+            <span class="kpi-trend">{{ card.trend }}</span>
+          </div>
+        </div>
+      }
+    </div>
+
+    <div class="charts-grid">
+      <div class="chart-panel">
+        <div class="chart-panel-header">
+          <h3>
+            @switch (activeTab) {
+              @case ('valuation') { Value by Property Type }
+              @case ('requisition') { Requests by Department }
+              @case ('stock') { Stock by Warehouse }
+              @case ('issuance') { Monthly Issuance Trend }
+              @case ('compliance') { Compliance by Area }
+              @case ('audit') { Activity by Type }
+            }
+          </h3>
+        </div>
+        <div class="chart-panel-body">
+          <div echarts [options]="chartOptions" class="chart-container"></div>
+        </div>
+      </div>
+
+      <div class="chart-panel">
+        <div class="chart-panel-header">
+          <h3>
+            @switch (activeTab) {
+              @case ('valuation') { Depreciation Trend }
+              @case ('requisition') { Approval Rate }
+              @case ('stock') { Stock Distribution }
+              @case ('issuance') { Issuance by Department }
+              @case ('compliance') { Compliance Overview }
+              @case ('audit') { Weekly Activity }
+            }
+          </h3>
+        </div>
+        <div class="chart-panel-body">
+          <div echarts [options]="chartOptions2" class="chart-container"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="table-panel">
+      <div class="table-panel-header">
+        <h3>
+          @switch (activeTab) {
+            @case ('valuation') { Property Valuation Details }
+            @case ('requisition') { Requisition Details }
+            @case ('stock') { Stock Level Details }
+            @case ('issuance') { Issuance Details }
+            @case ('compliance') { Compliance Details }
+            @case ('audit') { Audit Log Details }
+          }
+        </h3>
+        <div class="table-actions">
+          <input type="text" class="search-input" placeholder="Search..." />
+          <button type="button" class="action-btn secondary small">
+            <i class="bi bi-funnel"></i>
+            Filter
+          </button>
+        </div>
+      </div>
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              @for (col of tableColumns; track col.key) {
+                <th>{{ col.label }}</th>
+              }
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of tableData; track row.id) {
+              <tr>
+                @for (col of tableColumns; track col.key) {
+                  <td>
+                    @if (col.key === 'status') {
+                      <span class="status-badge" [ngClass]="getStatusClass('' + row[col.key])">
+                        {{ row[col.key] }}
+                      </span>
+                    } @else {
+                      {{ row[col.key] }}
+                    }
+                  </td>
+                }
+                <td>
+                  <div class="action-buttons">
+                    <button type="button" class="icon-btn" title="View Details" (click)="viewItem(row)">
+                      <i class="bi bi-eye"></i>
+                    </button>
+                    <button type="button" class="icon-btn danger" title="Delete" (click)="deleteItem(row)">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</section>
+
+@if (showDetailModal && selectedItem) {
+  <div class="modal-overlay" (click)="closeDetail()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>
+          <i class="bi bi-file-text"></i>
+          Record Details
+        </h3>
+        <button type="button" class="modal-close" (click)="closeDetail()">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="detail-grid">
+          @for (col of tableColumns; track col.key) {
+            <div class="detail-item">
+              <span class="detail-label">{{ col.label }}</span>
+              <span class="detail-value">
+                @if (col.key === 'status') {
+                  <span class="status-badge" [ngClass]="getStatusClass('' + selectedItem[col.key])">
+                    {{ selectedItem[col.key] }}
+                  </span>
+                } @else {
+                  {{ selectedItem[col.key] }}
+                }
+              </span>
+            </div>
+          }
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="action-btn secondary" (click)="closeDetail()">
+          <i class="bi bi-x-lg"></i>
+          Close
+        </button>
+        <button type="button" class="action-btn primary" (click)="closeDetail()">
+          <i class="bi bi-check-lg"></i>
+          OK
+        </button>
+      </div>
+    </div>
+  </div>
+}

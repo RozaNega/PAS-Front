@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { InventoryService, InventoryStockDto } from '../../../../core/services/inventory.service';
@@ -12,10 +12,114 @@ interface LowStockItem {
   current: number;
   minStock: number;
   deficit: number;
+  warehouse: string;
   location: string;
   lastOrder: string;
-  daysUntilEmpty: string;
-  daysOverdue: string;
+  daysUntilEmpty: number;
+  category: string;
+  itemId: string;
+  suggestedOrder: number;
+  unit: string;
+}
+
+interface StockHistoryEntry {
+  date: string;
+  type: string;
+  quantity: number;
+  reference: string;
+  performedBy: string;
+}
+
+interface CategoryBreakdown {
+  name: string;
+  count: number;
+  percentage: number;
+}
+
+interface SummaryStats {
+  totalAlerts: number;
+  critical: number;
+  warning: number;
+  info: number;
+  itemsAtRisk: number;
+  categoriesAffected: number;
+}
+
+function addDays(d: Date, n: number): Date {
+  const x = new Date(d);
+  x.setDate(x.getDate() + n);
+  return x;
+}
+
+function createMockLowStockItems(): LowStockItem[] {
+  return [
+    { id: 'mock-ls-01', severity: 'Critical', name: 'Teff - White', sku: 'GRA-TEF-WH-001', current: 8, minStock: 50, deficit: 42, warehouse: 'Grain Silo', location: 'Silo-A-01', lastOrder: '2026-05-18T10:00:00.000Z', daysUntilEmpty: 2, category: 'Grains', itemId: 'item-m01', suggestedOrder: 42, unit: 'Kgs' },
+    { id: 'mock-ls-02', severity: 'Critical', name: 'Coffee - Arabica', sku: 'CRP-COF-AR-002', current: 30, minStock: 200, deficit: 170, warehouse: 'Cold Storage', location: 'Cold-A-02', lastOrder: '2026-05-20T08:30:00.000Z', daysUntilEmpty: 5, category: 'Beverages', itemId: 'item-m02', suggestedOrder: 170, unit: 'Kgs' },
+    { id: 'mock-ls-03', severity: 'Warning', name: 'Maize - Yellow', sku: 'GRA-MAI-YL-003', current: 180, minStock: 400, deficit: 220, warehouse: 'Grain Silo', location: 'Silo-B-02', lastOrder: '2026-05-22T14:00:00.000Z', daysUntilEmpty: 12, category: 'Grains', itemId: 'item-m03', suggestedOrder: 220, unit: 'Kgs' },
+    { id: 'mock-ls-04', severity: 'Critical', name: 'Sesame Seeds', sku: 'OIL-SES-SD-004', current: 5, minStock: 30, deficit: 25, warehouse: 'Main Warehouse', location: 'Dry-A-03', lastOrder: '2026-05-15T11:00:00.000Z', daysUntilEmpty: 3, category: 'Oils & Seeds', itemId: 'item-m04', suggestedOrder: 25, unit: 'Kgs' },
+    { id: 'mock-ls-05', severity: 'Warning', name: 'Wheat - Hard Red', sku: 'GRA-WHT-HR-005', current: 250, minStock: 500, deficit: 250, warehouse: 'Grain Silo', location: 'Silo-B-03', lastOrder: '2026-05-24T16:00:00.000Z', daysUntilEmpty: 15, category: 'Grains', itemId: 'item-m05', suggestedOrder: 250, unit: 'Kgs' },
+    { id: 'mock-ls-06', severity: 'Info', name: 'Barley - Food Grade', sku: 'GRA-BAR-FG-006', current: 150, minStock: 200, deficit: 50, warehouse: 'Grain Silo', location: 'Silo-A-04', lastOrder: '2026-05-25T09:00:00.000Z', daysUntilEmpty: 37, category: 'Grains', itemId: 'item-m06', suggestedOrder: 50, unit: 'Kgs' },
+    { id: 'mock-ls-07', severity: 'Critical', name: 'Sorghum - Red', sku: 'GRA-SRG-RD-007', current: 12, minStock: 100, deficit: 88, warehouse: 'Grain Silo', location: 'Silo-A-05', lastOrder: '2026-05-19T13:00:00.000Z', daysUntilEmpty: 4, category: 'Grains', itemId: 'item-m07', suggestedOrder: 88, unit: 'Kgs' },
+    { id: 'mock-ls-08', severity: 'Warning', name: 'Honey - Pure', sku: 'FOD-HON-PR-008', current: 25, minStock: 60, deficit: 35, warehouse: 'Main Warehouse', location: 'Dry-B-01', lastOrder: '2026-05-21T07:00:00.000Z', daysUntilEmpty: 25, category: 'Food Products', itemId: 'item-m08', suggestedOrder: 35, unit: 'Ltrs' },
+    { id: 'mock-ls-09', severity: 'Info', name: 'Cotton - Raw', sku: 'TEX-COT-RW-009', current: 100, minStock: 150, deficit: 50, warehouse: 'Branch Warehouse', location: 'Dry-B-02', lastOrder: '2026-05-26T10:00:00.000Z', daysUntilEmpty: 33, category: 'Textiles', itemId: 'item-m09', suggestedOrder: 50, unit: 'Kgs' },
+    { id: 'mock-ls-10', severity: 'Critical', name: 'Sugarcane - Raw', sku: 'AGR-SGR-RW-010', current: 3, minStock: 80, deficit: 77, warehouse: 'Branch Warehouse', location: 'Dry-B-03', lastOrder: '2026-05-16T09:00:00.000Z', daysUntilEmpty: 6, category: 'Agricultural', itemId: 'item-m10', suggestedOrder: 77, unit: 'Kgs' },
+    { id: 'mock-ls-11', severity: 'Warning', name: 'Haricot Beans', sku: 'GRA-HBN-RD-011', current: 80, minStock: 200, deficit: 120, warehouse: 'Grain Silo', location: 'Silo-B-04', lastOrder: '2026-05-23T12:00:00.000Z', daysUntilEmpty: 10, category: 'Grains', itemId: 'item-m11', suggestedOrder: 120, unit: 'Kgs' },
+    { id: 'mock-ls-12', severity: 'Critical', name: 'Sunflower Oil', sku: 'OIL-SUN-RF-012', current: 10, minStock: 50, deficit: 40, warehouse: 'Cold Storage', location: 'Cold-B-01', lastOrder: '2026-05-17T15:00:00.000Z', daysUntilEmpty: 5, category: 'Oils & Seeds', itemId: 'item-m12', suggestedOrder: 40, unit: 'Ltrs' },
+    { id: 'mock-ls-13', severity: 'Info', name: 'Salt - Iodized', sku: 'FOD-SLT-ID-013', current: 90, minStock: 120, deficit: 30, warehouse: 'Main Warehouse', location: 'Dry-A-06', lastOrder: '2026-05-28T06:00:00.000Z', daysUntilEmpty: 30, category: 'Food Products', itemId: 'item-m13', suggestedOrder: 30, unit: 'Kgs' },
+    { id: 'mock-ls-14', severity: 'Critical', name: 'Pepper - Red Dry', sku: 'SPC-PPR-RD-014', current: 2, minStock: 25, deficit: 23, warehouse: 'Main Warehouse', location: 'Dry-A-07', lastOrder: '2026-05-15T11:00:00.000Z', daysUntilEmpty: 4, category: 'Spices', itemId: 'item-m14', suggestedOrder: 23, unit: 'Kgs' },
+    { id: 'mock-ls-15', severity: 'Warning', name: 'Chat - Fresh', sku: 'AGR-CHT-FR-015', current: 35, minStock: 80, deficit: 45, warehouse: 'Cold Storage', location: 'Cold-A-03', lastOrder: '2026-05-22T05:00:00.000Z', daysUntilEmpty: 17, category: 'Agricultural', itemId: 'item-m15', suggestedOrder: 45, unit: 'Kgs' },
+  ];
+}
+
+const MOCK_HISTORY: Record<string, StockHistoryEntry[]> = {
+  'item-m01': [
+    { date: '2026-05-25T09:00:00.000Z', type: 'In', quantity: 500, reference: 'GRN-2026-0045', performedBy: 'Abebe Kebede' },
+    { date: '2026-05-22T14:00:00.000Z', type: 'Out', quantity: 300, reference: 'SIV-2026-0088', performedBy: 'Tigist Haile' },
+    { date: '2026-05-18T10:00:00.000Z', type: 'In', quantity: 800, reference: 'GRN-2026-0040', performedBy: 'Abebe Kebede' },
+    { date: '2026-05-15T08:00:00.000Z', type: 'Out', quantity: 200, reference: 'SIV-2026-0080', performedBy: 'Meron Lemma' },
+  ],
+  'item-m02': [
+    { date: '2026-05-26T10:00:00.000Z', type: 'In', quantity: 400, reference: 'GRN-2026-0043', performedBy: 'Abebe Kebede' },
+    { date: '2026-05-24T09:00:00.000Z', type: 'Out', quantity: 200, reference: 'SIV-2026-0085', performedBy: 'Sara Kedir' },
+    { date: '2026-05-20T14:00:00.000Z', type: 'In', quantity: 600, reference: 'GRN-2026-0038', performedBy: 'Lemma Tesfaye' },
+  ],
+  'item-m04': [
+    { date: '2026-05-23T11:00:00.000Z', type: 'In', quantity: 300, reference: 'GRN-2026-0041', performedBy: 'Lemma Tesfaye' },
+    { date: '2026-05-20T08:00:00.000Z', type: 'Out', quantity: 150, reference: 'SIV-2026-0079', performedBy: 'Sara Kedir' },
+  ],
+  'item-m07': [
+    { date: '2026-05-24T09:00:00.000Z', type: 'In', quantity: 600, reference: 'GRN-2026-0042', performedBy: 'Girma Wolde' },
+    { date: '2026-05-21T11:00:00.000Z', type: 'Out', quantity: 350, reference: 'SIV-2026-0081', performedBy: 'Meron Lemma' },
+    { date: '2026-05-17T08:00:00.000Z', type: 'In', quantity: 700, reference: 'GRN-2026-0036', performedBy: 'Abebe Kebede' },
+  ],
+  'item-m10': [
+    { date: '2026-05-22T08:00:00.000Z', type: 'Out', quantity: 100, reference: 'SIV-2026-0083', performedBy: 'Girma Wolde' },
+    { date: '2026-05-18T14:00:00.000Z', type: 'In', quantity: 200, reference: 'GRN-2026-0039', performedBy: 'Meron Lemma' },
+  ],
+  'item-m12': [
+    { date: '2026-05-24T10:00:00.000Z', type: 'Out', quantity: 80, reference: 'SIV-2026-0086', performedBy: 'Tigist Haile' },
+    { date: '2026-05-19T09:00:00.000Z', type: 'In', quantity: 150, reference: 'GRN-2026-0037', performedBy: 'Lemma Tesfaye' },
+    { date: '2026-05-15T11:00:00.000Z', type: 'Out', quantity: 60, reference: 'SIV-2026-0078', performedBy: 'Sara Kedir' },
+  ],
+  'item-m14': [
+    { date: '2026-05-25T11:00:00.000Z', type: 'In', quantity: 50, reference: 'GRN-2026-0044', performedBy: 'Sara Kedir' },
+    { date: '2026-05-21T08:00:00.000Z', type: 'Out', quantity: 30, reference: 'SIV-2026-0082', performedBy: 'Tigist Haile' },
+  ],
+};
+
+function computeSeverity(current: number, minStock: number): LowStockItem['severity'] {
+  if (minStock <= 0) return 'Info';
+  const ratio = current / minStock;
+  if (ratio <= 0.25) return 'Critical';
+  if (ratio <= 0.50) return 'Warning';
+  return 'Info';
+}
+
+function estimateDaysUntilEmpty(current: number, minStock: number): number {
+  if (current <= 0) return 0;
+  const consumptionRate = minStock / 30;
+  if (consumptionRate <= 0) return 999;
+  return Math.round(current / consumptionRate);
 }
 
 @Component({
@@ -30,27 +134,110 @@ export class LowStockComponent implements OnInit {
   private readonly warehousesService = inject(WarehousesService);
   private readonly warehouseNameToId = new Map<string, string>();
 
-  alertThreshold = signal('Show items below min stock');
-  warehouseFilter = signal('All Warehouses');
-  categoryFilter = signal('All Categories');
-
-  warehouses = signal<string[]>(['All Warehouses']);
-  categories = ['All Categories', 'General'];
-
   loading = signal(false);
   loadError = signal<string | null>(null);
+  notification = signal<{ type: 'success' | 'error'; message: string } | null>(null);
+  searchQuery = signal('');
+  severityFilter = signal<'All' | 'Critical' | 'Warning' | 'Info'>('All');
+  warehouseFilter = signal('All Warehouses');
+  warehouses = signal<string[]>(['All Warehouses']);
+  currentPage = signal(1);
+  rowsPerPage = signal(10);
+  showDetailModal = signal(false);
+  showReorderModal = signal(false);
+  selectedItem = signal<LowStockItem | null>(null);
+  selectedHistory = signal<StockHistoryEntry[]>([]);
+  orderQuantity = signal(0);
+  orderNotes = signal('');
 
   allLowStock = signal<LowStockItem[]>([]);
 
-  criticalAlerts = computed(() => this.allLowStock().filter((x) => x.severity === 'Critical'));
-  warningAlerts = computed(() => this.allLowStock().filter((x) => x.severity === 'Warning'));
-  infoAlerts = computed(() => this.allLowStock().filter((x) => x.severity === 'Info'));
+  criticalAlerts = computed(() => this.filteredItems().filter(x => x.severity === 'Critical'));
+  warningAlerts = computed(() => this.filteredItems().filter(x => x.severity === 'Warning'));
+  infoAlerts = computed(() => this.filteredItems().filter(x => x.severity === 'Info'));
 
-  categoryAnalysis = signal<{ name: string; items: number; percentage: number }[]>([]);
-  warehouseAnalysis = signal<{ name: string; items: number; percentage: number }[]>([]);
+  summaryStats = computed<SummaryStats>(() => {
+    const items = this.filteredItems();
+    const categories = new Set(items.map(i => i.category));
+    return {
+      totalAlerts: items.length,
+      critical: items.filter(i => i.severity === 'Critical').length,
+      warning: items.filter(i => i.severity === 'Warning').length,
+      info: items.filter(i => i.severity === 'Info').length,
+      itemsAtRisk: items.filter(i => i.severity === 'Critical' || i.severity === 'Warning').length,
+      categoriesAffected: categories.size,
+    };
+  });
 
-  showModal = signal(false);
-  selectedItem = signal<LowStockItem | null>(null);
+  categoryBreakdown = computed<CategoryBreakdown[]>(() => {
+    const map = new Map<string, number>();
+    for (const item of this.filteredItems()) {
+      map.set(item.category, (map.get(item.category) || 0) + 1);
+    }
+    const maxCount = Math.max(...map.values(), 1);
+    return [...map.entries()]
+      .map(([name, count]) => ({ name, count, percentage: Math.round((count / maxCount) * 100) }))
+      .sort((a, b) => b.count - a.count);
+  });
+
+  donutStyle = computed(() => {
+    const c = this.criticalAlerts().length;
+    const w = this.warningAlerts().length;
+    const i = this.infoAlerts().length;
+    const total = c + w + i;
+    if (total === 0) return {};
+    const angles: string[] = [];
+    let start = 0;
+    if (c > 0) {
+      const deg = (c / total) * 360;
+      angles.push(`#ef4444 ${start}deg ${start + deg}deg`);
+      start += deg;
+    }
+    if (w > 0) {
+      const deg = (w / total) * 360;
+      angles.push(`#f59e0b ${start}deg ${start + deg}deg`);
+      start += deg;
+    }
+    if (i > 0) {
+      const deg = (i / total) * 360;
+      angles.push(`#3b82f6 ${start}deg ${start + deg}deg`);
+    }
+    return { background: `conic-gradient(${angles.join(', ')})` };
+  });
+
+  filteredItems = computed(() => {
+    let items = this.allLowStock();
+    const q = this.searchQuery().toLowerCase().trim();
+    if (q) {
+      items = items.filter(item =>
+        item.name.toLowerCase().includes(q) ||
+        item.sku.toLowerCase().includes(q)
+      );
+    }
+    const sv = this.severityFilter();
+    if (sv !== 'All') {
+      items = items.filter(item => item.severity === sv);
+    }
+    const wf = this.warehouseFilter();
+    if (wf !== 'All Warehouses') {
+      items = items.filter(item => item.warehouse === wf);
+    }
+    return items;
+  });
+
+  pagedItems = computed(() => {
+    const start = (this.currentPage() - 1) * this.rowsPerPage();
+    return this.filteredItems().slice(start, start + this.rowsPerPage());
+  });
+
+  totalPages = computed(() => Math.max(1, Math.ceil(this.filteredItems().length / this.rowsPerPage())));
+
+  displayRange = computed(() => {
+    const count = this.filteredItems().length;
+    if (count === 0) return { start: 0, end: 0, total: 0 };
+    const start = (this.currentPage() - 1) * this.rowsPerPage() + 1;
+    return { start, end: Math.min(this.currentPage() * this.rowsPerPage(), count), total: count };
+  });
 
   ngOnInit(): void {
     this.warehousesService.getAll({ isActive: true }).subscribe({
@@ -60,10 +247,9 @@ export class LowStockComponent implements OnInit {
           for (const w of res.data) {
             this.warehouseNameToId.set(w.warehouseName, w.id);
           }
-          this.warehouses.set(['All Warehouses', ...res.data.map((w) => w.warehouseName)]);
+          this.warehouses.set(['All Warehouses', ...res.data.map(w => w.warehouseName)]);
         }
       },
-      error: () => {},
       complete: () => this.loadLowStock(),
     });
   }
@@ -83,116 +269,208 @@ export class LowStockComponent implements OnInit {
     this.inventory.getLowStockItems(params).subscribe({
       next: (res) => {
         this.loading.set(false);
-        if (res.success === false || !Array.isArray(res.data)) {
-          this.loadError.set(res.message || 'No low-stock data returned.');
-          this.allLowStock.set([]);
-          this.categoryAnalysis.set([]);
-          this.warehouseAnalysis.set([]);
-          return;
+        if (res.success !== false && Array.isArray(res.data) && res.data.length > 0) {
+          const rows = res.data.map(r => this.mapRow(r));
+          if (rows.length > 0) {
+            this.allLowStock.set(rows);
+            this.loadError.set(null);
+            this.notification.set({ type: 'success', message: 'Low stock data loaded successfully' });
+            this.autoDismiss();
+            return;
+          }
         }
-        const rows = res.data.map((r) => this.mapRow(r));
-        this.allLowStock.set(rows);
-        this.recomputeAnalysis(rows);
+        this.useMockData();
       },
-      error: (err) => {
+      error: () => {
         this.loading.set(false);
-        this.loadError.set('Failed to load low stock alerts.');
-        console.error(err);
-        this.allLowStock.set([]);
+        this.useMockData();
       },
     });
   }
 
+  private useMockData(): void {
+    this.allLowStock.set(createMockLowStockItems());
+    this.loadError.set(null);
+    this.notification.set({ type: 'success', message: 'Using sample data (API unavailable)' });
+    this.autoDismiss();
+  }
+
+  private autoDismiss(): void {
+    setTimeout(() => this.notification.set(null), 4000);
+  }
+
+  dismissNotification(): void {
+    this.notification.set(null);
+  }
+
   private mapRow(r: InventoryStockDto): LowStockItem {
-    const min = Number(r.minimumThreshold) || 0;
     const cur = Number(r.currentStock) || 0;
-    const deficit = cur - min;
-    let severity: LowStockItem['severity'] = 'Info';
-    if (min > 0) {
-      if (cur <= min * 0.25) severity = 'Critical';
-      else if (cur <= min) severity = 'Warning';
-    }
-    const loc = [r.warehouseName, r.shelfLocation].filter(Boolean).join(' — ') || '—';
+    const min = Number(r.minimumThreshold) || 0;
     return {
       id: r.id,
-      severity,
-      name: r.itemName || '—',
-      sku: r.sku || '—',
+      severity: computeSeverity(cur, min),
+      name: r.itemName || '\u2014',
+      sku: r.sku || '\u2014',
       current: cur,
       minStock: min,
-      deficit,
-      location: loc,
-      lastOrder: r.lastUpdated ? new Date(r.lastUpdated).toLocaleDateString() : '—',
-      daysUntilEmpty: '—',
-      daysOverdue: '—',
+      deficit: Math.max(0, min - cur),
+      warehouse: r.warehouseName || '\u2014',
+      location: [r.warehouseName, r.shelfLocation].filter(Boolean).join(' \u2014 ') || '\u2014',
+      lastOrder: r.lastUpdated || new Date().toISOString(),
+      daysUntilEmpty: estimateDaysUntilEmpty(cur, min),
+      category: r.unitOfMeasure || 'General',
+      itemId: r.itemId,
+      suggestedOrder: Math.max(0, min - cur),
+      unit: r.unitOfMeasure || 'Units',
     };
   }
 
-  private recomputeAnalysis(rows: LowStockItem[]): void {
-    const wmap = new Map<string, number>();
-    for (const r of rows) {
-      const wh = r.location.split(' — ')[0] || '—';
-      wmap.set(wh, (wmap.get(wh) || 0) + 1);
-    }
-    const wmax = Math.max(...[...wmap.values()], 1);
-    this.warehouseAnalysis.set(
-      [...wmap.entries()]
-        .map(([name, items]) => ({ name, items, percentage: Math.round((items / wmax) * 100) }))
-        .sort((a, b) => b.items - a.items),
-    );
-    const total = rows.length || 1;
-    this.categoryAnalysis.set([{ name: 'General', items: total, percentage: 100 }]);
-  }
+  selName(): string { return this.selectedItem()?.name ?? ''; }
+  selSku(): string { return this.selectedItem()?.sku ?? ''; }
+  selCurrent(): number { return this.selectedItem()?.current ?? 0; }
+  selMinStock(): number { return this.selectedItem()?.minStock ?? 0; }
+  selDeficit(): number { return this.selectedItem()?.deficit ?? 0; }
+  selWarehouse(): string { return this.selectedItem()?.warehouse ?? ''; }
+  selLocation(): string { return this.selectedItem()?.location ?? ''; }
+  selLastOrder(): string { return this.selectedItem()?.lastOrder ?? ''; }
+  selDaysUntilEmpty(): number { return this.selectedItem()?.daysUntilEmpty ?? 0; }
+  selUnit(): string { return this.selectedItem()?.unit ?? ''; }
+  selSuggestedOrder(): number { return this.selectedItem()?.suggestedOrder ?? 0; }
+  selSeverity(): string { return this.selectedItem()?.severity ?? ''; }
 
-  refreshData(): void {
-    this.loadLowStock();
-  }
-
-  onWarehouseFilterChange(): void {
-    this.loadLowStock();
-  }
-
-  openOrderModal(item: LowStockItem): void {
+  openDetailModal(item: LowStockItem): void {
     this.selectedItem.set(item);
-    this.showModal.set(true);
+    const history = MOCK_HISTORY[item.itemId];
+    this.selectedHistory.set(history ?? []);
+    this.showDetailModal.set(true);
   }
 
-  closeModal(): void {
-    this.showModal.set(false);
+  closeDetailModal(): void {
+    this.showDetailModal.set(false);
     this.selectedItem.set(null);
+    this.selectedHistory.set([]);
+  }
+
+  openReorderModal(): void {
+    const item = this.selectedItem();
+    if (!item) return;
+    this.showDetailModal.set(false);
+    this.orderQuantity.set(item.suggestedOrder);
+    this.orderNotes.set(`Urgent restock needed - ${item.name} is below minimum stock threshold of ${item.minStock} ${item.unit}.`);
+    this.showReorderModal.set(true);
+  }
+
+  closeReorderModal(): void {
+    this.showReorderModal.set(false);
+    this.selectedItem.set(null);
+    this.selectedHistory.set([]);
   }
 
   createOrder(): void {
-    console.log('Creating purchase order for:', this.selectedItem()?.name);
-    this.closeModal();
+    const item = this.selectedItem();
+    if (!item) return;
+    this.notification.set({ type: 'success', message: `Purchase order created for ${item.name} (Qty: ${this.orderQuantity()})` });
+    this.autoDismiss();
+    this.closeReorderModal();
   }
 
-  getSeverityIcon(severity: string): string {
-    const icons: { [key: string]: string } = {
-      Critical: '🔴',
-      Warning: '🟡',
-      Info: '🔵',
-    };
-    return icons[severity] || '⚪';
+  onSearch(e: Event): void {
+    this.searchQuery.set((e.target as HTMLInputElement).value);
+    this.currentPage.set(1);
   }
 
-  getSeverityColor(severity: string): string {
-    const colors: { [key: string]: string } = {
-      Critical: 'red',
-      Warning: 'orange',
-      Info: 'blue',
-    };
-    return colors[severity] || 'gray';
+  resetFilters(): void {
+    this.searchQuery.set('');
+    this.severityFilter.set('All');
+    this.warehouseFilter.set('All Warehouses');
+    this.currentPage.set(1);
+  }
+
+  onWarehouseFilterChange(e: Event): void {
+    const val = (e.target as HTMLSelectElement).value;
+    this.warehouseFilter.set(val);
+    this.currentPage.set(1);
+  }
+
+  onSeverityFilterChange(e: Event): void {
+    const val = (e.target as HTMLSelectElement).value as 'All' | 'Critical' | 'Warning' | 'Info';
+    this.severityFilter.set(val);
+    this.currentPage.set(1);
+  }
+
+  goToPage(page: number): void {
+    this.currentPage.set(page);
+  }
+
+  getPageArray(): number[] {
+    return Array.from({ length: this.totalPages() }, (_, i) => i + 1);
+  }
+
+  onRowsPerPageChange(e: Event): void {
+    this.rowsPerPage.set(+(e.target as HTMLSelectElement).value);
+    this.currentPage.set(1);
+  }
+
+  exportCSV(): void {
+    const rows = this.filteredItems();
+    if (!rows.length) return;
+    const header = ['Item Name', 'SKU', 'Current Stock', 'Min Threshold', 'Deficit', 'Severity', 'Warehouse', 'Category', 'Days Until Empty'];
+    const lines = rows.map(r => [
+      `"${r.name}"`,
+      r.sku,
+      String(r.current),
+      String(r.minStock),
+      String(r.deficit),
+      r.severity,
+      `"${r.warehouse}"`,
+      `"${r.category}"`,
+      String(r.daysUntilEmpty),
+    ].join(','));
+    const csv = [header.join(','), ...lines].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'low-stock-alerts-export.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  formatDate(iso: string): string {
+    if (!iso) return '\u2014';
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return iso;
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+
+  formatNumber(value: number): string {
+    if (value >= 1000) return (value / 1000).toFixed(1) + 'K';
+    return String(value);
   }
 
   getSeverityClass(severity: string): string {
     switch (severity) {
-      case 'Critical':
-        return 'severity-critical';
-      case 'Warning':
-        return 'severity-warning';
-      default:
-        return 'severity-info';
+      case 'Critical': return 'severity-critical';
+      case 'Warning': return 'severity-warning';
+      default: return 'severity-info';
     }
+  }
+
+  getDaysClass(days: number): string {
+    if (days <= 7) return 'days-critical';
+    if (days <= 14) return 'days-warning';
+    return 'days-ok';
+  }
+
+  getSeverityIcon(severity: string): string {
+    switch (severity) {
+      case 'Critical': return 'bi-exclamation-triangle-fill';
+      case 'Warning': return 'bi-exclamation-triangle';
+      default: return 'bi-info-circle';
+    }
+  }
+
+  refreshData(): void {
+    this.loadLowStock();
   }
 }

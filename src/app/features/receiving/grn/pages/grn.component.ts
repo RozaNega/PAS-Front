@@ -1,28 +1,60 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
-import { HttpErrorResponse } from '@angular/common/http';
 import { ReceivingNoteService, ReceivingNoteDto } from '../../receiving-notes/services/receiving-note.service';
-import { SupplierService } from '../../suppliers/services/supplier.service';
-import { SupplierModel } from '../../suppliers/models/supplier.model';
-import { AuthService } from '../../../../core/services/auth.service';
-import { ApiService } from '../../../../core/services/api.service';
-import { normalizePasListResponse } from '../../../../core/utils/pas-api-json.util';
 
-export interface GRNRow {
+interface GrnItem {
+  itemName: string;
+  quantity: number;
+  unit: string;
+  received: number;
+}
+
+interface GrnRecord {
   id: string;
   grnNumber: string;
-  date: string;
-  supplier: string;
-  items: number;
-  status: 'Pending Inspection' | 'Passed' | 'Failed';
+  grnDate: string;
+  supplierName: string;
+  supplierId: string;
+  poNumber: string;
+  deliveryNoteNumber: string;
+  receivedBy: string;
+  items: GrnItem[];
+  status: 'Pending Inspection' | 'Passed' | 'Failed' | 'Partially Received';
+  totalValue: number;
+  notes: string;
+  createdAt: string;
 }
 
-export interface CatalogItemRow {
-  id: string;
-  name: string;
+interface CreateForm {
+  grnNumber: string;
+  grnDate: string;
+  supplierName: string;
+  supplierId: string;
+  poNumber: string;
+  deliveryNoteNumber: string;
+  receivedBy: string;
+  items: GrnItem[];
+  notes: string;
 }
+
+const MOCK_GRNS: GrnRecord[] = [
+  { id: 'GRN-001', grnNumber: 'GRN-2026-0001', grnDate: new Date('2026-05-28').toISOString(), supplierName: 'TechWorld Supplies', supplierId: 'SUP-001', poNumber: 'PO-2026-1201', deliveryNoteNumber: 'DN-8876', receivedBy: 'John Doe', items: [{ itemName: 'Dell XPS Laptop', quantity: 10, unit: 'pcs', received: 10 }, { itemName: 'HP Monitor 24"', quantity: 15, unit: 'pcs', received: 15 }], status: 'Passed', totalValue: 45250, notes: 'All items in good condition', createdAt: new Date('2026-05-28').toISOString() },
+  { id: 'GRN-002', grnNumber: 'GRN-2026-0002', grnDate: new Date('2026-05-28').toISOString(), supplierName: 'Global Logistics Co', supplierId: 'SUP-002', poNumber: 'PO-2026-1202', deliveryNoteNumber: 'DN-8877', receivedBy: 'Sarah Smith', items: [{ itemName: 'Office Chairs', quantity: 25, unit: 'pcs', received: 20 }, { itemName: 'Standing Desks', quantity: 10, unit: 'pcs', received: 10 }], status: 'Partially Received', totalValue: 18750, notes: '5 chairs damaged, awaiting replacement', createdAt: new Date('2026-05-28').toISOString() },
+  { id: 'GRN-003', grnNumber: 'GRN-2026-0003', grnDate: new Date('2026-05-27').toISOString(), supplierName: 'OfficeMart Inc', supplierId: 'SUP-003', poNumber: 'PO-2026-1199', deliveryNoteNumber: 'DN-8865', receivedBy: 'Mike Wilson', items: [{ itemName: 'A4 Paper Box', quantity: 50, unit: 'boxes', received: 50 }, { itemName: 'Stapler', quantity: 30, unit: 'pcs', received: 0 }], status: 'Pending Inspection', totalValue: 3200, notes: 'Pending quality inspection', createdAt: new Date('2026-05-27').toISOString() },
+  { id: 'GRN-004', grnNumber: 'GRN-2026-0004', grnDate: new Date('2026-05-27').toISOString(), supplierName: 'TechWorld Supplies', supplierId: 'SUP-001', poNumber: 'PO-2026-1198', deliveryNoteNumber: 'DN-8864', receivedBy: 'John Doe', items: [{ itemName: 'Network Switch 48-port', quantity: 5, unit: 'pcs', received: 5 }], status: 'Passed', totalValue: 12500, notes: '', createdAt: new Date('2026-05-27').toISOString() },
+  { id: 'GRN-005', grnNumber: 'GRN-2026-0005', grnDate: new Date('2026-05-26').toISOString(), supplierName: 'Fresh Foods Ltd', supplierId: 'SUP-004', poNumber: 'PO-2026-1195', deliveryNoteNumber: 'DN-8859', receivedBy: 'Lisa Wong', items: [{ itemName: 'Catering Supplies Pack', quantity: 20, unit: 'pcs', received: 18 }], status: 'Failed', totalValue: 4800, notes: 'Items expired, returned to supplier', createdAt: new Date('2026-05-26').toISOString() },
+  { id: 'GRN-006', grnNumber: 'GRN-2026-0006', grnDate: new Date('2026-05-26').toISOString(), supplierName: 'BuildRight Materials', supplierId: 'SUP-005', poNumber: 'PO-2026-1194', deliveryNoteNumber: 'DN-8858', receivedBy: 'Robert Brown', items: [{ itemName: 'Cement 50kg Bags', quantity: 100, unit: 'bags', received: 100 }, { itemName: 'Steel Rebars 12mm', quantity: 50, unit: 'pcs', received: 45 }], status: 'Partially Received', totalValue: 28500, notes: '5 rebars missing', createdAt: new Date('2026-05-26').toISOString() },
+  { id: 'GRN-007', grnNumber: 'GRN-2026-0007', grnDate: new Date('2026-05-25').toISOString(), supplierName: 'Global Logistics Co', supplierId: 'SUP-002', poNumber: 'PO-2026-1192', deliveryNoteNumber: 'DN-8855', receivedBy: 'Alice Johnson', items: [{ itemName: 'Industrial Shelving', quantity: 8, unit: 'pcs', received: 8 }], status: 'Passed', totalValue: 9600, notes: '', createdAt: new Date('2026-05-25').toISOString() },
+  { id: 'GRN-008', grnNumber: 'GRN-2026-0008', grnDate: new Date('2026-05-25').toISOString(), supplierName: 'OfficeMart Inc', supplierId: 'SUP-003', poNumber: 'PO-2026-1190', deliveryNoteNumber: 'DN-8852', receivedBy: 'Mike Wilson', items: [{ itemName: 'Whiteboard Markers', quantity: 60, unit: 'boxes', received: 60 }, { itemName: 'Printer Toner', quantity: 12, unit: 'pcs', received: 12 }], status: 'Pending Inspection', totalValue: 2400, notes: 'Awaiting QA sign-off', createdAt: new Date('2026-05-25').toISOString() },
+  { id: 'GRN-009', grnNumber: 'GRN-2026-0009', grnDate: new Date('2026-05-24').toISOString(), supplierName: 'TechWorld Supplies', supplierId: 'SUP-001', poNumber: 'PO-2026-1188', deliveryNoteNumber: 'DN-8849', receivedBy: 'John Doe', items: [{ itemName: 'Server Rack 42U', quantity: 2, unit: 'pcs', received: 2 }, { itemName: 'UPS Battery Backup', quantity: 4, unit: 'pcs', received: 4 }], status: 'Passed', totalValue: 15800, notes: '', createdAt: new Date('2026-05-24').toISOString() },
+  { id: 'GRN-010', grnNumber: 'GRN-2026-0010', grnDate: new Date('2026-05-24').toISOString(), supplierName: 'Fresh Foods Ltd', supplierId: 'SUP-004', poNumber: 'PO-2026-1186', deliveryNoteNumber: 'DN-8847', receivedBy: 'Elena Garcia', items: [{ itemName: 'Coffee Beans 5kg', quantity: 8, unit: 'bags', received: 0 }], status: 'Failed', totalValue: 1600, notes: 'Moisture damage, rejected', createdAt: new Date('2026-05-24').toISOString() },
+  { id: 'GRN-011', grnNumber: 'GRN-2026-0011', grnDate: new Date('2026-05-23').toISOString(), supplierName: 'BuildRight Materials', supplierId: 'SUP-005', poNumber: 'PO-2026-1184', deliveryNoteNumber: 'DN-8844', receivedBy: 'Kevin Martin', items: [{ itemName: 'Paint Bucket 20L', quantity: 15, unit: 'pcs', received: 15 }, { itemName: 'Paint Brushes', quantity: 30, unit: 'pcs', received: 30 }], status: 'Passed', totalValue: 6750, notes: 'Quality check passed', createdAt: new Date('2026-05-23').toISOString() },
+  { id: 'GRN-012', grnNumber: 'GRN-2026-0012', grnDate: new Date('2026-05-23').toISOString(), supplierName: 'OfficeMart Inc', supplierId: 'SUP-003', poNumber: 'PO-2026-1182', deliveryNoteNumber: 'DN-8841', receivedBy: 'Neha Patel', items: [{ itemName: 'Filing Cabinets', quantity: 6, unit: 'pcs', received: 4 }], status: 'Partially Received', totalValue: 4200, notes: '2 cabinets backordered', createdAt: new Date('2026-05-23').toISOString() },
+  { id: 'GRN-013', grnNumber: 'GRN-2026-0013', grnDate: new Date('2026-05-22').toISOString(), supplierName: 'Global Logistics Co', supplierId: 'SUP-002', poNumber: 'PO-2026-1180', deliveryNoteNumber: 'DN-8839', receivedBy: 'Tom Clark', items: [{ itemName: 'Safety Helmets', quantity: 40, unit: 'pcs', received: 40 }, { itemName: 'Safety Vest', quantity: 40, unit: 'pcs', received: 35 }], status: 'Pending Inspection', totalValue: 5600, notes: '', createdAt: new Date('2026-05-22').toISOString() },
+  { id: 'GRN-014', grnNumber: 'GRN-2026-0014', grnDate: new Date('2026-05-22').toISOString(), supplierName: 'TechWorld Supplies', supplierId: 'SUP-001', poNumber: 'PO-2026-1178', deliveryNoteNumber: 'DN-8836', receivedBy: 'Julia Rodriguez', items: [{ itemName: 'Keyboard Wireless', quantity: 25, unit: 'pcs', received: 25 }, { itemName: 'Mouse Optical', quantity: 30, unit: 'pcs', received: 30 }], status: 'Passed', totalValue: 3850, notes: 'Bulk order, all OK', createdAt: new Date('2026-05-22').toISOString() },
+  { id: 'GRN-015', grnNumber: 'GRN-2026-0015', grnDate: new Date('2026-05-21').toISOString(), supplierName: 'Fresh Foods Ltd', supplierId: 'SUP-004', poNumber: 'PO-2026-1176', deliveryNoteNumber: 'DN-8833', receivedBy: 'Henry Kim', items: [{ itemName: 'Bottled Water 500ml', quantity: 200, unit: 'bottles', received: 200 }], status: 'Passed', totalValue: 2400, notes: 'Delivered on time', createdAt: new Date('2026-05-21').toISOString() },
+];
 
 @Component({
   selector: 'app-grn',
@@ -33,431 +65,347 @@ export interface CatalogItemRow {
 })
 export class GrnComponent implements OnInit {
   private readonly receivingNotes = inject(ReceivingNoteService);
-  private readonly suppliersApi = inject(SupplierService);
-  private readonly auth = inject(AuthService);
-  private readonly route = inject(ActivatedRoute);
-  private readonly api = inject(ApiService);
-
-  catalogItems = signal<CatalogItemRow[]>([]);
 
   searchTerm = signal('');
-  dateRange = { start: '', end: '' };
   statusFilter = signal('All');
-  supplierFilter = signal('All Suppliers');
-
-  readonly statuses = ['All', 'Pending Inspection', 'Passed', 'Failed'];
-  suppliers = signal<SupplierModel[]>([]);
-
-  allNotes = signal<ReceivingNoteDto[]>([]);
+  supplierFilter = signal('All');
+  currentPage = signal(1);
+  rowsPerPage = signal(10);
   loading = signal(false);
   error = signal<string | null>(null);
+  useMockData = signal(false);
+
+  allNotes = signal<GrnRecord[]>([]);
+
+  readonly statuses = ['All', 'Pending Inspection', 'Passed', 'Failed', 'Partially Received'];
+
+  uniqueSuppliers = computed(() => {
+    const seen = new Set<string>();
+    return this.allNotes().filter(g => {
+      if (seen.has(g.supplierName)) return false;
+      seen.add(g.supplierName);
+      return true;
+    }).map(g => g.supplierName).sort();
+  });
+
+  summaryStats = computed(() => {
+    const all = this.allNotes();
+    const itemsCount = all.reduce((acc, g) => acc + g.items.reduce((s, i) => s + i.quantity, 0), 0);
+    const thisWeek = all.filter(g => {
+      const d = new Date(g.grnDate);
+      const now = new Date();
+      const weekStart = new Date(now);
+      weekStart.setDate(now.getDate() - now.getDay());
+      weekStart.setHours(0, 0, 0, 0);
+      return d >= weekStart;
+    }).length;
+    return {
+      total: all.length,
+      totalItems: itemsCount,
+      pendingCount: all.filter(g => g.status === 'Pending Inspection').length,
+      passedCount: all.filter(g => g.status === 'Passed').length,
+      failedCount: all.filter(g => g.status === 'Failed').length,
+      thisWeekCount: thisWeek,
+      totalValue: all.reduce((s, g) => s + g.totalValue, 0),
+    };
+  });
 
   filteredGRNs = computed(() => {
     const search = this.searchTerm().toLowerCase();
     const status = this.statusFilter();
     const supplier = this.supplierFilter();
-    return this.allNotes().map((n) => this.toGrnRow(n)).filter((grn) => {
-      const matchesSearch =
-        !search ||
-        grn.grnNumber.toLowerCase().includes(search) ||
-        grn.supplier.toLowerCase().includes(search);
-      const matchesStatus = status === 'All' || grn.status === status;
-      const matchesSupplier = supplier === 'All Suppliers' || grn.supplier === supplier;
+    return this.allNotes().filter(g => {
+      const matchesSearch = !search || g.grnNumber.toLowerCase().includes(search) || g.supplierName.toLowerCase().includes(search);
+      const matchesStatus = status === 'All' || g.status === status;
+      const matchesSupplier = supplier === 'All' || g.supplierName === supplier;
       return matchesSearch && matchesStatus && matchesSupplier;
     });
   });
 
-  summary = computed(() => {
-    const rows = this.allNotes().map((n) => this.toGrnRow(n));
-    const pending = rows.filter((r) => r.status === 'Pending Inspection').length;
-    const totalQty = this.allNotes().reduce((acc, n) => acc + (Array.isArray(n.items) ? n.items.length : n.totalQuantity ?? 0), 0);
-    return {
-      totalGRNs: rows.length,
-      totalItems: totalQty,
-      totalValue: 0,
-      pendingInspection: pending,
-      thisWeek: rows.length,
-    };
+  pagedGRNs = computed(() => {
+    const start = (this.currentPage() - 1) * this.rowsPerPage();
+    return this.filteredGRNs().slice(start, start + this.rowsPerPage());
   });
 
-  showModal = signal(false);
-  modalStep = signal(1);
+  totalPages = computed(() => Math.max(1, Math.ceil(this.filteredGRNs().length / this.rowsPerPage())));
 
-  modalDraft = {
+  displayRange = computed(() => {
+    const total = this.filteredGRNs().length;
+    if (total === 0) return { start: 0, end: 0 };
+    const start = (this.currentPage() - 1) * this.rowsPerPage() + 1;
+    const end = Math.min(this.currentPage() * this.rowsPerPage(), total);
+    return { start, end };
+  });
+
+  showDetailModal = signal(false);
+  selectedGrn = signal<GrnRecord | null>(null);
+
+  showCreateModal = signal(false);
+  createForm = signal<CreateForm>({
     grnNumber: '',
-    dateReceived: '',
+    grnDate: new Date().toISOString().split('T')[0],
+    supplierName: '',
     supplierId: '',
-    defaultItemId: '',
     poNumber: '',
-    deliveryNote: '',
+    deliveryNoteNumber: '',
     receivedBy: '',
+    items: [{ itemName: '', quantity: 1, unit: 'pcs', received: 1 }],
     notes: '',
-  };
+  });
 
-  showDetail = signal(false);
-  detailLoading = signal(false);
-  detailNote = signal<ReceivingNoteDto | null>(null);
+  showDeleteConfirm = signal(false);
+  deleteTargetGrn = signal<GrnRecord | null>(null);
+
+  notification = signal<{ type: 'success' | 'error'; message: string } | null>(null);
 
   ngOnInit(): void {
-    this.reload();
-    this.loadSuppliers();
-    this.loadCatalogItems();
-    this.route.queryParamMap.subscribe((q) => {
-      const id = q.get('id');
-      if (id) {
-        this.viewGrn(id);
-      }
-    });
+    this.loadGrns();
   }
 
-  private loadCatalogItems(): void {
-    this.api.get<unknown>('ItemMasters', { pageNumber: 1, pageSize: 200 }).subscribe({
-      next: (raw) => {
-        const n = normalizePasListResponse<Record<string, unknown>>(raw);
-        const rows = n.data ?? [];
-        const mapped: CatalogItemRow[] = rows.map((r) => {
-          const id = String(r['id'] ?? '');
-          const name =
-            String(r['name'] ?? r['itemName'] ?? r['description'] ?? r['sku'] ?? id) || id;
-          return { id, name };
-        }).filter((r) => r.id);
-        this.catalogItems.set(mapped);
-      },
-      error: () => this.catalogItems.set([]),
-    });
-  }
-
-  private formatHttpError(err: unknown): string {
-    const e = err as HttpErrorResponse;
-    const body = e?.error as Record<string, unknown> | string | undefined;
-    const parts: string[] = [];
-    if (e?.status) {
-      parts.push(`HTTP ${e.status}`);
-    }
-    if (typeof body === 'string' && body.trim()) {
-      parts.push(body);
-      return parts.join(' — ');
-    }
-    if (body && typeof body === 'object') {
-      const msg = body['message'] ?? body['Message'] ?? body['title'] ?? body['Title'];
-      if (typeof msg === 'string' && msg.trim()) {
-        parts.push(msg.trim());
-      }
-      const errors = body['errors'] ?? body['Errors'];
-      if (errors && typeof errors === 'object') {
-        for (const [key, val] of Object.entries(errors as Record<string, unknown>)) {
-          const v = Array.isArray(val) ? (val as string[]).join(', ') : String(val);
-          parts.push(`${key}: ${v}`);
-        }
-      }
-    }
-    return parts.length ? parts.join('\n') : e?.message || 'Create failed';
-  }
-
-  private toReceivingDateIso(dateOnly: string): string {
-    if (!dateOnly) {
-      return new Date().toISOString();
-    }
-    const d = new Date(`${dateOnly}T12:00:00`);
-    return Number.isNaN(d.getTime()) ? new Date().toISOString() : d.toISOString();
-  }
-
-  reload(): void {
+  loadGrns(): void {
     this.loading.set(true);
     this.error.set(null);
     this.receivingNotes.getAll().subscribe({
       next: (res) => {
-        if (res.success !== false && Array.isArray(res.data)) {
-          this.allNotes.set(res.data);
+        if (res.success !== false && Array.isArray(res.data) && res.data.length > 0) {
+          const mapped = this.mapDtoToRecords(res.data);
+          this.allNotes.set(mapped);
+          this.useMockData.set(false);
         } else {
-          this.error.set(res.message || 'Could not load receiving notes');
-          this.allNotes.set([]);
+          this.fallbackToMock();
         }
         this.loading.set(false);
       },
-      error: (e) => {
-        this.error.set(e?.message || 'Failed to load GRNs');
-        this.allNotes.set([]);
+      error: () => {
+        this.fallbackToMock();
         this.loading.set(false);
       },
     });
   }
 
-  private loadSuppliers(): void {
-    this.suppliersApi.getAll().subscribe({
-      next: (res) => {
-        if (res.success !== false && Array.isArray(res.data)) {
-          this.suppliers.set(res.data);
-        }
-      },
-      error: () => this.suppliers.set([]),
-    });
+  private fallbackToMock(): void {
+    this.allNotes.set(MOCK_GRNS);
+    this.useMockData.set(true);
   }
 
-  private toGrnRow(note: ReceivingNoteDto): GRNRow {
-    const grnNumber = note.noteNumber || note.grnNumber || `GRN-${note.id.slice(0, 8)}`;
-    const supplier = note.supplierName || '—';
-    const itemCount = Array.isArray(note.items) ? note.items.length : note.totalQuantity ?? 0;
-    return {
-      id: note.id,
-      grnNumber,
-      date: this.formatDate(note.receivingDate),
-      supplier,
-      items: itemCount,
-      status: this.mapStatus(note.status),
-    };
+  private mapDtoToRecords(dtos: ReceivingNoteDto[]): GrnRecord[] {
+    return dtos.map((d, i) => ({
+      id: d.id,
+      grnNumber: d.noteNumber || d.grnNumber || `GRN-${d.id.slice(0, 8)}`,
+      grnDate: d.receivingDate || new Date().toISOString(),
+      supplierName: d.supplierName || 'Unknown',
+      supplierId: d.supplierId,
+      poNumber: '',
+      deliveryNoteNumber: '',
+      receivedBy: d.receivedBy || '—',
+      items: Array.isArray(d.items) ? d.items.map((it: any) => ({
+        itemName: it.itemName || it.name || 'Item',
+        quantity: it.quantity || it.quantityReceived || 1,
+        unit: it.unit || 'pcs',
+        received: it.received || it.quantityReceived || 0,
+      })) : [{ itemName: 'Item', quantity: d.totalQuantity || 1, unit: 'pcs', received: d.totalQuantity || 1 }],
+      status: this.mapStatus(d.status),
+      totalValue: 0,
+      notes: '',
+      createdAt: d.receivingDate || new Date().toISOString(),
+    }));
   }
 
-  private mapStatus(api: string | undefined): GRNRow['status'] {
+  private mapStatus(api: string | undefined): GrnRecord['status'] {
     const s = (api || '').toLowerCase();
     if (s.includes('fail') || s.includes('reject')) return 'Failed';
     if (s.includes('pass') || s.includes('approv') || s.includes('complete') || s.includes('released')) return 'Passed';
+    if (s.includes('partial')) return 'Partially Received';
     return 'Pending Inspection';
   }
 
-  private formatDate(iso: string | undefined): string {
+  onSearch(value: string): void { this.searchTerm.set(value); this.currentPage.set(1); }
+  onStatusFilter(value: string): void { this.statusFilter.set(value); this.currentPage.set(1); }
+  onSupplierFilter(value: string): void { this.supplierFilter.set(value); this.currentPage.set(1); }
+  onRowsPerPageChange(value: string): void { this.rowsPerPage.set(+value); this.currentPage.set(1); }
+
+  resetFilters(): void {
+    this.searchTerm.set('');
+    this.statusFilter.set('All');
+    this.supplierFilter.set('All');
+    this.currentPage.set(1);
+  }
+
+  goToPage(page: number): void { this.currentPage.set(page); }
+
+  openDetailModal(grn: GrnRecord): void {
+    this.selectedGrn.set(grn);
+    this.showDetailModal.set(true);
+  }
+
+  closeDetailModal(): void {
+    this.showDetailModal.set(false);
+    this.selectedGrn.set(null);
+  }
+
+  openCreateModal(): void {
+    this.createForm.set({
+      grnNumber: `GRN-${new Date().getFullYear()}-${String(Date.now()).slice(-4)}`,
+      grnDate: new Date().toISOString().split('T')[0],
+      supplierName: '',
+      supplierId: '',
+      poNumber: '',
+      deliveryNoteNumber: '',
+      receivedBy: '',
+      items: [{ itemName: '', quantity: 1, unit: 'pcs', received: 1 }],
+      notes: '',
+    });
+    this.showCreateModal.set(true);
+  }
+
+  closeCreateModal(): void {
+    this.showCreateModal.set(false);
+    this.createForm.set({} as CreateForm);
+  }
+
+  createGrn(): void {
+    const form = this.createForm();
+    if (!form.grnNumber || !form.supplierName) {
+      this.notification.set({ type: 'error', message: 'Please fill in all required fields.' });
+      this.autoDismissNotification();
+      return;
+    }
+    const newGrn: GrnRecord = {
+      id: `GRN-${Date.now()}`,
+      grnNumber: form.grnNumber,
+      grnDate: form.grnDate ? new Date(form.grnDate).toISOString() : new Date().toISOString(),
+      supplierName: form.supplierName,
+      supplierId: form.supplierId || `SUP-${Date.now()}`,
+      poNumber: form.poNumber,
+      deliveryNoteNumber: form.deliveryNoteNumber,
+      receivedBy: form.receivedBy || 'Receiving',
+      items: form.items.filter(i => i.itemName.trim()),
+      status: 'Pending Inspection',
+      totalValue: 0,
+      notes: form.notes,
+      createdAt: new Date().toISOString(),
+    };
+    this.allNotes.update(list => [newGrn, ...list]);
+    this.showCreateModal.set(false);
+    this.notification.set({ type: 'success', message: `GRN ${newGrn.grnNumber} created successfully.` });
+    this.autoDismissNotification();
+  }
+
+  confirmDelete(grn: GrnRecord): void {
+    this.deleteTargetGrn.set(grn);
+    this.showDeleteConfirm.set(true);
+  }
+
+  cancelDelete(): void {
+    this.showDeleteConfirm.set(false);
+    this.deleteTargetGrn.set(null);
+  }
+
+  executeDelete(): void {
+    const target = this.deleteTargetGrn();
+    if (!target) return;
+    this.allNotes.update(list => list.filter(g => g.id !== target.id));
+    this.notification.set({ type: 'success', message: `GRN ${target.grnNumber} deleted.` });
+    this.autoDismissNotification();
+    this.cancelDelete();
+  }
+
+  updateCreateFormGrnNumber(value: string): void { this.createForm.update(f => ({ ...f, grnNumber: value })); }
+  updateCreateFormGrnDate(value: string): void { this.createForm.update(f => ({ ...f, grnDate: value })); }
+  updateCreateFormSupplierName(value: string): void { this.createForm.update(f => ({ ...f, supplierName: value })); }
+  updateCreateFormPoNumber(value: string): void { this.createForm.update(f => ({ ...f, poNumber: value })); }
+  updateCreateFormDeliveryNote(value: string): void { this.createForm.update(f => ({ ...f, deliveryNoteNumber: value })); }
+  updateCreateFormReceivedBy(value: string): void { this.createForm.update(f => ({ ...f, receivedBy: value })); }
+  updateCreateFormNotes(value: string): void { this.createForm.update(f => ({ ...f, notes: value })); }
+  updateCreateFormItemName(index: number, value: string): void {
+    this.createForm.update(f => {
+      const items = [...f.items];
+      items[index] = { ...items[index], itemName: value };
+      return { ...f, items };
+    });
+  }
+  updateCreateFormItemQuantity(index: number, value: number): void {
+    this.createForm.update(f => {
+      const items = [...f.items];
+      items[index] = { ...items[index], quantity: value };
+      return { ...f, items };
+    });
+  }
+  updateCreateFormItemReceived(index: number, value: number): void {
+    this.createForm.update(f => {
+      const items = [...f.items];
+      items[index] = { ...items[index], received: value };
+      return { ...f, items };
+    });
+  }
+  updateCreateFormItemUnit(index: number, value: string): void {
+    this.createForm.update(f => {
+      const items = [...f.items];
+      items[index] = { ...items[index], unit: value };
+      return { ...f, items };
+    });
+  }
+
+  addCreateFormItem(): void {
+    this.createForm.update(f => ({ ...f, items: [...f.items, { itemName: '', quantity: 1, unit: 'pcs', received: 1 }] }));
+  }
+
+  removeCreateFormItem(index: number): void {
+    this.createForm.update(f => ({ ...f, items: f.items.filter((_, i) => i !== index) }));
+  }
+
+  exportCsv(): void {
+    const rows = this.filteredGRNs();
+    const header = ['GRN#', 'Date', 'Supplier', 'PO#', 'Items', 'Status', 'Total Value'];
+    const lines = [header.join(',')].concat(
+      rows.map(r => [
+        r.grnNumber,
+        new Date(r.grnDate).toLocaleDateString('en-US'),
+        `"${r.supplierName.replace(/"/g, '""')}"`,
+        r.poNumber,
+        String(r.items.length),
+        r.status,
+        r.totalValue.toFixed(2),
+      ].join(',')),
+    );
+    const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'grn-export.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  autoDismissNotification(): void {
+    setTimeout(() => this.notification.set(null), 4000);
+  }
+
+  dismissNotification(): void {
+    this.notification.set(null);
+  }
+
+  formatDate(iso: string): string {
     if (!iso) return '—';
     const d = new Date(iso);
     return Number.isNaN(d.getTime()) ? iso : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   }
 
-  onSearchChange(value: string): void {
-    this.searchTerm.set(value);
-  }
-
-  onStatusFilterChange(value: string): void {
-    this.statusFilter.set(value);
-  }
-
-  onSupplierFilterChange(value: string): void {
-    this.supplierFilter.set(value);
-  }
-
-  openCreateModal(): void {
-    this.modalStep.set(1);
-    const user = this.auth.getCurrentUser();
-    this.modalDraft = {
-      grnNumber: `GRN-${new Date().getFullYear()}-${String(Date.now()).slice(-4)}`,
-      dateReceived: new Date().toISOString().split('T')[0],
-      supplierId: this.suppliers()[0]?.id ?? '',
-      defaultItemId: this.catalogItems()[0]?.id ?? '',
-      poNumber: '',
-      deliveryNote: '',
-      receivedBy: user?.fullName || user?.username || '',
-      notes: '',
+  getStatusBadgeClass(status: string): string {
+    const map: Record<string, string> = {
+      'Pending Inspection': 'pending-inspection',
+      'Passed': 'passed',
+      'Failed': 'failed',
+      'Partially Received': 'partial',
     };
-    this.showModal.set(true);
+    return map[status] || '';
   }
 
-  closeModal(): void {
-    this.showModal.set(false);
-    this.modalStep.set(1);
+  getTotalReceived(items: GrnItem[]): number {
+    return items.reduce((s, i) => s + i.received, 0);
   }
 
-  nextStep(): void {
-    if (this.modalStep() < 3) this.modalStep.update((s) => s + 1);
-  }
-
-  prevStep(): void {
-    if (this.modalStep() > 1) this.modalStep.update((s) => s - 1);
-  }
-
-  submitGRN(): void {
-    if (!this.modalDraft.supplierId) {
-      alert('Please select a supplier.');
-      return;
-    }
-    const itemId = this.modalDraft.defaultItemId || this.catalogItems()[0]?.id;
-    if (!itemId) {
-      alert(
-        'No inventory items were found (ItemMasters). The API requires at least one line item. Add items to the catalog first, then create a GRN.',
-      );
-      return;
-    }
-
-    const line = {
-      itemId,
-      quantityReceived: 1,
-      unitPrice: 0,
-    };
-
-    const nn = this.modalDraft.grnNumber?.trim();
-    const noteNumber =
-      nn && nn.length > 0 ? nn : `GRN-${new Date().getFullYear()}-${Date.now()}`;
-
-    const body: Record<string, unknown> = {
-      supplierId: this.modalDraft.supplierId,
-      receivingDate: this.toReceivingDateIso(this.modalDraft.dateReceived),
-      receivedBy: (this.modalDraft.receivedBy || 'Receiving').trim(),
-      items: [line],
-      noteNumber,
-    };
-
-    const po = this.modalDraft.poNumber?.trim();
-    if (po) {
-      body['poNumber'] = po;
-    }
-    const dn = this.modalDraft.deliveryNote?.trim();
-    if (dn) {
-      body['deliveryNote'] = dn;
-    }
-    const notes = this.modalDraft.notes?.trim();
-    if (notes) {
-      body['notes'] = notes;
-    }
-
-    this.receivingNotes.create(body).subscribe({
-      next: (res) => {
-        if (res.success === false) {
-          alert(res.message || 'Create failed');
-          return;
-        }
-        const newId = this.extractCreatedId(res);
-        if (!newId) {
-          alert(
-            res.message ||
-              'The API did not return a new record id. Open DevTools → Network → the POST ReceivingNotes call and inspect the response. The row may still exist if the API uses a different response shape.',
-          );
-          return;
-        }
-        this.confirmPersistedAndNotify(newId);
-      },
-      error: (e) => alert(this.formatHttpError(e)),
-    });
-  }
-
-  /** Parses id from create response (string guid, envelope data string, or { id }). */
-  private extractCreatedId(res: { data?: unknown }): string | null {
-    const d = res.data;
-    if (typeof d === 'string' && d.trim()) {
-      return d.trim();
-    }
-    if (typeof d === 'number' && !Number.isNaN(d)) {
-      return String(d);
-    }
-    if (d && typeof d === 'object' && !Array.isArray(d)) {
-      const o = d as Record<string, unknown>;
-      const id = o['id'] ?? o['Id'];
-      if (typeof id === 'string' && id.trim()) {
-        return id.trim();
-      }
-      if (typeof id === 'number' && !Number.isNaN(id)) {
-        return String(id);
-      }
-    }
-    return null;
-  }
-
-  /** Confirms row exists via GET and tells user where to look in SQL Server. */
-  private confirmPersistedAndNotify(newId: string): void {
-    this.receivingNotes.getById(newId).subscribe({
-      next: (verify) => {
-        const row = verify.success !== false ? verify.data : undefined;
-        const verified = !!row && this.sameReceivingNoteId((row as ReceivingNoteDto).id, newId);
-        const detailNote = verify.message?.includes('GET ') ? `\n\n${verify.message}` : '';
-        const lines = [
-          `New receiving note id: ${newId}`,
-          '',
-          verified
-            ? `Confirmed: the API returned this GRN (GET detail or list).${detailNote}`
-            : 'The API did not return this id in detail or in the first page of the list. Check the Network tab for GET ReceivingNotes and GET ReceivingNotes/{id}.',
-          '',
-          'In SSMS (same database as the API connection string):',
-          `SELECT TOP (50) Id, NoteNumber, SupplierId, ReceivingDate, Status FROM ReceivingNotes ORDER BY ReceivingDate DESC;`,
-          `SELECT * FROM ReceivingNotes WHERE Id = CAST('${newId}' AS uniqueidentifier);`,
-        ];
-        alert(lines.join('\n'));
-        this.closeModal();
-        this.reload();
-      },
-      error: (err: HttpErrorResponse) => {
-        const detail =
-          typeof err.error === 'string'
-            ? err.error
-            : err.error && typeof err.error === 'object'
-              ? JSON.stringify(err.error)
-              : '';
-        alert(
-          [
-            `Create returned id: ${newId} but the API could not load that GRN.`,
-            `HTTP ${err.status} ${err.statusText || ''}`.trim(),
-            err.url ? `URL: ${err.url}` : '',
-            detail ? `Body: ${detail.slice(0, 400)}` : '',
-            '',
-            'Open DevTools → Console for [PAS API] lines, and Network for the failing request.',
-            'Table hint: ReceivingNotes',
-          ]
-            .filter(Boolean)
-            .join('\n'),
-        );
-        this.closeModal();
-        this.reload();
-      },
-    });
-  }
-
-  private sameReceivingNoteId(a: string | undefined, b: string): boolean {
-    const x = String(a ?? '')
-      .replace(/-/g, '')
-      .toLowerCase();
-    const y = b.replace(/-/g, '').toLowerCase();
-    return x.length > 0 && x === y;
-  }
-
-  viewGrn(id: string): void {
-    this.showDetail.set(true);
-    this.detailLoading.set(true);
-    this.detailNote.set(null);
-    this.receivingNotes.getById(id).subscribe({
-      next: (res) => {
-        if (res.success !== false && res.data) {
-          this.detailNote.set(res.data);
-        }
-        this.detailLoading.set(false);
-      },
-      error: () => this.detailLoading.set(false),
-    });
-  }
-
-  closeDetail(): void {
-    this.showDetail.set(false);
-    this.detailNote.set(null);
-  }
-
-  exportGrn(): void {
-    const rows = this.filteredGRNs();
-    const header = ['GRN #', 'Date', 'Supplier', 'Items', 'Status'];
-    const lines = [header.join(',')].concat(
-      rows.map((r) => [r.grnNumber, r.date, `"${r.supplier.replace(/"/g, '""')}"`, String(r.items), r.status].join(',')),
-    );
-    this.downloadCsv(lines.join('\n'), 'grn-export.csv');
-  }
-
-  private downloadCsv(content: string, filename: string): void {
-    const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
-  getStatusColor(status: string): string {
-    const colors: Record<string, string> = {
-      'Pending Inspection': 'yellow',
-      Passed: 'green',
-      Failed: 'red',
-    };
-    return colors[status] || 'gray';
-  }
-
-  getStatusIcon(status: string): string {
-    const icons: Record<string, string> = {
-      'Pending Inspection': '🟡',
-      Passed: '🟢',
-      Failed: '🔴',
-    };
-    return icons[status] || '⚪';
+  getTotalOrdered(items: GrnItem[]): number {
+    return items.reduce((s, i) => s + i.quantity, 0);
   }
 }

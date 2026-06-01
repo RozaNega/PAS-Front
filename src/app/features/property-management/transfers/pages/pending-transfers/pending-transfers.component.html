@@ -1,573 +1,425 @@
-<section class="pending-transfers" aria-label="Pending Property Transfers">
-  <!-- Header -->
-  <header class="page-header">
-    <div class="header-content">
-      <h1>Pending Transfers ({{ summary().pending }})</h1>
-      <p>Manage and approve asset transfer requests</p>
+<section class="transfers-page">
+
+  @if (notification(); as note) {
+    <div class="notification-banner" [class]="note.type" (click)="notification.set(null)">
+      <i class="bi {{ notificationIcon(note.type) }}"></i>
+      <span>{{ note.message }}</span>
+      <i class="bi bi-x close-notif"></i>
     </div>
-    <button type="button" class="action-btn secondary" (click)="refreshData()">
-      <i class="bi bi-arrow-repeat"></i>
-      Refresh
-    </button>
+  }
+
+  <header class="page-header">
+    <div class="header-icon">
+      <i class="bi bi-arrow-left-right"></i>
+    </div>
+    <div class="header-content">
+      <div class="header-text">
+        <h1>Pending Transfers</h1>
+        <p>{{ totalTransfers() }} transfer{{ totalTransfers() !== 1 ? 's' : '' }} — {{ pendingCount() }} pending approval</p>
+      </div>
+      @if (isMockBadge()) {
+        <div class="mock-badge">
+          <i class="bi bi-database-fill"></i> Sample Data
+        </div>
+      }
+    </div>
+    <div class="header-actions">
+      <button type="button" class="action-btn secondary" (click)="exportCSV()">
+        <i class="bi bi-download"></i> Export CSV
+      </button>
+    </div>
   </header>
 
-  <!-- Filter Bar -->
-  <section class="filter-bar" aria-label="Filter transfers">
-    <div class="filter-row">
-      <div class="search-box">
-        <i class="bi bi-search"></i>
-        <input 
-          type="text" 
-          placeholder="Search by property tag, requester, location..." 
-          [(ngModel)]="searchTerm"
-        >
-      </div>
+  @if (isLoading()) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading transfers...</p>
     </div>
-    <div class="filter-row">
-      <div class="filter-group">
-        <label>📅 Date:</label>
-        <input type="text" [(ngModel)]="dateFrom" class="date-input">
-        <span>to</span>
-        <input type="text" [(ngModel)]="dateTo" class="date-input">
-      </div>
-      <div class="filter-group">
-        <label>🏷️ Status:</label>
-        <select [(ngModel)]="statusFilter" class="filter-select">
-          <option value="All">All</option>
-          <option value="pending">Pending</option>
-          <option value="approved">Approved</option>
-          <option value="rejected">Rejected</option>
-          <option value="completed">Completed</option>
-        </select>
-      </div>
-      <div class="filter-group">
-        <label>🏭 From:</label>
-        <select [(ngModel)]="fromLocationFilter" class="filter-select">
-          <option value="All Locations">All Locations</option>
-          <option value="IT Department">IT Department</option>
-          <option value="HR Department">HR Department</option>
-          <option value="Warehouse">Warehouse</option>
-        </select>
-      </div>
-      <div class="filter-group">
-        <label>To:</label>
-        <select [(ngModel)]="toLocationFilter" class="filter-select">
-          <option value="All">All</option>
-          <option value="Branch Office">Branch Office</option>
-          <option value="Warehouse">Warehouse</option>
-          <option value="Data Center">Data Center</option>
-        </select>
-      </div>
-      <button type="button" class="action-btn primary" (click)="applyFilters()">Apply Filters</button>
-      <button type="button" class="action-btn secondary" (click)="resetFilters()">Reset</button>
-    </div>
-  </section>
+  }
 
-  <!-- Transfer Summary -->
-  <section class="transfer-summary" aria-label="Transfer Summary">
-    <h2>📊 TRANSFER SUMMARY</h2>
-    <div class="summary-grid">
-      <div class="summary-card">
-        <p class="summary-label">Total Transfers</p>
-        <p class="summary-value">{{ summary().totalTransfers }}</p>
-        <p class="summary-sub">this month</p>
-      </div>
-      <div class="summary-card">
-        <p class="summary-label">Pending Approval</p>
-        <p class="summary-value">{{ summary().pending }}</p>
-        <p class="summary-sub urgent">🔴 Urgent: {{ summary().urgent }}</p>
-      </div>
-      <div class="summary-card">
-        <p class="summary-label">Approved</p>
-        <p class="summary-value">{{ summary().approved }}</p>
-        <p class="summary-sub positive">▲ +20%</p>
-      </div>
-      <div class="summary-card">
-        <p class="summary-label">Completed This Month</p>
-        <p class="summary-value">{{ summary().completed }}</p>
-        <p class="summary-sub positive">▲ +15%</p>
-      </div>
-    </div>
-  </section>
+  @if (!isLoading()) {
 
-  <!-- Pending Transfers List -->
-  <section class="transfers-list" aria-label="Pending Transfers List">
-    <h2>⏳ PENDING TRANSFERS LIST ({{ filteredTransfers().length }})</h2>
-    
-    @for (transfer of filteredTransfers(); track transfer.id) {
-      <article class="transfer-card {{ getPriorityColor(transfer.priority) }}">
-        <div class="transfer-header">
-          <h3>{{ getPriorityEmoji(transfer.priority) }} {{ transfer.id }}</h3>
-          <span class="requested-by">Requested By: {{ transfer.requestedBy }}</span>
-          <span class="requested-date">Requested Date: {{ transfer.requestedDate }}</span>
+    <section class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon violet">
+          <i class="bi bi-arrow-left-right"></i>
         </div>
-        
-        <div class="transfer-details">
-          <div class="detail-row">
-            <span class="detail-label">Property:</span>
-            <span class="detail-value">{{ transfer.property.name }} ({{ transfer.property.tag }})</span>
-          </div>
-          <div class="detail-row">
-            <span class="detail-label">From:</span>
-            <span class="detail-value">{{ transfer.from.location }}</span>
-          </div>
-          <div class="detail-row">
-            <span class="detail-label">To:</span>
-            <span class="detail-value">{{ transfer.to.location }}</span>
-          </div>
-          <div class="detail-row">
-            <span class="detail-label">Reason:</span>
-            <span class="detail-value">{{ transfer.reason }}</span>
-          </div>
-          <div class="detail-row">
-            <span class="detail-label">Required By:</span>
-            <span class="detail-value">{{ transfer.requiredBy }}</span>
-          </div>
+        <div class="stat-info">
+          <span class="stat-label">Total Transfers</span>
+          <span class="stat-value">{{ totalTransfers() }}</span>
         </div>
-        
-        <div class="transfer-actions">
-          <button type="button" class="action-btn secondary small" (click)="openDetailsModal(transfer)">
-            View Details
-          </button>
-          <button type="button" class="action-btn primary small" (click)="openApproveModal(transfer)">
-            Approve
-          </button>
-          <button type="button" class="action-btn danger small" (click)="rejectTransfer(transfer.id)">
-            Reject
-          </button>
-          <button type="button" class="action-btn secondary small">
-            Request Info
-          </button>
+        <span class="stat-trend">All time</span>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon amber">
+          <i class="bi bi-hourglass-split"></i>
         </div>
-      </article>
+        <div class="stat-info">
+          <span class="stat-label">Pending Approval</span>
+          <span class="stat-value">{{ pendingCount() }}</span>
+        </div>
+        <span class="stat-trend">Awaiting decision</span>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon green">
+          <i class="bi bi-check-circle"></i>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Approved</span>
+          <span class="stat-value">{{ approvedCount() }}</span>
+        </div>
+        <span class="stat-trend">{{ approvedPct() }}% of total</span>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon red">
+          <i class="bi bi-exclamation-triangle-fill"></i>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Urgent</span>
+          <span class="stat-value">{{ urgentCount() }}</span>
+        </div>
+        <span class="stat-trend">High priority</span>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon blue">
+          <i class="bi bi-check2-all"></i>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Completed</span>
+          <span class="stat-value">{{ completedCount() }}</span>
+        </div>
+        <span class="stat-trend">Successfully transferred</span>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon rose">
+          <i class="bi bi-x-circle"></i>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Rejected</span>
+          <span class="stat-value">{{ rejectedCount() }}</span>
+        </div>
+        <span class="stat-trend">Declined requests</span>
+      </div>
+    </section>
+
+    <section class="filter-bar">
+      <div class="filter-row">
+        <div class="search-box">
+          <i class="bi bi-search"></i>
+          <input type="text" placeholder="Search by ID, property, requester, or location..."
+            [ngModel]="searchTerm()" (ngModelChange)="onSearchInput($event)">
+        </div>
+        <div class="filter-group">
+          <label>Status</label>
+          <select class="filter-select" [ngModel]="statusFilter()" (ngModelChange)="onStatusFilterChange($event)">
+            @for (s of statuses; track s) {
+              <option [value]="s">{{ s === 'All' ? 'All Statuses' : (s.charAt(0).toUpperCase() + s.slice(1)) }}</option>
+            }
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>Priority</label>
+          <select class="filter-select" [ngModel]="priorityFilter()" (ngModelChange)="onPriorityFilterChange($event)">
+            @for (p of priorities; track p) {
+              <option [value]="p">{{ p === 'All' ? 'All Priorities' : (p.charAt(0).toUpperCase() + p.slice(1)) }}</option>
+            }
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>From</label>
+          <select class="filter-select" [ngModel]="fromLocationFilter()" (ngModelChange)="onFromLocationChange($event)">
+            @for (loc of fromLocations(); track loc) {
+              <option [value]="loc">{{ loc === 'All' ? 'All Locations' : loc }}</option>
+            }
+          </select>
+        </div>
+        <button type="button" class="icon-btn" (click)="clearFilters()" title="Clear filters">
+          <i class="bi bi-x-circle"></i>
+        </button>
+      </div>
+      @if (hasActiveFilters()) {
+        <div class="active-filters">
+          <span class="filter-chip">{{ filteredTransfers().length }} result{{ filteredTransfers().length !== 1 ? 's' : '' }}</span>
+        </div>
+      }
+    </section>
+
+    @if (filteredTransfers().length === 0) {
+      <div class="empty-state-card">
+        <i class="bi bi-arrow-left-right"></i>
+        <h3>No transfers found</h3>
+        <p>Try adjusting filters or submit a new transfer request.</p>
+        @if (hasActiveFilters()) {
+          <button class="action-btn secondary" (click)="clearFilters()">Clear Filters</button>
+        }
+      </div>
+    } @else {
+      <div class="panel">
+        <div class="data-table">
+          <table>
+            <thead>
+              <tr>
+                <th>Transfer ID</th>
+                <th>Property</th>
+                <th>From</th>
+                <th>To</th>
+                <th>Requested By</th>
+                <th>Required By</th>
+                <th>Priority</th>
+                <th>Status</th>
+                <th class="text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (t of pagedTransfers(); track t.id) {
+                <tr>
+                  <td>
+                    <div class="cell-name" (click)="openDetailModal(t)" style="cursor:pointer">
+                      <div class="cell-icon"><i class="bi bi-arrow-left-right"></i></div>
+                      <div>
+                        <span class="name">{{ t.id }}</span>
+                        <span class="meta">{{ formatDate(t.requestedDate) }}</span>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="prop-info">
+                      <span class="prop-name">{{ t.propertyName }}</span>
+                      <span class="prop-tag">{{ t.tagNumber }}</span>
+                    </div>
+                  </td>
+                  <td class="loc-cell" [title]="t.fromDetails">{{ t.fromLocation }}</td>
+                  <td class="loc-cell" [title]="t.toDetails">{{ t.toLocation }}</td>
+                  <td>{{ t.requestedBy }}</td>
+                  <td>{{ formatDate(t.requiredByDate) }}</td>
+                  <td>
+                    <span class="status-badge {{ getPriorityBadgeClass(t.priority) }}">
+                      <i class="bi {{ getPriorityIcon(t.priority) }}"></i>
+                      {{ t.priority }}
+                    </span>
+                  </td>
+                  <td>
+                    <span class="status-badge {{ getStatusBadgeClass(t.status) }}">
+                      <i class="bi {{ getStatusIcon(t.status) }}"></i>
+                      {{ t.status }}
+                    </span>
+                  </td>
+                  <td class="text-right">
+                    <div class="row-actions">
+                      <button class="icon-btn" (click)="openDetailModal(t)" title="View"><i class="bi bi-eye"></i></button>
+                      @if (t.status === 'pending') {
+                        <button class="icon-btn" (click)="openApproveModal(t)" title="Approve"><i class="bi bi-check-lg" style="color:#16a34a"></i></button>
+                        <button class="icon-btn danger" (click)="rejectTransfer(t)" title="Reject"><i class="bi bi-x-lg"></i></button>
+                      }
+                      <button class="icon-btn danger" (click)="openDeleteModal(t)" title="Delete"><i class="bi bi-trash"></i></button>
+                    </div>
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="9" class="empty-state">
+                    <i class="bi bi-inbox"></i>
+                    <p>No transfers found</p>
+                    @if (hasActiveFilters()) {
+                      <button class="action-btn secondary" (click)="clearFilters()">Clear Filters</button>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        @if (totalPages() > 1) {
+          <div class="pagination-bar">
+            <span class="page-info">Page {{ page() }} of {{ totalPages() }} ({{ filteredTransfers().length }} total)</span>
+            <div class="page-controls">
+              <button class="icon-btn" [disabled]="page() === 1" (click)="goToPage(page() - 1)">
+                <i class="bi bi-chevron-left"></i>
+              </button>
+              @for (p of [].constructor(totalPages()); track $index) {
+                <button class="page-btn" [class.active]="page() === $index + 1" (click)="goToPage($index + 1)">
+                  {{ $index + 1 }}
+                </button>
+              }
+              <button class="icon-btn" [disabled]="page() === totalPages()" (click)="goToPage(page() + 1)">
+                <i class="bi bi-chevron-right"></i>
+              </button>
+            </div>
+          </div>
+        }
+      </div>
     }
-  </section>
-
-  <!-- Bulk Actions -->
-  <section class="bulk-actions" aria-label="Bulk Actions">
-    <h2>⚡ BULK ACTIONS</h2>
-    <div class="bulk-options">
-      <label class="checkbox-label">
-        <input type="checkbox">
-        <span>Select All</span>
-      </label>
-      <label class="checkbox-label">
-        <input type="checkbox">
-        <span>Urgent Only</span>
-      </label>
-      <label class="checkbox-label">
-        <input type="checkbox">
-        <span>High Priority</span>
-      </label>
-    </div>
-    <div class="bulk-buttons">
-      <button type="button" class="action-btn primary">Bulk Approve</button>
-      <button type="button" class="action-btn danger">Bulk Reject</button>
-      <button type="button" class="action-btn secondary">Export List</button>
-    </div>
-  </section>
-
-  <!-- Completed Transfers History -->
-  <section class="history-section" aria-label="Transfer History">
-    <div class="section-header">
-      <h2>Transfer History</h2>
-      <button type="button" class="action-btn secondary">Export</button>
-    </div>
-    
-    <div class="history-filter">
-      <div class="search-box">
-        <i class="bi bi-search"></i>
-        <input type="text" placeholder="Search transfer history...">
-      </div>
-      <select class="filter-select">
-        <option>Last 30 days</option>
-        <option>Last 7 days</option>
-        <option>Last 90 days</option>
-        <option>This year</option>
-      </select>
-    </div>
-
-    <div class="history-stats">
-      <div class="stat-card">
-        <p class="stat-label">Total Transfers</p>
-        <p class="stat-value">23</p>
-        <p class="stat-sub">this month</p>
-      </div>
-      <div class="stat-card">
-        <p class="stat-label">Avg. Processing</p>
-        <p class="stat-value">2.4 days</p>
-        <p class="stat-sub">▲ -0.5 days</p>
-      </div>
-      <div class="stat-card">
-        <p class="stat-label">Most Active Requester</p>
-        <p class="stat-value">John Doe</p>
-        <p class="stat-sub">(5 requests)</p>
-      </div>
-      <div class="stat-card">
-        <p class="stat-label">Most Transferred Property</p>
-        <p class="stat-value">Office Chair (TAG-003)</p>
-        <p class="stat-sub">(3 times)</p>
-      </div>
-    </div>
-
-    <div class="history-table">
-      <table>
-        <thead>
-          <tr>
-            <th>Transfer #</th>
-            <th>Date</th>
-            <th>Property</th>
-            <th>From → To</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (transfer of completedTransfers(); track transfer.id) {
-            <tr>
-              <td>{{ transfer.id }}</td>
-              <td>{{ transfer.date }}</td>
-              <td>{{ transfer.property }}</td>
-              <td>{{ transfer.fromTo }}</td>
-              <td><span class="status-badge completed">✅</span></td>
-            </tr>
-          }
-        </tbody>
-      </table>
-      <p class="table-footer">Showing 1-{{ completedTransfers().length }} of 23 transfers</p>
-    </div>
-  </section>
-
-  <!-- Transfer Details Modal -->
-  @if (showDetailsModal() && selectedTransfer()) {
-    <div class="modal-overlay" (click)="closeModals()">
-      <div class="modal-content" (click)="$event.stopPropagation()">
-        <div class="modal-header">
-          <h2>Transfer Request Details - {{ selectedTransfer()!.id }}</h2>
-          <button type="button" class="close-btn" (click)="closeModals()">
-            <i class="bi bi-x-lg"></i>
-          </button>
-        </div>
-
-        <div class="modal-body">
-          <!-- Request Information -->
-          <section class="modal-section">
-            <h3>REQUEST INFORMATION</h3>
-            <div class="info-grid">
-              <div class="info-item">
-                <span class="info-label">Transfer ID:</span>
-                <span class="info-value">{{ selectedTransfer()!.id }}</span>
-              </div>
-              <div class="info-item">
-                <span class="info-label">Requested By:</span>
-                <span class="info-value">{{ selectedTransfer()!.requestedBy }}</span>
-              </div>
-              <div class="info-item">
-                <span class="info-label">Requested Date:</span>
-                <span class="info-value">{{ selectedTransfer()!.requestedDate }} 09:30 AM</span>
-              </div>
-              <div class="info-item">
-                <span class="info-label">Priority:</span>
-                <span class="info-value">{{ getPriorityEmoji(selectedTransfer()!.priority) }} {{ selectedTransfer()!.priority }}</span>
-              </div>
-              <div class="info-item">
-                <span class="info-label">Required By:</span>
-                <span class="info-value">{{ selectedTransfer()!.requiredBy }}</span>
-              </div>
-              <div class="info-item">
-                <span class="info-label">Status:</span>
-                <span class="info-value">⏳ Pending Approval</span>
-              </div>
-            </div>
-          </section>
-
-          <!-- Property Details -->
-          <section class="modal-section">
-            <h3>📦 PROPERTY DETAILS</h3>
-            <div class="info-grid">
-              <div class="info-item">
-                <span class="info-label">Tag Number:</span>
-                <span class="info-value">{{ selectedTransfer()!.property.tag }}</span>
-              </div>
-              <div class="info-item">
-                <span class="info-label">Property Name:</span>
-                <span class="info-value">{{ selectedTransfer()!.property.name }}</span>
-              </div>
-              <div class="info-item">
-                <span class="info-label">Serial Number:</span>
-                <span class="info-value">C02XK2L8Q6PJ</span>
-              </div>
-              <div class="info-item">
-                <span class="info-label">Current Value:</span>
-                <span class="info-value">$2,499</span>
-              </div>
-              <div class="info-item">
-                <span class="info-label">Condition:</span>
-                <span class="info-value">Excellent</span>
-              </div>
-              <div class="info-item">
-                <span class="info-label">Warranty:</span>
-                <span class="info-value">Active until Nov 14, 2026</span>
-              </div>
-            </div>
-            <button type="button" class="action-btn secondary small">View Full Property Details →</button>
-          </section>
-
-          <!-- Location Change -->
-          <section class="modal-section">
-            <h3>📍 LOCATION CHANGE</h3>
-            <div class="location-change">
-              <div class="location-box from">
-                <h4>FROM:</h4>
-                <div class="location-details">
-                  <p>🏢 {{ selectedTransfer()!.from.location }}</p>
-                  <p>{{ selectedTransfer()!.from.details }}</p>
-                  <p>Safety Box: SAF-001</p>
-                  <p>Shelf: Shelf-03</p>
-                </div>
-              </div>
-              <div class="arrow">─▶</div>
-              <div class="location-box to">
-                <h4>TO:</h4>
-                <div class="location-details">
-                  <p>🏢 {{ selectedTransfer()!.to.location }}</p>
-                  <p>{{ selectedTransfer()!.to.details }}</p>
-                  <p>Safety Box: SAF-008</p>
-                  <p>Shelf: Shelf-01</p>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <!-- Reason & Justification -->
-          <section class="modal-section">
-            <h3>📝 REASON & JUSTIFICATION</h3>
-            <div class="text-content">
-              <p>{{ selectedTransfer()!.reason }}</p>
-            </div>
-          </section>
-
-          <!-- Supporting Documents -->
-          <section class="modal-section">
-            <h3>📎 SUPPORTING DOCUMENTS</h3>
-            <div class="documents-list">
-              <div class="document-item">
-                <span>📄 Transfer_Approval_IT_Dept.pdf</span>
-                <div class="doc-actions">
-                  <button type="button" class="action-btn secondary small">View</button>
-                  <button type="button" class="action-btn secondary small">Download</button>
-                </div>
-              </div>
-              <div class="document-item">
-                <span>📄 Staff_Transfer_Letter.pdf</span>
-                <div class="doc-actions">
-                  <button type="button" class="action-btn secondary small">View</button>
-                  <button type="button" class="action-btn secondary small">Download</button>
-                </div>
-              </div>
-            </div>
-            <button type="button" class="action-btn secondary small">+ Add Document</button>
-          </section>
-
-          <!-- Transfer History -->
-          <section class="modal-section">
-            <h3>📜 TRANSFER HISTORY</h3>
-            <div class="text-content">
-              <p>This property has been transferred 2 times previously:</p>
-              <ul>
-                <li>• Jan 2023: Warehouse A → IT Department</li>
-                <li>• Mar 2022: Storage → Warehouse A</li>
-              </ul>
-            </div>
-          </section>
-
-          <!-- Approval Decision -->
-          <section class="modal-section">
-            <h3>APPROVAL DECISION</h3>
-            <div class="approval-options">
-              <label class="radio-label">
-                <input type="radio" name="decision" value="approve">
-                <span>Approve</span>
-              </label>
-              <label class="radio-label">
-                <input type="radio" name="decision" value="conditional">
-                <span>Approve with Conditions</span>
-              </label>
-              <label class="radio-label">
-                <input type="radio" name="decision" value="reject" checked>
-                <span>Reject</span>
-              </label>
-            </div>
-            <div class="rejection-reason">
-              <label>Rejection Reason:</label>
-              <textarea rows="3">Branch office does not have secure storage for this equipment. Please reconsider or arrange for safe storage before transfer.</textarea>
-            </div>
-          </section>
-        </div>
-
-        <div class="modal-footer">
-          <button type="button" class="action-btn secondary" (click)="closeModals()">Cancel</button>
-          <button type="button" class="action-btn primary">Submit Decision</button>
-        </div>
-      </div>
-    </div>
   }
 
-  <!-- Approve Transfer Modal -->
-  @if (showApproveModal() && selectedTransfer()) {
-    <div class="modal-overlay" (click)="closeModals()">
-      <div class="modal-content" (click)="$event.stopPropagation()">
-        <div class="modal-header">
-          <h2>Approve Transfer Request</h2>
-          <button type="button" class="close-btn" (click)="closeModals()">
-            <i class="bi bi-x-lg"></i>
-          </button>
-        </div>
-
-        <div class="modal-body">
-          <p class="transfer-info">
-            Transfer ID: {{ selectedTransfer()!.id }}<br>
-            Property: {{ selectedTransfer()!.property.name }} ({{ selectedTransfer()!.property.tag }})
-          </p>
-
-          <section class="modal-section">
-            <h3>APPROVAL DETAILS</h3>
-            <div class="form-grid">
-              <div class="form-group">
-                <label>Approved By:</label>
-                <select class="form-select">
-                  <option>John Doe (Property Admin)</option>
-                  <option>Sarah Smith (Manager)</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label>Approved Date:</label>
-                <input type="text" class="form-input" value="Dec 15, 2024">
-              </div>
-              <div class="form-group">
-                <label>Effective Date:</label>
-                <input type="text" class="form-input" value="Dec 16, 2024">
-              </div>
-            </div>
-          </section>
-
-          <section class="modal-section">
-            <h3>CONDITIONS (Optional)</h3>
-            <div class="checkbox-list">
-              <label class="checkbox-label">
-                <input type="checkbox" checked>
-                <span>Notify requester via email</span>
-              </label>
-              <label class="checkbox-label">
-                <input type="checkbox" checked>
-                <span>Notify receiving location manager</span>
-              </label>
-              <label class="checkbox-label">
-                <input type="checkbox">
-                <span>Require sign-off from receiving department</span>
-              </label>
-              <label class="checkbox-label">
-                <input type="checkbox">
-                <span>Schedule security audit after transfer</span>
-              </label>
-            </div>
-          </section>
-
-          <section class="modal-section">
-            <h3>COMMENTS</h3>
-            <textarea class="form-textarea" rows="3">Approved as requested. Ensure proper documentation at receiving end.</textarea>
-          </section>
-        </div>
-
-        <div class="modal-footer">
-          <button type="button" class="action-btn secondary" (click)="closeModals()">Cancel</button>
-          <button type="button" class="action-btn primary" (click)="approveTransfer()">Confirm Approval</button>
-        </div>
+  @if (loadError(); as err) {
+    @if (!isLoading()) {
+      <div class="error-banner">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+        <span>{{ err }}</span>
+        <button class="action-btn secondary" (click)="loadData()">
+          <i class="bi bi-arrow-clockwise"></i> Retry
+        </button>
       </div>
-    </div>
+    }
   }
 
-  <!-- Create Transfer Request Modal -->
-  @if (showCreateModal()) {
-    <div class="modal-overlay" (click)="closeModals()">
-      <div class="modal-content large" (click)="$event.stopPropagation()">
-        <div class="modal-header">
-          <h2>Request Property Transfer</h2>
-          <button type="button" class="close-btn" (click)="closeModals()">
-            <i class="bi bi-x-lg"></i>
-          </button>
-        </div>
-
-        <div class="modal-body">
-          <!-- Step 1: Select Property -->
-          <section class="modal-section">
-            <h3>Step 1 of 3: Select Property</h3>
-            <div class="search-box">
-              <i class="bi bi-search"></i>
-              <input type="text" placeholder="Search property by Tag #, Name, or Serial...">
-            </div>
-            <div class="property-selection">
-              <label class="checkbox-label card-checkbox">
-                <input type="checkbox" checked>
-                <div class="property-card">
-                  <strong>TAG-001 - Dell XPS Laptop</strong>
-                  <p>Current Location: IT Department, HQ Floor 1</p>
-                  <p>Status: Active</p>
-                </div>
-              </label>
-            </div>
-          </section>
-
-          <!-- Step 2: Select Destination -->
-          <section class="modal-section">
-            <h3>Step 2 of 3: Select Destination</h3>
-            <div class="destination-selection">
-              <div class="from-location">
-                <label>From Location:</label>
-                <p>IT Department, HQ Floor 1 (Current)</p>
-              </div>
-              <div class="arrow-down">↓</div>
-              <div class="to-location">
-                <label>To Location *</label>
-                <select class="form-select">
-                  <option>Branch Office - Marketing Dept</option>
-                  <option>Warehouse A - Aisle B</option>
-                  <option>Data Center - HQ Floor 2</option>
-                </select>
-              </div>
-            </div>
-          </section>
-
-          <!-- Step 3: Transfer Details -->
-          <section class="modal-section">
-            <h3>Step 3 of 3: Transfer Details</h3>
-            <div class="form-group">
-              <label>Reason for Transfer *</label>
-              <input type="text" class="form-input" value="Staff relocation to Branch Office">
-            </div>
-            <div class="form-group">
-              <label>Required By Date *</label>
-              <input type="text" class="form-input" value="Dec 20, 2024">
-            </div>
-            <div class="form-group">
-              <label>Priority *</label>
-              <select class="form-select">
-                <option>🔴 Urgent</option>
-                <option>🟡 Medium</option>
-                <option>🟢 Normal</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>Additional Comments (Optional)</label>
-              <textarea class="form-textarea" rows="2">Equipment needed for new hire at branch office</textarea>
-            </div>
-          </section>
-        </div>
-
-        <div class="modal-footer">
-          <button type="button" class="action-btn secondary" (click)="closeModals()">Cancel</button>
-          <button type="button" class="action-btn primary">Submit Transfer Request</button>
-        </div>
-      </div>
-    </div>
-  }
 </section>
+
+@if (showModal()) {
+  <div class="modal-overlay" (click)="closeModal()">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+
+      @if (modalMode() === 'detail') {
+        @let t = selectedTransfer();
+        @if (t) {
+          <div class="modal-header">
+            <h2><i class="bi bi-arrow-left-right"></i> {{ t.id }}</h2>
+            <button class="icon-btn" (click)="closeModal()"><i class="bi bi-x-lg"></i></button>
+          </div>
+          <div class="modal-body">
+            <div class="detail-grid">
+              <div class="detail-field full-width">
+                <span class="detail-label">Transfer ID</span>
+                <span class="detail-value monospace">{{ t.id }}</span>
+              </div>
+              <div class="detail-field">
+                <span class="detail-label">Status</span>
+                <span class="detail-value">
+                  <span class="status-badge {{ getStatusBadgeClass(t.status) }}">
+                    <i class="bi {{ getStatusIcon(t.status) }}"></i> {{ t.status }}
+                  </span>
+                </span>
+              </div>
+              <div class="detail-field">
+                <span class="detail-label">Priority</span>
+                <span class="detail-value">
+                  <span class="status-badge {{ getPriorityBadgeClass(t.priority) }}">
+                    <i class="bi {{ getPriorityIcon(t.priority) }}"></i> {{ t.priority }}
+                  </span>
+                </span>
+              </div>
+              <div class="detail-field full-width">
+                <span class="detail-label">Property</span>
+                <span class="detail-value">{{ t.propertyName }} ({{ t.tagNumber }}) — {{ t.propertyCategory }}</span>
+              </div>
+              <div class="detail-field">
+                <span class="detail-label">Requested By</span>
+                <span class="detail-value">{{ t.requestedBy }}</span>
+              </div>
+              <div class="detail-field">
+                <span class="detail-label">Department</span>
+                <span class="detail-value">{{ t.requesterDepartment }}</span>
+              </div>
+              <div class="detail-field">
+                <span class="detail-label">Requested Date</span>
+                <span class="detail-value">{{ formatDate(t.requestedDate) }}</span>
+              </div>
+              <div class="detail-field">
+                <span class="detail-label">Required By</span>
+                <span class="detail-value">{{ formatDate(t.requiredByDate) }}</span>
+              </div>
+            </div>
+
+            <div class="detail-section">
+              <h4><i class="bi bi-geo-alt"></i> From Location</h4>
+              <div class="loc-detail-card">
+                <span class="loc-name">{{ t.fromLocation }}</span>
+                <span class="loc-desc">{{ t.fromDetails }}</span>
+              </div>
+            </div>
+
+            <div class="detail-section">
+              <h4><i class="bi bi-geo-alt-fill"></i> To Location</h4>
+              <div class="loc-detail-card">
+                <span class="loc-name">{{ t.toLocation }}</span>
+                <span class="loc-desc">{{ t.toDetails }}</span>
+              </div>
+            </div>
+
+            <div class="detail-section">
+              <h4><i class="bi bi-card-text"></i> Reason</h4>
+              <div class="reason-card">
+                <p>{{ t.reason }}</p>
+              </div>
+            </div>
+
+            @if (t.comments) {
+              <div class="detail-section">
+                <h4><i class="bi bi-chat-dots"></i> Comments</h4>
+                <div class="reason-card">
+                  <p>{{ t.comments }}</p>
+                </div>
+              </div>
+            }
+          </div>
+          <div class="modal-footer">
+            <button class="action-btn secondary" (click)="closeModal()">Close</button>
+            @if (t.status === 'pending') {
+              <button class="action-btn primary" (click)="openApproveModal(t)"><i class="bi bi-check-lg"></i> Approve</button>
+            }
+          </div>
+        }
+      }
+
+      @if (modalMode() === 'approve') {
+        @let t = selectedTransfer();
+        @if (t) {
+          <div class="modal-header">
+            <h2><i class="bi bi-check-circle"></i> Approve Transfer</h2>
+            <button class="icon-btn" (click)="closeModal()"><i class="bi bi-x-lg"></i></button>
+          </div>
+          <div class="modal-body">
+            <div class="approve-summary">
+              <div class="approve-row">
+                <span class="approve-label">Transfer ID:</span>
+                <span class="approve-value monospace">{{ t.id }}</span>
+              </div>
+              <div class="approve-row">
+                <span class="approve-label">Property:</span>
+                <span class="approve-value">{{ t.propertyName }} ({{ t.tagNumber }})</span>
+              </div>
+              <div class="approve-row">
+                <span class="approve-label">From:</span>
+                <span class="approve-value">{{ t.fromLocation }}</span>
+              </div>
+              <div class="approve-row">
+                <span class="approve-label">To:</span>
+                <span class="approve-value">{{ t.toLocation }}</span>
+              </div>
+            </div>
+            <div class="form-field">
+              <label for="comments">Approval Comments</label>
+              <textarea id="comments" [(ngModel)]="approveComments" rows="3" placeholder="Optional approval notes..."></textarea>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="action-btn secondary" (click)="closeModal()">Cancel</button>
+            <button class="action-btn primary" (click)="approveTransfer()">
+              <i class="bi bi-check-lg"></i> Confirm Approval
+            </button>
+          </div>
+        }
+      }
+
+      @if (modalMode() === 'delete') {
+        @let t = transferToDelete();
+        @if (t) {
+          <div class="modal-header">
+            <h2><i class="bi bi-exclamation-triangle" style="color:#dc2626"></i> Confirm Delete</h2>
+            <button class="icon-btn" (click)="closeModal()"><i class="bi bi-x-lg"></i></button>
+          </div>
+          <div class="modal-body delete-body">
+            <div class="delete-icon"><i class="bi bi-trash3-fill"></i></div>
+            <p class="delete-warning">Delete transfer <strong>"{{ t.id }}"</strong>?</p>
+            <p class="delete-hint">This will permanently remove this transfer record from the system.</p>
+          </div>
+          <div class="modal-footer">
+            <button class="action-btn secondary" (click)="closeModal()">Cancel</button>
+            <button class="action-btn danger" (click)="confirmDelete()"><i class="bi bi-trash"></i> Delete</button>
+          </div>
+        }
+      }
+
+    </div>
+  </div>
+}

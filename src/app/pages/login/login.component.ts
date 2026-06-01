@@ -11,6 +11,6 @@ export class LoginComponent implements OnInit {
   private readonly router = inject(Router);
 
   ngOnInit(): void {
-    void this.router.navigateByUrl('/auth/login');
+    // Removed forced redirect to /auth/login so /auth/login/:role works
   }
 }

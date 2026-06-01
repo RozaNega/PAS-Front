@@ -1,18 +1,101 @@
-﻿<div class="property-types-container">
-  <div class="page-header">
-    <div class="header-info">
+﻿<div class="types-container">
+  <div class="page-header gradient-header">
+    <div class="header-icon">
+      <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M4 7V4h16v3M4 7v9h16V7M4 7h16M9 20h6M12 17v3"/>
+      </svg>
+    </div>
+    <div class="header-content">
       <h1>Property Types</h1>
       <p class="subtitle">Define and manage asset categories</p>
     </div>
-    <button class="btn btn-primary" (click)="openAddModal()">
-      <i class="bi bi-plus-lg"></i> Add Type
-    </button>
+    <div class="header-actions">
+      <button class="btn btn-primary" (click)="openAddModal()">
+        <i class="bi bi-plus-lg"></i> Add Type
+      </button>
+    </div>
+  </div>
+
+  @if (notification(); as notif) {
+    <div class="notification-banner" [class.success]="notif.type === 'success'" [class.error]="notif.type === 'error'" [class.info]="notif.type === 'info'">
+      <i class="bi" [class.bi-check-circle-fill]="notif.type === 'success'" [class.bi-exclamation-circle-fill]="notif.type === 'error'" [class.bi-info-circle-fill]="notif.type === 'info'"></i>
+      <span>{{ notif.message }}</span>
+      <button class="notif-close" (click)="notification.set(null)">
+        <i class="bi bi-x"></i>
+      </button>
+    </div>
+  }
+
+  <div class="stat-cards">
+    @for (card of statCards(); track card.label) {
+      <div class="stat-card">
+        <div class="stat-icon" [style.background]="card.color + '15'" [style.color]="card.color">
+          <i class="bi" [class.bi-layers]="card.icon === 'bi-layers'" [class.bi-check-circle]="card.icon === 'bi-check-circle'" [class.bi-pause-circle]="card.icon === 'bi-pause-circle'" [class.bi-list-ul]="card.icon === 'bi-list-ul'" [class.bi-box]="card.icon === 'bi-box'" [class.bi-star]="card.icon === 'bi-star'"></i>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">{{ card.label }}</span>
+          <span class="stat-value">{{ card.value }}</span>
+          <div class="micro-bar">
+            <div class="micro-fill" [style.width.%]="card.pct" [style.background]="card.color"></div>
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+
+  <div class="charts-row">
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <span class="chart-card-title">Status Distribution</span>
+        <span class="chart-card-badge">{{ filteredTypes().length }} types</span>
+      </div>
+      <div class="chart-card-body">
+        <div class="donut-section">
+          <svg viewBox="0 0 130 130" class="donut-svg">
+            @for (seg of donutSegments(); track seg.label) {
+              <circle r="50" cx="65" cy="65" fill="transparent" [attr.stroke]="seg.color" stroke-width="22" [attr.stroke-dasharray]="seg.dashArray" [attr.stroke-dashoffset]="seg.dashOffset" transform="rotate(-90 65 65)" class="donut-segment" />
+            }
+            <text x="65" y="55" text-anchor="middle" class="donut-value">{{ filteredTypes().length }}</text>
+            <text x="65" y="72" text-anchor="middle" class="donut-label">Types</text>
+          </svg>
+          <div class="donut-legend">
+            @for (seg of donutSegments(); track seg.label) {
+              <div class="legend-item">
+                <span class="legend-dot" [style.background]="seg.color"></span>
+                <span class="legend-label">{{ seg.label }}</span>
+                <span class="legend-value">{{ seg.value }}</span>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="chart-card wide-chart">
+      <div class="chart-card-header">
+        <span class="chart-card-title">Property Count by Type</span>
+        <span class="chart-card-badge">{{ propertyCountBars().length }} types</span>
+      </div>
+      <div class="chart-card-body">
+        @for (item of propertyCountBars(); track item.name) {
+          <div class="bar-item">
+            <div class="bar-label">
+              <span>{{ item.name }}</span>
+              <span>{{ item.value | number }}</span>
+            </div>
+            <div class="bar-track">
+              <div class="bar-fill" [style.width.%]="item.pct" [style.background]="item.color"></div>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
   </div>
 
   <div class="filter-bar">
     <div class="search-box">
       <i class="bi bi-search"></i>
-      <input type="text" [value]="searchTerm()" (input)="onSearchChange($any($event.target).value)" placeholder="Search property types...">
+      <input type="text" (input)="onSearchChange($event)" [value]="searchTerm()" placeholder="Search property types...">
     </div>
     <div class="filter-buttons">
       <button class="btn-filter" [class.active]="statusFilter() === 'All'" (click)="onStatusFilterChange('All')">All</button>
@@ -22,48 +105,54 @@
   </div>
 
   <div class="table-container">
-    <table class="types-table">
+    <table class="data-table">
       <thead>
         <tr>
           <th>Type Name</th>
-          <th>Properties Count</th>
+          <th>Properties</th>
           <th>Custom Fields</th>
           <th>Status</th>
-          <th>Actions</th>
+          <th class="actions-col">Actions</th>
         </tr>
       </thead>
       <tbody>
         @for (type of filteredTypes(); track type.id) {
           <tr>
             <td>
-              <div class="type-name">
-                <span class="type-icon">{{ type.icon }}</span>
-                <span>{{ type.name }}</span>
+              <div class="type-cell">
+                <span class="type-avatar">{{ getTypeInitials(type.name) }}</span>
+                <div>
+                  <span class="type-name">{{ type.name }}</span>
+                  <span class="type-icon-text">{{ type.icon }} {{ type.name }}</span>
+                </div>
               </div>
             </td>
-            <td>{{ type.propertiesCount }}</td>
+            <td><span class="count-badge">{{ type.propertiesCount | number }}</span></td>
             <td>{{ type.customFields }} fields</td>
             <td>
-              <span class="badge" [class.badge-green]="type.status === 'Active'" [class.badge-yellow]="type.status === 'Inactive'">
+              <span class="status-pill" [class.active]="type.status === 'Active'" [class.inactive]="type.status === 'Inactive'">
+                <i class="bi" [class.bi-check-circle-fill]="type.status === 'Active'" [class.bi-pause-circle-fill]="type.status === 'Inactive'"></i>
                 {{ type.status }}
               </span>
             </td>
-            <td>
-              <div class="actions-cell">
-                <button class="action-btn" (click)="openEditModal(type)" title="Edit">
-                  <i class="bi bi-pencil"></i>
-                </button>
-                <button class="action-btn" (click)="duplicateType(type)" title="Duplicate">
-                  <i class="bi bi-copy"></i>
-                </button>
-                <button class="action-btn" (click)="toggleStatus(type.id)" title="Toggle Status">
-                  <i class="bi bi-power"></i>
-                </button>
-                <button class="action-btn delete" (click)="deleteType(type.id)" title="Delete">
-                  <i class="bi bi-trash"></i>
-                </button>
-              </div>
+            <td class="actions-cell">
+              <button class="action-btn" (click)="openEditModal(type)" title="Edit">
+                <i class="bi bi-pencil"></i>
+              </button>
+              <button class="action-btn" (click)="duplicateType(type)" title="Duplicate">
+                <i class="bi bi-copy"></i>
+              </button>
+              <button class="action-btn" (click)="toggleStatus(type.id)" title="Toggle Status">
+                <i class="bi bi-power"></i>
+              </button>
+              <button class="action-btn delete-btn" (click)="requestDelete(type.id)" title="Delete">
+                <i class="bi bi-trash"></i>
+              </button>
             </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="5" class="empty-row">No property types found</td>
           </tr>
         }
       </tbody>
@@ -71,14 +160,7 @@
   </div>
 
   <div class="pagination-bar">
-    <div class="pagination-info">
-      Showing 1-{{ filteredTypes().length }} of {{ filteredTypes().length }} property types
-    </div>
-    <div class="pagination-controls">
-      <button class="page-btn" disabled>Previous</button>
-      <button class="page-btn active">1</button>
-      <button class="page-btn" disabled>Next</button>
-    </div>
+    <span class="pagination-info">Showing {{ filteredTypes().length }} of {{ propertyTypes().length }} types</span>
   </div>
 </div>
 
@@ -86,18 +168,18 @@
   <div class="modal-overlay" (click)="closeModal()">
     <div class="modal-content" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <h3>{{ editingType() ? 'Edit Property Type: ' + editingType()!.name : 'Add New Property Type' }}</h3>
+        <h3><i class="bi" [class.bi-plus-circle]="!editingType()" [class.bi-pencil-square]="!!editingType()"></i> {{ editingType() ? 'Edit: ' + editingType()!.name : 'Add New Type' }}</h3>
         <button class="btn-close" (click)="closeModal()">
           <i class="bi bi-x-lg"></i>
         </button>
       </div>
       <div class="modal-body">
         <div class="form-section">
-          <h4>Basic Information</h4>
+          <h4><i class="bi bi-info-circle"></i> Basic Information</h4>
           <div class="form-grid">
             <div class="form-field">
               <label>Type Name <span class="required">*</span></label>
-              <input type="text" [(ngModel)]="modalFormData().name" placeholder="Enter type name">
+              <input type="text" [(ngModel)]="modalFormData().name" placeholder="e.g., Computer, Furniture">
             </div>
             <div class="form-field">
               <label>Icon</label>
@@ -119,43 +201,45 @@
         </div>
 
         <div class="form-section">
-          <h4>Custom Fields (for this property type)</h4>
+          <h4><i class="bi bi-list-ul"></i> Custom Fields</h4>
           <button class="btn btn-secondary btn-sm" (click)="addCustomField()">
-            <i class="bi bi-plus"></i> Add Custom Field
+            <i class="bi bi-plus"></i> Add Field
           </button>
-          <div class="custom-fields-table">
-            <div class="custom-fields-header">
-              <span>Field Name</span>
-              <span>Field Type</span>
-              <span>Required</span>
-              <span>Actions</span>
-            </div>
-            @for (field of customFields(); track $index) {
-              <div class="custom-field-row">
-                <input type="text" [(ngModel)]="customFields()[$index].name" placeholder="Field name">
-                <select [(ngModel)]="customFields()[$index].type">
-                  <option value="Text">Text</option>
-                  <option value="Number">Number</option>
-                  <option value="Dropdown">Dropdown</option>
-                  <option value="Date">Date</option>
-                  <option value="Boolean">Boolean</option>
-                </select>
-                <label class="checkbox-item">
-                  <input type="checkbox" [(ngModel)]="customFields()[$index].required">
-                </label>
-                <button class="btn-remove" (click)="removeCustomField($index)">
-                  <i class="bi bi-trash"></i>
-                </button>
+          @if (customFields().length > 0) {
+            <div class="custom-fields-table">
+              <div class="cf-header">
+                <span>Field Name</span>
+                <span>Type</span>
+                <span>Required</span>
+                <span></span>
               </div>
-            }
-          </div>
+              @for (field of customFields(); track $index) {
+                <div class="cf-row">
+                  <input type="text" [(ngModel)]="customFields()[$index].name" placeholder="Field name">
+                  <select [(ngModel)]="customFields()[$index].type">
+                    <option value="Text">Text</option>
+                    <option value="Number">Number</option>
+                    <option value="Dropdown">Dropdown</option>
+                    <option value="Date">Date</option>
+                    <option value="Boolean">Boolean</option>
+                  </select>
+                  <label class="checkbox-wrap">
+                    <input type="checkbox" [(ngModel)]="customFields()[$index].required">
+                  </label>
+                  <button class="btn-remove" (click)="removeCustomField($index)">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </div>
+              }
+            </div>
+          }
         </div>
 
         <div class="form-section">
-          <h4>Default Values</h4>
+          <h4><i class="bi bi-gear"></i> Default Values</h4>
           <div class="form-grid">
             <div class="form-field">
-              <label>Default Warranty Period</label>
+              <label>Warranty Period</label>
               <select [(ngModel)]="modalFormData().warrantyPeriod">
                 <option value="12 months">12 months</option>
                 <option value="24 months">24 months</option>
@@ -164,7 +248,7 @@
               </select>
             </div>
             <div class="form-field">
-              <label>Default Depreciation Rate</label>
+              <label>Depreciation Rate</label>
               <select [(ngModel)]="modalFormData().depreciationRate">
                 <option value="10% per year">10% per year</option>
                 <option value="15% per year">15% per year</option>
@@ -173,7 +257,7 @@
               </select>
             </div>
             <div class="form-field full-width">
-              <label>Default Location Category</label>
+              <label>Location Category</label>
               <select [(ngModel)]="modalFormData().locationCategory">
                 <option value="IT Equipment">IT Equipment</option>
                 <option value="Office Furniture">Office Furniture</option>
@@ -185,24 +269,51 @@
         </div>
 
         <div class="form-section">
-          <h4>Status</h4>
+          <h4><i class="bi bi-toggle-on"></i> Status</h4>
           <div class="radio-group">
             <label class="radio-item">
               <input type="radio" [(ngModel)]="modalFormData().status" value="Active">
-              <span>Active</span>
+              <span><i class="bi bi-check-circle-fill" style="color:#10b981"></i> Active</span>
             </label>
             <label class="radio-item">
               <input type="radio" [(ngModel)]="modalFormData().status" value="Inactive">
-              <span>Inactive</span>
+              <span><i class="bi bi-pause-circle-fill" style="color:#f59e0b"></i> Inactive</span>
             </label>
           </div>
         </div>
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary" (click)="closeModal()">Cancel</button>
-        <button class="btn btn-primary" (click)="saveType()">Save Type</button>
+        <button class="btn btn-primary" (click)="saveType()">
+          <i class="bi bi-check-lg"></i> {{ editingType() ? 'Update' : 'Create' }}
+        </button>
       </div>
     </div>
   </div>
 }
 
+@if (showConfirmDelete() && typeToDelete(); as id) {
+  <div class="modal-overlay" (click)="cancelDelete()">
+    <div class="modal-content confirm-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Confirm Delete</h3>
+        <button class="btn-close" (click)="cancelDelete()">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      <div class="modal-body confirm-body">
+        <div class="confirm-icon">
+          <i class="bi bi-exclamation-triangle"></i>
+        </div>
+        <p>Are you sure you want to delete this property type?</p>
+        <p class="confirm-warning">This action cannot be undone.</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="cancelDelete()">Cancel</button>
+        <button class="btn btn-danger" (click)="confirmDelete()">
+          <i class="bi bi-trash"></i> Delete
+        </button>
+      </div>
+    </div>
+  </div>
+}

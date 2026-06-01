@@ -1,123 +1,152 @@
 ﻿<div class="properties-container">
-  <div class="page-header">
-    <div class="header-info">
+  <div class="page-header gradient-header">
+    <div class="header-icon">
+      <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+      </svg>
+    </div>
+    <div class="header-content">
       <h1>All Properties</h1>
       <p class="subtitle">View and manage all organizational assets</p>
     </div>
-    <button class="btn btn-primary" (click)="addNewProperty()">
-      <i class="bi bi-plus-lg"></i> Add New
-    </button>
+    <div class="header-actions">
+      <button class="btn btn-primary" (click)="addNewProperty()">
+        <i class="bi bi-plus-lg"></i> Add Property
+      </button>
+    </div>
   </div>
+
+  @if (notification(); as notif) {
+    <div class="notification-banner" [class.success]="notif.type === 'success'" [class.error]="notif.type === 'error'" [class.info]="notif.type === 'info'">
+      <i class="bi" [class.bi-check-circle-fill]="notif.type === 'success'" [class.bi-exclamation-circle-fill]="notif.type === 'error'" [class.bi-info-circle-fill]="notif.type === 'info'"></i>
+      <span>{{ notif.message }}</span>
+      <button class="notif-close" (click)="notification.set(null)">
+        <i class="bi bi-x"></i>
+      </button>
+    </div>
+  }
 
   <div class="filter-bar">
     <div class="search-box">
       <i class="bi bi-search"></i>
-      <input type="text" [value]="searchTerm()" (input)="onSearchChange($any($event.target).value)" placeholder="Search by Tag #, Name, Serial...">
+      <input type="text" (input)="onSearchChange($event)" [value]="searchTerm()" placeholder="Search by Tag #, Name...">
     </div>
     <div class="filter-group">
-      <label>🏷️ Type:</label>
-      <select [(ngModel)]="typeFilter" (ngModelChange)="applyFilters()">
+      <label>Type</label>
+      <select [(ngModel)]="typeFilter" (ngModelChange)="onFilterChange()">
         @for (type of propertyTypes; track type) {
           <option [value]="type">{{ type }}</option>
         }
       </select>
     </div>
     <div class="filter-group">
-      <label>📍 Location:</label>
-      <select [(ngModel)]="locationFilter" (ngModelChange)="applyFilters()">
+      <label>Location</label>
+      <select [(ngModel)]="locationFilter" (ngModelChange)="onFilterChange()">
         @for (loc of locations; track loc) {
           <option [value]="loc">{{ loc }}</option>
         }
       </select>
     </div>
     <div class="filter-group">
-      <label>🔧 Status:</label>
-      <select [(ngModel)]="statusFilter" (ngModelChange)="applyFilters()">
+      <label>Status</label>
+      <select [(ngModel)]="statusFilter" (ngModelChange)="onFilterChange()">
         @for (status of statuses; track status) {
           <option [value]="status">{{ status }}</option>
         }
       </select>
     </div>
     <div class="filter-group">
-      <label>📅 Purchase:</label>
-      <select [(ngModel)]="purchaseFilter" (ngModelChange)="applyFilters()">
+      <label>Purchase</label>
+      <select [(ngModel)]="purchaseFilter" (ngModelChange)="onFilterChange()">
         @for (date of purchaseDates; track date) {
           <option [value]="date">{{ date }}</option>
         }
       </select>
     </div>
-    <div class="filter-actions">
-      <button class="btn btn-sm btn-primary" (click)="applyFilters()">Apply Filters</button>
-      <button class="btn btn-sm btn-secondary" (click)="resetFilters()">Reset</button>
-      <button class="btn btn-sm btn-secondary" (click)="saveFilter()">Save Filter</button>
-    </div>
+    <button class="btn btn-sm btn-secondary" (click)="resetFilters()">Reset</button>
+    <button class="btn btn-sm btn-secondary" (click)="saveFilter()">Save</button>
   </div>
 
-  <div class="summary-grid">
-    <div class="summary-card">
-      <div class="summary-label">Total Properties</div>
-      <div class="summary-value">{{ summary().totalProperties.toLocaleString() }}</div>
-      <div class="summary-sub">▲ +8.3%</div>
-    </div>
-    <div class="summary-card">
-      <div class="summary-label">Total Value</div>
-      <div class="summary-value">${{ summary().totalValue.toLocaleString() }}</div>
-      <div class="summary-sub">▲ +12.5%</div>
-    </div>
-    <div class="summary-card">
-      <div class="summary-label">Avg. Value</div>
-      <div class="summary-value">${{ summary().avgValue.toLocaleString() }}</div>
-      <div class="summary-sub">▲ +4.2%</div>
-    </div>
-    <div class="summary-card">
-      <div class="summary-label">This Month Added</div>
-      <div class="summary-value">{{ summary().thisMonthAdded }}</div>
-      <div class="summary-sub">▲ +5</div>
-    </div>
-    <div class="summary-card">
-      <div class="summary-label">Active Status</div>
-      <div class="summary-value">{{ summary().activeStatus.toLocaleString() }}</div>
-      <div class="summary-sub">🟢</div>
-    </div>
+  <div class="stat-cards">
+    @for (card of statCards(); track card.label) {
+      <div class="stat-card">
+        <div class="stat-icon" [style.background]="card.color + '15'" [style.color]="card.color">
+          <i class="bi" [class.bi-box]="card.icon === 'box'" [class.bi-check-circle]="card.icon === 'check-circle'" [class.bi-tools]="card.icon === 'tools'" [class.bi-archive]="card.icon === 'archive'" [class.bi-currency-dollar]="card.icon === 'currency-dollar'" [class.bi-graph-up]="card.icon === 'graph-up'"></i>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">{{ card.label }}</span>
+          <span class="stat-value">{{ card.value }}</span>
+          <div class="micro-bar">
+            <div class="micro-fill" [style.width.%]="card.pct" [style.background]="card.color"></div>
+          </div>
+        </div>
+      </div>
+    }
   </div>
 
-  <div class="charts-section">
+  <div class="charts-row">
     <div class="chart-card">
-      <h4>By Category</h4>
-      <div class="chart-bars">
-        @for (item of [
-          { name: 'Electronics', value: 45, color: '#3b82f6' },
-          { name: 'Furniture', value: 20, color: '#10b981' },
-          { name: 'Equipment', value: 12, color: '#f59e0b' },
-          { name: 'Vehicles', value: 10, color: '#ef4444' },
-          { name: 'Other', value: 13, color: '#8b5cf6' }
-        ]; track item.name) {
-          <div class="chart-item">
-            <div class="chart-label">{{ item.name }}</div>
-            <div class="chart-bar-container">
-              <div class="chart-bar" [style.width.%]="item.value" [style.background]="item.color"></div>
+      <div class="chart-card-header">
+        <span class="chart-card-title">Type Distribution</span>
+        <span class="chart-card-badge">{{ typeBars().length }} types</span>
+      </div>
+      <div class="chart-card-body">
+        <div class="donut-section">
+          <svg viewBox="0 0 130 130" class="donut-svg">
+            @for (seg of donutSegments(); track seg.label) {
+              <circle r="50" cx="65" cy="65" fill="transparent" [attr.stroke]="seg.color" stroke-width="22" [attr.stroke-dasharray]="seg.dashArray" [attr.stroke-dashoffset]="seg.dashOffset" transform="rotate(-90 65 65)" class="donut-segment" />
+            }
+            <text x="65" y="55" text-anchor="middle" class="donut-value">{{ filteredProperties().length }}</text>
+            <text x="65" y="72" text-anchor="middle" class="donut-label">Total</text>
+          </svg>
+          <div class="donut-legend">
+            @for (seg of donutSegments(); track seg.label) {
+              <div class="legend-item">
+                <span class="legend-dot" [style.background]="seg.color"></span>
+                <span class="legend-label">{{ seg.label }}</span>
+                <span class="legend-value">{{ seg.value }}</span>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <span class="chart-card-title">By Type</span>
+        <span class="chart-card-badge">{{ typeBars().length }} categories</span>
+      </div>
+      <div class="chart-card-body">
+        @for (item of typeBars(); track item.name) {
+          <div class="bar-item">
+            <div class="bar-label">
+              <span>{{ item.name }}</span>
+              <span>{{ item.value }}</span>
             </div>
-            <div class="chart-value">{{ item.value }}%</div>
+            <div class="bar-track">
+              <div class="bar-fill" [style.width.%]="item.pct" [style.background]="item.color"></div>
+            </div>
           </div>
         }
       </div>
     </div>
+
     <div class="chart-card">
-      <h4>By Location</h4>
-      <div class="chart-bars">
-        @for (item of [
-          { name: 'Headquarters', value: 48, color: '#3b82f6' },
-          { name: 'Warehouse A', value: 25, color: '#10b981' },
-          { name: 'Branch Office', value: 15, color: '#f59e0b' },
-          { name: 'Storage', value: 8, color: '#ef4444' },
-          { name: 'Other', value: 4, color: '#8b5cf6' }
-        ]; track item.name) {
-          <div class="chart-item">
-            <div class="chart-label">{{ item.name }}</div>
-            <div class="chart-bar-container">
-              <div class="chart-bar" [style.width.%]="item.value" [style.background]="item.color"></div>
+      <div class="chart-card-header">
+        <span class="chart-card-title">By Location</span>
+        <span class="chart-card-badge">{{ locationBars().length }} locations</span>
+      </div>
+      <div class="chart-card-body">
+        @for (item of locationBars(); track item.name) {
+          <div class="bar-item">
+            <div class="bar-label">
+              <span>{{ item.name }}</span>
+              <span>{{ item.value }}</span>
             </div>
-            <div class="chart-value">{{ item.value }}%</div>
+            <div class="bar-track">
+              <div class="bar-fill" [style.width.%]="item.pct" [style.background]="item.color"></div>
+            </div>
           </div>
         }
       </div>
@@ -125,8 +154,38 @@
   </div>
 
   <div class="table-section">
+    <div class="table-toolbar">
+      <span class="toolbar-title">All Properties ({{ filteredProperties().length }})</span>
+      <div class="toolbar-actions">
+        <button class="btn btn-sm btn-secondary" (click)="exportProperties()">
+          <i class="bi bi-download"></i> Export
+        </button>
+        <button class="btn btn-sm btn-secondary" (click)="printProperties()">
+          <i class="bi bi-printer"></i> Print
+        </button>
+        <div class="bulk-actions-wrapper">
+          <button class="btn btn-sm btn-secondary" (click)="showBulkActions()">
+            Bulk <i class="bi bi-chevron-down"></i>
+          </button>
+          @if (showBulkActionsDropdown()) {
+            <div class="bulk-dropdown">
+              <button class="dropdown-item" (click)="bulkDelete()">
+                <i class="bi bi-trash"></i> Delete Selected
+              </button>
+              <button class="dropdown-item" (click)="bulkTransfer()">
+                <i class="bi bi-arrow-repeat"></i> Transfer
+              </button>
+              <button class="dropdown-item" (click)="bulkExport()">
+                <i class="bi bi-download"></i> Export
+              </button>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+
     <div class="table-container">
-      <table class="properties-table">
+      <table class="data-table">
         <thead>
           <tr>
             <th>Tag #</th>
@@ -135,175 +194,209 @@
             <th>Location</th>
             <th>Value</th>
             <th>Status</th>
-            <th>Actions</th>
+            <th class="actions-col">Actions</th>
           </tr>
         </thead>
         <tbody>
-          @for (prop of filteredProperties(); track prop.id) {
+          @for (prop of paginatedProperties(); track prop.id) {
             <tr>
-              <td>{{ prop.tagNumber }}</td>
-              <td>{{ prop.name }}</td>
+              <td><span class="tag-badge">{{ prop.tagNumber }}</span></td>
+              <td class="name-cell">{{ prop.name }}</td>
               <td>{{ prop.type }}</td>
               <td>{{ prop.location }}</td>
-              <td>${{ prop.value.toLocaleString() }}</td>
+              <td class="value-cell">ETB {{ prop.value.toLocaleString() }}</td>
               <td>
-                <span class="status-badge" [class]="getStatusColor(prop.status)">
-                  {{ getStatusIcon(prop.status) }}
+                <span class="status-badge" [class.active]="prop.status === 'Active'" [class.maintenance]="prop.status === 'Maintenance'" [class.disposed]="prop.status === 'Disposed'">
+                  <i class="bi" [class.bi-check-circle-fill]="prop.status === 'Active'" [class.bi-exclamation-triangle-fill]="prop.status === 'Maintenance'" [class.bi-archive-fill]="prop.status === 'Disposed'"></i>
+                  {{ prop.status }}
                 </span>
               </td>
-              <td>
-                <div class="actions-cell">
-                  <button class="action-btn" (click)="openDetailsModal(prop)" title="View">
-                    <i class="bi bi-eye"></i>
-                  </button>
-                </div>
+              <td class="actions-cell">
+                <button class="action-btn" (click)="openDetailsModal(prop)" title="View Details">
+                  <i class="bi bi-eye"></i>
+                </button>
+                <button class="action-btn" (click)="navigateToEdit(prop)" title="Edit">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button class="action-btn" (click)="requestDelete(prop)" title="Delete">
+                  <i class="bi bi-trash"></i>
+                </button>
               </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="7" class="empty-row">No properties match your filters</td>
             </tr>
           }
         </tbody>
       </table>
     </div>
+
     <div class="pagination-bar">
-      <div class="pagination-info">Showing 1-{{ filteredProperties().length }} of {{ summary().totalProperties.toLocaleString() }} properties</div>
+      <span class="pagination-info">
+        Showing {{ (currentPage() - 1) * pageSize + 1 }}-{{ Math.min(currentPage() * pageSize, filteredProperties().length) }} of {{ filteredProperties().length }}
+      </span>
       <div class="pagination-controls">
-        <button class="page-btn" disabled>Previous</button>
-        <button class="page-btn active">1</button>
-        <button class="page-btn">2</button>
-        <button class="page-btn">3</button>
-        <button class="page-btn">→</button>
-        <button class="page-btn">50</button>
-      </div>
-    </div>
-    <div class="table-actions">
-      <button class="btn btn-secondary" (click)="exportProperties()">Export</button>
-      <button class="btn btn-secondary" (click)="printProperties()">Print</button>
-      <div class="bulk-actions-wrapper">
-        <button class="btn btn-secondary" (click)="showBulkActions()">Bulk Actions ▼</button>
-        @if (showBulkActionsDropdown()) {
-          <div class="bulk-actions-dropdown">
-            <button class="dropdown-item" (click)="bulkDelete()">
-              <i class="bi bi-trash"></i> Delete Selected
-            </button>
-            <button class="dropdown-item" (click)="bulkTransfer()">
-              <i class="bi bi-arrow-repeat"></i> Transfer Selected
-            </button>
-            <button class="dropdown-item" (click)="bulkExport()">
-              <i class="bi bi-download"></i> Export Selected
-            </button>
-          </div>
+        <button class="page-btn" (click)="prevPage()" [disabled]="currentPage() <= 1">
+          <i class="bi bi-chevron-left"></i>
+        </button>
+        @for (p of getPageRange(); track p) {
+          <button class="page-btn" [class.active]="p === currentPage()" (click)="goToPage(p)">{{ p }}</button>
         }
+        <button class="page-btn" (click)="nextPage()" [disabled]="currentPage() >= totalPages()">
+          <i class="bi bi-chevron-right"></i>
+        </button>
       </div>
     </div>
   </div>
 </div>
 
-@if (showModal() && selectedProperty()) {
+@if (showModal() && selectedProperty(); as prop) {
   <div class="modal-overlay" (click)="closeModal()">
-    <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-content wide-modal" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <h3>Property Details: {{ selectedProperty()!.tagNumber }}</h3>
+        <div class="modal-header-info">
+          <h3>{{ prop.tagNumber }} - {{ prop.name }}</h3>
+          <span class="status-badge" [class.active]="prop.status === 'Active'" [class.maintenance]="prop.status === 'Maintenance'" [class.disposed]="prop.status === 'Disposed'">
+            <i class="bi" [class.bi-check-circle-fill]="prop.status === 'Active'" [class.bi-exclamation-triangle-fill]="prop.status === 'Maintenance'" [class.bi-archive-fill]="prop.status === 'Disposed'"></i>
+            {{ prop.status }}
+          </span>
+        </div>
         <button class="btn-close" (click)="closeModal()">
           <i class="bi bi-x-lg"></i>
         </button>
       </div>
+
       <div class="modal-body">
-        <div class="info-section">
-          <h4>BASIC INFORMATION</h4>
-          <div class="info-grid">
-            <div class="info-item">
-              <span>Tag Number:</span>
-              <span>{{ selectedProperty()!.tagNumber }}</span>
-            </div>
-            <div class="info-item">
-              <span>Name:</span>
-              <span>{{ selectedProperty()!.name }}</span>
-            </div>
-            <div class="info-item">
-              <span>Serial Number:</span>
-              <span>C02XK2L8Q6PJ</span>
-            </div>
-            <div class="info-item">
-              <span>Status:</span>
-              <span class="status-badge" [class]="getStatusColor(selectedProperty()!.status)">
-                {{ getStatusIcon(selectedProperty()!.status) }} {{ selectedProperty()!.status }}
-              </span>
+        <div class="detail-grid-2col">
+          <div class="detail-section">
+            <h4 class="section-title">
+              <i class="bi bi-info-circle"></i> Basic Information
+            </h4>
+            <div class="detail-list">
+              <div class="detail-item">
+                <span class="detail-label">Tag Number</span>
+                <span class="detail-value">{{ prop.tagNumber }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Name</span>
+                <span class="detail-value">{{ prop.name }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Serial Number</span>
+                <span class="detail-value">{{ getSerial(prop) }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Type</span>
+                <span class="detail-value">{{ prop.type }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Location</span>
+                <span class="detail-value">{{ prop.location }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Assigned To</span>
+                <span class="detail-value">{{ getAssignedTo(prop) }}</span>
+              </div>
             </div>
           </div>
-          <div class="qr-code">
-            <div class="qr-placeholder">[QR Code Image]</div>
-          </div>
-        </div>
 
-        <div class="info-grid-2">
-          <div class="info-box">
-            <h4>CLASSIFICATION</h4>
-            <div class="info-list">
-              <div class="info-item"><span>Type:</span><span>{{ selectedProperty()!.type }}</span></div>
-              <div class="info-item"><span>Category:</span><span>Electronics</span></div>
-              <div class="info-item"><span>Model:</span><span>XPS 9530</span></div>
-              <div class="info-item"><span>Processor:</span><span>Intel i7</span></div>
-              <div class="info-item"><span>RAM:</span><span>16GB</span></div>
-              <div class="info-item"><span>Storage:</span><span>512GB SSD</span></div>
-            </div>
-          </div>
-          <div class="info-box">
-            <h4>FINANCIAL DETAILS</h4>
-            <div class="info-list">
-              <div class="info-item"><span>Unit Price:</span><span>${{ selectedProperty()!.value.toLocaleString() }}</span></div>
-              <div class="info-item"><span>Quantity:</span><span>1</span></div>
-              <div class="info-item"><span>Total Value:</span><span>${{ selectedProperty()!.value.toLocaleString() }}</span></div>
-              <div class="info-item"><span>Purchase Date:</span><span>Nov 15, 2024</span></div>
-              <div class="info-item"><span>PO Number:</span><span>PO-2024-1234</span></div>
-              <div class="info-item"><span>Supplier:</span><span>Tech Supplies</span></div>
-            </div>
-          </div>
-        </div>
-
-        <div class="info-grid-2">
-          <div class="info-box">
-            <h4>LOCATION</h4>
-            <div class="info-list">
-              <div class="info-item"><span>Location:</span><span>{{ selectedProperty()!.location }}</span></div>
-              <div class="info-item"><span>Safety Box:</span><span>SAF-001</span></div>
-              <div class="info-item"><span>Shelf:</span><span>Shelf-03</span></div>
-              <div class="info-item"><span>Assigned To:</span><span>John Doe</span></div>
-            </div>
-          </div>
-          <div class="info-box">
-            <h4>WARRANTY & MAINTENANCE</h4>
-            <div class="info-list">
-              <div class="info-item"><span>Warranty Start:</span><span>Nov 15, 2024</span></div>
-              <div class="info-item"><span>Warranty End:</span><span>Nov 14, 2026</span></div>
-              <div class="info-item"><span>Status:</span><span>Active</span></div>
-              <div class="info-item"><span>Next Service:</span><span>May 15, 2025</span></div>
+          <div class="detail-section">
+            <h4 class="section-title">
+              <i class="bi bi-currency-dollar"></i> Financial Details
+            </h4>
+            <div class="detail-list">
+              <div class="detail-item">
+                <span class="detail-label">Unit Price</span>
+                <span class="detail-value">ETB {{ prop.value.toLocaleString() }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Quantity</span>
+                <span class="detail-value">1</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Total Value</span>
+                <span class="detail-value">ETB {{ prop.value.toLocaleString() }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Supplier</span>
+                <span class="detail-value">{{ getSupplier(prop) }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">PO Number</span>
+                <span class="detail-value">{{ prop.poNumber || 'N/A' }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Purchase Date</span>
+                <span class="detail-value">{{ prop.purchaseDate ? (prop.purchaseDate | date:'mediumDate') : 'N/A' }}</span>
+              </div>
             </div>
           </div>
         </div>
 
-        <div class="attachments-section">
-          <h4>📎 ATTACHMENTS</h4>
+        <div class="detail-grid-2col">
+          <div class="detail-section">
+            <h4 class="section-title">
+              <i class="bi bi-shield-check"></i> Warranty
+            </h4>
+            <div class="detail-list">
+              <div class="detail-item">
+                <span class="detail-label">Warranty End</span>
+                <span class="detail-value">{{ prop.warrantyEnd ? (prop.warrantyEnd | date:'mediumDate') : 'N/A' }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Warranty Status</span>
+                <span class="detail-value">
+                  <span class="status-badge" [class.active]="prop.warrantyEnd && prop.warrantyEnd > '2026-06-01'" [class.disposed]="!prop.warrantyEnd || prop.warrantyEnd <= '2026-06-01'">
+                    {{ prop.warrantyEnd && prop.warrantyEnd > '2026-06-01' ? 'Active' : 'Expired' }}
+                  </span>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="detail-section">
+            <h4 class="section-title">
+              <i class="bi bi-qr-code"></i> QR Code
+            </h4>
+            <div class="qr-placeholder">
+              <i class="bi bi-qr-code"></i>
+              <span>{{ prop.tagNumber }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="detail-section">
+          <h4 class="section-title">
+            <i class="bi bi-paperclip"></i> Attachments
+          </h4>
           <div class="attachments-list">
             <div class="attachment-item">
-              <span>📄 Invoice_Nov2024.pdf</span>
-              <button class="btn-sm btn-secondary" (click)="viewAttachment('Invoice_Nov2024.pdf')">View</button>
-              <button class="btn-sm btn-secondary" (click)="downloadAttachment('Invoice_Nov2024.pdf')">Download</button>
+              <i class="bi bi-file-pdf"></i>
+              <span>Invoice_{{ prop.tagNumber }}.pdf</span>
+              <div class="attachment-actions">
+                <button class="btn btn-sm btn-secondary" (click)="viewAttachment('Invoice_' + prop.tagNumber + '.pdf')">View</button>
+                <button class="btn btn-sm btn-secondary" (click)="downloadAttachment('Invoice_' + prop.tagNumber + '.pdf')">Download</button>
+              </div>
             </div>
             <div class="attachment-item">
-              <span>🖼️ Laptop_Photo.jpg</span>
-              <button class="btn-sm btn-secondary" (click)="viewAttachment('Laptop_Photo.jpg')">View</button>
-              <button class="btn-sm btn-secondary" (click)="downloadAttachment('Laptop_Photo.jpg')">Download</button>
-            </div>
-            <div class="attachment-item">
-              <span>📑 Warranty_Certificate.pdf</span>
-              <button class="btn-sm btn-secondary" (click)="viewAttachment('Warranty_Certificate.pdf')">View</button>
-              <button class="btn-sm btn-secondary" (click)="downloadAttachment('Warranty_Certificate.pdf')">Download</button>
+              <i class="bi bi-file-image"></i>
+              <span>{{ prop.name }}_Photo.jpg</span>
+              <div class="attachment-actions">
+                <button class="btn btn-sm btn-secondary" (click)="viewAttachment(prop.name + '_Photo.jpg')">View</button>
+                <button class="btn btn-sm btn-secondary" (click)="downloadAttachment(prop.name + '_Photo.jpg')">Download</button>
+              </div>
             </div>
           </div>
-          <button class="btn btn-sm btn-secondary" (click)="addAttachment()">+ Add File</button>
+          <button class="btn btn-sm btn-secondary" (click)="addAttachment()">
+            <i class="bi bi-plus"></i> Add File
+          </button>
         </div>
 
-        <div class="history-section">
-          <h4>📜 HISTORY & AUDIT</h4>
+        <div class="detail-section">
+          <h4 class="section-title">
+            <i class="bi bi-clock-history"></i> Recent History
+          </h4>
           <table class="history-table">
             <thead>
               <tr>
@@ -315,35 +408,68 @@
             </thead>
             <tbody>
               <tr>
-                <td>Dec 15, 2024</td>
-                <td>Created</td>
-                <td>John Doe</td>
-                <td>Property added</td>
+                <td>{{ prop.purchaseDate ? (prop.purchaseDate | date:'mediumDate') : 'N/A' }}</td>
+                <td><span class="action-tag created">Created</span></td>
+                <td>{{ getAssignedTo(prop) }}</td>
+                <td>Property added to inventory</td>
               </tr>
               <tr>
-                <td>Dec 14, 2024</td>
-                <td>Location</td>
-                <td>Sarah Smith</td>
-                <td>Moved to SAF-001</td>
-              </tr>
-              <tr>
-                <td>Dec 10, 2024</td>
-                <td>Assigned</td>
+                <td>{{ prop.warrantyEnd ? (prop.warrantyEnd | date:'mediumDate') : 'N/A' }}</td>
+                <td><span class="action-tag updated">Warranty</span></td>
                 <td>Admin</td>
-                <td>Assigned to John</td>
+                <td>Warranty registered</td>
               </tr>
             </tbody>
           </table>
-          <button class="btn btn-sm btn-secondary" (click)="viewFullHistory()">View Full History →</button>
+          <button class="btn btn-sm btn-secondary" (click)="viewFullHistory()">
+            View Full History <i class="bi bi-arrow-right"></i>
+          </button>
         </div>
       </div>
+
       <div class="modal-footer">
-        <button class="btn btn-secondary" (click)="editProperty(selectedProperty()!)">Edit</button>
-        <button class="btn btn-secondary" (click)="transferProperty(selectedProperty()!)">Transfer</button>
-        <button class="btn btn-secondary" (click)="printLabel(selectedProperty()!)">Print Label</button>
-        <button class="btn btn-secondary" (click)="viewQR(selectedProperty()!)">View QR</button>
-        <button class="btn btn-secondary" (click)="disposeProperty(selectedProperty()!)">Dispose</button>
+        <button class="btn btn-secondary" (click)="navigateToEdit(prop)">
+          <i class="bi bi-pencil"></i> Edit
+        </button>
+        <button class="btn btn-secondary" (click)="transferProperty(prop)">
+          <i class="bi bi-arrow-repeat"></i> Transfer
+        </button>
+        <button class="btn btn-secondary" (click)="printLabel(prop)">
+          <i class="bi bi-tag"></i> Label
+        </button>
+        <button class="btn btn-secondary" (click)="viewQR(prop)">
+          <i class="bi bi-qr-code"></i> QR
+        </button>
+        <button class="btn btn-danger" (click)="disposeProperty(prop)">
+          <i class="bi bi-archive"></i> Dispose
+        </button>
         <button class="btn btn-secondary" (click)="closeModal()">Close</button>
+      </div>
+    </div>
+  </div>
+}
+
+@if (showConfirmDelete() && propertyToDelete(); as prop) {
+  <div class="modal-overlay" (click)="cancelDelete()">
+    <div class="modal-content confirm-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Confirm Delete</h3>
+        <button class="btn-close" (click)="cancelDelete()">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      <div class="modal-body confirm-body">
+        <div class="confirm-icon">
+          <i class="bi bi-exclamation-triangle"></i>
+        </div>
+        <p>Are you sure you want to delete <strong>{{ prop.tagNumber }} - {{ prop.name }}</strong>?</p>
+        <p class="confirm-warning">This action cannot be undone.</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="cancelDelete()">Cancel</button>
+        <button class="btn btn-danger" (click)="confirmDelete()">
+          <i class="bi bi-trash"></i> Delete
+        </button>
       </div>
     </div>
   </div>

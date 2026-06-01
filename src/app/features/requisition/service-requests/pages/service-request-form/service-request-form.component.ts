@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, inject } from '@angular/core';
+import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -18,6 +18,30 @@ interface ServiceRequestItem {
   shelfLocation?: string;
 }
 
+interface DraftData {
+  formData: Record<string, unknown>;
+  selectedItems: ServiceRequestItem[];
+  currentStep: number;
+}
+
+const MOCK_CATALOG_ITEMS = [
+  { id: 'a1b2c3d4-0001-4000-8000-000000000001', itemName: 'Teff (White)', sku: 'TEFF-WHT-001', unitOfMeasure: 'kg', stockQuantity: 500, description: 'Premium quality white teff grain' },
+  { id: 'a1b2c3d4-0002-4000-8000-000000000002', itemName: 'Coffee Arabica', sku: 'COF-ARB-002', unitOfMeasure: 'kg', stockQuantity: 200, description: 'Ethiopian Arabica coffee beans' },
+  { id: 'a1b2c3d4-0003-4000-8000-000000000003', itemName: 'Maize (Yellow)', sku: 'MAZ-YEL-003', unitOfMeasure: 'kg', stockQuantity: 800, description: 'Yellow maize grain for processing' },
+  { id: 'a1b2c3d4-0004-4000-8000-000000000004', itemName: 'Sesame Seeds', sku: 'SES-SED-004', unitOfMeasure: 'kg', stockQuantity: 350, description: 'Ethiopian white sesame seeds' },
+  { id: 'a1b2c3d4-0005-4000-8000-000000000005', itemName: 'Wheat (Hard Red)', sku: 'WHT-HRD-005', unitOfMeasure: 'kg', stockQuantity: 600, description: 'Hard red winter wheat' },
+  { id: 'a1b2c3d4-0006-4000-8000-000000000006', itemName: 'Barley (Food Grade)', sku: 'BAR-FOD-006', unitOfMeasure: 'kg', stockQuantity: 400, description: 'Food grade barley for human consumption' },
+  { id: 'a1b2c3d4-0007-4000-8000-000000000007', itemName: 'Honey (White)', sku: 'HON-WHT-007', unitOfMeasure: 'kg', stockQuantity: 120, description: 'Pure Ethiopian white honey' },
+  { id: 'a1b2c3d4-0008-4000-8000-000000000008', itemName: 'Cotton (Raw)', sku: 'COT-RAW-008', unitOfMeasure: 'kg', stockQuantity: 900, description: 'Raw cotton fiber for textile industry' },
+  { id: 'a1b2c3d4-0009-4000-8000-000000000009', itemName: 'Sugar Cane', sku: 'SGR-CAN-009', unitOfMeasure: 'ton', stockQuantity: 50, description: 'Fresh sugar cane for processing' },
+  { id: 'a1b2c3d4-0010-4000-8000-000000000010', itemName: 'Haricot Beans', sku: 'HRC-BNS-010', unitOfMeasure: 'kg', stockQuantity: 280, description: 'Dried haricot beans for export' },
+  { id: 'a1b2c3d4-0011-4000-8000-000000000011', itemName: 'Sunflower Oil', sku: 'SUN-OIL-011', unitOfMeasure: 'liter', stockQuantity: 150, description: 'Refined sunflower cooking oil' },
+  { id: 'a1b2c3d4-0012-4000-8000-000000000012', itemName: 'Salt (Iodized)', sku: 'SLT-IOD-012', unitOfMeasure: 'kg', stockQuantity: 1000, description: 'Iodized table salt' },
+  { id: 'a1b2c3d4-0013-4000-8000-000000000013', itemName: 'Black Pepper', sku: 'BLK-PPR-013', unitOfMeasure: 'kg', stockQuantity: 75, description: 'Ground black pepper spice' },
+  { id: 'a1b2c3d4-0014-4000-8000-000000000014', itemName: 'Sorghum (Red)', sku: 'SRG-RED-014', unitOfMeasure: 'kg', stockQuantity: 450, description: 'Red sorghum grain' },
+  { id: 'a1b2c3d4-0015-4000-8000-000000000015', itemName: 'Fertilizer (UREA 46%)', sku: 'FRT-URE-015', unitOfMeasure: 'bag', stockQuantity: 200, description: 'UREA nitrogen fertilizer 46%' },
+];
+
 @Component({
   selector: 'app-service-request-form',
   standalone: true,
@@ -35,13 +59,20 @@ export class ServiceRequestFormComponent implements OnInit {
   totalSteps = 3;
   loading = signal(false);
   error = signal<string | null>(null);
-  
-  // Forms
+  isUsingMock = signal(false);
+
   requestForm!: FormGroup;
-  
-  // Data
+
   availableItems = signal<any[]>([]);
+  availableItemsCount = signal(0);
   selectedItems = signal<ServiceRequestItem[]>([]);
+
+  notification = signal<{ type: 'success' | 'error' | 'info'; message: string } | null>(null);
+  showClearConfirm = signal(false);
+  showCancelConfirm = signal(false);
+  showSuccessModal = signal(false);
+
+  itemSearch = signal('');
 
   departments = [
     'Information Technology (IT)',
@@ -51,21 +82,52 @@ export class ServiceRequestFormComponent implements OnInit {
     'Warehouse',
     'Sales',
     'Marketing',
-    'Procurement'
+    'Procurement',
   ];
 
   urgencyLevels = [
-    { value: 'low', label: 'Low', class: 'badge-secondary' },
-    { value: 'normal', label: 'Normal', class: 'badge-success' },
-    { value: 'high', label: 'High', class: 'badge-warning' },
-    { value: 'urgent', label: 'Urgent', class: 'badge-warning' },
-    { value: 'critical', label: 'Critical', class: 'badge-danger' }
+    { value: 'low', label: 'Low' },
+    { value: 'normal', label: 'Normal' },
+    { value: 'high', label: 'High' },
+    { value: 'urgent', label: 'Urgent' },
+    { value: 'critical', label: 'Critical' },
   ];
+
+  filteredItems = computed(() => {
+    const q = this.itemSearch().toLowerCase();
+    if (!q) return this.availableItems();
+    return this.availableItems().filter((item: any) =>
+      item.itemName.toLowerCase().includes(q) ||
+      item.sku.toLowerCase().includes(q) ||
+      (item.description || '').toLowerCase().includes(q)
+    );
+  });
+
+  totalQuantity = computed(() =>
+    this.selectedItems().reduce((sum, item) => sum + item.requestedQty, 0)
+  );
+
+  totalItemsCount = computed(() => this.selectedItems().length);
+
+  draftExists = computed(() => localStorage.getItem('serviceRequestDraft') !== null);
+
+  getUrgencyClass(urgency: string): string {
+    const map: Record<string, string> = {
+      low: 'urgency-low', normal: 'urgency-normal', high: 'urgency-high',
+      urgent: 'urgency-urgent', critical: 'urgency-critical',
+    };
+    return map[urgency] || 'urgency-normal';
+  }
+
+  getUrgencyLabel(urgency: string): string {
+    const level = this.urgencyLevels.find(u => u.value === urgency);
+    return level?.label || urgency;
+  }
 
   ngOnInit(): void {
     this.initializeForms();
     this.loadAvailableItems();
-    this.loadDraftData();
+    this.loadDraft();
   }
 
   private initializeForms(): void {
@@ -73,7 +135,7 @@ export class ServiceRequestFormComponent implements OnInit {
       department: ['', Validators.required],
       purpose: ['', Validators.required],
       urgency: ['normal', Validators.required],
-      notes: ['']
+      notes: [''],
     });
   }
 
@@ -100,28 +162,31 @@ export class ServiceRequestFormComponent implements OnInit {
             categoryName: r['categoryName'] != null ? String(r['categoryName']) : '',
           }))
           .filter((row) => this.isGuid(row.id));
-
         this.availableItems.set(rows);
+        this.availableItemsCount.set(rows.length);
         if (rows.length === 0) {
-          this.error.set(
-            'No catalog items with valid IDs were returned. Ensure ItemMasters exist in the database and try again.',
-          );
+          this.useMockFallback();
         }
         this.loading.set(false);
       },
       error: () => {
-        this.availableItems.set([]);
-        this.error.set('Failed to load items from ItemMasters. Check your connection and API configuration.');
+        this.useMockFallback();
         this.loading.set(false);
       },
     });
   }
 
-  // Step Navigation
+  private useMockFallback(): void {
+    this.availableItems.set(MOCK_CATALOG_ITEMS);
+    this.availableItemsCount.set(MOCK_CATALOG_ITEMS.length);
+    this.isUsingMock.set(true);
+    this.showNotification('info', 'Using sample catalog data — API items unavailable');
+  }
+
   nextStep(): void {
     if (this.currentStep() < this.totalSteps) {
       if (this.validateCurrentStep()) {
-        this.currentStep.update(step => step + 1);
+        this.currentStep.update(s => s + 1);
         this.saveDraftData();
       }
     }
@@ -129,21 +194,34 @@ export class ServiceRequestFormComponent implements OnInit {
 
   previousStep(): void {
     if (this.currentStep() > 1) {
-      this.currentStep.update(step => step - 1);
+      this.currentStep.update(s => s - 1);
     }
   }
 
-  private validateCurrentStep(): boolean {
-    switch (this.currentStep()) {
+  goToStep(step: number): void {
+    if (step < this.currentStep()) {
+      this.currentStep.set(step);
+      return;
+    }
+    for (let s = this.currentStep(); s < step; s++) {
+      if (!this.validateStep(s)) return;
+    }
+    this.currentStep.set(step);
+    this.saveDraftData();
+  }
+
+  private validateStep(step: number): boolean {
+    switch (step) {
       case 1:
         if (!this.requestForm.valid) {
-          alert('Please fill in all required fields (Department, Purpose)');
+          this.showNotification('error', 'Please fill in all required fields (Department, Purpose)');
+          this.requestForm.markAllAsTouched();
           return false;
         }
         return true;
       case 2:
         if (this.selectedItems().length === 0) {
-          alert('Please add at least one item to the request');
+          this.showNotification('error', 'Please add at least one item to the request');
           return false;
         }
         return true;
@@ -152,29 +230,27 @@ export class ServiceRequestFormComponent implements OnInit {
     }
   }
 
-  // Item Management
+  private validateCurrentStep(): boolean {
+    return this.validateStep(this.currentStep());
+  }
+
   addItem(item: any): void {
-    const existingItem = this.selectedItems().find(si => si.itemId === item.id);
-    
-    if (existingItem) {
-      alert('Item already added to the request');
+    const existing = this.selectedItems().find(si => si.itemId === item.id);
+    if (existing) {
+      this.showNotification('info', 'Item already added to the request');
       return;
     }
-
     const newItem: ServiceRequestItem = {
-      id: this.generateTempId(),
+      id: 'temp_' + Math.random().toString(36).substr(2, 9),
       itemId: item.id,
       itemName: item.itemName,
       sku: item.sku,
       unitOfMeasure: item.unitOfMeasure,
       requestedQty: 1,
       availableStock: item.stockQuantity,
-      shelfId: undefined,
-      shelfLocation: undefined
     };
-
     this.selectedItems.update(items => [...items, newItem]);
-    console.log('Item added:', newItem);
+    this.showNotification('success', `${item.itemName} added to request`);
   }
 
   removeItem(itemId: string): void {
@@ -182,105 +258,78 @@ export class ServiceRequestFormComponent implements OnInit {
   }
 
   updateItemQuantity(itemId: string, quantity: number): void {
-    if (quantity <= 0) {
-      alert('Quantity must be greater than 0');
-      return;
-    }
-
-    this.selectedItems.update(items => 
-      items.map(item => 
-        item.id === itemId 
-          ? { ...item, requestedQty: quantity }
-          : item
+    const q = Math.max(1, Math.floor(quantity));
+    this.selectedItems.update(items =>
+      items.map(item =>
+        item.id === itemId ? { ...item, requestedQty: q } : item
       )
     );
   }
 
-  private generateTempId(): string {
-    return 'temp_' + Math.random().toString(36).substr(2, 9);
+  onItemSearch(e: Event): void {
+    this.itemSearch.set((e.target as HTMLInputElement).value);
   }
 
-  // Draft Management
   saveDraft(): void {
-    const draftData = {
+    const draft: DraftData = {
       formData: this.requestForm.value,
       selectedItems: this.selectedItems(),
-      currentStep: this.currentStep()
+      currentStep: this.currentStep(),
     };
-    
-    localStorage.setItem('serviceRequestDraft', JSON.stringify(draftData));
-    alert('Draft saved successfully!');
+    localStorage.setItem('serviceRequestDraft', JSON.stringify(draft));
+    this.showNotification('success', 'Draft saved successfully!');
   }
 
   loadDraft(): void {
-    const draft = localStorage.getItem('serviceRequestDraft');
-    if (draft) {
-      const draftData = JSON.parse(draft);
-      this.requestForm.patchValue(draftData.formData);
-      this.selectedItems.set(draftData.selectedItems || []);
-      this.currentStep.set(draftData.currentStep || 1);
-      alert('Draft loaded successfully!');
-    } else {
-      alert('No draft found');
+    const raw = localStorage.getItem('serviceRequestDraft');
+    if (!raw) {
+      this.showNotification('info', 'No draft found');
+      return;
     }
-  }
-
-  private loadDraftData(): void {
-    const draft = localStorage.getItem('serviceRequestDraft');
-    if (draft) {
-      try {
-        const draftData = JSON.parse(draft);
-        this.requestForm.patchValue(draftData.formData);
-        this.selectedItems.set(draftData.selectedItems || []);
-        this.currentStep.set(draftData.currentStep || 1);
-      } catch (error) {
-        console.error('Error loading draft:', error);
-      }
+    try {
+      const draft: DraftData = JSON.parse(raw);
+      this.requestForm.patchValue(draft.formData);
+      this.selectedItems.set(draft.selectedItems || []);
+      this.currentStep.set(draft.currentStep || 1);
+      this.showNotification('success', 'Draft loaded successfully!');
+    } catch {
+      this.showNotification('error', 'Failed to load draft data');
     }
   }
 
   private saveDraftData(): void {
-    const draftData = {
+    const draft: DraftData = {
       formData: this.requestForm.value,
       selectedItems: this.selectedItems(),
-      currentStep: this.currentStep()
+      currentStep: this.currentStep(),
     };
-    
-    localStorage.setItem('serviceRequestDraft', JSON.stringify(draftData));
+    localStorage.setItem('serviceRequestDraft', JSON.stringify(draft));
   }
 
   clearDraft(): void {
-    if (confirm('Are you sure you want to clear the draft? All unsaved data will be lost.')) {
-      localStorage.removeItem('serviceRequestDraft');
-      this.requestForm.reset();
-      this.selectedItems.set([]);
-      this.currentStep.set(1);
-      this.requestForm.patchValue({ urgency: 'normal' });
-      alert('Draft cleared successfully!');
-    }
+    localStorage.removeItem('serviceRequestDraft');
+    this.requestForm.reset();
+    this.selectedItems.set([]);
+    this.currentStep.set(1);
+    this.requestForm.patchValue({ urgency: 'normal' });
+    this.showClearConfirm.set(false);
+    this.showNotification('success', 'Draft cleared successfully!');
   }
 
-  // Form Submission
   submitRequest(): void {
-    if (!this.validateCurrentStep()) {
-      return;
-    }
-
+    if (!this.validateCurrentStep()) return;
     if (this.selectedItems().length === 0) {
-      alert('Please add at least one item to the request.');
+      this.showNotification('error', 'Please add at least one item to the request');
       return;
     }
-
     if (!this.requestForm.valid) {
-      alert('Please fill in all required fields.');
+      this.showNotification('error', 'Please fill in all required fields');
+      this.requestForm.markAllAsTouched();
       return;
     }
-
-    const invalid = this.selectedItems().filter((i) => !this.isGuid(i.itemId));
+    const invalid = this.selectedItems().filter(i => !this.isGuid(i.itemId));
     if (invalid.length > 0) {
-      alert(
-        'One or more lines use invalid item IDs (not from the catalog). Remove those lines and re-add items from the list.',
-      );
+      this.showNotification('error', 'Some items have invalid IDs. Remove and re-add them from the catalog.');
       return;
     }
 
@@ -308,106 +357,64 @@ export class ServiceRequestFormComponent implements OnInit {
     this.serviceRequestService.create(createRequest).subscribe({
       next: (response) => {
         this.loading.set(false);
-
         if (response.success) {
-          alert('Service Request created successfully!');
-          
-          // Clear draft
           localStorage.removeItem('serviceRequestDraft');
-          
-          // Navigate back to list
-          this.router.navigate(['/admin/requisitions']);
+          this.showSuccessModal.set(true);
         } else {
           this.error.set(response.message || 'Failed to create service request');
-          alert(this.error());
+          this.showNotification('error', this.error()!);
         }
       },
       error: (err: unknown) => {
         this.loading.set(false);
-
-        // Handle validation errors with detailed parsing
-        let errorMessage = 'Failed to create service request. Please try again.';
-        const httpErr = err as {
-          status?: number;
-          statusText?: string;
-          error?: {
-            errors?: Record<string, string | string[]>;
-            message?: string;
-            title?: string;
-          };
-        };
-
-        if (httpErr.error) {
-          // .NET Core validation errors format
-          if (httpErr.error.errors && typeof httpErr.error.errors === 'object') {
-            const validationErrors = httpErr.error.errors;
-            const errorDetails = Object.keys(validationErrors).map((key) => {
-              const messages = Array.isArray(validationErrors[key])
-                ? validationErrors[key].join(', ')
-                : validationErrors[key];
-              return `• ${key}: ${messages}`;
-            });
-            errorMessage = 'Validation errors:\n' + errorDetails.join('\n');
-          }
-          // Single error message
-          else if (httpErr.error.message) {
-            errorMessage = httpErr.error.message;
-          }
-          // Title field (common in .NET validation responses)
-          else if (httpErr.error.title) {
-            errorMessage = httpErr.error.title;
-            if (httpErr.error.errors) {
-              errorMessage += '\n\nDetails:\n' + JSON.stringify(httpErr.error.errors, null, 2);
-            }
-          }
-          // Generic error object
-          else if (typeof httpErr.error === 'string') {
-            errorMessage = httpErr.error;
-          }
+        let msg = 'Failed to create service request. Please try again.';
+        const httpErr = err as { status?: number; statusText?: string; error?: { errors?: Record<string, string | string[]>; message?: string; title?: string } };
+        if (httpErr.error?.errors && typeof httpErr.error.errors === 'object') {
+          const details = Object.keys(httpErr.error.errors).map(key => {
+            const msgs = Array.isArray(httpErr.error!.errors![key]) ? (httpErr.error!.errors![key] as string[]).join(', ') : httpErr.error!.errors![key];
+            return `• ${key}: ${msgs}`;
+          });
+          msg = 'Validation errors:\n' + details.join('\n');
+        } else if (httpErr.error?.message) {
+          msg = httpErr.error.message;
+        } else if (httpErr.error?.title) {
+          msg = httpErr.error.title;
+        } else if (typeof httpErr.error === 'string') {
+          msg = httpErr.error;
         }
-
-        // Add HTTP status info
-        if (httpErr.status) {
-          errorMessage = `[${httpErr.status} ${httpErr.statusText}]\n${errorMessage}`;
-        }
-
-        console.error('Service request creation failed', err);
-
-        this.error.set(errorMessage);
-        alert(this.error());
+        if (httpErr.status) msg = `[${httpErr.status}] ${msg}`;
+        this.error.set(msg);
+        this.showNotification('error', msg);
       },
     });
   }
 
+  navigateToList(): void {
+    this.showSuccessModal.set(false);
+    this.router.navigate(['/admin/requisitions']);
+  }
+
   cancel(): void {
-    if (confirm('Are you sure you want to cancel? All unsaved data will be lost.')) {
-      this.router.navigate(['/admin/requisitions']);
-    }
+    this.showCancelConfirm.set(true);
   }
 
-  // Computed Properties
-  get totalQuantity(): number {
-    return this.selectedItems().reduce((sum, item) => sum + item.requestedQty, 0);
+  confirmCancel(): void {
+    this.showCancelConfirm.set(false);
+    this.router.navigate(['/admin/requisitions']);
   }
 
-  get totalItems(): number {
-    return this.selectedItems().length;
+  private showNotification(type: 'success' | 'error' | 'info', message: string): void {
+    this.notification.set({ type, message });
+    setTimeout(() => this.notification.set(null), 4000);
   }
 
-  getUrgencyClass(urgency: string): string {
-    const level = this.urgencyLevels.find(u => u.value === urgency);
-    return level?.class || 'badge-secondary';
+  dismissNotification(): void {
+    this.notification.set(null);
   }
 
-  getUrgencyLabel(urgency: string): string {
-    const level = this.urgencyLevels.find(u => u.value === urgency);
-    return level?.label || urgency;
-  }
-
-  formatCurrency(amount: number): string {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(amount);
+  formatDate(iso: string): string {
+    if (!iso) return '\u2014';
+    const d = new Date(iso);
+    return isNaN(d.getTime()) ? iso : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   }
 }

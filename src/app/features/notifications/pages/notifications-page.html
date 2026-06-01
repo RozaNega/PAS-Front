@@ -1,30 +1,206 @@
-<section class="notifications-page ecx-list-surface" aria-label="Notifications page">
-  <header class="page-head">
-    <div>
-      <h1>Notifications</h1>
-      <p>Track approvals, alerts, and operational updates in one place.</p>
+<section class="notif-page" aria-label="Notifications page">
+
+  @if (notificationToast(); as toast) {
+    <div class="toast-bar" [class.toast--success]="toast.type === 'success'" [class.toast--error]="toast.type === 'error'" [class.toast--info]="toast.type === 'info'" role="alert">
+      <i class="bi" [class.bi-check-circle-fill]="toast.type === 'success'" [class.bi-x-circle-fill]="toast.type === 'error'" [class.bi-info-circle-fill]="toast.type === 'info'" aria-hidden="true"></i>
+      <span>{{ toast.message }}</span>
+    </div>
+  }
+
+  <header class="page-hero">
+    <div class="page-hero__top">
+      <div class="page-hero__text">
+        <p class="page-hero__eyebrow">Notification Center</p>
+        <h1>Notifications</h1>
+        <p class="page-hero__subtitle">Track approvals, alerts, and system updates in one place.</p>
+      </div>
+      <div class="page-hero__stats">
+        <div class="hero-stat">
+          <span class="hero-stat__label">Unread</span>
+          <span class="hero-stat__value">{{ unreadCount() }}</span>
+        </div>
+        <div class="hero-stat">
+          <span class="hero-stat__label">Total</span>
+          <span class="hero-stat__value">{{ allNotifications().length }}</span>
+        </div>
+      </div>
     </div>
 
-    <button type="button" class="mark-btn" (click)="markAllAsRead()" [disabled]="unreadCount() === 0">
-      Mark all as read
-    </button>
+    <div class="stat-grid">
+      @for (card of statCards(); track card.label) {
+        <div class="stat-card">
+          <div class="stat-card__top">
+            <i class="bi {{ card.icon }}" [style.color]="card.color" aria-hidden="true"></i>
+            <span class="stat-card__value">{{ card.value }}</span>
+          </div>
+          <span class="stat-card__label">{{ card.label }}</span>
+          <div class="stat-card__bar-track">
+            <div class="stat-card__bar-fill" [style.width.%]="card.pct" [style.background]="card.color"></div>
+          </div>
+        </div>
+      }
+    </div>
   </header>
 
-  <p class="summary">Unread: <strong>{{ unreadCount() }}</strong></p>
-
-  <div class="notification-list">
-    @for (item of notifications(); track item.id) {
-      <article class="notification-item" [class.is-read]="item.read">
-        <div class="notification-meta">
-          <span class="tag" [class.info]="item.type === 'Info'" [class.success]="item.type === 'Success'" [class.warning]="item.type === 'Warning'">
-            {{ item.type }}
-          </span>
-          <time>{{ item.createdAt }}</time>
+  <div class="insight-row">
+    <div class="insight-card insight-card--donut">
+      <h3 class="insight-card__title">By Type</h3>
+      <div class="donut-wrapper">
+        <svg class="donut" viewBox="0 0 120 120" aria-label="Notification type distribution">
+          <circle cx="60" cy="60" r="50" fill="none" stroke="#e2e8f0" stroke-width="16" />
+          @for (seg of donutSegments(); track seg.label) {
+            <circle cx="60" cy="60" r="50" fill="none" [attr.stroke]="seg.color" stroke-width="16" stroke-linecap="butt"
+              [attr.stroke-dasharray]="seg.dashArray" [style.stroke-dashoffset]="seg.dashOffset" transform="rotate(-90 60 60)" />
+          }
+          <text x="60" y="54" text-anchor="middle" font-size="18" font-weight="700" fill="#0f172a">{{ filteredNotifications().length }}</text>
+          <text x="60" y="70" text-anchor="middle" font-size="8" fill="#64748b">total</text>
+        </svg>
+        <div class="donut-legend">
+          @for (seg of donutSegments(); track seg.label) {
+            <div class="legend-item">
+              <span class="legend-dot" [style.background]="seg.color"></span>
+              <span class="legend-label">{{ seg.label }}</span>
+              <span class="legend-value">{{ seg.value }}</span>
+            </div>
+          }
         </div>
+      </div>
+    </div>
 
-        <h2>{{ item.title }}</h2>
-        <p>{{ item.message }}</p>
-      </article>
-    }
+    <div class="insight-card insight-card--activity">
+      <h3 class="insight-card__title">Activity</h3>
+      <p class="insight-card__subtitle">Notifications by day of week</p>
+      <div class="activity-bars">
+        @for (d of dayActivity(); track d.day) {
+          <div class="activity-bar-col">
+            <span class="activity-bar-count">{{ d.count }}</span>
+            <div class="activity-bar-track">
+              <div class="activity-bar-fill" [style.height.%]="d.pct" [style.background]="d.color"></div>
+            </div>
+            <span class="activity-bar-label">{{ d.day }}</span>
+          </div>
+        }
+      </div>
+    </div>
   </div>
+
+  <div class="toolbar">
+    <div class="toolbar__search">
+      <i class="bi bi-search" aria-hidden="true"></i>
+      <input type="search" class="toolbar__input" placeholder="Search notifications…" [ngModel]="searchTerm()" (ngModelChange)="searchTerm.set($event); currentPage.set(1)" autocomplete="off" aria-label="Search notifications" />
+    </div>
+    <div class="toolbar__actions">
+      <button type="button" class="action-btn ghost" (click)="markAllAsRead()" [disabled]="unreadCount() === 0">
+        <i class="bi bi-check2-all" aria-hidden="true"></i>
+        Mark all read
+      </button>
+    </div>
+  </div>
+
+  <div class="filter-row">
+    <div class="type-filters" role="tablist" aria-label="Filter by type">
+      @for (t of typeOptions; track t) {
+        <button type="button" role="tab" class="filter-chip" [class.active]="typeFilter() === t" (click)="setTypeFilter(t)">
+          @if (t !== 'All') {
+            <span class="chip-dot" [style.background]="TYPE_COLORS[t]"></span>
+          }
+          {{ t === 'All' ? 'All Types' : t }}
+        </button>
+      }
+    </div>
+    <div class="read-filters" role="tablist" aria-label="Filter by read status">
+      @for (f of readFilters; track f) {
+        <button type="button" role="tab" class="filter-chip" [class.active]="readFilter() === f" (click)="setReadFilter(f)">
+          {{ f === 'all' ? 'All' : f === 'unread' ? 'Unread' : 'Read' }}
+        </button>
+      }
+    </div>
+  </div>
+
+  @if (filteredNotifications().length === 0) {
+    <div class="empty-state">
+      <i class="bi bi-bell-slash" aria-hidden="true"></i>
+      @if (searchTerm() || typeFilter() !== 'All' || readFilter() !== 'all') {
+        <h3>No matches</h3>
+        <p>Try different search terms or filters.</p>
+      } @else {
+        <h3>You're all caught up</h3>
+        <p>No notifications right now. New alerts will appear here.</p>
+      }
+    </div>
+  } @else {
+    <div class="notification-list">
+      @for (group of timelineGroups(); track group.label) {
+        <div class="timeline-group">
+          <div class="timeline-header">
+            <span class="timeline-label">{{ group.label }}</span>
+            <span class="timeline-count">{{ group.items.length }}</span>
+          </div>
+          @for (item of group.items; track item.id) {
+            <article class="notif-card" [class.is-read]="item.read" [class.is-unread]="!item.read" (click)="markAsRead(item)">
+              <div class="notif-card__indicator" [style.background]="getTypeColor(item.type)" aria-hidden="true"></div>
+              <div class="notif-icon" [style.background]="getTypeColor(item.type) + '18'" [style.color]="getTypeColor(item.type)">
+                <i class="bi {{ getTypeIcon(item.type) }}" aria-hidden="true"></i>
+              </div>
+              <div class="notif-body">
+                <div class="notif-header">
+                  <h2 class="notif-title">{{ item.title }}</h2>
+                  <time class="notif-time">{{ getTimeLabel(item.createdAt) }}</time>
+                </div>
+                <p class="notif-msg">{{ item.message }}</p>
+                <div class="notif-footer">
+                  <span class="notif-tag" [style.background]="getTypeColor(item.type) + '14'" [style.color]="getTypeColor(item.type)">
+                    {{ item.type }}
+                  </span>
+                  @if (!item.read) {
+                    <span class="unread-dot" aria-label="Unread"></span>
+                  }
+                </div>
+              </div>
+              <div class="notif-actions" (click)="$event.stopPropagation()">
+                @if (!item.read) {
+                  <button type="button" class="notif-action-btn" title="Mark as read" (click)="markAsRead(item)">
+                    <i class="bi bi-envelope-open" aria-hidden="true"></i>
+                  </button>
+                }
+                <button type="button" class="notif-action-btn notif-action-btn--danger" title="Dismiss" (click)="requestDelete(item)">
+                  <i class="bi bi-trash3" aria-hidden="true"></i>
+                </button>
+              </div>
+            </article>
+          }
+        </div>
+      }
+    </div>
+
+    @if (totalPages() > 1) {
+      <nav class="pagination" aria-label="Pagination">
+        <button type="button" class="page-btn" [disabled]="currentPage() === 1" (click)="prevPage()">
+          <i class="bi bi-chevron-left" aria-hidden="true"></i>
+        </button>
+        @for (p of getPageRange(); track p) {
+          <button type="button" class="page-btn" [class.active]="currentPage() === p" (click)="goToPage(p)">{{ p }}</button>
+        }
+        <button type="button" class="page-btn" [disabled]="currentPage() === totalPages()" (click)="nextPage()">
+          <i class="bi bi-chevron-right" aria-hidden="true"></i>
+        </button>
+      </nav>
+    }
+  }
+
+  @if (showConfirmDelete()) {
+    <div class="modal-overlay" (click)="cancelDelete()">
+      <div class="modal-box" (click)="$event.stopPropagation()">
+        <div class="modal-icon">
+          <i class="bi bi-exclamation-triangle-fill"></i>
+        </div>
+        <h3 class="modal-title">Dismiss Notification</h3>
+        <p class="modal-desc">Are you sure you want to dismiss "{{ notificationToDelete()?.title }}"? This action cannot be undone.</p>
+        <div class="modal-actions">
+          <button type="button" class="modal-btn modal-btn--secondary" (click)="cancelDelete()">Cancel</button>
+          <button type="button" class="modal-btn modal-btn--danger" (click)="confirmDelete()">Dismiss</button>
+        </div>
+      </div>
+    </div>
+  }
 </section>

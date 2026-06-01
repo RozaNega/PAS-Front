@@ -1,6 +1,6 @@
-import { Component, signal, inject, OnInit } from '@angular/core';
+import { Component, signal, computed, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { FormBuilder, Validators } from '@angular/forms';
 import { finalize } from 'rxjs';
@@ -19,6 +19,32 @@ interface Category {
   displayOrder: number;
 }
 
+interface StatCard {
+  label: string;
+  value: string;
+  pct: number;
+  color: string;
+  icon: string;
+}
+
+interface DonutSegment {
+  label: string;
+  value: number;
+  pct: number;
+  color: string;
+  dashArray: string;
+  dashOffset: number;
+}
+
+interface BarItem {
+  name: string;
+  value: number;
+  pct: number;
+  color: string;
+}
+
+const BAR_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+
 @Component({
   selector: 'app-property-category-list',
   standalone: true,
@@ -36,6 +62,9 @@ export class PropertyCategoryListComponent implements OnInit {
   editingCategory = signal<Category | null>(null);
   expandedCategories = signal<Set<string>>(new Set());
   loading = signal(false);
+  showConfirmDelete = signal(false);
+  categoryToDelete = signal<string | null>(null);
+  notification = signal<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
 
   categories = signal<Category[]>([
     {
@@ -97,6 +126,80 @@ export class PropertyCategoryListComponent implements OnInit {
     }
   ]);
 
+  flatCategories = computed(() => {
+    const flat: { cat: Category; depth: number }[] = [];
+    const flatten = (cats: Category[], depth: number) => {
+      cats.forEach(cat => {
+        flat.push({ cat, depth });
+        if (cat.subcategories.length > 0) {
+          flatten(cat.subcategories, depth + 1);
+        }
+      });
+    };
+    flatten(this.categories(), 0);
+    return flat;
+  });
+
+  totalSubcategories = computed(() =>
+    this.flatCategories().filter(f => f.cat.parentId !== null).length
+  );
+
+  totalCategoryProperties = computed(() =>
+    this.flatCategories().reduce((s, f) => s + f.cat.propertiesCount, 0)
+  );
+
+  statCards = computed((): StatCard[] => {
+    const all = this.flatCategories();
+    const total = all.length;
+    const roots = all.filter(f => f.cat.parentId === null).length;
+    const subs = all.filter(f => f.cat.parentId !== null).length;
+    const active = all.filter(f => f.cat.status === 'Active').length;
+    const totalProps = all.reduce((s, f) => s + f.cat.propertiesCount, 0);
+    const largest = all.reduce((best, f) =>
+      f.cat.propertiesCount > (best?.cat.propertiesCount ?? 0) ? f : best, all[0]);
+
+    return [
+      { label: 'Total Categories', value: total.toString(), pct: 100, color: '#3b82f6', icon: 'bi-folder' },
+      { label: 'Root Categories', value: roots.toString(), pct: total > 0 ? Math.round(roots / total * 100) : 0, color: '#10b981', icon: 'bi-diagram-3' },
+      { label: 'Subcategories', value: subs.toString(), pct: total > 0 ? Math.round(subs / total * 100) : 0, color: '#f59e0b', icon: 'bi-list-nested' },
+      { label: 'Active', value: active.toString(), pct: total > 0 ? Math.round(active / total * 100) : 0, color: '#8b5cf6', icon: 'bi-check-circle' },
+      { label: 'Total Properties', value: totalProps.toLocaleString(), pct: Math.min(100, Math.round(totalProps / 800 * 100)), color: '#ec4899', icon: 'bi-box' },
+      { label: 'Largest', value: largest?.cat.name || 'N/A', pct: largest ? Math.round(largest.cat.propertiesCount / 312 * 100) : 0, color: '#14b8a6', icon: 'bi-trophy' }
+    ];
+  });
+
+  categoryBars = computed((): BarItem[] => {
+    const roots = this.categories().filter(c => c.parentId === null);
+    const max = Math.max(...roots.map(c => c.propertiesCount), 1);
+    return roots.map((c, i) => ({
+      name: c.name,
+      value: c.propertiesCount,
+      pct: Math.round(c.propertiesCount / max * 100),
+      color: BAR_COLORS[i % BAR_COLORS.length]
+    }));
+  });
+
+  donutSegments = computed((): DonutSegment[] => {
+    const roots = this.categories().filter(c => c.parentId === null);
+    const total = roots.reduce((s, c) => s + c.propertiesCount, 0) || 1;
+    const C = 2 * Math.PI * 50;
+    let cumulative = 0;
+    return roots.map((c, i) => {
+      const pct = Math.round(c.propertiesCount / total * 100);
+      const dashLen = C * pct / 100;
+      const seg: DonutSegment = {
+        label: c.name,
+        value: c.propertiesCount,
+        pct,
+        color: BAR_COLORS[i % BAR_COLORS.length],
+        dashArray: `${dashLen} ${C}`,
+        dashOffset: cumulative
+      };
+      cumulative += dashLen;
+      return seg;
+    });
+  });
+
   modalFormData = signal({
     name: '',
     parentId: '' as string | null,
@@ -128,7 +231,6 @@ export class PropertyCategoryListComponent implements OnInit {
       .subscribe({
         next: (response) => {
           if (response.success && response.data) {
-            // Transform backend data to match frontend structure
             const transformedCategories = response.data.map(cat => ({
               id: cat.id,
               name: cat.name,
@@ -143,10 +245,19 @@ export class PropertyCategoryListComponent implements OnInit {
             this.categories.set(transformedCategories);
           }
         },
-        error: (error) => {
-          console.error('Error loading categories:', error);
+        error: () => {
+          this.showNotification('Failed to load categories from server, using mock data', 'info');
         }
       });
+  }
+
+  showNotification(message: string, type: 'success' | 'error' | 'info'): void {
+    this.notification.set({ message, type });
+    setTimeout(() => this.notification.set(null), 3500);
+  }
+
+  getRootCategories(): Category[] {
+    return this.categories().filter(c => c.parentId === null);
   }
 
   selectCategory(category: Category): void {
@@ -215,11 +326,9 @@ export class PropertyCategoryListComponent implements OnInit {
   saveCategory(): void {
     const data = this.modalFormData();
     const editing = this.editingCategory();
-
     this.loading.set(true);
 
     if (editing) {
-      // Update existing category
       this.categoriesService.update(editing.id, {
         name: data.name,
         description: data.description,
@@ -231,17 +340,16 @@ export class PropertyCategoryListComponent implements OnInit {
             this.updateCategoryRecursive(this.categories(), editing.id, data);
             this.closeModal();
             this.loadCategories();
+            this.showNotification('Category updated successfully', 'success');
           } else {
-            alert('Failed to update category: ' + response.message);
+            this.showNotification('Failed to update category: ' + response.message, 'error');
           }
         },
         error: (error) => {
-          console.error('Error updating category:', error);
-          alert('Error updating category: ' + (error.error?.message || 'Unknown error'));
+          this.showNotification('Error updating category', 'error');
         }
       });
     } else {
-      // Create new category
       this.categoriesService.createCategory({
         name: data.name,
         description: data.description,
@@ -252,13 +360,13 @@ export class PropertyCategoryListComponent implements OnInit {
           if (response.success) {
             this.closeModal();
             this.loadCategories();
+            this.showNotification('Category created successfully', 'success');
           } else {
-            alert('Failed to create category: ' + response.message);
+            this.showNotification('Failed to create category: ' + response.message, 'error');
           }
         },
-        error: (error) => {
-          console.error('Error creating category:', error);
-          alert('Error creating category: ' + (error.error?.message || 'Unknown error'));
+        error: () => {
+          this.showNotification('Error creating category', 'error');
         }
       });
     }
@@ -297,10 +405,27 @@ export class PropertyCategoryListComponent implements OnInit {
     return false;
   }
 
-  deleteCategory(id: string): void {
-    if (confirm('Are you sure you want to delete this category?')) {
+  requestDelete(id: string): void {
+    this.categoryToDelete.set(id);
+    this.showConfirmDelete.set(true);
+  }
+
+  cancelDelete(): void {
+    this.showConfirmDelete.set(false);
+    this.categoryToDelete.set(null);
+  }
+
+  confirmDelete(): void {
+    const id = this.categoryToDelete();
+    if (id) {
       this.deleteCategoryRecursive(this.categories(), id);
+      this.showNotification('Category deleted', 'success');
     }
+    this.cancelDelete();
+  }
+
+  deleteCategory(id: string): void {
+    this.requestDelete(id);
   }
 
   deleteCategoryRecursive(cats: Category[], id: string): boolean {
@@ -308,6 +433,9 @@ export class PropertyCategoryListComponent implements OnInit {
       if (cats[i].id === id) {
         cats.splice(i, 1);
         this.categories.set([...cats]);
+        if (this.selectedCategory()?.id === id) {
+          this.selectedCategory.set(null);
+        }
         return true;
       }
       if (cats[i].subcategories.length > 0) {
@@ -319,17 +447,15 @@ export class PropertyCategoryListComponent implements OnInit {
     return false;
   }
 
+  getCategoryStatus(cat: Category): 'Active' | 'Inactive' {
+    return cat.status;
+  }
+
   getFlatCategories(): Category[] {
-    const flat: Category[] = [];
-    const flatten = (cats: Category[]) => {
-      cats.forEach(cat => {
-        flat.push(cat);
-        if (cat.subcategories.length > 0) {
-          flatten(cat.subcategories);
-        }
-      });
-    };
-    flatten(this.categories());
-    return flat;
+    return this.flatCategories().map(f => f.cat);
+  }
+
+  getParentLabel(cat: Category): string {
+    return cat.parentId ? 'Subcategory' : 'Root Category';
   }
 }

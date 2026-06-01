@@ -1,0 +1,266 @@
+<section class="backup-page">
+  <header class="page-header">
+    <div class="header-content">
+      <div class="header-icon">
+        <i class="bi bi-database"></i>
+      </div>
+      <div class="header-text">
+        <h1>Backup & Restore</h1>
+        <p>Manage system backups, restore data, and configure backup schedules</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button type="button" class="action-btn primary" (click)="createBackup()" [disabled]="creating()">
+        @if (creating()) {
+          <i class="bi bi-arrow-repeat spin"></i>
+          Creating...
+        } @else {
+          <i class="bi bi-cloud-arrow-up"></i>
+          Create Backup
+        }
+      </button>
+    </div>
+  </header>
+
+  <main class="page-content">
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon blue">
+          <i class="bi bi-clock-history"></i>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Last Backup</span>
+          <span class="stat-value">{{ backupStats.lastBackup }}</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon purple">
+          <i class="bi bi-database"></i>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Database Size</span>
+          <span class="stat-value">{{ backupStats.databaseSize }}</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon green">
+          <i class="bi bi-files"></i>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Total Backups</span>
+          <span class="stat-value">{{ backupStats.totalBackups }}</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon orange">
+          <i class="bi bi-hdd-stack"></i>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Storage Used</span>
+          <span class="stat-value">{{ backupStats.storageUsed }}</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon teal">
+          <i class="bi bi-calendar-check"></i>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Next Scheduled</span>
+          <span class="stat-value">{{ backupStats.nextScheduled }}</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" [class.green]="backupStats.healthStatus === 'Healthy'" [class.red]="backupStats.healthStatus !== 'Healthy'">
+          <i class="bi bi-shield-check"></i>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">System Health</span>
+          <span class="stat-value">{{ backupStats.healthStatus }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="backup-layout">
+      <div class="backup-main">
+        <div class="panel">
+          <div class="panel-header">
+            <h3><i class="bi bi-clock-history"></i> Backup History</h3>
+            <div class="panel-actions">
+              <input type="text" class="search-input" placeholder="Search backups..." />
+            </div>
+          </div>
+          <div class="panel-body no-padding">
+            <table class="backup-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Date</th>
+                  <th>Size</th>
+                  <th>Type</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (backup of backupHistory; track backup.id) {
+                  <tr>
+                    <td class="backup-name">
+                      <i class="bi bi-file-earmark-zip"></i>
+                      {{ backup.name }}
+                    </td>
+                    <td>{{ backup.date }}</td>
+                    <td>{{ backup.size }}</td>
+                    <td>
+                      <span class="type-badge" [class.full]="backup.type === 'Full'" [class.inc]="backup.type === 'Incremental'">
+                        {{ backup.type }}
+                      </span>
+                    </td>
+                    <td>
+                      <span class="status-badge" [class.success]="backup.status === 'success'" [class.danger]="backup.status === 'failed'" [class.warning]="backup.status === 'in-progress'">
+                        @if (backup.status === 'in-progress') {
+                          <i class="bi bi-arrow-repeat spin"></i>
+                        } @else if (backup.status === 'success') {
+                          <i class="bi bi-check-circle-fill"></i>
+                        } @else {
+                          <i class="bi bi-x-circle-fill"></i>
+                        }
+                        {{ getStatusLabel(backup.status) }}
+                      </span>
+                    </td>
+                    <td>
+                      <div class="action-buttons">
+                        <button type="button" class="icon-btn" title="Download" (click)="downloadBackup(backup.id)">
+                          <i class="bi bi-download"></i>
+                        </button>
+                        <button type="button" class="icon-btn restore" title="Restore" (click)="restoreBackup(backup.id)" [disabled]="restoring() === backup.id">
+                          @if (restoring() === backup.id) {
+                            <i class="bi bi-arrow-repeat spin"></i>
+                          } @else {
+                            <i class="bi bi-arrow-counterclockwise"></i>
+                          }
+                        </button>
+                        <button type="button" class="icon-btn danger" title="Delete" (click)="deleteBackup(backup.id)" [disabled]="deleting() === backup.id">
+                          @if (deleting() === backup.id) {
+                            <i class="bi bi-arrow-repeat spin"></i>
+                          } @else {
+                            <i class="bi bi-trash"></i>
+                          }
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <aside class="backup-sidebar">
+        <div class="panel">
+          <div class="panel-header">
+            <h3><i class="bi bi-gear"></i> Schedule</h3>
+          </div>
+          <div class="panel-body">
+            <div class="schedule-form">
+              <div class="form-group">
+                <label>Frequency</label>
+                <select class="form-input" [(ngModel)]="scheduleConfig.frequency">
+                  <option value="hourly">Hourly</option>
+                  <option value="daily">Daily</option>
+                  <option value="weekly">Weekly</option>
+                  <option value="monthly">Monthly</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Time</label>
+                <input type="time" class="form-input" [(ngModel)]="scheduleConfig.time" />
+              </div>
+              <div class="form-group">
+                <label>Retention (days)</label>
+                <select class="form-input" [(ngModel)]="scheduleConfig.retention">
+                  <option [value]="7">7 days</option>
+                  <option [value]="30">30 days</option>
+                  <option [value]="90">90 days</option>
+                  <option [value]="365">1 year</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Storage Location</label>
+                <select class="form-input" [(ngModel)]="scheduleConfig.location">
+                  <option value="local">Local Server</option>
+                  <option value="s3">AWS S3</option>
+                  <option value="gcs">Google Cloud</option>
+                  <option value="ftp">FTP Server</option>
+                </select>
+              </div>
+              <div class="toggle-item">
+                <span class="toggle-label">Compression</span>
+                <label class="toggle-switch">
+                  <input type="checkbox" [(ngModel)]="scheduleConfig.compression" />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <div class="toggle-item">
+                <span class="toggle-label">Include Logs</span>
+                <label class="toggle-switch">
+                  <input type="checkbox" [(ngModel)]="scheduleConfig.includeLogs" />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <div class="toggle-item">
+                <span class="toggle-label">Include Database</span>
+                <label class="toggle-switch">
+                  <input type="checkbox" [(ngModel)]="scheduleConfig.includeDatabase" />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <div class="toggle-item">
+                <span class="toggle-label">Include Uploads</span>
+                <label class="toggle-switch">
+                  <input type="checkbox" [(ngModel)]="scheduleConfig.includeUploads" />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <button type="button" class="action-btn primary full-width" (click)="saveSchedule()">
+                <i class="bi bi-check-lg"></i>
+                Save Schedule
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <h3><i class="bi bi-info-circle"></i> Storage Info</h3>
+          </div>
+          <div class="panel-body">
+            <div class="storage-info">
+              <div class="storage-bar">
+                <div class="storage-fill" style="width: 68%"></div>
+              </div>
+              <div class="storage-details">
+                <div class="storage-item">
+                  <span>Used</span>
+                  <span>57.6 GB</span>
+                </div>
+                <div class="storage-item">
+                  <span>Free</span>
+                  <span>27.2 GB</span>
+                </div>
+                <div class="storage-item">
+                  <span>Total</span>
+                  <span>84.8 GB</span>
+                </div>
+                <div class="storage-item">
+                  <span>Usage</span>
+                  <span>68%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </main>
+</section>

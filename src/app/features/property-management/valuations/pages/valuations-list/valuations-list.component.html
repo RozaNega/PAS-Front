@@ -1,12 +1,17 @@
 <div class="valuations-container">
-  <div class="page-header">
-    <div class="header-info">
+  <div class="page-header gradient-header">
+    <div class="header-icon">
+      <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M3 3v18h18M7 16l4-4 4 4 5-5M7 12l4-4 4 4 5-5"/>
+      </svg>
+    </div>
+    <div class="header-content">
       <h1>Valuations</h1>
       <p class="subtitle">Track and analyze asset values over time</p>
     </div>
     <div class="header-actions">
       @if (lastRunTime()) {
-        <span class="last-run-time">Last run: {{ lastRunTime() | date:'short' }}</span>
+        <span class="last-run">Last: {{ lastRunTime() | date:'short' }}</span>
       }
       <button class="btn btn-primary" (click)="runReport()" [disabled]="isLoading()">
         @if (isLoading()) {
@@ -18,227 +23,218 @@
     </div>
   </div>
 
+  @if (notification(); as notif) {
+    <div class="notification-banner" [class.success]="notif.type === 'success'" [class.error]="notif.type === 'error'" [class.info]="notif.type === 'info'">
+      <i class="bi" [class.bi-check-circle-fill]="notif.type === 'success'" [class.bi-exclamation-circle-fill]="notif.type === 'error'" [class.bi-info-circle-fill]="notif.type === 'info'"></i>
+      <span>{{ notif.message }}</span>
+      <button class="notif-close" (click)="notification.set(null)">
+        <i class="bi bi-x"></i>
+      </button>
+    </div>
+  }
+
   <div class="filter-bar">
     <div class="filter-group">
-      <label>📅 Date Range:</label>
+      <label>Date Range</label>
       <input type="date" [(ngModel)]="dateRange.start">
-      <span>to</span>
+      <span class="range-sep">to</span>
       <input type="date" [(ngModel)]="dateRange.end">
     </div>
     <div class="filter-group">
-      <label>🏷️ Category:</label>
-      <select [(ngModel)]="categoryFilter">
+      <label>Category</label>
+      <select [(ngModel)]="categoryFilter" (ngModelChange)="onFilterChange()">
         @for (cat of categories; track cat) {
           <option [value]="cat">{{ cat }}</option>
         }
       </select>
     </div>
     <div class="filter-group">
-      <label>📍 Location:</label>
-      <select [(ngModel)]="locationFilter">
+      <label>Location</label>
+      <select [(ngModel)]="locationFilter" (ngModelChange)="onFilterChange()">
         @for (loc of locations; track loc) {
           <option [value]="loc">{{ loc }}</option>
         }
       </select>
     </div>
-    <button class="btn btn-secondary" (click)="applyFilters()">Apply Filters</button>
+    <button class="btn btn-sm btn-secondary" (click)="applyFilters()">Apply</button>
   </div>
 
-  <div class="valuation-summary">
-    <div class="summary-card">
-      <div class="summary-icon">📊</div>
-      <div class="summary-content">
-        <div class="summary-label">Total Assets</div>
-        <div class="summary-value">{{ totalAssets() }}</div>
-        <div class="summary-sub">properties</div>
+  <div class="stat-cards">
+    @for (card of statCards(); track card.label) {
+      <div class="stat-card">
+        <div class="stat-icon" [style.background]="card.color + '15'" [style.color]="card.color">
+          <i class="bi" [class.bi-box]="card.icon === 'bi-box'" [class.bi-currency-dollar]="card.icon === 'bi-currency-dollar'" [class.bi-graph-up]="card.icon === 'bi-graph-up'" [class.bi-arrow-down]="card.icon === 'bi-arrow-down'" [class.bi-percent]="card.icon === 'bi-percent'" [class.bi-pie-chart]="card.icon === 'bi-pie-chart'"></i>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">{{ card.label }}</span>
+          <span class="stat-value">{{ card.value }}</span>
+          <div class="micro-bar">
+            <div class="micro-fill" [style.width.%]="card.pct" [style.background]="card.color"></div>
+          </div>
+        </div>
       </div>
-    </div>
-    <div class="summary-card">
-      <div class="summary-icon">💰</div>
-      <div class="summary-content">
-        <div class="summary-label">Current Value</div>
-        <div class="summary-value">${{ currentValue() | number:'1.0-0' }}</div>
-        <div class="summary-sub trend-up">▲ +12.5%</div>
-      </div>
-    </div>
-    <div class="summary-card">
-      <div class="summary-icon">📉</div>
-      <div class="summary-content">
-        <div class="summary-label">YTD Depreciation</div>
-        <div class="summary-value">${{ ytdDepreciation() | number:'1.0-0' }}</div>
-        <div class="summary-sub trend-down">▼ -6.9%</div>
-      </div>
-    </div>
-    <div class="summary-card">
-      <div class="summary-icon">🎯</div>
-      <div class="summary-content">
-        <div class="summary-label">Projected Year End</div>
-        <div class="summary-value">${{ projectedYearEnd() | number:'1.0-0' }}</div>
-        <div class="summary-sub trend-down">▼ -7.4%</div>
-      </div>
-    </div>
+    }
   </div>
 
-  <div class="charts-section">
-    <div class="chart-card main-chart">
-      <div class="chart-header">
-        <h3>📈 Value Trend Chart</h3>
+  <div class="charts-row">
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <span class="chart-card-title">Value by Category</span>
+        <span class="chart-card-badge">{{ categoryBars().length }} categories</span>
       </div>
-      <div class="chart-placeholder">
-        <div class="chart-bars">
-          <div class="chart-bar" style="height: 60%"></div>
-          <div class="chart-bar" style="height: 70%"></div>
-          <div class="chart-bar" style="height: 65%"></div>
-          <div class="chart-bar" style="height: 80%"></div>
-          <div class="chart-bar" style="height: 75%"></div>
-          <div class="chart-bar" style="height: 85%"></div>
-          <div class="chart-bar" style="height: 90%"></div>
-          <div class="chart-bar" style="height: 88%"></div>
-          <div class="chart-bar" style="height: 95%"></div>
-          <div class="chart-bar" style="height: 92%"></div>
-          <div class="chart-bar" style="height: 98%"></div>
-          <div class="chart-bar" style="height: 100%"></div>
+      <div class="chart-card-body">
+        <div class="donut-section">
+          <svg viewBox="0 0 130 130" class="donut-svg">
+            @for (seg of donutSegments(); track seg.label) {
+              <circle r="50" cx="65" cy="65" fill="transparent" [attr.stroke]="seg.color" stroke-width="22" [attr.stroke-dasharray]="seg.dashArray" [attr.stroke-dashoffset]="seg.dashOffset" transform="rotate(-90 65 65)" class="donut-segment" />
+            }
+            <text x="65" y="55" text-anchor="middle" class="donut-value">{{ filteredAssets().length }}</text>
+            <text x="65" y="72" text-anchor="middle" class="donut-label">Assets</text>
+          </svg>
+          <div class="donut-legend">
+            @for (seg of donutSegments(); track seg.label) {
+              <div class="legend-item">
+                <span class="legend-dot" [style.background]="seg.color"></span>
+                <span class="legend-label">{{ seg.label }}</span>
+                <span class="legend-value">{{ seg.value }}K</span>
+              </div>
+            }
+          </div>
         </div>
-        <div class="chart-labels">
-          <span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span><span>May</span>
-          <span>Jun</span><span>Jul</span><span>Aug</span><span>Sep</span><span>Oct</span>
-          <span>Nov</span><span>Dec</span>
-        </div>
-      </div>
-      <div class="chart-legend">
-        <span class="legend-item"><span class="legend-color blue"></span> Total Value</span>
-        <span class="legend-item"><span class="legend-color green"></span> Depreciated Value</span>
-        <span class="legend-item"><span class="legend-color orange"></span> New Acquisitions</span>
       </div>
     </div>
 
-    <div class="chart-cards-row">
-      <div class="chart-card pie-chart">
-        <div class="chart-header">
-          <h3>🥧 Value by Category</h3>
-        </div>
-        <div class="pie-placeholder">
-          <div class="pie-segment" style="background: #3b82f6; width: 35%"></div>
-          <div class="pie-segment" style="background: #10b981; width: 25%"></div>
-          <div class="pie-segment" style="background: #f59e0b; width: 15%"></div>
-          <div class="pie-segment" style="background: #ef4444; width: 10%"></div>
-          <div class="pie-segment" style="background: #8b5cf6; width: 10%"></div>
-          <div class="pie-segment" style="background: #6b7280; width: 5%"></div>
-        </div>
-        <div class="pie-legend">
-          <div class="pie-legend-item"><span class="pie-color" style="background: #3b82f6"></span> Electronics 35%</div>
-          <div class="pie-legend-item"><span class="pie-color" style="background: #10b981"></span> Furniture 25%</div>
-          <div class="pie-legend-item"><span class="pie-color" style="background: #f59e0b"></span> Vehicles 15%</div>
-          <div class="pie-legend-item"><span class="pie-color" style="background: #ef4444"></span> Machinery 10%</div>
-          <div class="pie-legend-item"><span class="pie-color" style="background: #8b5cf6"></span> Other 10%</div>
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <span class="chart-card-title">Monthly Value Trend</span>
+        <span class="chart-card-badge">12 months</span>
+      </div>
+      <div class="chart-card-body trend-body">
+        <div class="trend-chart">
+          @for (bar of trendBars(); track bar.month) {
+            <div class="trend-bar-wrapper">
+              <div class="trend-bar" [style.height.%]="bar.pct" [style.background]="'linear-gradient(to top, #3b82f6, #60a5fa)'"></div>
+              <span class="trend-label">{{ bar.month }}</span>
+            </div>
+          }
         </div>
       </div>
+    </div>
 
-      <div class="chart-card location-chart">
-        <div class="chart-header">
-          <h3>🗺️ Value by Location</h3>
-        </div>
-        <div class="location-bars">
-          <div class="location-bar-item">
-            <span>Headquarters</span>
-            <div class="bar-container"><div class="bar-fill" style="width: 60%"></div></div>
-            <span>$1.2M</span>
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <span class="chart-card-title">By Location (Book Value)</span>
+        <span class="chart-card-badge">{{ locationBars().length }} locations</span>
+      </div>
+      <div class="chart-card-body">
+        @for (item of locationBars(); track item.name) {
+          <div class="bar-item">
+            <div class="bar-label">
+              <span>{{ item.name }}</span>
+              <span>{{ item.value }}K</span>
+            </div>
+            <div class="bar-track">
+              <div class="bar-fill" [style.width.%]="item.pct" [style.background]="item.color"></div>
+            </div>
           </div>
-          <div class="location-bar-item">
-            <span>Warehouse</span>
-            <div class="bar-container"><div class="bar-fill" style="width: 40%"></div></div>
-            <span>$0.8M</span>
-          </div>
-          <div class="location-bar-item">
-            <span>Branch 1</span>
-            <div class="bar-container"><div class="bar-fill" style="width: 20%"></div></div>
-            <span>$0.4M</span>
-          </div>
-          <div class="location-bar-item">
-            <span>Branch 2</span>
-            <div class="bar-container"><div class="bar-fill" style="width: 15%"></div></div>
-            <span>$0.3M</span>
-          </div>
-          <div class="location-bar-item">
-            <span>Storage</span>
-            <div class="bar-container"><div class="bar-fill" style="width: 10%"></div></div>
-            <span>$0.2M</span>
-          </div>
-        </div>
+        }
       </div>
     </div>
   </div>
 
-  <div class="depreciation-section">
-    <div class="section-header">
-      <h3>📋 Depreciation Schedule</h3>
+  <div class="table-section">
+    <div class="table-toolbar">
+      <span class="toolbar-title">Depreciation Schedule ({{ filteredAssets().length }})</span>
+      <div class="toolbar-actions">
+        <button class="btn btn-sm btn-secondary" (click)="exportToExcel()">
+          <i class="bi bi-download"></i> Export CSV
+        </button>
+        <button class="btn btn-sm btn-secondary" (click)="exportToPDF()">
+          <i class="bi bi-file-pdf"></i> PDF
+        </button>
+        <button class="btn btn-sm btn-secondary" (click)="emailReport()">
+          <i class="bi bi-envelope"></i> Email
+        </button>
+        <button class="btn btn-sm btn-primary" (click)="scheduleReport()">
+          <i class="bi bi-calendar-check"></i> Schedule
+        </button>
+      </div>
     </div>
+
     <div class="table-container">
-      <table class="depreciation-table">
+      <table class="data-table">
         <thead>
           <tr>
-            <th>Asset Name</th>
+            <th>Asset</th>
+            <th>Category</th>
+            <th>Location</th>
             <th>Cost</th>
-            <th>Depreciation Rate</th>
+            <th>Dep. Rate</th>
             <th>Acc. Dep.</th>
             <th>Book Value</th>
+            <th>Dep. Progress</th>
           </tr>
         </thead>
         <tbody>
-          @for (asset of valuationAssets(); track asset.id) {
+          @for (asset of paginatedAssets(); track asset.id) {
             <tr>
-              <td>{{ asset.name }}</td>
-              <td>${{ asset.cost | number:'1.0-0' }}</td>
+              <td class="name-cell">{{ asset.name }}</td>
+              <td><span class="type-badge">{{ asset.category }}</span></td>
+              <td>{{ asset.location }}</td>
+              <td class="value-cell">ETB {{ asset.cost | number:'1.0-0' }}</td>
               <td>{{ asset.depreciationRate }}%</td>
-              <td>${{ asset.accumulatedDepreciation | number:'1.0-0' }}</td>
-              <td>${{ asset.bookValue | number:'1.0-0' }}</td>
+              <td class="value-cell">ETB {{ asset.accumulatedDepreciation | number:'1.0-0' }}</td>
+              <td class="value-cell book-value">ETB {{ asset.bookValue | number:'1.0-0' }}</td>
+              <td>
+                <div class="dep-bar-wrapper">
+                  <div class="dep-bar">
+                    <div class="dep-fill" [style.width.%]="getDepreciationPct(asset)" [style.background]="getDepreciationPct(asset) > 70 ? '#ef4444' : getDepreciationPct(asset) > 40 ? '#f59e0b' : '#10b981'"></div>
+                  </div>
+                  <span class="dep-pct">{{ getDepreciationPct(asset) }}%</span>
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="8" class="empty-row">No assets match your filters</td>
             </tr>
           }
         </tbody>
       </table>
     </div>
-    <div class="pagination-bar">
-      <div class="pagination-info">Showing 1-{{ valuationAssets().length }} of 234 assets</div>
-      <div class="pagination-controls">
-        <button class="page-btn" disabled>Previous</button>
-        <button class="page-btn active">1</button>
-        <button class="page-btn">2</button>
-        <button class="page-btn">3</button>
-        <button class="page-btn">Next →</button>
-      </div>
-    </div>
-  </div>
 
-  <div class="export-section">
-    <h3>📊 Valuation Report Export</h3>
-    <div class="export-buttons">
-      <button class="btn btn-secondary" (click)="exportToExcel()">
-        <i class="bi bi-file-earmark-excel"></i> Export to Excel
-      </button>
-      <button class="btn btn-secondary" (click)="exportToPDF()">
-        <i class="bi bi-file-earmark-pdf"></i> Export to PDF
-      </button>
-      <button class="btn btn-secondary" (click)="emailReport()">
-        <i class="bi bi-envelope"></i> Email Report
-      </button>
-      <button class="btn btn-secondary" (click)="scheduleReport()">
-        <i class="bi bi-calendar-check"></i> Schedule Report
-      </button>
+    <div class="pagination-bar">
+      <span class="pagination-info">
+        Showing {{ (currentPage() - 1) * pageSize + 1 }}-{{ Math.min(currentPage() * pageSize, filteredAssets().length) }} of {{ filteredAssets().length }}
+      </span>
+      <div class="pagination-controls">
+        <button class="page-btn" (click)="prevPage()" [disabled]="currentPage() <= 1">
+          <i class="bi bi-chevron-left"></i>
+        </button>
+        @for (p of getPageRange(); track p) {
+          <button class="page-btn" [class.active]="p === currentPage()" (click)="goToPage(p)">{{ p }}</button>
+        }
+        <button class="page-btn" (click)="nextPage()" [disabled]="currentPage() >= totalPages()">
+          <i class="bi bi-chevron-right"></i>
+        </button>
+      </div>
     </div>
   </div>
 </div>
 
 @if (showScheduleModal()) {
   <div class="modal-overlay" (click)="closeScheduleModal()">
-    <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-content schedule-modal" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <h3>Schedule Valuation Report</h3>
+        <h3>
+          <i class="bi bi-calendar-check"></i> Schedule Report
+        </h3>
         <button class="btn-close" (click)="closeScheduleModal()">
           <i class="bi bi-x-lg"></i>
         </button>
       </div>
       <div class="modal-body">
-        <div class="form-field">
+        <div class="form-group">
           <label>Frequency</label>
           <select [(ngModel)]="scheduleFrequency">
             <option value="daily">Daily</option>
@@ -247,18 +243,20 @@
             <option value="quarterly">Quarterly</option>
           </select>
         </div>
-        <div class="form-field">
+        <div class="form-group">
           <label>Email Recipient</label>
           <input type="email" [(ngModel)]="scheduleEmail" placeholder="email@example.com">
         </div>
-        <div class="form-field">
+        <div class="form-group">
           <label>Start Date</label>
           <input type="date" [(ngModel)]="scheduleDate">
         </div>
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary" (click)="closeScheduleModal()">Cancel</button>
-        <button class="btn btn-primary" (click)="saveSchedule()">Save Schedule</button>
+        <button class="btn btn-primary" (click)="saveSchedule()">
+          <i class="bi bi-check-lg"></i> Save Schedule
+        </button>
       </div>
     </div>
   </div>

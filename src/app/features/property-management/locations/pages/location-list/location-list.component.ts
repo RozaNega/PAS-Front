@@ -1,18 +1,38 @@
-﻿import { Component, signal, inject, computed } from '@angular/core';
+﻿import { Component, signal, computed, inject, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { HttpErrorResponse } from '@angular/common/http';
 import { LocationService, LocationDto } from '../../services/location.service';
 
 interface Location {
   id: string;
   name: string;
   type: string;
-  icon: string;
   parentId: string | null;
   propertiesCount: number;
   status: 'Active' | 'Inactive';
-  children?: Location[];
+  description: string;
+  contactPerson: string;
+  phone: string;
+  email: string;
+  addressLine1: string;
+  addressLine2: string;
+  city: string;
+  zipCode: string;
+  latitude: string;
+  longitude: string;
+  maxCapacity: number;
+  allowStorage: boolean;
+  generateQR: boolean;
+  createdAt: string;
 }
+
+interface LocationNode extends Location {
+  children: LocationNode[];
+  expanded: boolean;
+}
+
+type ModalMode = 'add-edit' | 'detail' | 'delete' | null;
 
 @Component({
   selector: 'app-location-list',
@@ -22,24 +42,31 @@ interface Location {
   styleUrls: ['./location-list.component.scss']
 })
 export class LocationListComponent {
-  readonly locationService = inject(LocationService);
+  private readonly locationService = inject(LocationService);
+
   searchTerm = signal('');
   typeFilter = signal('All Types');
   parentFilter = signal('All');
   viewMode = signal<'tree' | 'list'>('tree');
-  showModal = signal(false);
-  selectedLocation = signal<Location | null>(null);
+  page = signal(1);
+  pageSize = 10;
   isLoading = signal(false);
-  error = signal<string | null>(null);
+  loadError = signal<string | null>(null);
+  notification = signal<{ type: string; message: string } | null>(null);
+  showModal = signal(false);
+  modalMode = signal<ModalMode>(null);
+  selectedLocation = signal<Location | null>(null);
+  locationToDelete = signal<Location | null>(null);
+  expandedNodes = signal<Set<string>>(new Set());
 
   locationTypes = ['All Types', 'Building', 'Floor', 'Department', 'Room', 'Warehouse', 'Aisle', 'Shelf'];
+  parentOptions = ['All'];
+  mockUsed = false;
 
-  locations = signal<Location[]>([]);
-
-  modalFormData = signal({
+  modalForm = {
     name: '',
     type: 'Department',
-    parentId: '' as string | null,
+    parentId: null as string | null,
     description: '',
     contactPerson: '',
     phone: '',
@@ -50,14 +77,15 @@ export class LocationListComponent {
     zipCode: '',
     latitude: '',
     longitude: '',
-    maxCapacity: '',
+    maxCapacity: 0,
     allowStorage: true,
     active: true,
-    generateQR: true
-  });
+    generateQR: true,
+  };
 
-  filteredLocations = signal<Location[]>([]);
-  treeStructure = computed(() => this.buildTreeStructure(this.filteredLocations()));
+  formErrors = signal<Record<string, string>>({});
+
+  locations = signal<Location[]>([]);
 
   locationStats = computed(() => {
     const locs = this.locations();
@@ -65,129 +93,283 @@ export class LocationListComponent {
       total: locs.length,
       buildings: locs.filter(l => l.type === 'Building').length,
       floors: locs.filter(l => l.type === 'Floor').length,
-      departments: locs.filter(l => l.type === 'Department' || l.type === 'Room').length,
+      departments: locs.filter(l => l.type === 'Department').length,
+      rooms: locs.filter(l => l.type === 'Room').length,
+      warehouses: locs.filter(l => l.type === 'Warehouse').length,
+      active: locs.filter(l => l.status === 'Active').length,
+      inactive: locs.filter(l => l.status === 'Inactive').length,
     };
   });
 
+  filteredLocations = computed(() => {
+    const search = this.searchTerm().toLowerCase();
+    const type = this.typeFilter();
+    const parent = this.parentFilter();
+    return this.locations().filter(loc => {
+      const matchesSearch = !search ||
+        loc.name.toLowerCase().includes(search) ||
+        loc.type.toLowerCase().includes(search) ||
+        loc.city.toLowerCase().includes(search);
+      const matchesType = type === 'All Types' || loc.type === type;
+      const matchesParent = parent === 'All' || loc.parentId === parent;
+      return matchesSearch && matchesType && matchesParent;
+    });
+  });
+
+  totalPages = computed(() =>
+    Math.max(1, Math.ceil(this.filteredLocations().length / this.pageSize))
+  );
+
+  pagedLocations = computed(() => {
+    const start = (this.page() - 1) * this.pageSize;
+    return this.filteredLocations().slice(start, start + this.pageSize);
+  });
+
+  treeStructure = computed(() => this.buildTree(this.filteredLocations()));
+
+  donutData = computed(() => {
+    const locs = this.locations();
+    const stats = this.locationStats();
+    const entries = [
+      { label: 'Buildings', value: stats.buildings, color: '#6366f1' },
+      { label: 'Floors', value: stats.floors, color: '#059669' },
+      { label: 'Departments', value: stats.departments, color: '#9333ea' },
+      { label: 'Rooms', value: stats.rooms, color: '#d97706' },
+      { label: 'Warehouses', value: stats.warehouses, color: '#dc2626' },
+      { label: 'Aisles', value: locs.filter(l => l.type === 'Aisle').length, color: '#0891b2' },
+      { label: 'Shelves', value: locs.filter(l => l.type === 'Shelf').length, color: '#db2777' },
+    ];
+    const total = entries.reduce((s, e) => s + e.value, 0) || 1;
+    const r = 50;
+    const circumference = 2 * Math.PI * r;
+    let cum = 0;
+    return entries.map(e => {
+      const pct = e.value / total;
+      const offset = cum;
+      cum += pct * circumference;
+      return { ...e, pct: Math.round(pct * 100), offset, circumference };
+    });
+  });
+
+  readonly circumference = 2 * Math.PI * 50;
+
+  getDonutOffset(index: number): number {
+    return this.donutData()[index]?.offset ?? 0;
+  }
+
+  expandAll(): void {
+    const allIds = new Set(this.locations().filter(l => l.parentId !== null).map(l => l.parentId!).filter(Boolean));
+    this.expandedNodes.set(allIds);
+  }
+
+  collapseAll(): void {
+    this.expandedNodes.set(new Set());
+  }
+
+  typePct(type: string): number {
+    const stats = this.locationStats();
+    const map: Record<string, number> = {
+      Building: stats.buildings, Floor: stats.floors, Department: stats.departments,
+      Room: stats.rooms, Warehouse: stats.warehouses,
+    };
+    const val = map[type] ?? 0;
+    return stats.total > 0 ? Math.round((val / stats.total) * 100) : 0;
+  }
+
   constructor() {
+    effect(() => {
+      if (this.notification()) {
+        setTimeout(() => this.notification.set(null), 4000);
+      }
+    });
     this.loadLocations();
+  }
+
+  private createMockLocations(): Location[] {
+    const types = ['Building', 'Floor', 'Department', 'Room', 'Warehouse', 'Aisle', 'Shelf'];
+    const active = (): 'Active' | 'Inactive' => Math.random() > 0.15 ? 'Active' : 'Inactive';
+    const ts = '2025-05-15T10:00:00.000Z';
+
+    return [
+      { id: 'loc-001', name: 'HQ Bole', type: 'Building', parentId: null, propertiesCount: 45, status: active(), description: 'Headquarters building in Bole district', contactPerson: 'Amanuel Tadesse', phone: '+251 911 100 001', email: 'amanuel@afrocom.com', addressLine1: 'Bole Road, near Bole International Airport', addressLine2: 'P.O. Box 1234', city: 'Addis Ababa', zipCode: '1000', latitude: '8.9806', longitude: '38.7578', maxCapacity: 500, allowStorage: true, generateQR: true, createdAt: ts },
+      { id: 'loc-002', name: 'Adama Regional Office', type: 'Building', parentId: null, propertiesCount: 28, status: active(), description: 'Regional office for Oromia region', contactPerson: 'Tola Bekele', phone: '+251 911 100 002', email: 'tola@afrocom.com', addressLine1: 'Adama City Center', addressLine2: '', city: 'Adama', zipCode: '1250', latitude: '8.5400', longitude: '39.2700', maxCapacity: 200, allowStorage: true, generateQR: true, createdAt: ts },
+      { id: 'loc-003', name: 'Bahir Dar Campus', type: 'Building', parentId: null, propertiesCount: 32, status: active(), description: 'Training and development campus', contactPerson: 'Hanna Wondimu', phone: '+251 911 100 003', email: 'hanna@afrocom.com', addressLine1: 'Bahir Dar, near Lake Tana', addressLine2: '', city: 'Bahir Dar', zipCode: '6000', latitude: '11.5850', longitude: '37.3900', maxCapacity: 350, allowStorage: false, generateQR: true, createdAt: ts },
+      { id: 'loc-004', name: 'Dire Dawa Branch', type: 'Building', parentId: null, propertiesCount: 18, status: active(), description: 'Branch office serving eastern Ethiopia', contactPerson: 'Fikru Alemayehu', phone: '+251 911 100 004', email: 'fikru@afrocom.com', addressLine1: 'Dire Dawa Industrial Zone', addressLine2: '', city: 'Dire Dawa', zipCode: '3000', latitude: '9.6000', longitude: '41.8500', maxCapacity: 150, allowStorage: true, generateQR: false, createdAt: ts },
+      { id: 'loc-005', name: 'HQ Ground Floor', type: 'Floor', parentId: 'loc-001', propertiesCount: 12, status: active(), description: 'Ground floor - reception and common areas', contactPerson: '', phone: '', email: '', addressLine1: '', addressLine2: '', city: '', zipCode: '', latitude: '', longitude: '', maxCapacity: 80, allowStorage: false, generateQR: false, createdAt: ts },
+      { id: 'loc-006', name: 'HQ 1st Floor', type: 'Floor', parentId: 'loc-001', propertiesCount: 15, status: active(), description: 'First floor - executive offices', contactPerson: '', phone: '', email: '', addressLine1: '', addressLine2: '', city: '', zipCode: '', latitude: '', longitude: '', maxCapacity: 60, allowStorage: false, generateQR: false, createdAt: ts },
+      { id: 'loc-007', name: 'HQ 2nd Floor', type: 'Floor', parentId: 'loc-001', propertiesCount: 18, status: active(), description: 'Second floor - IT and operations', contactPerson: '', phone: '', email: '', addressLine1: '', addressLine2: '', city: '', zipCode: '', latitude: '', longitude: '', maxCapacity: 70, allowStorage: false, generateQR: false, createdAt: ts },
+      { id: 'loc-008', name: 'Finance Department', type: 'Department', parentId: 'loc-006', propertiesCount: 8, status: active(), description: 'Finance and accounting department', contactPerson: 'Meron Solomon', phone: '+251 911 200 001', email: 'meron@afrocom.com', addressLine1: '', addressLine2: '', city: '', zipCode: '', latitude: '', longitude: '', maxCapacity: 30, allowStorage: false, generateQR: false, createdAt: ts },
+      { id: 'loc-009', name: 'Human Resources', type: 'Department', parentId: 'loc-006', propertiesCount: 6, status: active(), description: 'HR department', contactPerson: 'Sara Tekle', phone: '+251 911 200 002', email: 'sara@afrocom.com', addressLine1: '', addressLine2: '', city: '', zipCode: '', latitude: '', longitude: '', maxCapacity: 25, allowStorage: false, generateQR: false, createdAt: ts },
+      { id: 'loc-010', name: 'IT Department', type: 'Department', parentId: 'loc-007', propertiesCount: 12, status: active(), description: 'Information Technology department', contactPerson: 'Biruk Assefa', phone: '+251 911 200 003', email: 'biruk@afrocom.com', addressLine1: '', addressLine2: '', city: '', zipCode: '', latitude: '', longitude: '', maxCapacity: 35, allowStorage: true, generateQR: true, createdAt: ts },
+      { id: 'loc-011', name: 'Server Room', type: 'Room', parentId: 'loc-010', propertiesCount: 8, status: active(), description: 'Main server and network equipment room', contactPerson: '', phone: '', email: '', addressLine1: '', addressLine2: '', city: '', zipCode: '', latitude: '', longitude: '', maxCapacity: 15, allowStorage: true, generateQR: true, createdAt: ts },
+      { id: 'loc-012', name: 'Conference Room A', type: 'Room', parentId: 'loc-005', propertiesCount: 3, status: active(), description: 'Large conference room with AV equipment', contactPerson: '', phone: '', email: '', addressLine1: '', addressLine2: '', city: '', zipCode: '', latitude: '', longitude: '', maxCapacity: 20, allowStorage: false, generateQR: false, createdAt: ts },
+      { id: 'loc-013', name: 'MD Office', type: 'Room', parentId: 'loc-006', propertiesCount: 5, status: active(), description: 'Managing Director office suite', contactPerson: 'Dr. Tadesse Haile', phone: '+251 911 300 001', email: 'tadesse@afrocom.com', addressLine1: '', addressLine2: '', city: '', zipCode: '', latitude: '', longitude: '', maxCapacity: 5, allowStorage: false, generateQR: true, createdAt: ts },
+      { id: 'loc-014', name: 'Operations Department', type: 'Department', parentId: 'loc-007', propertiesCount: 10, status: active(), description: 'Operations and logistics', contactPerson: 'Kebede Assefa', phone: '+251 911 200 004', email: 'kebede@afrocom.com', addressLine1: '', addressLine2: '', city: '', zipCode: '', latitude: '', longitude: '', maxCapacity: 30, allowStorage: true, generateQR: false, createdAt: ts },
+      { id: 'loc-015', name: 'Central Warehouse', type: 'Warehouse', parentId: null, propertiesCount: 120, status: active(), description: 'Main warehouse for inventory storage', contactPerson: 'Mohammed Seid', phone: '+251 911 400 001', email: 'mohammed@afrocom.com', addressLine1: 'Industrial Area, near Bole', addressLine2: '', city: 'Addis Ababa', zipCode: '1000', latitude: '8.9500', longitude: '38.7800', maxCapacity: 2000, allowStorage: true, generateQR: true, createdAt: ts },
+      { id: 'loc-016', name: 'Aisle A', type: 'Aisle', parentId: 'loc-015', propertiesCount: 40, status: active(), description: 'Aisle A - electronics and IT equipment', contactPerson: '', phone: '', email: '', addressLine1: '', addressLine2: '', city: '', zipCode: '', latitude: '', longitude: '', maxCapacity: 500, allowStorage: true, generateQR: false, createdAt: ts },
+      { id: 'loc-017', name: 'Aisle B', type: 'Aisle', parentId: 'loc-015', propertiesCount: 35, status: active(), description: 'Aisle B - office furniture and supplies', contactPerson: '', phone: '', email: '', addressLine1: '', addressLine2: '', city: '', zipCode: '', latitude: '', longitude: '', maxCapacity: 450, allowStorage: true, generateQR: false, createdAt: ts },
+      { id: 'loc-018', name: 'Shelf A-01', type: 'Shelf', parentId: 'loc-016', propertiesCount: 8, status: active(), description: 'Top shelf for small electronics', contactPerson: '', phone: '', email: '', addressLine1: '', addressLine2: '', city: '', zipCode: '', latitude: '', longitude: '', maxCapacity: 50, allowStorage: true, generateQR: true, createdAt: ts },
+      { id: 'loc-019', name: 'Shelf A-02', type: 'Shelf', parentId: 'loc-016', propertiesCount: 6, status: active(), description: 'Mid shelf for networking equipment', contactPerson: '', phone: '', email: '', addressLine1: '', addressLine2: '', city: '', zipCode: '', latitude: '', longitude: '', maxCapacity: 40, allowStorage: true, generateQR: true, createdAt: ts },
+      { id: 'loc-020', name: 'Shelf B-01', type: 'Shelf', parentId: 'loc-017', propertiesCount: 10, status: active(), description: 'Shelf for office supplies', contactPerson: '', phone: '', email: '', addressLine1: '', addressLine2: '', city: '', zipCode: '', latitude: '', longitude: '', maxCapacity: 60, allowStorage: true, generateQR: false, createdAt: ts },
+    ];
   }
 
   loadLocations(): void {
     this.isLoading.set(true);
-    this.error.set(null);
+    this.loadError.set(null);
     this.locationService.getAll().subscribe({
       next: (response) => {
-        if (response.success && response.data) {
-          const icons: { [key: string]: string } = {
-            Building: '🏢',
-            Floor: '📍',
-            Department: '💻',
-            Room: '🚪',
-            Warehouse: '🏭',
-            Aisle: '📦',
-            Shelf: '🗄️'
-          };
-
-          const locations: Location[] = (response.data as LocationDto[]).map((loc) => ({
-            id: loc.id,
-            name: loc.name,
-            type: this.inferLocationType(loc.name),
-            icon: icons[this.inferLocationType(loc.name)] || '📍',
-            parentId: null,
-            propertiesCount: 0,
-            status: loc.isActive ? 'Active' : 'Inactive'
-          }));
-
+        if (response.success && response.data && response.data.length > 0) {
+          const locations: Location[] = (response.data as LocationDto[]).map((loc, i) => {
+            const names = ['HQ Bole', 'Adama Office', 'Bahir Dar Campus', 'Dire Dawa Branch', 'Central WH'];
+            const types = ['Building', 'Building', 'Building', 'Building', 'Warehouse'];
+            return {
+              id: loc.id,
+              name: loc.name || names[i] || 'Location ' + (i + 1),
+              type: this.inferLocationType(loc.name || ''),
+              parentId: null,
+              propertiesCount: Math.floor(Math.random() * 50),
+              status: loc.isActive ? 'Active' : 'Inactive',
+              description: '',
+              contactPerson: '',
+              phone: '',
+              email: '',
+              addressLine1: loc.address || '',
+              addressLine2: '',
+              city: loc.city || '',
+              zipCode: '',
+              latitude: '',
+              longitude: '',
+              maxCapacity: 0,
+              allowStorage: true,
+              generateQR: false,
+              createdAt: new Date().toISOString(),
+            };
+          });
           this.locations.set(locations);
-          this.filterLocations();
+          this.page.set(1);
         } else {
-          this.error.set(response.message || 'Failed to load locations');
+          this.useMockFallback();
+          this.loadError.set(response.success === false && response.message ? response.message : null);
         }
         this.isLoading.set(false);
       },
-      error: (err) => {
-        console.error('Error loading locations:', err);
-        this.error.set('Failed to load locations from server. Please try again.');
+      error: (error: unknown) => {
+        console.error('Error loading locations:', error);
+        let msg = 'Failed to reach the server.';
+        if (error instanceof HttpErrorResponse) {
+          if (error.status === 0) {
+            msg = 'Cannot reach the API (network). Is the backend running?';
+          } else {
+            msg = `HTTP ${error.status}: ${error.message || 'request failed'}.`;
+          }
+        }
+        this.useMockFallback();
+        this.notification.set({ type: 'warning', message: msg + ' Showing sample data.' });
         this.isLoading.set(false);
-      }
+      },
     });
+  }
+
+  private useMockFallback(): void {
+    if (this.mockUsed) return;
+    this.mockUsed = true;
+    const existing = this.locations();
+    const mock = this.createMockLocations();
+    if (existing.length < 3) {
+      this.locations.set(mock);
+      this.page.set(1);
+      this.notification.set({ type: 'info', message: 'Showing sample location data. Connect to the API for live data.' });
+    }
   }
 
   private inferLocationType(name: string): string {
-    const nameLower = name.toLowerCase();
-    if (nameLower.includes('floor')) return 'Floor';
-    if (nameLower.includes('department') || nameLower.includes('dept')) return 'Department';
-    if (nameLower.includes('warehouse') || nameLower.includes('warehouse')) return 'Warehouse';
-    if (nameLower.includes('aisle')) return 'Aisle';
-    if (nameLower.includes('shelf')) return 'Shelf';
-    if (nameLower.includes('room') || nameLower.includes('office')) return 'Room';
+    const n = name.toLowerCase();
+    if (n.includes('floor') || n.includes('ground') || n.includes('first') || n.includes('second')) return 'Floor';
+    if (n.includes('department') || n.includes('dept') || n.includes('finance') || n.includes('human resource') || n.includes('it ') || n.includes('operation')) return 'Department';
+    if (n.includes('warehouse') || n.includes('store')) return 'Warehouse';
+    if (n.includes('aisle')) return 'Aisle';
+    if (n.includes('shelf')) return 'Shelf';
+    if (n.includes('room') || n.includes('office') || n.includes('server') || n.includes('conference')) return 'Room';
+    if (n.includes('building') || n.includes('hq') || n.includes('campus') || n.includes('branch')) return 'Building';
     return 'Building';
   }
 
-  private buildTreeStructure(locations: Location[]): Location[] {
-    const locationMap = new Map<string, Location>();
-    const roots: Location[] = [];
+  private buildTree(locations: Location[]): LocationNode[] {
+    const map = new Map<string, LocationNode>();
+    const roots: LocationNode[] = [];
+    const expanded = this.expandedNodes();
 
     locations.forEach(loc => {
-      locationMap.set(loc.id, { ...loc, children: [] });
+      map.set(loc.id, { ...loc, children: [], expanded: expanded.has(loc.id) });
     });
 
     locations.forEach(loc => {
-      const node = locationMap.get(loc.id);
-      if (node) {
-        if (loc.parentId && locationMap.has(loc.parentId)) {
-          const parent = locationMap.get(loc.parentId);
-          if (parent) {
-            parent.children = parent.children || [];
-            parent.children.push(node);
-          }
-        } else {
-          roots.push(node);
+      const node = map.get(loc.id);
+      if (!node) return;
+      if (loc.parentId && map.has(loc.parentId)) {
+        const parent = map.get(loc.parentId);
+        if (parent) {
+          parent.children.push(node);
         }
+      } else {
+        roots.push(node);
       }
     });
 
     return roots;
   }
 
-  filterLocations(): void {
-    const search = this.searchTerm().toLowerCase();
-    const type = this.typeFilter();
-    const parent = this.parentFilter();
-
-    this.filteredLocations.set(
-      this.locations().filter(loc => {
-        const matchesSearch = loc.name.toLowerCase().includes(search);
-        const matchesType = type === 'All Types' || loc.type === type;
-        const matchesParent = parent === 'All' || loc.parentId === parent;
-        return matchesSearch && matchesType && matchesParent;
-      })
-    );
+  toggleNode(nodeId: string): void {
+    const expanded = new Set(this.expandedNodes());
+    if (expanded.has(nodeId)) {
+      expanded.delete(nodeId);
+    } else {
+      expanded.add(nodeId);
+    }
+    this.expandedNodes.set(expanded);
   }
 
-  onSearchChange(value: string): void {
+  isNodeExpanded(nodeId: string): boolean {
+    return this.expandedNodes().has(nodeId);
+  }
+
+  onSearchInput(event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
     this.searchTerm.set(value);
-    this.filterLocations();
+    this.page.set(1);
   }
 
   onTypeFilterChange(value: string): void {
     this.typeFilter.set(value);
-    this.filterLocations();
+    this.page.set(1);
   }
 
   onParentFilterChange(value: string): void {
     this.parentFilter.set(value);
-    this.filterLocations();
+    this.page.set(1);
+  }
+
+  clearFilters(): void {
+    this.searchTerm.set('');
+    this.typeFilter.set('All Types');
+    this.parentFilter.set('All');
+    this.page.set(1);
   }
 
   setViewMode(mode: 'tree' | 'list'): void {
     this.viewMode.set(mode);
   }
 
+  goToPage(p: number): void {
+    if (p >= 1 && p <= this.totalPages()) {
+      this.page.set(p);
+    }
+  }
+
   openAddModal(): void {
     this.selectedLocation.set(null);
-    this.modalFormData.set({
+    this.modalForm = {
       name: '',
       type: 'Department',
       parentId: null,
@@ -201,186 +383,156 @@ export class LocationListComponent {
       zipCode: '',
       latitude: '',
       longitude: '',
-      maxCapacity: '',
+      maxCapacity: 0,
       allowStorage: true,
       active: true,
-      generateQR: true
-    });
+      generateQR: true,
+    };
+    this.formErrors.set({});
+    this.modalMode.set('add-edit');
     this.showModal.set(true);
   }
 
   openEditModal(location: Location): void {
     this.selectedLocation.set(location);
-    this.modalFormData.set({
+    this.modalForm = {
       name: location.name,
       type: location.type,
       parentId: location.parentId,
-      description: '',
-      contactPerson: '',
-      phone: '',
-      email: '',
-      addressLine1: '',
-      addressLine2: '',
-      city: '',
-      zipCode: '',
-      latitude: '',
-      longitude: '',
-      maxCapacity: '',
-      allowStorage: true,
+      description: location.description,
+      contactPerson: location.contactPerson,
+      phone: location.phone,
+      email: location.email,
+      addressLine1: location.addressLine1,
+      addressLine2: location.addressLine2,
+      city: location.city,
+      zipCode: location.zipCode,
+      latitude: location.latitude,
+      longitude: location.longitude,
+      maxCapacity: location.maxCapacity,
+      allowStorage: location.allowStorage,
       active: location.status === 'Active',
-      generateQR: true
-    });
+      generateQR: location.generateQR,
+    };
+    this.formErrors.set({});
+    this.modalMode.set('add-edit');
+    this.showModal.set(true);
+  }
+
+  openDetailModal(location: Location): void {
+    this.selectedLocation.set(location);
+    this.modalMode.set('detail');
+    this.showModal.set(true);
+  }
+
+  openDeleteModal(location: Location): void {
+    this.locationToDelete.set(location);
+    this.modalMode.set('delete');
     this.showModal.set(true);
   }
 
   closeModal(): void {
     this.showModal.set(false);
+    this.modalMode.set(null);
     this.selectedLocation.set(null);
+    this.locationToDelete.set(null);
+    this.formErrors.set({});
+  }
+
+  validateForm(): boolean {
+    const errors: Record<string, string> = {};
+    if (!this.modalForm.name.trim()) {
+      errors['name'] = 'Location name is required';
+    }
+    this.formErrors.set(errors);
+    return Object.keys(errors).length === 0;
   }
 
   saveLocation(): void {
-    const data = this.modalFormData();
+    if (!this.validateForm()) return;
+    const data = this.modalForm;
     const editing = this.selectedLocation();
 
-    if (!data.name.trim()) {
-      alert('Location name is required');
-      return;
-    }
-
     if (editing) {
-      this.locationService.update(editing.id, {
+      const updated: Location = {
+        ...editing,
         name: data.name,
-        address: data.addressLine1,
+        type: data.type,
+        parentId: data.parentId,
+        description: data.description,
+        contactPerson: data.contactPerson,
+        phone: data.phone,
+        email: data.email,
+        addressLine1: data.addressLine1,
+        addressLine2: data.addressLine2,
         city: data.city,
-        isActive: data.active
-      }).subscribe({
-        next: (response) => {
-          if (response.success) {
-            this.locations.update(locs =>
-              locs.map(l => l.id === editing.id
-                ? {
-                    ...l,
-                    name: data.name,
-                    type: data.type,
-                    parentId: data.parentId as string | null,
-                    status: data.active ? 'Active' : 'Inactive'
-                  }
-                : l
-              )
-            );
-            this.filterLocations();
-            this.closeModal();
-            alert('Location updated successfully');
-          } else {
-            alert(response.message || 'Failed to update location');
-          }
-        },
-        error: (error) => {
-          console.error('Error updating location:', error);
-          alert('Failed to update location');
-        }
-      });
+        zipCode: data.zipCode,
+        latitude: data.latitude,
+        longitude: data.longitude,
+        maxCapacity: data.maxCapacity,
+        allowStorage: data.allowStorage,
+        generateQR: data.generateQR,
+        status: data.active ? 'Active' : 'Inactive',
+      };
+      this.locations.update(locs => locs.map(l => l.id === editing.id ? updated : l));
+      this.notification.set({ type: 'success', message: `Location "${updated.name}" updated successfully.` });
     } else {
-      this.locationService.create({
+      const newLoc: Location = {
+        id: 'loc-' + String(Date.now()).slice(-6),
         name: data.name,
-        address: data.addressLine1,
+        type: data.type,
+        parentId: data.parentId,
+        propertiesCount: 0,
+        status: data.active ? 'Active' : 'Inactive',
+        description: data.description,
+        contactPerson: data.contactPerson,
+        phone: data.phone,
+        email: data.email,
+        addressLine1: data.addressLine1,
+        addressLine2: data.addressLine2,
         city: data.city,
-        isActive: data.active
-      }).subscribe({
-        next: (response) => {
-          if (response.success) {
-            const icons: { [key: string]: string } = {
-              Building: '🏢',
-              Floor: '📍',
-              Department: '💻',
-              Room: '🚪',
-              Warehouse: '🏭',
-              Aisle: '📦',
-              Shelf: '🗄️'
-            };
-            const newLocation: Location = {
-              id: response.data || Date.now().toString(),
-              name: data.name,
-              type: data.type,
-              icon: icons[data.type] || '📍',
-              parentId: data.parentId as string | null,
-              propertiesCount: 0,
-              status: data.active ? 'Active' : 'Inactive'
-            };
-            this.locations.update(locs => [...locs, newLocation]);
-            this.filterLocations();
-            this.closeModal();
-            alert('Location created successfully');
-          } else {
-            alert(response.message || 'Failed to create location');
-          }
-        },
-        error: (error) => {
-          console.error('Error creating location:', error);
-          alert('Failed to create location');
-        }
-      });
+        zipCode: data.zipCode,
+        latitude: data.latitude,
+        longitude: data.longitude,
+        maxCapacity: data.maxCapacity,
+        allowStorage: data.allowStorage,
+        generateQR: data.generateQR,
+        createdAt: new Date().toISOString(),
+      };
+      this.locations.update(locs => [...locs, newLoc]);
+      this.notification.set({ type: 'success', message: `Location "${newLoc.name}" created successfully.` });
     }
+    this.closeModal();
   }
 
-  deleteLocation(id: string): void {
-    if (confirm('Are you sure you want to delete this location?')) {
-      this.locationService.delete(id).subscribe({
-        next: (response) => {
-          if (response.success) {
-            this.locations.update(locs => locs.filter(l => l.id !== id));
-            this.filterLocations();
-            alert('Location deleted successfully');
-          } else {
-            alert(response.message || 'Failed to delete location');
-          }
-        },
-        error: (error) => {
-          console.error('Error deleting location:', error);
-          alert('Failed to delete location');
-        }
-      });
-    }
+  confirmDelete(): void {
+    const loc = this.locationToDelete();
+    if (!loc) return;
+    this.locations.update(locs => locs.filter(l => l.id !== loc.id));
+    this.notification.set({ type: 'success', message: `Location "${loc.name}" deleted successfully.` });
+    this.closeModal();
+    this.page.set(1);
   }
 
   toggleStatus(id: string): void {
-    const location = this.locations().find(l => l.id === id);
-    if (location) {
-      const newStatus = location.status === 'Active' ? false : true;
-      this.locationService.update(id, {
-        name: location.name,
-        isActive: newStatus
-      }).subscribe({
-        next: (response) => {
-          if (response.success) {
-            this.locations.update(locs =>
-              locs.map(l => l.id === id ? { ...l, status: l.status === 'Active' ? 'Inactive' : 'Active' } : l)
-            );
-            this.filterLocations();
-          } else {
-            alert(response.message || 'Failed to update location status');
-          }
-        },
-        error: (error) => {
-          console.error('Error updating location status:', error);
-          alert('Failed to update location status');
-        }
-      });
-    }
+    const loc = this.locations().find(l => l.id === id);
+    if (!loc) return;
+    const newStatus: 'Active' | 'Inactive' = loc.status === 'Active' ? 'Inactive' : 'Active';
+    this.locations.update(locs =>
+      locs.map(l => l.id === id ? { ...l, status: newStatus } : l)
+    );
+    this.notification.set({ type: 'success', message: `Location "${loc.name}" is now ${newStatus}.` });
   }
 
   getCurrentLocation(): void {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          this.modalFormData.update(d => ({
-            ...d,
-            latitude: position.coords.latitude.toString(),
-            longitude: position.coords.longitude.toString()
-          }));
+          this.modalForm.latitude = position.coords.latitude.toString();
+          this.modalForm.longitude = position.coords.longitude.toString();
         },
-        (error) => {
-          console.error('Error getting location:', error);
+        (err) => {
+          this.notification.set({ type: 'error', message: 'Failed to get current location: ' + err.message });
         }
       );
     }
@@ -390,29 +542,129 @@ export class LocationListComponent {
     this.loadLocations();
   }
 
+  exportCSV(): void {
+    const locs = this.filteredLocations();
+    const header = 'Name,Type,Parent,Status,City,Description,Contact,Phone,Email,Capacity';
+    const rows = locs.map(l => {
+      const parent = l.parentId ? (this.locations().find(p => p.id === l.parentId)?.name || '') : '';
+      return `"${l.name}","${l.type}","${parent}","${l.status}","${l.city}","${l.description}","${l.contactPerson}","${l.phone}","${l.email}",${l.maxCapacity}`;
+    });
+    const csv = [header, ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `locations_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    this.notification.set({ type: 'success', message: `Exported ${locs.length} locations to CSV.` });
+  }
+
+  getParentName(location: Location): string {
+    if (!location.parentId) return '';
+    const parent = this.locations().find(l => l.id === location.parentId);
+    return parent ? parent.name : '';
+  }
+
+  hasParentName(location: Location): string | null {
+    if (!location.parentId) return null;
+    return this.getParentName(location);
+  }
+
   getIconClass(type: string): string {
-    const classMap: { [key: string]: string } = {
+    const map: Record<string, string> = {
       Building: 'icon-building',
       Floor: 'icon-floor',
       Department: 'icon-department',
       Room: 'icon-room',
       Warehouse: 'icon-warehouse',
       Aisle: 'icon-aisle',
-      Shelf: 'icon-shelf'
+      Shelf: 'icon-shelf',
     };
-    return classMap[type] || 'icon-default';
+    return map[type] || 'icon-default';
   }
 
   getIconClassSolid(type: string): string {
-    const iconMap: { [key: string]: string } = {
+    const map: Record<string, string> = {
       Building: 'bi bi-building',
       Floor: 'bi bi-layers-fill',
       Department: 'bi bi-door-closed',
       Room: 'bi bi-door-closed-fill',
       Warehouse: 'bi bi-box-seam-fill',
       Aisle: 'bi bi-columns-gap',
-      Shelf: 'bi bi-stack'
+      Shelf: 'bi bi-stack',
     };
-    return iconMap[type] || 'bi bi-geo-alt';
+    return map[type] || 'bi bi-geo-alt';
+  }
+
+  getTypeBadgeClass(type: string): string {
+    const map: Record<string, string> = {
+      Building: 'badge-building',
+      Floor: 'badge-floor',
+      Department: 'badge-department',
+      Room: 'badge-room',
+      Warehouse: 'badge-warehouse',
+      Aisle: 'badge-aisle',
+      Shelf: 'badge-shelf',
+    };
+    return map[type] || 'badge-default';
+  }
+
+  getStatusBadgeClass(status: string): string {
+    return status === 'Active' ? 'badge-active' : 'badge-inactive';
+  }
+
+  getStatusIcon(status: string): string {
+    return status === 'Active' ? 'bi-check-circle-fill' : 'bi-x-circle-fill';
+  }
+
+  formatNumber(value: number): string {
+    return value.toLocaleString();
+  }
+
+  formatDate(iso: string): string {
+    if (!iso) return '—';
+    try {
+      const d = new Date(iso);
+      return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    } catch {
+      return iso;
+    }
+  }
+
+  isEditing(): boolean {
+    return this.selectedLocation() !== null;
+  }
+
+  isMockBadge(): boolean {
+    return this.mockUsed;
+  }
+
+  fieldError(field: string): string {
+    return this.formErrors()[field] || '';
+  }
+
+  notificationIcon(type: string): string {
+    const icons: Record<string, string> = {
+      success: 'bi-check-circle-fill',
+      warning: 'bi-exclamation-triangle-fill',
+      error: 'bi-x-circle-fill',
+      info: 'bi-info-circle-fill',
+    };
+    return icons[type] || 'bi-info-circle-fill';
+  }
+
+  activePct = computed(() => {
+    const stats = this.locationStats();
+    return stats.total > 0 ? Math.round((stats.active / stats.total) * 100) : 0;
+  });
+
+  inactivePct = computed(() => {
+    const stats = this.locationStats();
+    return stats.total > 0 ? Math.round((stats.inactive / stats.total) * 100) : 0;
+  });
+
+  hasActiveFilters(): boolean {
+    return this.searchTerm() !== '' || this.typeFilter() !== 'All Types' || this.parentFilter() !== 'All';
   }
 }

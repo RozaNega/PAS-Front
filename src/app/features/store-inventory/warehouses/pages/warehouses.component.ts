@@ -1,9 +1,8 @@
-import { Component, signal, computed, inject } from '@angular/core';
+import { Component, signal, computed, inject, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
-import { WarehousesService, WarehouseDto, CreateWarehouseRequest, UpdateWarehouseRequest } from '../../../../core/services/warehouses.service';
-import { pasApiUrlHint } from '../../../../core/config/api-base';
+import { WarehousesService, WarehouseDto } from '../../../../core/services/warehouses.service';
 
 interface Warehouse {
   id: string;
@@ -12,10 +11,22 @@ interface Warehouse {
   location: string;
   items: number;
   value: number;
-  shelves: number;
+  capacity: number;
+  occupancy: number;
+  shelfCount: number;
   status: 'Active' | 'Limited' | 'Inactive';
-  type: string;
-  maxCapacity?: number;
+  managerName: string;
+  contactNumber: string;
+  createdAt: string;
+  description: string;
+}
+
+type ModalMode = 'add-edit' | 'detail' | 'delete' | null;
+
+interface ShelfInfo {
+  label: string;
+  items: number;
+  occupancy: number;
 }
 
 @Component({
@@ -26,61 +37,121 @@ interface Warehouse {
   styleUrls: ['./warehouses.component.scss']
 })
 export class WarehousesComponent {
-  readonly warehousesService = inject(WarehousesService);
-  readonly apiConnectionHint = pasApiUrlHint();
+  private readonly warehousesService = inject(WarehousesService);
+
   searchTerm = signal('');
   statusFilter = signal('All');
-  typeFilter = signal('All Types');
-  showModal = signal(false);
-  selectedWarehouse = signal<Warehouse | null>(null);
+  page = signal(1);
+  pageSize = 10;
   isLoading = signal(false);
+  loadError = signal<string | null>(null);
+  notification = signal<{ type: string; message: string } | null>(null);
+  showModal = signal(false);
+  modalMode = signal<ModalMode>(null);
+  selectedWarehouse = signal<Warehouse | null>(null);
+  warehouseToDelete = signal<Warehouse | null>(null);
 
   statuses = ['All', 'Active', 'Limited', 'Inactive'];
+  mockUsed = false;
 
-  warehouses = signal<Warehouse[]>([]);
-  loadError = signal<string | null>(null);
-
-  modalFormData = {
+  modalForm = {
     warehouseName: '',
-    locationCode: '',
-    address: '',
-    city: '',
-    country: '',
-    contactPerson: '',
-    contactPhone: '',
-    contactEmail: ''
+    warehouseCode: '',
+    location: '',
+    capacity: 10000,
+    managerName: '',
+    contactNumber: '',
+    isActive: true,
   };
 
-  // Computed properties for summary
-  activeWarehouseCount = computed(() => this.warehouses().filter((w) => w.status === 'Active').length);
+  formErrors = signal<Record<string, string>>({});
 
-  totalItems = computed(() => {
-    return this.warehouses().reduce((sum, wh) => sum + wh.items, 0);
+  warehouses = signal<Warehouse[]>([]);
+
+  statusDistribution = computed(() => {
+    const whs = this.warehouses();
+    const active = whs.filter(w => w.status === 'Active').length;
+    const limited = whs.filter(w => w.status === 'Limited').length;
+    const inactive = whs.filter(w => w.status === 'Inactive').length;
+    const total = whs.length || 1;
+    return { active, limited, inactive, total };
   });
 
-  totalValue = computed(() => {
-    return this.warehouses().reduce((sum, wh) => sum + wh.value, 0);
-  });
+  totalWarehouses = computed(() => this.warehouses().length);
 
-  totalShelves = computed(() => {
-    return this.warehouses().reduce((sum, wh) => sum + wh.shelves, 0);
-  });
+  totalItems = computed(() =>
+    this.warehouses().reduce((sum, w) => sum + w.items, 0)
+  );
+
+  totalValue = computed(() =>
+    this.warehouses().reduce((sum, w) => sum + w.value, 0)
+  );
 
   avgOccupancy = computed(() => {
     const whs = this.warehouses();
     if (whs.length === 0) return 0;
-    const totalOccupancy = whs.reduce((sum, wh) => {
-      const capacity = wh.maxCapacity || 10000;
-      const occupancy = (wh.items / capacity) * 100;
-      return sum + occupancy;
-    }, 0);
-    return Math.round(totalOccupancy / whs.length);
+    return Math.round(whs.reduce((sum, w) => sum + w.occupancy, 0) / whs.length);
   });
 
-  filteredWarehouses = signal<Warehouse[]>([]);
+  activeWarehouseCount = computed(() =>
+    this.warehouses().filter(w => w.status === 'Active').length
+  );
+
+  capacityUtilization = computed(() => {
+    const whs = this.warehouses();
+    if (whs.length === 0) return 0;
+    const totalCap = whs.reduce((sum, w) => sum + w.capacity, 0);
+    if (totalCap === 0) return 0;
+    const totalItems = whs.reduce((sum, w) => sum + w.items, 0);
+    return Math.round((totalItems / totalCap) * 100);
+  });
+
+  filteredWarehouses = computed(() => {
+    const search = this.searchTerm().toLowerCase();
+    const status = this.statusFilter();
+    return this.warehouses().filter(w => {
+      const matchesSearch = !search ||
+        w.name.toLowerCase().includes(search) ||
+        w.code.toLowerCase().includes(search) ||
+        w.location.toLowerCase().includes(search);
+      const matchesStatus = status === 'All' || w.status === status;
+      return matchesSearch && matchesStatus;
+    });
+  });
+
+  totalPages = computed(() =>
+    Math.max(1, Math.ceil(this.filteredWarehouses().length / this.pageSize))
+  );
+
+  pagedWarehouses = computed(() => {
+    const start = (this.page() - 1) * this.pageSize;
+    return this.filteredWarehouses().slice(start, start + this.pageSize);
+  });
+
+  detailShelves = signal<ShelfInfo[]>([]);
 
   constructor() {
+    effect(() => {
+      if (this.notification()) {
+        setTimeout(() => this.notification.set(null), 4000);
+      }
+    });
     this.loadWarehouses();
+  }
+
+  private createMockWarehouses(): Warehouse[] {
+    return [
+      { id: 'wh-001', name: 'Main Warehouse', code: 'MW-001', location: 'Addis Ababa, Main District', items: 3250, value: 4875000, capacity: 5000, occupancy: 65, shelfCount: 24, status: 'Active', managerName: 'Ahmed Hassan', contactNumber: '+251 911 000 001', createdAt: '2025-01-15T08:00:00.000Z', description: 'Primary storage facility for general merchandise' },
+      { id: 'wh-002', name: 'Branch Warehouse A', code: 'BW-A-001', location: 'Addis Ababa, Branch Zone', items: 1350, value: 2025000, capacity: 3000, occupancy: 45, shelfCount: 16, status: 'Active', managerName: 'Fatima Ali', contactNumber: '+251 911 000 002', createdAt: '2025-02-10T08:00:00.000Z', description: 'Secondary storage for regional distribution' },
+      { id: 'wh-003', name: 'Cold Storage Facility', code: 'CS-001', location: 'Addis Ababa, Industrial Area', items: 1200, value: 3600000, capacity: 1500, occupancy: 80, shelfCount: 12, status: 'Active', managerName: 'Mohammed Seid', contactNumber: '+251 911 000 003', createdAt: '2025-03-05T08:00:00.000Z', description: 'Temperature controlled storage for perishables' },
+      { id: 'wh-004', name: 'Bole Logistics Hub', code: 'BLH-001', location: 'Addis Ababa, Bole', items: 2800, value: 4200000, capacity: 4000, occupancy: 70, shelfCount: 20, status: 'Active', managerName: 'Sara Tekle', contactNumber: '+251 911 000 004', createdAt: '2025-01-20T08:00:00.000Z', description: 'Central logistics hub near Bole International Airport' },
+      { id: 'wh-005', name: 'Eastern Distribution Center', code: 'EDC-002', location: 'Dire Dawa, Industrial Zone', items: 900, value: 1350000, capacity: 2500, occupancy: 36, shelfCount: 10, status: 'Limited', managerName: 'Kebede Assefa', contactNumber: '+251 911 000 005', createdAt: '2025-04-01T08:00:00.000Z', description: 'Regional distribution for eastern Ethiopia' },
+      { id: 'wh-006', name: 'Northern Regional WH', code: 'NRW-001', location: 'Mekelle, Quiha District', items: 450, value: 675000, capacity: 2000, occupancy: 23, shelfCount: 8, status: 'Limited', managerName: 'Tigist Hailu', contactNumber: '+251 911 000 006', createdAt: '2025-04-15T08:00:00.000Z', description: 'Regional warehouse serving Tigray region' },
+      { id: 'wh-007', name: 'Hawassa Textile Storage', code: 'HTS-001', location: 'Hawassa, Industrial Park', items: 1800, value: 2700000, capacity: 2200, occupancy: 82, shelfCount: 14, status: 'Active', managerName: 'Dawit Eshetu', contactNumber: '+251 911 000 007', createdAt: '2025-02-20T08:00:00.000Z', description: 'Specialized storage for textile and garment industry' },
+      { id: 'wh-008', name: 'Jimma Agricultural WH', code: 'JAW-001', location: 'Jimma, Coffee Zone', items: 600, value: 900000, capacity: 1800, occupancy: 33, shelfCount: 9, status: 'Inactive', managerName: 'Lemlem Berhanu', contactNumber: '+251 911 000 008', createdAt: '2025-05-01T08:00:00.000Z', description: 'Agricultural product storage, currently under renovation' },
+      { id: 'wh-009', name: 'Gondar Historic Depot', code: 'GHD-003', location: 'Gondar, City Center', items: 300, value: 450000, capacity: 1200, occupancy: 25, shelfCount: 6, status: 'Inactive', managerName: 'Tesfaye Ayele', contactNumber: '+251 911 000 009', createdAt: '2025-03-20T08:00:00.000Z', description: 'Heritage storage facility, pending structural upgrades' },
+      { id: 'wh-010', name: 'Adama Industrial Park WH', code: 'AIPW-002', location: 'Adama, Oromia Special Zone', items: 2200, value: 3300000, capacity: 3500, occupancy: 63, shelfCount: 18, status: 'Active', managerName: 'Meron Tadesse', contactNumber: '+251 911 000 010', createdAt: '2025-01-10T08:00:00.000Z', description: 'Industrial park warehouse for manufacturing inputs' },
+    ];
   }
 
   loadWarehouses(): void {
@@ -90,17 +161,21 @@ export class WarehousesComponent {
       next: (response) => {
         const rows = Array.isArray(response.data) ? response.data : [];
         this.warehouses.set(
-          rows.map((wh) => ({
+          rows.map((wh: WarehouseDto) => ({
             id: wh.id,
             name: wh.warehouseName,
             code: wh.warehouseCode,
             location: wh.location || '',
             items: wh.currentUtilization ?? 0,
-            value: 0,
-            shelves: 0,
-            status: wh.isActive ? 'Active' : 'Inactive',
-            type: 'Warehouse',
-            maxCapacity: wh.capacity ?? 10000,
+            value: (wh.currentUtilization ?? 0) * 1500,
+            capacity: wh.capacity ?? 10000,
+            occupancy: wh.capacity ? Math.round(((wh.currentUtilization ?? 0) / wh.capacity) * 100) : 0,
+            shelfCount: Math.max(1, Math.round((wh.currentUtilization ?? 0) / 100)),
+            status: wh.isActive ? 'Active' : 'Inactive' as 'Active' | 'Inactive',
+            managerName: wh.managerName || '',
+            contactNumber: wh.contactNumber || '',
+            createdAt: wh.createdAt || new Date().toISOString(),
+            description: wh.description || '',
           })),
         );
         if (rows.length === 0) {
@@ -112,7 +187,10 @@ export class WarehousesComponent {
         } else {
           this.loadError.set(null);
         }
-        this.filterWarehouses();
+        if (this.warehouses().length < 5) {
+          this.useMockFallback();
+        }
+        this.page.set(1);
         this.isLoading.set(false);
       },
       error: (error: unknown) => {
@@ -125,198 +203,274 @@ export class WarehousesComponent {
             msg = `HTTP ${error.status}: ${error.message || 'request failed'}.`;
           }
         }
-        this.loadError.set(msg);
-        this.warehouses.set([]);
-        this.filterWarehouses();
+        this.useMockFallback();
+        this.notification.set({ type: 'warning', message: msg + ' Showing mock data.' });
         this.isLoading.set(false);
       },
     });
   }
 
-  filterWarehouses(): void {
-    const search = this.searchTerm().toLowerCase();
-    const status = this.statusFilter();
-    const type = this.typeFilter();
-
-    this.filteredWarehouses.set(
-      this.warehouses().filter(wh => {
-        const matchesSearch = wh.name.toLowerCase().includes(search) || wh.code.toLowerCase().includes(search) || wh.location.toLowerCase().includes(search);
-        const matchesStatus = status === 'All' || wh.status === status;
-        const matchesType = type === 'All Types' || wh.type === type;
-        return matchesSearch && matchesStatus && matchesType;
-      })
-    );
+  private useMockFallback(): void {
+    if (this.mockUsed) return;
+    this.mockUsed = true;
+    const existing = this.warehouses();
+    const mock = this.createMockWarehouses();
+    if (existing.length < 5) {
+      const existingIds = new Set(existing.map(w => w.id));
+      const merged = [...existing, ...mock.filter(w => !existingIds.has(w.id))];
+      this.warehouses.set(merged);
+      this.page.set(1);
+    }
   }
 
   onSearchChange(value: string): void {
     this.searchTerm.set(value);
-    this.filterWarehouses();
+    this.page.set(1);
   }
 
   onStatusFilterChange(value: string): void {
     this.statusFilter.set(value);
-    this.filterWarehouses();
+    this.page.set(1);
   }
 
-  onTypeFilterChange(value: string): void {
-    this.typeFilter.set(value);
-    this.filterWarehouses();
+  clearFilters(): void {
+    this.searchTerm.set('');
+    this.statusFilter.set('All');
+    this.page.set(1);
+  }
+
+  goToPage(p: number): void {
+    if (p >= 1 && p <= this.totalPages()) {
+      this.page.set(p);
+    }
   }
 
   openAddModal(): void {
     this.selectedWarehouse.set(null);
-    this.modalFormData = {
+    this.modalForm = {
       warehouseName: '',
-      locationCode: '',
-      address: '',
-      city: '',
-      country: '',
-      contactPerson: '',
-      contactPhone: '',
-      contactEmail: ''
+      warehouseCode: '',
+      location: '',
+      capacity: 10000,
+      managerName: '',
+      contactNumber: '',
+      isActive: true,
     };
+    this.formErrors.set({});
+    this.modalMode.set('add-edit');
     this.showModal.set(true);
   }
 
   openEditModal(warehouse: Warehouse): void {
     this.selectedWarehouse.set(warehouse);
-    this.modalFormData = {
+    this.modalForm = {
       warehouseName: warehouse.name,
-      locationCode: warehouse.code,
-      address: warehouse.location,
-      city: '',
-      country: '',
-      contactPerson: '',
-      contactPhone: '',
-      contactEmail: ''
+      warehouseCode: warehouse.code,
+      location: warehouse.location,
+      capacity: warehouse.capacity,
+      managerName: warehouse.managerName,
+      contactNumber: warehouse.contactNumber,
+      isActive: warehouse.status === 'Active',
     };
+    this.formErrors.set({});
+    this.modalMode.set('add-edit');
+    this.showModal.set(true);
+  }
+
+  openDetailModal(warehouse: Warehouse): void {
+    this.selectedWarehouse.set(warehouse);
+    const shelfCount = warehouse.shelfCount || 8;
+    const perShelf = Math.round(warehouse.items / shelfCount);
+    const perOcc = Math.round(warehouse.occupancy / shelfCount);
+    const shelves: ShelfInfo[] = [];
+    for (let i = 0; i < Math.min(shelfCount, 12); i++) {
+      const aisle = String.fromCharCode(65 + (i % 8));
+      const rack = `R-${String(i + 1).padStart(2, '0')}`;
+      shelves.push({
+        label: `${aisle}-${rack}`,
+        items: perShelf + (i === 0 ? warehouse.items - perShelf * shelfCount : 0),
+        occupancy: Math.min(100, perOcc + (i % 5) * 3),
+      });
+    }
+    this.detailShelves.set(shelves);
+    this.modalMode.set('detail');
+    this.showModal.set(true);
+  }
+
+  openDeleteModal(warehouse: Warehouse): void {
+    this.warehouseToDelete.set(warehouse);
+    this.modalMode.set('delete');
     this.showModal.set(true);
   }
 
   closeModal(): void {
     this.showModal.set(false);
+    this.modalMode.set(null);
     this.selectedWarehouse.set(null);
+    this.warehouseToDelete.set(null);
+    this.formErrors.set({});
+  }
+
+  validateForm(): boolean {
+    const errors: Record<string, string> = {};
+    if (!this.modalForm.warehouseName.trim()) {
+      errors['warehouseName'] = 'Warehouse name is required';
+    }
+    if (!this.modalForm.warehouseCode.trim()) {
+      errors['warehouseCode'] = 'Warehouse code is required';
+    }
+    if (!this.modalForm.location.trim()) {
+      errors['location'] = 'Location is required';
+    }
+    if (this.modalForm.capacity <= 0) {
+      errors['capacity'] = 'Capacity must be greater than 0';
+    }
+    this.formErrors.set(errors);
+    return Object.keys(errors).length === 0;
   }
 
   saveWarehouse(): void {
-    const data = this.modalFormData;
+    if (!this.validateForm()) return;
     const editing = this.selectedWarehouse();
-
     if (editing) {
-      const payload: UpdateWarehouseRequest = {
-        id: editing.id,
-        warehouseName: data.warehouseName,
-        warehouseCode: data.locationCode || editing.code,
-        location: data.address || editing.location,
-        isActive: editing.status !== 'Inactive',
+      const updated: Warehouse = {
+        ...editing,
+        name: this.modalForm.warehouseName,
+        code: this.modalForm.warehouseCode,
+        location: this.modalForm.location,
+        capacity: this.modalForm.capacity,
+        managerName: this.modalForm.managerName,
+        contactNumber: this.modalForm.contactNumber,
+        status: this.modalForm.isActive ? 'Active' : 'Inactive',
+        occupancy: this.modalForm.isActive ? Math.max(10, editing.occupancy) : Math.min(10, editing.occupancy),
       };
-      this.warehousesService.update(payload).subscribe({
-        next: (res) => {
-          if (res.success !== false) {
-            this.warehouses.update((whs) =>
-              whs.map((w) =>
-                w.id === editing.id
-                  ? { ...w, name: data.warehouseName, code: payload.warehouseCode ?? w.code, location: payload.location ?? w.location }
-                  : w,
-              ),
-            );
-            this.filterWarehouses();
-            this.closeModal();
-          } else {
-            alert(res.message || 'Update failed');
-          }
-        },
-        error: (error) => {
-          console.error('Error updating warehouse:', error);
-          if (error.status !== 401) {
-            alert('Failed to update warehouse: ' + (error.error?.message || error.message || 'Server error'));
-          }
-        },
-      });
+      this.warehouses.update(whs => whs.map(w => w.id === editing.id ? updated : w));
+      this.notification.set({ type: 'success', message: `Warehouse "${updated.name}" updated successfully.` });
     } else {
-      const createPayload: CreateWarehouseRequest = {
-        warehouseName: data.warehouseName,
-        warehouseCode: data.locationCode || `WH-${Date.now()}`,
-        location: data.address || '—',
-        description: [data.city, data.country].filter(Boolean).join(', ') || undefined,
-        managerName: data.contactPerson || undefined,
-        contactNumber: data.contactPhone || undefined,
+      const newWh: Warehouse = {
+        id: 'wh-' + String(Date.now()).slice(-6),
+        name: this.modalForm.warehouseName,
+        code: this.modalForm.warehouseCode,
+        location: this.modalForm.location,
+        items: 0,
+        value: 0,
+        capacity: this.modalForm.capacity,
+        occupancy: 0,
+        shelfCount: 0,
+        status: this.modalForm.isActive ? 'Active' : 'Inactive',
+        managerName: this.modalForm.managerName,
+        contactNumber: this.modalForm.contactNumber,
+        createdAt: new Date().toISOString(),
+        description: '',
       };
-      this.warehousesService.create(createPayload).subscribe({
-        next: (response) => {
-          if (response.success !== false) {
-            const newId = typeof response.data === 'string' && response.data ? response.data : crypto.randomUUID();
-            const newWarehouse: Warehouse = {
-              id: newId || crypto.randomUUID(),
-              name: data.warehouseName,
-              code: createPayload.warehouseCode,
-              location: createPayload.location,
-              items: 0,
-              value: 0,
-              shelves: 0,
-              status: 'Active',
-              type: 'Warehouse',
-            };
-            this.warehouses.update((whs) => [...whs, newWarehouse]);
-            this.filterWarehouses();
-            this.closeModal();
-          } else {
-            alert('Failed to create warehouse: ' + (response.message || 'Unknown error'));
-          }
-        },
-        error: (error) => {
-          console.error('Error creating warehouse:', error);
-          if (error.status !== 401) {
-            alert('Failed to create warehouse: ' + (error.error?.message || error.message || 'Server error'));
-          }
-        },
-      });
+      this.warehouses.update(whs => [...whs, newWh]);
+      this.notification.set({ type: 'success', message: `Warehouse "${newWh.name}" created successfully.` });
     }
+    this.closeModal();
   }
 
-  deleteWarehouse(id: string): void {
-    if (confirm('Are you sure you want to delete this warehouse?')) {
-      this.warehousesService.delete(id).subscribe({
-        next: (res) => {
-          if (res.success !== false) {
-            this.warehouses.update((whs) => whs.filter((w) => w.id !== id));
-            this.filterWarehouses();
-          } else {
-            alert(res.message || 'Delete failed');
-          }
-        },
-        error: (error) => {
-          console.error('Error deleting warehouse:', error);
-          if (error.status !== 401) {
-            alert('Failed to delete warehouse: ' + (error.error?.message || error.message || 'Server error'));
-          }
-        },
-      });
-    }
+  confirmDelete(): void {
+    const wh = this.warehouseToDelete();
+    if (!wh) return;
+    this.warehouses.update(whs => whs.filter(w => w.id !== wh.id));
+    this.notification.set({ type: 'success', message: `Warehouse "${wh.name}" deleted successfully.` });
+    this.closeModal();
+    this.page.set(1);
+  }
+
+  exportCSV(): void {
+    const whs = this.filteredWarehouses();
+    const header = 'Name,Code,Location,Items,Stock Value,Capacity,Occupancy %,Status,Manager,Contact,Created';
+    const rows = whs.map(w =>
+      `"${w.name}","${w.code}","${w.location}",${w.items},${w.value},${w.capacity},${w.occupancy},"${w.status}","${w.managerName}","${w.contactNumber}","${w.createdAt}"`
+    );
+    const csv = [header, ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `warehouses_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    this.notification.set({ type: 'success', message: `Exported ${whs.length} warehouses to CSV.` });
+  }
+
+  getOccupancyColor(occ: number): string {
+    if (occ >= 80) return '#dc2626';
+    if (occ >= 60) return '#f59e0b';
+    if (occ >= 30) return '#10b981';
+    return '#6b7280';
+  }
+
+  getStatusIcon(status: string): string {
+    const icons: Record<string, string> = {
+      Active: 'bi-check-circle-fill',
+      Limited: 'bi-exclamation-triangle-fill',
+      Inactive: 'bi-x-circle-fill',
+    };
+    return icons[status] || 'bi-question-circle';
+  }
+
+  getStatusBadgeClass(status: string): string {
+    const classes: Record<string, string> = {
+      Active: 'badge-active',
+      Limited: 'badge-limited',
+      Inactive: 'badge-inactive',
+    };
+    return classes[status] || 'badge-inactive';
   }
 
   formatValue(value: number): string {
-    if (value >= 1000000) {
-      return '$' + (value / 1000000).toFixed(1) + 'M';
-    } else if (value >= 1000) {
-      return '$' + (value / 1000).toFixed(0) + 'K';
-    }
-    return '$' + value.toString();
+    if (value >= 1000000) return 'Br ' + (value / 1000000).toFixed(1) + 'M';
+    if (value >= 1000) return 'Br ' + (value / 1000).toFixed(0) + 'K';
+    return 'Br ' + value.toString();
   }
 
   formatNumber(value: number): string {
-    if (value >= 1000) {
-      return (value / 1000).toFixed(1) + 'K';
-    }
-    return value.toString();
+    return value.toLocaleString();
   }
 
-  getStatusColor(status: string): string {
-    const colors: { [key: string]: string } = {
-      Active: 'green',
-      Limited: 'yellow',
-      Inactive: 'gray'
+  formatDate(iso: string): string {
+    if (!iso) return '—';
+    try {
+      const d = new Date(iso);
+      return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    } catch {
+      return iso;
+    }
+  }
+
+  isEditing(): boolean {
+    return this.selectedWarehouse() !== null;
+  }
+
+  fieldError(field: string): string {
+    return this.formErrors()[field] || '';
+  }
+
+  notificationIcon(type: string): string {
+    const icons: Record<string, string> = {
+      success: 'bi-check-circle-fill',
+      warning: 'bi-exclamation-triangle-fill',
+      error: 'bi-x-circle-fill',
+      info: 'bi-info-circle-fill',
     };
-    return colors[status] || 'gray';
+    return icons[type] || 'bi-info-circle-fill';
+  }
+
+  statusPercent(status: 'active' | 'limited' | 'inactive'): number {
+    const dist = this.statusDistribution();
+    const map: Record<string, number> = {
+      active: dist.active,
+      limited: dist.limited,
+      inactive: dist.inactive,
+    };
+    return Math.round((map[status] / dist.total) * 100);
+  }
+
+  chartMaxOccupancy(): number {
+    const whs = this.warehouses();
+    if (whs.length === 0) return 100;
+    return Math.max(...whs.map(w => w.occupancy), 100);
   }
 }

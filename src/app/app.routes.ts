@@ -108,17 +108,16 @@ export const routes: Routes = [
         path: 'shelf-locations',
         loadComponent: () => import('./features/store-inventory/shelf-locations/pages/shelf-locations.component').then(m => m.ShelfLocationsComponent),
       },
-      // Requisitions (API-backed)
+      // Requisitions (Unified Dashboard)
       {
         path: 'requisitions',
         children: [
           {
             path: '',
             loadComponent: () =>
-              import('./features/requisition/service-requests/pages/service-request-list/service-request-list.component').then(
-                (m) => m.ServiceRequestListComponent,
+              import('./features/requisitions/requisition-dashboard/pages/requisition-dashboard.component').then(
+                (m) => m.RequisitionDashboardComponent,
               ),
-            data: { initialStatus: 'All' },
           },
           {
             path: 'pending',
@@ -234,48 +233,27 @@ export const routes: Routes = [
         path: 'receiving/suppliers/edit/:id',
         loadComponent: () => import('./features/receiving/suppliers/pages/supplier-form/supplier-form.component').then(m => m.SupplierFormComponent),
       },
-      // Reports & Settings
+      // Reports
       {
-        path: 'reports/valuation',
-        loadComponent: () => import('./features/pages/generic-page/generic-page.component').then(m => m.GenericPageComponent),
-        data: { pageTitle: 'Valuation Reports', pageDescription: 'View property valuation reports', icon: 'bi bi-file-earmark-bar-graph', pageType: 'dashboard' },
-      },
-      {
-        path: 'reports/requisition',
-        loadComponent: () => import('./features/pages/generic-page/generic-page.component').then(m => m.GenericPageComponent),
-        data: { pageTitle: 'Requisition Reports', pageDescription: 'View requisition reports', icon: 'bi bi-file-earmark-text', pageType: 'dashboard' },
-      },
-      {
-        path: 'reports/stock',
-        loadComponent: () => import('./features/store-inventory/stock-report/pages/stock-report.component').then(m => m.StockReportComponent),
-      },
-      {
-        path: 'reports/issuance',
-        loadComponent: () => import('./features/store-inventory/issuance-report/pages/issuance-report.component').then(m => m.IssuanceReportComponent),
+        path: 'reports',
+        loadComponent: () => import('./features/reports/reports-dashboard/reports-dashboard.component').then(m => m.ReportsDashboardComponent),
       },
       {
         path: 'reports/receiving',
         loadComponent: () => import('./features/store-inventory/receiving-report/pages/receiving-report.component').then(m => m.ReceivingReportComponent),
       },
       {
-        path: 'reports/compliance',
-        loadComponent: () => import('./features/pages/generic-page/generic-page.component').then(m => m.GenericPageComponent),
-        data: { pageTitle: 'Compliance Reports', pageDescription: 'View compliance reports', icon: 'bi bi-shield-check', pageType: 'dashboard' },
-      },
-      {
-        path: 'reports/audit',
-        loadComponent: () => import('./features/pages/generic-page/generic-page.component').then(m => m.GenericPageComponent),
-        data: { pageTitle: 'Audit Reports', pageDescription: 'View audit reports', icon: 'bi bi-file-earmark-spreadsheet', pageType: 'dashboard' },
-      },
-      {
         path: 'settings',
-        loadComponent: () => import('./features/pages/generic-page/generic-page.component').then(m => m.GenericPageComponent),
-        data: { pageTitle: 'System Settings', pageDescription: 'Configure system settings', icon: 'bi bi-gear', pageType: 'form' },
-      },
-      {
-        path: 'settings/backup',
-        loadComponent: () => import('./features/pages/generic-page/generic-page.component').then(m => m.GenericPageComponent),
-        data: { pageTitle: 'Backup', pageDescription: 'Manage system backups', icon: 'bi bi-database', pageType: 'backup' },
+        children: [
+          {
+            path: '',
+            loadComponent: () => import('./features/settings/system-settings.component').then(m => m.SystemSettingsComponent),
+          },
+          {
+            path: 'backup',
+            loadComponent: () => import('./features/settings/backup.component').then(m => m.BackupComponent),
+          },
+        ],
       },
       {
         path: 'notifications',

@@ -1,0 +1,423 @@
+<section class="req-page">
+  <header class="page-header">
+    <div class="header-content">
+      <div class="header-icon">
+        <i class="bi bi-file-earmark-text"></i>
+      </div>
+      <div class="header-text">
+        <h1>Requisitions</h1>
+        <p>Manage service requests, approvals, and stock issuances</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <span class="count-badge">{{ summaryStats().totalReqs + summaryStats().sivCount }} total</span>
+      <div class="dropdown-wrapper">
+        <button type="button" class="action-btn secondary" (click)="showExportDropdown.set(!showExportDropdown())">
+          <i class="bi bi-download"></i> Export
+        </button>
+        @if (showExportDropdown()) {
+          <div class="dropdown-menu">
+            <button type="button" (click)="exportCSV()"><i class="bi bi-file-earmark-csv"></i> CSV</button>
+          </div>
+        }
+      </div>
+      <a class="action-btn primary" routerLink="/admin/requisitions/create">
+        <i class="bi bi-plus-lg"></i> New Request
+      </a>
+    </div>
+  </header>
+
+  @if (notification(); as n) {
+    <div class="notification-banner" [class.success]="n.type === 'success'" [class.error]="n.type === 'error'">
+      <i class="bi" [class.bi-check-circle-fill]="n.type === 'success'" [class.bi-exclamation-triangle-fill]="n.type === 'error'"></i>
+      <span>{{ n.message }}</span>
+      <button type="button" class="dismiss-btn" (click)="dismissNotification()"><i class="bi bi-x"></i></button>
+    </div>
+  }
+
+  <div class="stats-grid">
+    <div class="stat-card" [class.active]="activeTab() === 'all'" (click)="switchTab('all')">
+      <div class="stat-icon blue"><i class="bi bi-list-check"></i></div>
+      <div class="stat-info">
+        <span class="stat-label">Total Requests</span>
+        <span class="stat-value">{{ summaryStats().totalReqs }}</span>
+      </div>
+    </div>
+    <div class="stat-card" [class.active]="activeTab() === 'pending'" (click)="switchTab('pending')">
+      <div class="stat-icon orange"><i class="bi bi-hourglass"></i></div>
+      <div class="stat-info">
+        <span class="stat-label">Pending</span>
+        <span class="stat-value">{{ summaryStats().pendingCount }}</span>
+      </div>
+    </div>
+    <div class="stat-card" [class.active]="activeTab() === 'approved'" (click)="switchTab('approved')">
+      <div class="stat-icon green"><i class="bi bi-check-circle"></i></div>
+      <div class="stat-info">
+        <span class="stat-label">Approved</span>
+        <span class="stat-value">{{ summaryStats().approvedCount }}</span>
+      </div>
+    </div>
+    <div class="stat-card" [class.active]="activeTab() === 'rejected'" (click)="switchTab('rejected')">
+      <div class="stat-icon red"><i class="bi bi-x-circle"></i></div>
+      <div class="stat-info">
+        <span class="stat-label">Rejected</span>
+        <span class="stat-value">{{ summaryStats().rejectedCount }}</span>
+      </div>
+    </div>
+    <div class="stat-card" [class.active]="activeTab() === 'completed'" (click)="switchTab('completed')">
+      <div class="stat-icon purple"><i class="bi bi-check-all"></i></div>
+      <div class="stat-info">
+        <span class="stat-label">Completed</span>
+        <span class="stat-value">{{ summaryStats().completedCount }}</span>
+      </div>
+    </div>
+    <div class="stat-card" [class.active]="activeTab() === 'sivs'" (click)="switchTab('sivs')">
+      <div class="stat-icon teal"><i class="bi bi-box-seam"></i></div>
+      <div class="stat-info">
+        <span class="stat-label">SIVs</span>
+        <span class="stat-value">{{ summaryStats().sivCount }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-bar">
+    @for (tab of tabItems; track tab.key) {
+      <button type="button" class="tab-btn" [class.active]="activeTab() === tab.key" (click)="switchTab(tab.key)">
+        <i [class]="tab.icon"></i>
+        {{ tab.label }}
+        <span class="tab-count">{{ tab.count() }}</span>
+      </button>
+    }
+  </div>
+
+  <div class="filter-bar">
+    <div class="filter-group">
+      <div class="filter-field search-field">
+        <i class="bi bi-search"></i>
+        <input type="text" [placeholder]="activeTab() === 'sivs' ? 'Search SIV#, request#, issued to...' : 'Search request#, requester, purpose...'" [value]="searchQuery()" (input)="onSearch($event)">
+      </div>
+      <div class="filter-field">
+        <i class="bi bi-flag"></i>
+        <select [value]="statusFilter()" (change)="onStatusFilter($event)">
+          <option>All Status</option>
+          @if (activeTab() === 'sivs') {
+            <option>Pending</option>
+            <option>Issued</option>
+            <option>Cancelled</option>
+          } @else {
+            <option>Pending</option>
+            <option>Approved</option>
+            <option>Rejected</option>
+            <option>Completed</option>
+            <option>Cancelled</option>
+          }
+        </select>
+      </div>
+      @if (activeTab() !== 'sivs') {
+        <div class="filter-field">
+          <i class="bi bi-building"></i>
+          <select [value]="departmentFilter()" (change)="onDepartmentFilter($event)">
+            <option value="All">All Departments</option>
+            @for (d of uniqueDepartments(); track d) {
+              <option>{{ d }}</option>
+            }
+          </select>
+        </div>
+        <div class="filter-field">
+          <i class="bi bi-lightning"></i>
+          <select [value]="urgencyFilter()" (change)="onUrgencyFilter($event)">
+            <option value="All">All Urgency</option>
+            <option>Low</option>
+            <option>Medium</option>
+            <option>High</option>
+            <option>Critical</option>
+          </select>
+        </div>
+      }
+    </div>
+    <div class="filter-actions">
+      <button type="button" class="btn-filter" (click)="resetFilters()"><i class="bi bi-x-circle"></i> Clear</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-header">
+      @if (activeTab() === 'sivs') {
+        <h3><i class="bi bi-box-seam"></i> Stock Issuance Vouchers</h3>
+      } @else {
+        <h3><i class="bi bi-file-earmark-text"></i> Service Requests</h3>
+      }
+      <span class="result-count">{{ filteredItems().length }} result(s)</span>
+    </div>
+    <div class="panel-body no-padding">
+      <table class="data-table">
+        @if (activeTab() === 'sivs') {
+          <thead>
+            <tr>
+              <th>SIV #</th>
+              <th>Request #</th>
+              <th>Issued To</th>
+              <th>Department</th>
+              <th>Items</th>
+              <th>Status</th>
+              <th>Issue Date</th>
+              <th class="actions-col">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of pagedItems(); track item.id) {
+              <tr>
+                <td><span class="req-number">{{ item.number }}</span></td>
+                <td class="mono">{{ sivRequestNumber(item) }}</td>
+                <td>
+                  <div class="user-cell">
+                    <div class="avatar-sm">{{ item.name.charAt(0) }}</div>
+                    {{ item.name }}
+                  </div>
+                </td>
+                <td>{{ item.department }}</td>
+                <td><span class="items-badge">{{ item.items }} items</span></td>
+                <td><span class="status-badge" [class]="item.statusClass"><span class="status-dot"></span> {{ item.status }}</span></td>
+                <td class="time-cell">{{ formatDate(item.date) }}</td>
+                <td>
+                  <div class="action-buttons">
+                    <button type="button" class="icon-btn" title="View" (click)="openDetailModal(item)"><i class="bi bi-eye"></i></button>
+                    <button type="button" class="icon-btn danger" title="Delete" (click)="confirmDelete(item)"><i class="bi bi-trash"></i></button>
+                  </div>
+                </td>
+              </tr>
+            } @empty {
+              <tr><td colspan="8" class="empty-state"><i class="bi bi-inbox"></i> No SIVs found</td></tr>
+            }
+          </tbody>
+        } @else {
+          <thead>
+            <tr>
+              <th>Request #</th>
+              <th>Requester</th>
+              <th>Department</th>
+              <th>Purpose</th>
+              <th>Items</th>
+              <th>Urgency</th>
+              <th>Status</th>
+              <th>Date</th>
+              <th class="actions-col">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of pagedItems(); track item.id) {
+              <tr>
+                <td><span class="req-number">{{ item.number }}</span></td>
+                <td>
+                  <div class="user-cell">
+                    <div class="avatar-sm">{{ item.name.charAt(0) }}</div>
+                    {{ item.name }}
+                  </div>
+                </td>
+                <td>{{ item.department }}</td>
+                <td><div class="purpose-cell">{{ reqPurpose(item) }}</div></td>
+                <td><span class="items-badge">{{ item.items }} items</span></td>
+                <td><span class="urgency-badge" [class]="reqUrgencyClass(item)">{{ reqUrgency(item) }}</span></td>
+                <td><span class="status-badge" [class]="item.statusClass"><span class="status-dot"></span> {{ item.status }}</span></td>
+                <td class="time-cell">{{ formatDate(item.date) }}</td>
+                <td>
+                  <div class="action-buttons">
+                    <button type="button" class="icon-btn" title="View" (click)="openDetailModal(item)"><i class="bi bi-eye"></i></button>
+                    @if (item.status === 'Pending') {
+                      <button type="button" class="icon-btn success" title="Approve" (click)="openApproveModal(item)"><i class="bi bi-check-lg"></i></button>
+                      <button type="button" class="icon-btn danger" title="Reject" (click)="openRejectModal(item)"><i class="bi bi-x-lg"></i></button>
+                    }
+                    <button type="button" class="icon-btn danger" title="Delete" (click)="confirmDelete(item)"><i class="bi bi-trash"></i></button>
+                  </div>
+                </td>
+              </tr>
+            } @empty {
+              <tr><td colspan="9" class="empty-state"><i class="bi bi-inbox"></i> No requests found</td></tr>
+            }
+          </tbody>
+        }
+      </table>
+    </div>
+  </div>
+
+  <div class="pagination-bar">
+    <div class="pagination-info">
+      Showing {{ displayRange().start }}&ndash;{{ displayRange().end }} of {{ filteredItems().length }}
+    </div>
+    <div class="pagination-controls">
+      <button type="button" class="page-btn" [disabled]="currentPage() === 1" (click)="goToPage(currentPage() - 1)"><i class="bi bi-chevron-left"></i></button>
+      @for (p of getPageArray(); track $index) {
+        <button type="button" class="page-btn" [class.active]="currentPage() === p" (click)="goToPage(p)">{{ p }}</button>
+      }
+      <button type="button" class="page-btn" [disabled]="currentPage() === totalPages()" (click)="goToPage(currentPage() + 1)"><i class="bi bi-chevron-right"></i></button>
+    </div>
+    <div class="rows-per-page">
+      <select [value]="rowsPerPage()" (change)="onRowsPerPageChange($event)">
+        <option>10</option>
+        <option>20</option>
+        <option>50</option>
+      </select> per page
+    </div>
+  </div>
+</section>
+
+@if (showDetailModal() && selectedRequisition(); as req) {
+  <div class="modal-overlay" (click)="closeDetailModal()">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3><i class="bi bi-file-earmark-text"></i> {{ req.requestNumber }}</h3>
+        <button type="button" class="modal-close" (click)="closeDetailModal()"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="detail-section">
+          <h4>Request Information</h4>
+          <div class="detail-grid">
+            <div class="detail-item"><span class="label">Requester</span><span class="value">{{ req.requesterName }}</span></div>
+            <div class="detail-item"><span class="label">Department</span><span class="value">{{ req.department }}</span></div>
+            <div class="detail-item"><span class="label">Purpose</span><span class="value">{{ req.purpose }}</span></div>
+            <div class="detail-item"><span class="label">Urgency</span><span class="value"><span class="urgency-badge" [class]="'urgency-' + req.urgency.toLowerCase()">{{ req.urgency }}</span></span></div>
+            <div class="detail-item"><span class="label">Status</span><span class="value"><span class="status-badge" [class]="req.status.toLowerCase()"><span class="status-dot"></span> {{ req.status }}</span></span></div>
+            <div class="detail-item"><span class="label">Request Date</span><span class="value">{{ formatDate(req.requestDate) }}</span></div>
+            @if (req.approvedDate) {
+              <div class="detail-item"><span class="label">Approved Date</span><span class="value">{{ formatDate(req.approvedDate) }}</span></div>
+            }
+            @if (req.completedDate) {
+              <div class="detail-item"><span class="label">Completed Date</span><span class="value">{{ formatDate(req.completedDate) }}</span></div>
+            }
+          </div>
+        </div>
+        @if (req.notes) {
+          <div class="detail-section">
+            <h4>Notes</h4>
+            <p style="font-size:0.85rem;color:var(--text-color-muted);margin:0;">{{ req.notes }}</p>
+          </div>
+        }
+        @if (req.items && req.items.length) {
+          <div class="detail-section">
+            <h4>Items ({{ req.totalItems }})</h4>
+            <table class="data-table">
+              <thead>
+                <tr><th>Item</th><th>Quantity</th><th>Unit</th></tr>
+              </thead>
+              <tbody>
+                @for (item of req.items; track $index) {
+                  <tr><td>{{ item.name }}</td><td>{{ item.quantity }}</td><td>{{ item.unit }}</td></tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="action-btn secondary" (click)="closeDetailModal()">Close</button>
+      </div>
+    </div>
+  </div>
+}
+
+@if (showSivDetailModal() && selectedSiv(); as siv) {
+  <div class="modal-overlay" (click)="closeSivDetailModal()">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3><i class="bi bi-box-seam"></i> {{ siv.sivNumber }}</h3>
+        <button type="button" class="modal-close" (click)="closeSivDetailModal()"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="detail-section">
+          <h4>SIV Information</h4>
+          <div class="detail-grid">
+            <div class="detail-item"><span class="label">SIV Number</span><span class="value">{{ siv.sivNumber }}</span></div>
+            <div class="detail-item"><span class="label">Request #</span><span class="value">{{ siv.requestNumber }}</span></div>
+            <div class="detail-item"><span class="label">Issued To</span><span class="value">{{ siv.issuedTo }}</span></div>
+            <div class="detail-item"><span class="label">Issued By</span><span class="value">{{ siv.issuedBy }}</span></div>
+            <div class="detail-item"><span class="label">Department</span><span class="value">{{ siv.department }}</span></div>
+            <div class="detail-item"><span class="label">Status</span><span class="value"><span class="status-badge" [class]="siv.status.toLowerCase()"><span class="status-dot"></span> {{ siv.status }}</span></span></div>
+            <div class="detail-item"><span class="label">Issue Date</span><span class="value">{{ formatDate(siv.issueDate) }}</span></div>
+            <div class="detail-item"><span class="label">Items</span><span class="value">{{ siv.totalItems }}</span></div>
+            <div class="detail-item"><span class="label">Total Quantity</span><span class="value">{{ siv.totalQuantity }}</span></div>
+          </div>
+        </div>
+        @if (siv.notes) {
+          <div class="detail-section">
+            <h4>Notes</h4>
+            <p style="font-size:0.85rem;color:var(--text-color-muted);margin:0;">{{ siv.notes }}</p>
+          </div>
+        }
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="action-btn secondary" (click)="closeSivDetailModal()">Close</button>
+      </div>
+    </div>
+  </div>
+}
+
+@if (showApproveModal() && approveTarget(); as req) {
+  <div class="modal-overlay" (click)="closeApproveModal()">
+    <div class="modal-card modal-sm" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3><i class="bi bi-check-circle"></i> Approve Request</h3>
+        <button type="button" class="modal-close" (click)="closeApproveModal()"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="approve-form">
+          <p>Approve <strong>{{ req.requestNumber }}</strong> from {{ req.requesterName }}?</p>
+          <div class="form-group">
+            <label>Remarks (optional)</label>
+            <textarea class="form-textarea" rows="3" placeholder="Add approval remarks..." [value]="approveForm().remarks" (input)="updateApproveRemarks($event)"></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="action-btn secondary" (click)="closeApproveModal()">Cancel</button>
+        <button type="button" class="action-btn primary" (click)="executeApprove()"><i class="bi bi-check-lg"></i> Approve</button>
+      </div>
+    </div>
+  </div>
+}
+
+@if (showRejectModal() && rejectTarget(); as req) {
+  <div class="modal-overlay" (click)="closeRejectModal()">
+    <div class="modal-card modal-sm" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3><i class="bi bi-x-circle"></i> Reject Request</h3>
+        <button type="button" class="modal-close" (click)="closeRejectModal()"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="approve-form">
+          <p>Reject <strong>{{ req.requestNumber }}</strong> from {{ req.requesterName }}?</p>
+          <div class="form-group">
+            <label>Reason <span class="required">*</span></label>
+            <textarea class="form-textarea" rows="3" placeholder="Enter rejection reason..." [value]="rejectReason()" (input)="updateRejectReason($event)"></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="action-btn secondary" (click)="closeRejectModal()">Cancel</button>
+        <button type="button" class="action-btn danger" (click)="executeReject()"><i class="bi bi-x-lg"></i> Reject</button>
+      </div>
+    </div>
+  </div>
+}
+
+@if (showDeleteConfirm() && deleteTarget(); as target) {
+  <div class="modal-overlay" (click)="cancelDelete()">
+    <div class="modal-card modal-sm" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3><i class="bi bi-trash"></i> Confirm Delete</h3>
+        <button type="button" class="modal-close" (click)="cancelDelete()"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="confirm-content">
+          <div class="confirm-icon"><i class="bi bi-exclamation-triangle"></i></div>
+          <p>Are you sure you want to delete</p>
+          <strong>{{ getDeleteLabel(target) }}</strong>
+          <p class="confirm-user">This action cannot be undone.</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="action-btn secondary" (click)="cancelDelete()">Cancel</button>
+        <button type="button" class="action-btn danger" (click)="executeDelete()"><i class="bi bi-trash"></i> Delete</button>
+      </div>
+    </div>
+  </div>
+}

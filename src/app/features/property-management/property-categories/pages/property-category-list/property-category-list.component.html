@@ -1,120 +1,201 @@
 ﻿<div class="categories-container">
-  <div class="page-header">
-    <div class="header-info">
+  <div class="page-header gradient-header">
+    <div class="header-icon">
+      <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M2 6l4-4 4 4M2 10h8v8H2zM14 6l4-4 4 4M14 10h8v8h-8z"/>
+      </svg>
+    </div>
+    <div class="header-content">
       <h1>Categories</h1>
       <p class="subtitle">Organize assets into hierarchical categories</p>
     </div>
-    <button class="btn btn-primary" (click)="openAddModal()">
-      <i class="bi bi-plus-lg"></i> Category
-    </button>
+    <div class="header-actions">
+      <button class="btn btn-primary" (click)="openAddModal()">
+        <i class="bi bi-plus-lg"></i> Category
+      </button>
+    </div>
+  </div>
+
+  @if (notification(); as notif) {
+    <div class="notification-banner" [class.success]="notif.type === 'success'" [class.error]="notif.type === 'error'" [class.info]="notif.type === 'info'">
+      <i class="bi" [class.bi-check-circle-fill]="notif.type === 'success'" [class.bi-exclamation-circle-fill]="notif.type === 'error'" [class.bi-info-circle-fill]="notif.type === 'info'"></i>
+      <span>{{ notif.message }}</span>
+      <button class="notif-close" (click)="notification.set(null)">
+        <i class="bi bi-x"></i>
+      </button>
+    </div>
+  }
+
+  <div class="stat-cards">
+    @for (card of statCards(); track card.label) {
+      <div class="stat-card">
+        <div class="stat-icon" [style.background]="card.color + '15'" [style.color]="card.color">
+          <i class="bi" [class.bi-folder]="card.icon === 'bi-folder'" [class.bi-diagram-3]="card.icon === 'bi-diagram-3'" [class.bi-list-nested]="card.icon === 'bi-list-nested'" [class.bi-check-circle]="card.icon === 'bi-check-circle'" [class.bi-box]="card.icon === 'bi-box'" [class.bi-trophy]="card.icon === 'bi-trophy'"></i>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">{{ card.label }}</span>
+          <span class="stat-value">{{ card.value }}</span>
+          <div class="micro-bar">
+            <div class="micro-fill" [style.width.%]="card.pct" [style.background]="card.color"></div>
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+
+  <div class="charts-row">
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <span class="chart-card-title">Property Distribution</span>
+        <span class="chart-card-badge">{{ donutSegments().length }} categories</span>
+      </div>
+      <div class="chart-card-body">
+        <div class="donut-section">
+          <svg viewBox="0 0 130 130" class="donut-svg">
+            @for (seg of donutSegments(); track seg.label) {
+              <circle r="50" cx="65" cy="65" fill="transparent" [attr.stroke]="seg.color" stroke-width="22" [attr.stroke-dasharray]="seg.dashArray" [attr.stroke-dashoffset]="seg.dashOffset" transform="rotate(-90 65 65)" class="donut-segment" />
+            }
+            <text x="65" y="55" text-anchor="middle" class="donut-value">{{ totalCategoryProperties() }}</text>
+            <text x="65" y="72" text-anchor="middle" class="donut-label">Properties</text>
+          </svg>
+          <div class="donut-legend">
+            @for (seg of donutSegments(); track seg.label) {
+              <div class="legend-item">
+                <span class="legend-dot" [style.background]="seg.color"></span>
+                <span class="legend-label">{{ seg.label }}</span>
+                <span class="legend-value">{{ seg.value }}</span>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="chart-card wide-chart">
+      <div class="chart-card-header">
+        <span class="chart-card-title">Properties by Category</span>
+        <span class="chart-card-badge">{{ categoryBars().length }} root categories</span>
+      </div>
+      <div class="chart-card-body">
+        @for (item of categoryBars(); track item.name) {
+          <div class="bar-item">
+            <div class="bar-label">
+              <span>{{ item.name }}</span>
+              <span>{{ item.value | number }}</span>
+            </div>
+            <div class="bar-track">
+              <div class="bar-fill" [style.width.%]="item.pct" [style.background]="item.color"></div>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
   </div>
 
   <div class="two-panel-layout">
     <div class="category-tree-panel">
       <div class="tree-header">
-        <h3>Category Tree</h3>
+        <h3><i class="bi bi-diagram-3"></i> Category Tree</h3>
         <div class="tree-actions">
           <button class="btn-link" (click)="expandAll()">Expand All</button>
           <button class="btn-link" (click)="collapseAll()">Collapse All</button>
         </div>
       </div>
       <div class="tree-content">
-        @for (category of categories(); track category.id) {
-          @if (category.parentId === null) {
-            <div class="tree-item">
-              <div class="tree-node" [class.selected]="selectedCategory()?.id === category.id" (click)="selectCategory(category)">
-                @if (category.subcategories.length > 0) {
-                  <button class="tree-toggle" (click)="$event.stopPropagation(); toggleExpand(category.id)">
-                    <i class="bi" [class.bi-chevron-right]="!expandedCategories().has(category.id)" [class.bi-chevron-down]="expandedCategories().has(category.id)"></i>
-                  </button>
-                } @else {
-                  <span class="tree-spacer"></span>
-                }
-                <span class="tree-icon">{{ category.icon }}</span>
-                <span class="tree-label">{{ category.name }}</span>
-              </div>
-              @if (expandedCategories().has(category.id) && category.subcategories.length > 0) {
-                <div class="tree-children">
-                  @for (subcat of category.subcategories; track subcat.id) {
-                    <div class="tree-item tree-child">
-                      <div class="tree-node" [class.selected]="selectedCategory()?.id === subcat.id" (click)="selectCategory(subcat)">
-                        <span class="tree-spacer"></span>
-                        <span class="tree-icon">{{ subcat.icon }}</span>
-                        <span class="tree-label">{{ subcat.name }}</span>
-                      </div>
-                    </div>
-                  }
-                </div>
+        @for (category of getRootCategories(); track category.id) {
+          <div class="tree-item">
+            <div class="tree-node" [class.selected]="selectedCategory()?.id === category.id" (click)="selectCategory(category)">
+              @if (category.subcategories.length > 0) {
+                <button class="tree-toggle" (click)="$event.stopPropagation(); toggleExpand(category.id)">
+                  <i class="bi" [class.bi-chevron-right]="!expandedCategories().has(category.id)" [class.bi-chevron-down]="expandedCategories().has(category.id)"></i>
+                </button>
+              } @else {
+                <span class="tree-spacer"></span>
               }
+              <span class="tree-icon">{{ category.icon }}</span>
+              <span class="tree-label">{{ category.name }}</span>
+              <span class="tree-count">{{ category.propertiesCount }}</span>
             </div>
-          }
+            @if (expandedCategories().has(category.id) && category.subcategories.length > 0) {
+              <div class="tree-children">
+                @for (subcat of category.subcategories; track subcat.id) {
+                  <div class="tree-item tree-child">
+                    <div class="tree-node" [class.selected]="selectedCategory()?.id === subcat.id" (click)="selectCategory(subcat)">
+                      <span class="tree-spacer"></span>
+                      <span class="tree-icon">{{ subcat.icon }}</span>
+                      <span class="tree-label">{{ subcat.name }}</span>
+                      <span class="tree-count">{{ subcat.propertiesCount }}</span>
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          </div>
         }
       </div>
     </div>
 
     <div class="category-details-panel">
-      @if (selectedCategory()) {
+      @if (selectedCategory(); as cat) {
         <div class="details-card">
           <div class="details-header">
-            <h3>{{ selectedCategory()!.icon }} {{ selectedCategory()!.name }}</h3>
+            <h3>{{ cat.icon }} {{ cat.name }}</h3>
             <div class="details-actions">
-              <button class="action-btn" (click)="openEditModal(selectedCategory()!)">
+              <button class="action-btn" (click)="openEditModal(cat)" title="Edit">
                 <i class="bi bi-pencil"></i>
               </button>
-              <button class="action-btn delete" (click)="deleteCategory(selectedCategory()!.id)">
+              <button class="action-btn delete-btn" (click)="deleteCategory(cat.id)" title="Delete">
                 <i class="bi bi-trash"></i>
               </button>
             </div>
           </div>
           <div class="details-content">
             <div class="detail-row">
-              <span>ID:</span>
-              <strong>{{ selectedCategory()!.id }}</strong>
+              <span>ID</span>
+              <strong>{{ cat.id }}</strong>
             </div>
             <div class="detail-row">
-              <span>Parent:</span>
-              <strong>{{ selectedCategory()!.parentId ? 'Subcategory' : 'Root Category' }}</strong>
+              <span>Type</span>
+              <strong>{{ getParentLabel(cat) }}</strong>
             </div>
             <div class="detail-row">
-              <span>Subcategories:</span>
-              <strong>{{ selectedCategory()!.subcategories.length }}</strong>
+              <span>Subcategories</span>
+              <strong>{{ cat.subcategories.length }}</strong>
             </div>
             <div class="detail-row">
-              <span>Properties:</span>
-              <strong>{{ selectedCategory()!.propertiesCount }}</strong>
+              <span>Properties</span>
+              <strong>{{ cat.propertiesCount }}</strong>
             </div>
             <div class="detail-row">
-              <span>Status:</span>
-              <span class="badge badge-green">{{ selectedCategory()!.status }}</span>
+              <span>Status</span>
+              <span class="status-pill" [class.active]="cat.status === 'Active'" [class.inactive]="cat.status === 'Inactive'">
+                {{ cat.status }}
+              </span>
             </div>
           </div>
 
-          @if (selectedCategory()!.subcategories.length > 0) {
+          @if (cat.subcategories.length > 0) {
             <div class="subcategories-section">
-              <h4>Subcategories</h4>
-              @for (subcat of selectedCategory()!.subcategories; track subcat.id) {
+              <h4><i class="bi bi-list-nested"></i> Subcategories</h4>
+              @for (subcat of cat.subcategories; track subcat.id) {
                 <div class="subcategory-item" (click)="selectCategory(subcat)">
                   <span class="subcategory-icon">{{ subcat.icon }}</span>
                   <span class="subcategory-name">{{ subcat.name }}</span>
-                  <span class="subcategory-count">({{ subcat.propertiesCount }} properties)</span>
+                  <span class="subcategory-count">{{ subcat.propertiesCount }} props</span>
                 </div>
               }
             </div>
           }
 
           <div class="recent-properties">
-            <h4>Recent Properties</h4>
+            <h4><i class="bi bi-clock-history"></i> Recent Properties</h4>
             <div class="property-item">
               <i class="bi bi-laptop"></i>
-              <span>Dell XPS Laptop</span>
+              <span>{{ cat.name }} Asset 001</span>
             </div>
             <div class="property-item">
               <i class="bi bi-printer"></i>
-              <span>HP LaserJet Printer</span>
-            </div>
-            <div class="property-item">
-              <i class="bi bi-router"></i>
-              <span>Cisco Switch</span>
+              <span>{{ cat.name }} Asset 002</span>
             </div>
           </div>
         </div>
@@ -133,17 +214,17 @@
   <div class="modal-overlay" (click)="closeModal()">
     <div class="modal-content" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <h3>{{ editingCategory() ? 'Edit Category' : 'Add New Category' }}</h3>
+        <h3><i class="bi" [class.bi-plus-circle]="!editingCategory()" [class.bi-pencil-square]="!!editingCategory()"></i> {{ editingCategory() ? 'Edit Category' : 'Add New Category' }}</h3>
         <button class="btn-close" (click)="closeModal()">
           <i class="bi bi-x-lg"></i>
         </button>
       </div>
       <div class="modal-body">
         <div class="form-section">
-          <h4>Category Information</h4>
+          <h4><i class="bi bi-info-circle"></i> Category Information</h4>
           <div class="form-grid">
             <div class="form-field full-width">
-              <label>Category Name <span class="required">*</span></label>
+              <label>Name <span class="required">*</span></label>
               <input type="text" [(ngModel)]="modalFormData().name" placeholder="Enter category name">
             </div>
             <div class="form-field full-width">
@@ -165,7 +246,7 @@
         </div>
 
         <div class="form-section">
-          <h4>Category Settings</h4>
+          <h4><i class="bi bi-gear"></i> Settings</h4>
           <div class="form-grid">
             <div class="form-field">
               <label>Icon</label>
@@ -185,17 +266,44 @@
             </div>
             <div class="form-field full-width">
               <label>Display Order</label>
-              <input type="number" [(ngModel)]="modalFormData().displayOrder" min="1" value="1">
-              <small>Higher numbers appear higher</small>
+              <input type="number" [(ngModel)]="modalFormData().displayOrder" min="1">
+              <small>Higher numbers appear first</small>
             </div>
           </div>
         </div>
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary" (click)="closeModal()">Cancel</button>
-        <button class="btn btn-primary" (click)="saveCategory()">Save</button>
+        <button class="btn btn-primary" (click)="saveCategory()" [disabled]="loading()">
+          <i class="bi bi-check-lg"></i> {{ loading() ? 'Saving...' : 'Save' }}
+        </button>
       </div>
     </div>
   </div>
 }
 
+@if (showConfirmDelete() && categoryToDelete(); as id) {
+  <div class="modal-overlay" (click)="cancelDelete()">
+    <div class="modal-content confirm-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Confirm Delete</h3>
+        <button class="btn-close" (click)="cancelDelete()">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      <div class="modal-body confirm-body">
+        <div class="confirm-icon">
+          <i class="bi bi-exclamation-triangle"></i>
+        </div>
+        <p>Are you sure you want to delete this category?</p>
+        <p class="confirm-warning">This action cannot be undone.</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="cancelDelete()">Cancel</button>
+        <button class="btn btn-danger" (click)="confirmDelete()">
+          <i class="bi bi-trash"></i> Delete
+        </button>
+      </div>
+    </div>
+  </div>
+}

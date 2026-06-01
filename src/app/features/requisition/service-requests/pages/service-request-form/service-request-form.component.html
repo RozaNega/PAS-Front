@@ -1,351 +1,365 @@
-﻿<div class="service-request-form">
-  <!-- Header -->
-  <div class="page-header">
+﻿<section class="req-form">
+  <header class="page-header">
     <div class="header-content">
-      <div class="header-left">
-        <button type="button" class="btn btn-outline-secondary" routerLink="/admin/requisitions">
-          <i class="bi bi-arrow-left"></i> Back to Requests
-        </button>
-        <div class="header-info">
-          <h1>Create New Service Request</h1>
-          <p>Fill in the details to create a new service request</p>
-        </div>
+      <div class="header-icon">
+        <i class="bi bi-plus-lg"></i>
       </div>
-      <div class="header-actions">
-        <button type="button" class="btn btn-outline-info" (click)="saveDraft()" [disabled]="loading()">
-          <i class="bi bi-save"></i> Save Draft
-        </button>
-        <button type="button" class="btn btn-outline-secondary" (click)="loadDraft()">
-          <i class="bi bi-folder-open"></i> Load Draft
-        </button>
-        <button type="button" class="btn btn-outline-warning" (click)="clearDraft()">
+      <div class="header-text">
+        <h1>Create New Service Request</h1>
+        <p>Fill in the details to create a new service request</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      @if (isUsingMock()) {
+        <span class="sample-badge">Sample Data</span>
+      }
+      <button type="button" class="action-btn secondary" (click)="saveDraft()" [disabled]="loading()">
+        <i class="bi bi-save"></i> Save Draft
+      </button>
+      <button type="button" class="action-btn secondary" (click)="loadDraft()" [disabled]="loading()">
+        <i class="bi bi-folder-open"></i> Load Draft
+      </button>
+      @if (draftExists()) {
+        <button type="button" class="action-btn danger" (click)="showClearConfirm.set(true)">
           <i class="bi bi-trash"></i> Clear Draft
         </button>
+      }
+      <a class="action-btn primary" routerLink="/admin/requisitions">
+        <i class="bi bi-arrow-left"></i> Back to Requests
+      </a>
+    </div>
+  </header>
+
+  @if (notification(); as n) {
+    <div class="notification-banner" [class.success]="n.type === 'success'" [class.error]="n.type === 'error'" [class.info]="n.type === 'info'">
+      <i class="bi" [class.bi-check-circle-fill]="n.type === 'success'" [class.bi-exclamation-triangle-fill]="n.type === 'error'" [class.bi-info-circle-fill]="n.type === 'info'"></i>
+      <span>{{ n.message }}</span>
+      <button type="button" class="dismiss-btn" (click)="dismissNotification()"><i class="bi bi-x"></i></button>
+    </div>
+  }
+
+  <div class="wizard-steps">
+    @for (step of [{ num: 1, label: 'Request Details', icon: 'bi-file-earmark-text' }, { num: 2, label: 'Select Items', icon: 'bi-cart-plus' }, { num: 3, label: 'Review & Submit', icon: 'bi-check-circle' }]; track step.num) {
+      <div class="wizard-step" [class.active]="currentStep() >= step.num" [class.completed]="currentStep() > step.num" (click)="goToStep(step.num)">
+        <div class="step-indicator">
+          @if (currentStep() > step.num) {
+            <i class="bi bi-check-lg"></i>
+          } @else {
+            <span>{{ step.num }}</span>
+          }
+        </div>
+        <div class="step-label">
+          <i [class]="step.icon"></i>
+          {{ step.label }}
+        </div>
+        @if (step.num < totalSteps) {
+          <div class="step-connector" [class.completed]="currentStep() > step.num"></div>
+        }
       </div>
-    </div>
+    }
   </div>
 
-  <!-- Progress Steps -->
-  <div class="progress-steps">
-    <div class="step" [class.active]="currentStep() >= 1" [class.completed]="currentStep() > 1">
-      <div class="step-number">1</div>
-      <div class="step-label">Request Details</div>
+  @if (error()) {
+    <div class="error-banner">
+      <i class="bi bi-exclamation-triangle-fill"></i>
+      <span>{{ error() }}</span>
+      <button type="button" class="dismiss-btn" (click)="error.set(null)"><i class="bi bi-x"></i></button>
     </div>
-    <div class="step" [class.active]="currentStep() >= 2" [class.completed]="currentStep() > 2">
-      <div class="step-number">2</div>
-      <div class="step-label">Select Items</div>
-    </div>
-    <div class="step" [class.active]="currentStep() >= 3" [class.completed]="currentStep() > 3">
-      <div class="step-number">3</div>
-      <div class="step-label">Review & Submit</div>
-    </div>
-  </div>
+  }
 
-  <!-- Error Display -->
-  <div class="alert alert-danger" *ngIf="error()">
-    <i class="bi bi-exclamation-triangle"></i>
-    {{ error() }}
-  </div>
-
-  <!-- Step 1: Request Details -->
-  <div class="step-content" *ngIf="currentStep() === 1">
-    <div class="card">
-      <div class="card-header">
-        <h3>Request Details</h3>
-        <p>Provide basic information about your service request</p>
+  @if (currentStep() === 1) {
+    <div class="card-panel">
+      <div class="panel-header">
+        <h3><i class="bi bi-file-earmark-text"></i> Request Details</h3>
+        <span class="panel-subtitle">Provide basic information about your service request</span>
       </div>
-      <div class="card-body">
+      <div class="panel-body">
         <form [formGroup]="requestForm">
           <div class="form-row">
             <div class="form-group">
-              <label for="department">Department *</label>
-              <select id="department" formControlName="department" class="form-control">
-                <option value="">Select Department</option>
-                <option *ngFor="let dept of departments" [value]="dept">{{ dept }}</option>
-              </select>
-              <div class="error-message" *ngIf="requestForm.get('department')?.invalid && requestForm.get('department')?.touched">
-                Department is required
+              <label for="department">Department <span class="required">*</span></label>
+              <div class="select-wrap">
+                <i class="bi bi-building"></i>
+                <select id="department" formControlName="department">
+                  <option value="">Select Department</option>
+                  @for (dept of departments; track dept) {
+                    <option [value]="dept">{{ dept }}</option>
+                  }
+                </select>
               </div>
+              @if (requestForm.get('department')?.invalid && requestForm.get('department')?.touched) {
+                <span class="field-error">Department is required</span>
+              }
             </div>
             <div class="form-group">
-              <label for="urgency">Urgency Level *</label>
-              <select id="urgency" formControlName="urgency" class="form-control">
-                <option *ngFor="let level of urgencyLevels" [value]="level.value">{{ level.label }}</option>
-              </select>
+              <label for="urgency">Urgency Level <span class="required">*</span></label>
+              <div class="select-wrap">
+                <i class="bi bi-lightning"></i>
+                <select id="urgency" formControlName="urgency">
+                  @for (level of urgencyLevels; track level.value) {
+                    <option [value]="level.value">{{ level.label }}</option>
+                  }
+                </select>
+              </div>
             </div>
           </div>
           <div class="form-group">
-            <label for="purpose">Purpose of Request *</label>
-            <textarea 
-              id="purpose" 
-              formControlName="purpose" 
-              class="form-control" 
-              rows="3" 
-              placeholder="Describe the purpose and justification for this request..."></textarea>
-            <div class="error-message" *ngIf="requestForm.get('purpose')?.invalid && requestForm.get('purpose')?.touched">
-              Purpose is required
-            </div>
+            <label for="purpose">Purpose of Request <span class="required">*</span></label>
+            <textarea id="purpose" formControlName="purpose" rows="3" placeholder="Describe the purpose and justification for this request..."></textarea>
+            @if (requestForm.get('purpose')?.invalid && requestForm.get('purpose')?.touched) {
+              <span class="field-error">Purpose is required</span>
+            }
           </div>
           <div class="form-group">
             <label for="notes">Additional Notes</label>
-            <textarea 
-              id="notes" 
-              formControlName="notes" 
-              class="form-control" 
-              rows="2" 
-              placeholder="Any additional information or special instructions..."></textarea>
+            <textarea id="notes" formControlName="notes" rows="2" placeholder="Any additional information or special instructions..."></textarea>
           </div>
         </form>
       </div>
     </div>
-  </div>
+  }
 
-  <!-- Step 2: Select Items -->
-  <div class="step-content" *ngIf="currentStep() === 2">
-    <div class="row">
-      <!-- Available Items -->
-      <div class="col-lg-6">
-        <div class="card">
-          <div class="card-header">
-            <h3>Available Items</h3>
-            <p>Select items to add to your request</p>
+  @if (currentStep() === 2) {
+    <div class="items-layout">
+      <div class="card-panel">
+        <div class="panel-header">
+          <h3><i class="bi bi-box"></i> Available Items</h3>
+          <span class="panel-subtitle">Select items to add to your request</span>
+        </div>
+        <div class="panel-body">
+          <div class="search-field">
+            <i class="bi bi-search"></i>
+            <input type="text" placeholder="Search items by name, SKU, or description..." [value]="itemSearch()" (input)="onItemSearch($event)">
           </div>
-          <div class="card-body">
-            <div class="loading-container" *ngIf="loading()">
-              <div class="spinner-border spinner-border-sm text-primary" role="status">
-                <span class="visually-hidden">Loading...</span>
-              </div>
+          @if (loading()) {
+            <div class="loading-state">
+              <div class="spinner"></div>
               <span>Loading items...</span>
             </div>
-            
-            <div *ngIf="!loading()" class="items-list">
-              <div *ngIf="availableItems().length === 0" class="empty-state">
-                <i class="bi bi-inbox"></i>
-                <p>No items available in inventory</p>
-              </div>
-              
-              <div *ngFor="let item of availableItems()" class="item-card">
-                <div class="item-info">
-                  <h5>{{ item.itemName }}</h5>
-                  <p class="item-details">
-                    <span class="sku">SKU: {{ item.sku }}</span>
-                    <span class="unit">Unit: {{ item.unitOfMeasure }}</span>
-                    <span class="stock" [class.low-stock]="item.stockQuantity < 10">
-                      Stock: {{ item.stockQuantity }}
-                    </span>
-                  </p>
-                  <p class="item-description" *ngIf="item.description">{{ item.description }}</p>
+          } @else {
+            <div class="items-grid">
+              @for (item of filteredItems(); track item.id) {
+                <div class="item-card" [class.added]="selectedItems().some(si => si.itemId === item.id)">
+                  <div class="item-body">
+                    <h5>{{ item.itemName }}</h5>
+                    <div class="item-meta">
+                      <span class="meta-tag"><i class="bi bi-upc-scan"></i> {{ item.sku }}</span>
+                      <span class="meta-tag"><i class="bi bi-rulers"></i> {{ item.unitOfMeasure }}</span>
+                      <span class="meta-tag stock-tag" [class.low]="item.stockQuantity < 10">
+                        <i class="bi bi-box"></i> {{ item.stockQuantity }}
+                      </span>
+                    </div>
+                    @if (item.description) {
+                      <p class="item-desc">{{ item.description }}</p>
+                    }
+                  </div>
+                  <div class="item-action">
+                    @if (selectedItems().some(si => si.itemId === item.id)) {
+                      <button type="button" class="action-btn primary sm" disabled><i class="bi bi-check-lg"></i> Added</button>
+                    } @else {
+                      <button type="button" class="action-btn primary sm" (click)="addItem(item)"><i class="bi bi-plus-lg"></i> Add</button>
+                    }
+                  </div>
                 </div>
-                <div class="item-actions">
-                  <button 
-                    type="button" 
-                    class="btn btn-sm btn-primary" 
-                    (click)="addItem(item)"
-                    [disabled]="selectedItems().some(si => si.itemId === item.id)">
-                    <i class="bi bi-plus-circle"></i>
-                    {{ selectedItems().some(si => si.itemId === item.id) ? 'Added' : 'Add' }}
-                  </button>
+              } @empty {
+                <div class="empty-state">
+                  <i class="bi bi-inbox"></i>
+                  <p>No items match your search</p>
                 </div>
-              </div>
+              }
             </div>
-          </div>
+          }
         </div>
       </div>
 
-      <!-- Selected Items -->
-      <div class="col-lg-6">
-        <div class="card">
-          <div class="card-header">
-            <h3>Selected Items</h3>
-            <p>Items in your request ({{ selectedItems().length }})</p>
-          </div>
-          <div class="card-body">
-            <div *ngIf="selectedItems().length === 0" class="empty-state">
-              <i class="bi bi-cart"></i>
+      <div class="card-panel selected-panel">
+        <div class="panel-header">
+          <h3><i class="bi bi-cart"></i> Selected Items</h3>
+          <span class="panel-subtitle">{{ selectedItems().length }} item(s) in your request</span>
+        </div>
+        <div class="panel-body">
+          @if (selectedItems().length === 0) {
+            <div class="empty-state">
+              <i class="bi bi-cart-plus"></i>
               <p>No items selected yet</p>
-              <p class="text-muted">Select items from the available items list</p>
+              <span class="hint">Select items from the catalog on the left</span>
             </div>
-            
-            <div *ngIf="selectedItems().length > 0" class="selected-items">
-              <div *ngFor="let item of selectedItems()" class="selected-item">
-                <div class="item-info">
-                  <h6>{{ item.itemName }}</h6>
-                  <p class="item-details">
-                    <span>{{ item.sku }}</span>
-                    <span>Available: {{ item.availableStock }}</span>
-                  </p>
-                </div>
-                <div class="quantity-controls">
-                  <label>Quantity:</label>
-                  <div class="quantity-input">
-                    <button 
-                      type="button" 
-                      class="btn btn-sm btn-outline-secondary"
-                      (click)="updateItemQuantity(item.id, item.requestedQty - 1)"
-                      [disabled]="item.requestedQty <= 1">
-                      <i class="bi bi-dash"></i>
-                    </button>
-                    <input 
-                      type="number" 
-                      class="form-control form-control-sm"
-                      [value]="item.requestedQty"
-                      (change)="updateItemQuantity(item.id, +$any($event.target).value)"
-                      min="1"
-                      [max]="item.availableStock">
-                    <button 
-                      type="button" 
-                      class="btn btn-sm btn-outline-secondary"
-                      (click)="updateItemQuantity(item.id, item.requestedQty + 1)"
-                      [disabled]="item.requestedQty >= item.availableStock">
-                      <i class="bi bi-plus"></i>
-                    </button>
+          } @else {
+            <div class="selected-list">
+              @for (item of selectedItems(); track item.id) {
+                <div class="selected-row">
+                  <div class="sel-info">
+                    <strong>{{ item.itemName }}</strong>
+                    <span class="sel-meta">{{ item.sku }} &middot; {{ item.unitOfMeasure }} &middot; Available: {{ item.availableStock }}</span>
                   </div>
+                  <div class="qty-controls">
+                    <button type="button" class="qty-btn" (click)="updateItemQuantity(item.id, item.requestedQty - 1)" [disabled]="item.requestedQty <= 1"><i class="bi bi-dash"></i></button>
+                    <input type="number" class="qty-input" [value]="item.requestedQty" (change)="updateItemQuantity(item.id, +($any($event.target).value))" min="1" [max]="item.availableStock">
+                    <button type="button" class="qty-btn" (click)="updateItemQuantity(item.id, item.requestedQty + 1)" [disabled]="item.requestedQty >= item.availableStock"><i class="bi bi-plus"></i></button>
+                  </div>
+                  <button type="button" class="icon-btn danger" title="Remove" (click)="removeItem(item.id)"><i class="bi bi-trash"></i></button>
                 </div>
-                <div class="item-actions">
-                  <button 
-                    type="button" 
-                    class="btn btn-sm btn-outline-danger" 
-                    (click)="removeItem(item.id)">
-                    <i class="bi bi-trash"></i>
-                  </button>
-                </div>
+              }
+            </div>
+            <div class="selected-summary">
+              <div class="summary-row">
+                <span>Total Items:</span>
+                <strong>{{ totalItemsCount() }}</strong>
               </div>
-              
-              <div class="items-summary">
-                <div class="summary-row">
-                  <span>Total Items:</span>
-                  <strong>{{ totalItems }}</strong>
-                </div>
-                <div class="summary-row">
-                  <span>Total Quantity:</span>
-                  <strong>{{ totalQuantity }}</strong>
-                </div>
+              <div class="summary-row">
+                <span>Total Quantity:</span>
+                <strong>{{ totalQuantity() }}</strong>
               </div>
             </div>
-          </div>
+          }
         </div>
       </div>
     </div>
-  </div>
+  }
 
-  <!-- Step 3: Review & Submit -->
-  <div class="step-content" *ngIf="currentStep() === 3">
-    <div class="card">
-      <div class="card-header">
-        <h3>Review & Submit</h3>
-        <p>Please review your request before submitting</p>
+  @if (currentStep() === 3) {
+    <div class="card-panel">
+      <div class="panel-header">
+        <h3><i class="bi bi-check-circle"></i> Review & Submit</h3>
+        <span class="panel-subtitle">Please review your request before submitting</span>
       </div>
-      <div class="card-body">
+      <div class="panel-body">
         <div class="review-section">
           <h4>Request Information</h4>
           <div class="review-grid">
+            <div class="review-item"><span class="label">Department</span><span class="value">{{ requestForm.get('department')?.value }}</span></div>
             <div class="review-item">
-              <label>Department:</label>
-              <span>{{ requestForm.get('department')?.value }}</span>
+              <span class="label">Urgency</span>
+              <span class="value"><span class="urgency-badge" [class]="getUrgencyClass(requestForm.get('urgency')?.value)">{{ getUrgencyLabel(requestForm.get('urgency')?.value) }}</span></span>
             </div>
-            <div class="review-item">
-              <label>Urgency:</label>
-              <span class="badge" [ngClass]="getUrgencyClass(requestForm.get('urgency')?.value)">
-                {{ getUrgencyLabel(requestForm.get('urgency')?.value) }}
-              </span>
-            </div>
-            <div class="review-item">
-              <label>Purpose:</label>
-              <span>{{ requestForm.get('purpose')?.value }}</span>
-            </div>
-            <div class="review-item" *ngIf="requestForm.get('notes')?.value">
-              <label>Notes:</label>
-              <span>{{ requestForm.get('notes')?.value }}</span>
-            </div>
+            <div class="review-item full"><span class="label">Purpose</span><span class="value">{{ requestForm.get('purpose')?.value }}</span></div>
+            @if (requestForm.get('notes')?.value) {
+              <div class="review-item full"><span class="label">Notes</span><span class="value">{{ requestForm.get('notes')?.value }}</span></div>
+            }
           </div>
         </div>
-
         <div class="review-section">
-          <h4>Items Summary</h4>
-          <div class="table-responsive">
-            <table class="table table-sm">
-              <thead>
+          <h4>Items Summary ({{ totalItemsCount() }})</h4>
+          <table class="data-table">
+            <thead>
+              <tr><th>Item</th><th>SKU</th><th>Unit</th><th>Quantity</th><th>Available</th></tr>
+            </thead>
+            <tbody>
+              @for (item of selectedItems(); track item.id) {
                 <tr>
-                  <th>Item</th>
-                  <th>SKU</th>
-                  <th>Unit</th>
-                  <th>Quantity</th>
-                  <th>Available</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let item of selectedItems()">
-                  <td>{{ item.itemName }}</td>
-                  <td>{{ item.sku }}</td>
+                  <td><div class="user-cell"><div class="avatar-sm">{{ item.itemName.charAt(0) }}</div>{{ item.itemName }}</div></td>
+                  <td class="mono">{{ item.sku }}</td>
                   <td>{{ item.unitOfMeasure }}</td>
                   <td>{{ item.requestedQty }}</td>
                   <td>
-                    <span class="badge" 
-                          [class.badge-success]="item.availableStock >= item.requestedQty"
-                          [class.badge-warning]="item.availableStock < item.requestedQty">
+                    <span class="stock-badge" [class.sufficient]="item.availableStock >= item.requestedQty" [class.insufficient]="item.availableStock < item.requestedQty">
                       {{ item.availableStock }}
                     </span>
                   </td>
                 </tr>
-              </tbody>
-              <tfoot>
-                <tr class="table-light">
-                  <th colspan="3">Total</th>
-                  <th>{{ totalQuantity }}</th>
-                  <th></th>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
+              }
+            </tbody>
+            <tfoot>
+              <tr><th colspan="3">Total</th><th>{{ totalQuantity() }}</th><th></th></tr>
+            </tfoot>
+          </table>
         </div>
-
-        <div class="submission-note">
-          <div class="alert alert-info">
-            <i class="bi bi-info-circle"></i>
-            <strong>Note:</strong> Once submitted, this request will be sent for approval. 
-            You will be notified of any status changes via email and system notifications.
-          </div>
+        <div class="info-note">
+          <i class="bi bi-info-circle"></i>
+          <span>Once submitted, this request will be sent for approval. You will be notified of any status changes.</span>
         </div>
       </div>
     </div>
-  </div>
+  }
 
-  <!-- Navigation Buttons -->
   <div class="form-actions">
-    <button type="button" class="btn btn-secondary" (click)="cancel()">
-      <i class="bi bi-x-circle"></i> Cancel
-    </button>
-    <button 
-      type="button" 
-      class="btn btn-outline-primary" 
-      (click)="previousStep()" 
-      *ngIf="currentStep() > 1"
-      [disabled]="loading()">
-      <i class="bi bi-chevron-left"></i> Previous
-    </button>
-    <button 
-      type="button" 
-      class="btn btn-primary" 
-      (click)="nextStep()" 
-      *ngIf="currentStep() < totalSteps"
-      [disabled]="loading()">
-      Next <i class="bi bi-chevron-right"></i>
-    </button>
-    <button 
-      type="button" 
-      class="btn btn-success" 
-      (click)="submitRequest()" 
-      *ngIf="currentStep() === totalSteps" 
-      [disabled]="loading() || selectedItems().length === 0">
-      <span *ngIf="!loading()">
-        <i class="bi bi-check-circle"></i> Submit Request
-      </span>
-      <span *ngIf="loading()">
-        <div class="spinner-border spinner-border-sm" role="status">
-          <span class="visually-hidden">Loading...</span>
-        </div>
-        Submitting...
-      </span>
-    </button>
+    <div class="actions-left">
+      <a class="action-btn secondary" routerLink="/admin/requisitions"><i class="bi bi-x-lg"></i> Cancel</a>
+    </div>
+    <div class="actions-right">
+      @if (currentStep() > 1) {
+        <button type="button" class="action-btn secondary" (click)="previousStep()" [disabled]="loading()">
+          <i class="bi bi-chevron-left"></i> Previous
+        </button>
+      }
+      @if (currentStep() < totalSteps) {
+        <button type="button" class="action-btn primary" (click)="nextStep()" [disabled]="loading()">
+          Next <i class="bi bi-chevron-right"></i>
+        </button>
+      }
+      @if (currentStep() === totalSteps) {
+        <button type="button" class="action-btn primary" (click)="submitRequest()" [disabled]="loading() || selectedItems().length === 0">
+          @if (loading()) {
+            <span><span class="spinner sm"></span> Submitting...</span>
+          } @else {
+            <span><i class="bi bi-check-circle"></i> Submit Request</span>
+          }
+        </button>
+      }
+    </div>
   </div>
-</div>
+</section>
+
+@if (showClearConfirm()) {
+  <div class="modal-overlay" (click)="showClearConfirm.set(false)">
+    <div class="modal-card modal-sm" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3><i class="bi bi-trash"></i> Clear Draft</h3>
+        <button type="button" class="modal-close" (click)="showClearConfirm.set(false)"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="confirm-content">
+          <div class="confirm-icon"><i class="bi bi-exclamation-triangle"></i></div>
+          <p>Are you sure you want to clear the draft?</p>
+          <p class="confirm-hint">All unsaved data will be lost</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="action-btn secondary" (click)="showClearConfirm.set(false)">Cancel</button>
+        <button type="button" class="action-btn danger" (click)="clearDraft()"><i class="bi bi-trash"></i> Clear</button>
+      </div>
+    </div>
+  </div>
+}
+
+@if (showCancelConfirm()) {
+  <div class="modal-overlay" (click)="confirmCancel()">
+    <div class="modal-card modal-sm" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3><i class="bi bi-x-circle"></i> Cancel Request</h3>
+        <button type="button" class="modal-close" (click)="showCancelConfirm.set(false)"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="confirm-content">
+          <div class="confirm-icon"><i class="bi bi-exclamation-triangle"></i></div>
+          <p>Are you sure you want to cancel?</p>
+          <p class="confirm-hint">All unsaved data will be lost</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="action-btn secondary" (click)="showCancelConfirm.set(false)">Go Back</button>
+        <button type="button" class="action-btn danger" (click)="confirmCancel()"><i class="bi bi-x-lg"></i> Cancel</button>
+      </div>
+    </div>
+  </div>
+}
+
+@if (showSuccessModal()) {
+  <div class="modal-overlay">
+    <div class="modal-card modal-sm">
+      <div class="modal-header">
+        <h3><i class="bi bi-check-circle" style="color:#059669"></i> Request Submitted</h3>
+      </div>
+      <div class="modal-body">
+        <div class="confirm-content">
+          <div class="confirm-icon" style="color:#059669"><i class="bi bi-check-circle-fill"></i></div>
+          <p>Service request created successfully!</p>
+          <p class="confirm-hint">Your request has been submitted for approval. You will be notified of any updates.</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="action-btn primary" (click)="navigateToList()"><i class="bi bi-list-check"></i> View All Requests</button>
+      </div>
+    </div>
+  </div>
+}

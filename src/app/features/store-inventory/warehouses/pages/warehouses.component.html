@@ -1,232 +1,477 @@
-<section class="warehouse-dashboard animate-fade-in">
-  <div class="sheet-shell">
-    <header class="sheet-topbar glass-effect">
-      <div class="brand-block">
-        <div class="brand-mark" aria-hidden="true">
-          <i class="bi bi-building"></i>
-        </div>
-        <div>
-          <p class="eyebrow">STORE & INVENTORY</p>
-          <h1>Warehouse Management</h1>
-        </div>
-      </div>
+<section class="warehouses-page">
 
-      <div class="top-actions">
-        <button type="button" class="primary-pill" (click)="openAddModal()">
-          <i class="bi bi-plus-lg"></i>
-          Add Warehouse
-        </button>
-      </div>
-    </header>
-
-    <section class="search-row glass-effect" aria-label="Warehouse search and filters">
-      <label class="search-field">
-        <i class="bi bi-search"></i>
-        <input
-          type="search"
-          [value]="searchTerm()"
-          (input)="onSearchChange($any($event.target).value)"
-          placeholder="Search by name, code, or location..."
-          aria-label="Search warehouses"
-        />
-      </label>
-
-      <div class="compact-selectors">
-        <span class="meta-chip">Status</span>
-        <select [ngModel]="statusFilter()" (ngModelChange)="onStatusFilterChange($event)">
-          @for (status of statuses; track status) {
-            <option [value]="status">{{ status }}</option>
-          }
-        </select>
-      </div>
-
-      <div class="compact-selectors">
-        <span class="meta-chip">Type</span>
-        <select [ngModel]="typeFilter()" (ngModelChange)="onTypeFilterChange($event)">
-          <option value="All Types">All Types</option>
-          <option value="Main Warehouse">Main Warehouse</option>
-          <option value="Secondary WH">Secondary WH</option>
-          <option value="Cold Storage">Cold Storage</option>
-        </select>
-      </div>
-    </section>
-
-    <section class="summary-grid" aria-label="Warehouse metrics">
-      <article class="summary-card glass-effect accent-violet">
-        <div class="summary-card__header">
-          <span>Total Warehouses</span>
-          <strong>{{ warehouses().length }}</strong>
-          <small>Active: {{ activeWarehouseCount() }}</small>
-        </div>
-        <div class="sparkline" aria-hidden="true">
-          <span style="height: 40%"></span><span style="height: 60%"></span><span style="height: 50%"></span><span style="height: 80%"></span><span style="height: 70%"></span>
-        </div>
-      </article>
-
-      <article class="summary-card glass-effect accent-blue">
-        <div class="summary-card__header">
-          <span>Total Items</span>
-          <strong>{{ formatNumber(totalItems()) }}</strong>
-          <small>Across all facilities</small>
-        </div>
-        <div class="sparkline" aria-hidden="true">
-          <span style="height: 30%"></span><span style="height: 50%"></span><span style="height: 40%"></span><span style="height: 90%"></span><span style="height: 60%"></span>
-        </div>
-      </article>
-
-      <article class="summary-card glass-effect accent-emerald">
-        <div class="summary-card__header">
-          <span>Inventory Value</span>
-          <strong>{{ formatValue(totalValue()) }}</strong>
-          <small>Verified assets</small>
-        </div>
-        <div class="sparkline" aria-hidden="true">
-          <span style="height: 50%"></span><span style="height: 70%"></span><span style="height: 60%"></span><span style="height: 40%"></span><span style="height: 80%"></span>
-        </div>
-      </article>
-
-      <article class="summary-card glass-effect accent-amber">
-        <div class="summary-card__header">
-          <span>Avg. Occupancy</span>
-          <strong>{{ avgOccupancy() }}%</strong>
-          <small>Capacity utilized</small>
-        </div>
-        <div class="sparkline" aria-hidden="true">
-          <span style="height: 20%"></span><span style="height: 40%"></span><span style="height: 30%"></span><span style="height: 60%"></span><span style="height: 50%"></span>
-        </div>
-      </article>
-    </section>
-
-    <section class="table-shell glass-effect">
-      <div class="table-toolbar">
-        <div>
-          <p class="section-label">Storage Network</p>
-          <h2>{{ filteredWarehouses().length }} Facilities Listed</h2>
-        </div>
-      </div>
-
-      <div class="table-card">
-        @if (isLoading()) {
-          <div class="loading-state">
-            <div class="spinner"></div>
-            <p>Syncing warehouse data...</p>
-          </div>
-        } @else {
-          <table class="premium-table">
-            <thead>
-              <tr>
-                <th>Warehouse</th>
-                <th>Location</th>
-                <th>Capacity</th>
-                <th>Inventory Value</th>
-                <th>Status</th>
-                <th class="text-right">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (wh of filteredWarehouses(); track wh.id) {
-                <tr>
-                  <td>
-                    <div class="item-info">
-                      <div class="item-icon"><i class="bi bi-building"></i></div>
-                      <div class="item-text">
-                        <span class="name">{{ wh.name }}</span>
-                        <span class="id">{{ wh.code }} • {{ wh.type }}</span>
-                      </div>
-                    </div>
-                  </td>
-                  <td>{{ wh.location }}</td>
-                  <td>
-                    <div class="stock-indicator">
-                      <div class="stock-progress">
-                        <div class="bar" [style.width.%]="wh.shelves * 10"></div>
-                      </div>
-                      <span>{{ wh.items }} items</span>
-                    </div>
-                  </td>
-                  <td><strong>{{ formatValue(wh.value) }}</strong></td>
-                  <td>
-                    <span class="status-badge" [class]="wh.status.toLowerCase()">{{ wh.status }}</span>
-                  </td>
-                  <td class="text-right">
-                    <div class="row-actions">
-                      <button class="icon-btn" (click)="openEditModal(wh)"><i class="bi bi-pencil"></i></button>
-                      <button class="icon-btn" (click)="deleteWarehouse(wh.id)"><i class="bi bi-trash"></i></button>
-                    </div>
-                  </td>
-                </tr>
-              }
-            </tbody>
-          </table>
-        }
-      </div>
-    </section>
-
-    <footer class="page-footer glass-effect">
-      <div class="footer-left">
-        <i class="bi bi-shield-check"></i>
-        <span>Security Level: Enterprise</span>
-      </div>
-      <div class="footer-right">
-        <span>AFRICOM Asset Management Platform v2.0</span>
-      </div>
-    </footer>
-  </div>
-
-  <!-- Modal -->
-  @if (showModal()) {
-    <div class="modal-overlay animate-fade-in" (click)="closeModal()">
-      <div class="modal-shell glass-effect animate-slide-down" (click)="$event.stopPropagation()">
-        <div class="modal-header">
-          <div>
-            <p class="section-label">Warehouse Setup</p>
-            <h2>{{ selectedWarehouse() ? 'Modify Facility' : 'Initialize New Warehouse' }}</h2>
-          </div>
-          <button class="close-btn" (click)="closeModal()">✕</button>
-        </div>
-
-        <div class="modal-body">
-          <div class="form-grid">
-            <div class="form-section">
-              <h4>General Information</h4>
-              <label>
-                <span>Warehouse Name *</span>
-                <input type="text" [(ngModel)]="modalFormData.warehouseName" placeholder="Main Logistics Center">
-              </label>
-              <label>
-                <span>Location Code *</span>
-                <input type="text" [(ngModel)]="modalFormData.locationCode" placeholder="WH-001">
-              </label>
-              <label>
-                <span>Address</span>
-                <input type="text" [(ngModel)]="modalFormData.address" placeholder="123 Industrial Way">
-              </label>
-            </div>
-
-            <div class="form-section">
-              <h4>Contact & Logistics</h4>
-              <label>
-                <span>Contact Person</span>
-                <input type="text" [(ngModel)]="modalFormData.contactPerson" placeholder="John Doe">
-              </label>
-              <label>
-                <span>Phone</span>
-                <input type="text" [(ngModel)]="modalFormData.contactPhone" placeholder="+251-...">
-              </label>
-              <label>
-                <span>Email</span>
-                <input type="email" [(ngModel)]="modalFormData.contactEmail" placeholder="wh@africom.com">
-              </label>
-            </div>
-          </div>
-        </div>
-
-        <div class="modal-footer">
-          <button class="secondary-pill" (click)="closeModal()">Cancel</button>
-          <button class="primary-pill" (click)="saveWarehouse()">Confirm & Save</button>
-        </div>
-      </div>
+  @if (notification(); as note) {
+    <div class="notification-banner" [class]="note.type" (click)="notification.set(null)">
+      <i class="bi {{ notificationIcon(note.type) }}"></i>
+      <span>{{ note.message }}</span>
+      <i class="bi bi-x close-notif"></i>
     </div>
   }
+
+  <header class="page-header">
+    <div class="header-icon">
+      <i class="bi bi-building"></i>
+    </div>
+    <div class="header-content">
+      <div class="header-text">
+        <h1>Warehouses</h1>
+        <p>{{ totalWarehouses() }} facility{{ totalWarehouses() !== 1 ? 'ies' : 'y' }} across the network</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button type="button" class="action-btn secondary" (click)="exportCSV()">
+        <i class="bi bi-download"></i> Export CSV
+      </button>
+      <button type="button" class="action-btn primary" (click)="openAddModal()">
+        <i class="bi bi-plus-lg"></i> Add Warehouse
+      </button>
+    </div>
+  </header>
+
+  @if (isLoading()) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading warehouse data...</p>
+    </div>
+  }
+
+  @if (!isLoading()) {
+
+    <section class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon violet">
+          <i class="bi bi-building"></i>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Total Warehouses</span>
+          <span class="stat-value">{{ totalWarehouses() }}</span>
+        </div>
+        <span class="stat-trend">Active: {{ activeWarehouseCount() }}</span>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon blue">
+          <i class="bi bi-boxes"></i>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Total Items Stored</span>
+          <span class="stat-value">{{ formatNumber(totalItems()) }}</span>
+        </div>
+        <span class="stat-trend">Across all warehouses</span>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon emerald">
+          <i class="bi bi-coin"></i>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Total Stock Value</span>
+          <span class="stat-value">{{ formatValue(totalValue()) }}</span>
+        </div>
+        <span class="stat-trend">Inventory valuation</span>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon amber">
+          <i class="bi bi-graph-up-arrow"></i>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Avg Occupancy</span>
+          <span class="stat-value">{{ avgOccupancy() }}%</span>
+        </div>
+        <span class="stat-trend">Capacity utilized</span>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon cyan">
+          <i class="bi bi-check-circle"></i>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Active Warehouses</span>
+          <span class="stat-value">{{ activeWarehouseCount() }}</span>
+        </div>
+        <span class="stat-trend">Out of {{ totalWarehouses() }}</span>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon rose">
+          <i class="bi bi-pie-chart"></i>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Capacity Utilization</span>
+          <span class="stat-value">{{ capacityUtilization() }}%</span>
+        </div>
+        <span class="stat-trend">Overall usage rate</span>
+      </div>
+    </section>
+
+    <section class="charts-grid">
+      <div class="panel chart-panel">
+        <div class="panel-header">
+          <h3><i class="bi bi-bar-chart-fill"></i> Occupancy Comparison</h3>
+        </div>
+        <div class="chart-body occupancy-chart">
+          @for (wh of warehouses(); track wh.id) {
+            <div class="bar-row">
+              <div class="bar-label" title="{{ wh.name }}">
+                <span class="bar-name">{{ wh.name }}</span>
+                <span class="bar-pct">{{ wh.occupancy }}%</span>
+              </div>
+              <div class="bar-track">
+                <div class="bar-fill" [style.width.%]="wh.occupancy" [style.background]="getOccupancyColor(wh.occupancy)"></div>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+      <div class="panel chart-panel">
+        <div class="panel-header">
+          <h3><i class="bi bi-pie-chart-fill"></i> Status Distribution</h3>
+        </div>
+        <div class="chart-body status-chart">
+          <div class="donut-container">
+            <svg viewBox="0 0 42 42" class="donut-svg">
+              <circle cx="21" cy="21" r="15.9" fill="none" stroke="var(--surface-border)" stroke-width="3.5"/>
+              <circle cx="21" cy="21" r="15.9" fill="none" stroke="#10b981" stroke-width="3.5"
+                [attr.stroke-dasharray]="statusPercent('active') + ' ' + (100 - statusPercent('active'))"
+                [attr.stroke-dashoffset]="25" transform="rotate(-90 21 21)"/>
+              <circle cx="21" cy="21" r="15.9" fill="none" stroke="#f59e0b" stroke-width="3.5"
+                [attr.stroke-dasharray]="statusPercent('limited') + ' ' + (100 - statusPercent('limited'))"
+                [attr.stroke-dashoffset]="25 - statusPercent('active')" transform="rotate(-90 21 21)"/>
+              <circle cx="21" cy="21" r="15.9" fill="none" stroke="#ef4444" stroke-width="3.5"
+                [attr.stroke-dasharray]="statusPercent('inactive') + ' ' + (100 - statusPercent('inactive'))"
+                [attr.stroke-dashoffset]="25 - statusPercent('active') - statusPercent('limited')" transform="rotate(-90 21 21)"/>
+            </svg>
+          </div>
+          <div class="legend-list">
+            <div class="legend-item">
+              <span class="legend-dot active-dot"></span>
+              <span class="legend-label">Active</span>
+              <span class="legend-value">{{ statusDistribution().active }}</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-dot limited-dot"></span>
+              <span class="legend-label">Limited</span>
+              <span class="legend-value">{{ statusDistribution().limited }}</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-dot inactive-dot"></span>
+              <span class="legend-label">Inactive</span>
+              <span class="legend-value">{{ statusDistribution().inactive }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="filter-bar">
+      <div class="filter-row">
+        <div class="search-box">
+          <i class="bi bi-search"></i>
+          <input type="text" placeholder="Search by name, code, or location..."
+            [ngModel]="searchTerm()" (ngModelChange)="onSearchChange($event)">
+        </div>
+        <div class="filter-group">
+          <label>Status</label>
+          <select class="filter-select" [ngModel]="statusFilter()" (ngModelChange)="onStatusFilterChange($event)">
+            @for (s of statuses; track s) {
+              <option [value]="s">{{ s }}</option>
+            }
+          </select>
+        </div>
+        <button type="button" class="icon-btn" (click)="clearFilters()" title="Clear filters">
+          <i class="bi bi-x-circle"></i>
+        </button>
+      </div>
+      @if (searchTerm() || statusFilter() !== 'All') {
+        <div class="active-filters">
+          <span class="filter-chip">{{ filteredWarehouses().length }} result{{ filteredWarehouses().length !== 1 ? 's' : '' }}</span>
+        </div>
+      }
+    </section>
+
+    <div class="panel">
+      <div class="data-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Warehouse Name</th>
+              <th>Code</th>
+              <th>Location</th>
+              <th>Items</th>
+              <th>Stock Value</th>
+              <th>Occupancy</th>
+              <th>Status</th>
+              <th>Contact</th>
+              <th class="text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (wh of pagedWarehouses(); track wh.id) {
+              <tr>
+                <td>
+                  <div class="cell-name" (click)="openDetailModal(wh)" style="cursor:pointer">
+                    <div class="cell-icon"><i class="bi bi-building"></i></div>
+                    <div>
+                      <span class="name">{{ wh.name }}</span>
+                      <span class="meta">{{ wh.description || wh.location }}</span>
+                    </div>
+                  </div>
+                </td>
+                <td><code>{{ wh.code }}</code></td>
+                <td>{{ wh.location }}</td>
+                <td>{{ formatNumber(wh.items) }}</td>
+                <td><strong>{{ formatValue(wh.value) }}</strong></td>
+                <td>
+                  <div class="occ-bar-mini">
+                    <div class="occ-track">
+                      <div class="occ-fill" [style.width.%]="wh.occupancy" [style.background]="getOccupancyColor(wh.occupancy)"></div>
+                    </div>
+                    <span class="occ-text">{{ wh.occupancy }}%</span>
+                  </div>
+                </td>
+                <td>
+                  <span class="status-badge {{ getStatusBadgeClass(wh.status) }}">
+                    <i class="bi {{ getStatusIcon(wh.status) }}"></i>
+                    {{ wh.status }}
+                  </span>
+                </td>
+                <td>
+                  @if (wh.contactNumber) {
+                    <span class="contact-info">{{ wh.contactNumber }}</span>
+                  } @else {
+                    <span class="text-muted">—</span>
+                  }
+                </td>
+                <td class="text-right">
+                  <div class="row-actions">
+                    <button class="icon-btn" (click)="openEditModal(wh)" title="Edit"><i class="bi bi-pencil"></i></button>
+                    <button class="icon-btn danger" (click)="openDeleteModal(wh)" title="Delete"><i class="bi bi-trash"></i></button>
+                  </div>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="9" class="empty-state">
+                  <i class="bi bi-inbox"></i>
+                  <p>No warehouses found</p>
+                  @if (searchTerm() || statusFilter() !== 'All') {
+                    <button class="action-btn secondary" (click)="clearFilters()">Clear Filters</button>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      @if (totalPages() > 1) {
+        <div class="pagination-bar">
+          <span class="page-info">Page {{ page() }} of {{ totalPages() }} ({{ filteredWarehouses().length }} total)</span>
+          <div class="page-controls">
+            <button class="icon-btn" [disabled]="page() === 1" (click)="goToPage(page() - 1)">
+              <i class="bi bi-chevron-left"></i>
+            </button>
+            @for (p of [].constructor(totalPages()); track $index) {
+              <button class="page-btn" [class.active]="page() === $index + 1" (click)="goToPage($index + 1)">
+                {{ $index + 1 }}
+              </button>
+            }
+            <button class="icon-btn" [disabled]="page() === totalPages()" (click)="goToPage(page() + 1)">
+              <i class="bi bi-chevron-right"></i>
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  @if (loadError(); as err) {
+    @if (!isLoading()) {
+      <div class="error-banner">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+        <span>{{ err }}</span>
+        <button class="action-btn secondary" (click)="loadWarehouses()">
+          <i class="bi bi-arrow-clockwise"></i> Retry
+        </button>
+      </div>
+    }
+  }
+
 </section>
 
+@if (showModal()) {
+  <div class="modal-overlay" (click)="closeModal()">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+
+      @if (modalMode() === 'add-edit') {
+        <div class="modal-header">
+          <h2>{{ isEditing() ? 'Edit Warehouse' : 'Add Warehouse' }}</h2>
+          <button class="icon-btn" (click)="closeModal()"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <div class="modal-body">
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Warehouse Name <span class="required">*</span></label>
+              <input type="text" [(ngModel)]="modalForm.warehouseName" placeholder="Main Warehouse">
+              @if (fieldError('warehouseName')) {
+                <span class="form-error">{{ fieldError('warehouseName') }}</span>
+              }
+            </div>
+            <div class="form-group">
+              <label>Warehouse Code <span class="required">*</span></label>
+              <input type="text" [(ngModel)]="modalForm.warehouseCode" placeholder="WH-001">
+              @if (fieldError('warehouseCode')) {
+                <span class="form-error">{{ fieldError('warehouseCode') }}</span>
+              }
+            </div>
+            <div class="form-group">
+              <label>Location <span class="required">*</span></label>
+              <input type="text" [(ngModel)]="modalForm.location" placeholder="Addis Ababa, Main District">
+              @if (fieldError('location')) {
+                <span class="form-error">{{ fieldError('location') }}</span>
+              }
+            </div>
+            <div class="form-group">
+              <label>Capacity (units) <span class="required">*</span></label>
+              <input type="number" [(ngModel)]="modalForm.capacity" placeholder="10000" min="1">
+              @if (fieldError('capacity')) {
+                <span class="form-error">{{ fieldError('capacity') }}</span>
+              }
+            </div>
+            <div class="form-group">
+              <label>Manager Name</label>
+              <input type="text" [(ngModel)]="modalForm.managerName" placeholder="John Doe">
+            </div>
+            <div class="form-group">
+              <label>Contact Number</label>
+              <input type="text" [(ngModel)]="modalForm.contactNumber" placeholder="+251 911 000 000">
+            </div>
+            <div class="form-group toggle-group">
+              <label>Status</label>
+              <div class="toggle-row">
+                <span [class.active-label]="!modalForm.isActive">Inactive</span>
+                <label class="toggle-switch">
+                  <input type="checkbox" [(ngModel)]="modalForm.isActive">
+                  <span class="toggle-slider"></span>
+                </label>
+                <span [class.active-label]="modalForm.isActive">Active</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="action-btn secondary" (click)="closeModal()">Cancel</button>
+          <button class="action-btn primary" (click)="saveWarehouse()">
+            <i class="bi bi-check-lg"></i> {{ isEditing() ? 'Update' : 'Create' }}
+          </button>
+        </div>
+      }
+
+      @if (modalMode() === 'detail') {
+        @let wh = selectedWarehouse();
+        @if (wh) {
+          <div class="modal-header">
+            <h2><i class="bi bi-building"></i> {{ wh.name }}</h2>
+            <button class="icon-btn" (click)="closeModal()"><i class="bi bi-x-lg"></i></button>
+          </div>
+          <div class="modal-body">
+            <div class="detail-grid">
+              <div class="detail-field">
+                <span class="detail-label">Code</span>
+                <span class="detail-value"><code>{{ wh.code }}</code></span>
+              </div>
+              <div class="detail-field">
+                <span class="detail-label">Location</span>
+                <span class="detail-value">{{ wh.location }}</span>
+              </div>
+              <div class="detail-field">
+                <span class="detail-label">Status</span>
+                <span class="detail-value">
+                  <span class="status-badge {{ getStatusBadgeClass(wh.status) }}">
+                    <i class="bi {{ getStatusIcon(wh.status) }}"></i> {{ wh.status }}
+                  </span>
+                </span>
+              </div>
+              <div class="detail-field">
+                <span class="detail-label">Capacity</span>
+                <span class="detail-value">{{ formatNumber(wh.capacity) }} units</span>
+              </div>
+              <div class="detail-field">
+                <span class="detail-label">Current Items</span>
+                <span class="detail-value">{{ formatNumber(wh.items) }}</span>
+              </div>
+              <div class="detail-field">
+                <span class="detail-label">Occupancy</span>
+                <span class="detail-value">
+                  <div class="occ-bar-mini inline">
+                    <div class="occ-track">
+                      <div class="occ-fill" [style.width.%]="wh.occupancy" [style.background]="getOccupancyColor(wh.occupancy)"></div>
+                    </div>
+                    <span class="occ-text">{{ wh.occupancy }}%</span>
+                  </div>
+                </span>
+              </div>
+              <div class="detail-field">
+                <span class="detail-label">Stock Value</span>
+                <span class="detail-value">{{ formatValue(wh.value) }}</span>
+              </div>
+              <div class="detail-field">
+                <span class="detail-label">Manager</span>
+                <span class="detail-value">{{ wh.managerName || '—' }}</span>
+              </div>
+              <div class="detail-field">
+                <span class="detail-label">Contact</span>
+                <span class="detail-value">{{ wh.contactNumber || '—' }}</span>
+              </div>
+              <div class="detail-field">
+                <span class="detail-label">Created</span>
+                <span class="detail-value">{{ formatDate(wh.createdAt) }}</span>
+              </div>
+              <div class="detail-field">
+                <span class="detail-label">Description</span>
+                <span class="detail-value">{{ wh.description || '—' }}</span>
+              </div>
+            </div>
+            @if (detailShelves().length > 0) {
+              <div class="shelf-section">
+                <h4><i class="bi bi-layers"></i> Shelf Locations</h4>
+                <div class="shelf-grid">
+                  @for (shelf of detailShelves(); track $index) {
+                    <div class="shelf-card">
+                      <span class="shelf-label">{{ shelf.label }}</span>
+                      <div class="shelf-occ">
+                        <div class="occ-track">
+                          <div class="occ-fill" [style.width.%]="shelf.occupancy"></div>
+                        </div>
+                        <span>{{ formatNumber(shelf.items) }}</span>
+                      </div>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+          <div class="modal-footer">
+            <button class="action-btn secondary" (click)="closeModal()">Close</button>
+            <button class="action-btn primary" (click)="openEditModal(wh)"><i class="bi bi-pencil"></i> Edit</button>
+          </div>
+        }
+      }
+
+      @if (modalMode() === 'delete') {
+        @let wh = warehouseToDelete();
+        @if (wh) {
+          <div class="modal-header">
+            <h2><i class="bi bi-exclamation-triangle" style="color:#dc2626"></i> Confirm Delete</h2>
+            <button class="icon-btn" (click)="closeModal()"><i class="bi bi-x-lg"></i></button>
+          </div>
+          <div class="modal-body delete-body">
+            <div class="delete-icon"><i class="bi bi-trash3-fill"></i></div>
+            <p class="delete-warning">Are you sure you want to delete <strong>"{{ wh.name }}"</strong>?</p>
+            <p class="delete-hint">This action cannot be undone. All associated data including shelf locations and inventory records will be permanently removed.</p>
+          </div>
+          <div class="modal-footer">
+            <button class="action-btn secondary" (click)="closeModal()">Cancel</button>
+            <button class="action-btn danger" (click)="confirmDelete()"><i class="bi bi-trash"></i> Delete</button>
+          </div>
+        }
+      }
+
+    </div>
+  </div>
+}

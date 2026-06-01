@@ -1,0 +1,424 @@
+<section class="settings-page">
+  <header class="page-header">
+    <div class="header-content">
+      <div class="header-icon">
+        <i class="bi bi-gear-fill"></i>
+      </div>
+      <div class="header-text">
+        <h1>System Settings</h1>
+        <p>Configure and manage system-wide preferences</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button type="button" class="action-btn secondary" (click)="resetSettings()">
+        <i class="bi bi-arrow-counterclockwise"></i>
+        Reset
+      </button>
+      <button type="button" class="action-btn primary" (click)="saveSettings()" [disabled]="saving()">
+        @if (saving()) {
+          <i class="bi bi-arrow-repeat spin"></i>
+          Saving...
+        } @else if (saved()) {
+          <i class="bi bi-check-lg"></i>
+          Saved!
+        } @else {
+          <i class="bi bi-check-lg"></i>
+          Save Changes
+        }
+      </button>
+    </div>
+  </header>
+
+  <main class="page-content">
+    <aside class="settings-nav">
+      @for (section of sections; track section.id) {
+        <button
+          type="button"
+          class="nav-btn"
+          [class.active]="activeSection === section.id"
+          (click)="setActiveSection(section.id)"
+        >
+          <i [class]="section.icon"></i>
+          <span>{{ section.label }}</span>
+        </button>
+      }
+    </aside>
+
+    <div class="settings-panel">
+      @switch (activeSection) {
+        @case ('general') {
+          <div class="settings-form">
+            <div class="form-section">
+              <h3>Application Information</h3>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label>Application Name</label>
+                  <input type="text" class="form-input" [(ngModel)]="generalSettings.appName" />
+                </div>
+                <div class="form-group">
+                  <label>Application URL</label>
+                  <input type="url" class="form-input" [(ngModel)]="generalSettings.appUrl" />
+                </div>
+                <div class="form-group">
+                  <label>Support Email</label>
+                  <input type="email" class="form-input" [(ngModel)]="generalSettings.supportEmail" />
+                </div>
+                <div class="form-group">
+                  <label>Items Per Page</label>
+                  <select class="form-input" [(ngModel)]="generalSettings.itemsPerPage">
+                    <option [value]="10">10</option>
+                    <option [value]="25">25</option>
+                    <option [value]="50">50</option>
+                    <option [value]="100">100</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Session Timeout (minutes)</label>
+                  <input type="number" class="form-input" [(ngModel)]="generalSettings.sessionTimeout" />
+                </div>
+              </div>
+            </div>
+
+            <div class="form-section">
+              <h3>System Mode</h3>
+              <div class="toggle-list">
+                <div class="toggle-item">
+                  <div class="toggle-info">
+                    <span class="toggle-label">Maintenance Mode</span>
+                    <span class="toggle-desc">Disable user access during maintenance</span>
+                  </div>
+                  <label class="toggle-switch">
+                    <input type="checkbox" [(ngModel)]="generalSettings.maintenanceMode" />
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+                <div class="toggle-item">
+                  <div class="toggle-info">
+                    <span class="toggle-label">Debug Mode</span>
+                    <span class="toggle-desc">Enable verbose logging for troubleshooting</span>
+                  </div>
+                  <label class="toggle-switch">
+                    <input type="checkbox" [(ngModel)]="generalSettings.debugMode" />
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+        }
+
+        @case ('notifications') {
+          <div class="settings-form">
+            <div class="form-section">
+              <h3>Notification Channels</h3>
+              <div class="toggle-list">
+                <div class="toggle-item">
+                  <div class="toggle-info">
+                    <span class="toggle-label">Email Alerts</span>
+                    <span class="toggle-desc">Send notifications via email</span>
+                  </div>
+                  <label class="toggle-switch">
+                    <input type="checkbox" [(ngModel)]="notificationSettings.emailAlerts" />
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+                <div class="toggle-item">
+                  <div class="toggle-info">
+                    <span class="toggle-label">Push Notifications</span>
+                    <span class="toggle-desc">Browser push notifications</span>
+                  </div>
+                  <label class="toggle-switch">
+                    <input type="checkbox" [(ngModel)]="notificationSettings.pushNotifications" />
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+                <div class="toggle-item">
+                  <div class="toggle-info">
+                    <span class="toggle-label">SMS Alerts</span>
+                    <span class="toggle-desc">Text message notifications</span>
+                  </div>
+                  <label class="toggle-switch">
+                    <input type="checkbox" [(ngModel)]="notificationSettings.smsAlerts" />
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+                <div class="toggle-item">
+                  <div class="toggle-info">
+                    <span class="toggle-label">Weekly Digest</span>
+                    <span class="toggle-desc">Weekly summary email</span>
+                  </div>
+                  <label class="toggle-switch">
+                    <input type="checkbox" [(ngModel)]="notificationSettings.weeklyDigest" />
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-section">
+              <h3>Alert Preferences</h3>
+              <div class="toggle-list">
+                <div class="toggle-item">
+                  <div class="toggle-info">
+                    <span class="toggle-label">Report Errors</span>
+                    <span class="toggle-desc">Get notified about system errors</span>
+                  </div>
+                  <label class="toggle-switch">
+                    <input type="checkbox" [(ngModel)]="notificationSettings.reportErrors" />
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+                <div class="toggle-item">
+                  <div class="toggle-info">
+                    <span class="toggle-label">Low Stock Alerts</span>
+                    <span class="toggle-desc">Alert when items reach minimum stock</span>
+                  </div>
+                  <label class="toggle-switch">
+                    <input type="checkbox" [(ngModel)]="notificationSettings.lowStockAlerts" />
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+                <div class="toggle-item">
+                  <div class="toggle-info">
+                    <span class="toggle-label">Approval Requests</span>
+                    <span class="toggle-desc">Notify when approval is needed</span>
+                  </div>
+                  <label class="toggle-switch">
+                    <input type="checkbox" [(ngModel)]="notificationSettings.approvalRequests" />
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+        }
+
+        @case ('security') {
+          <div class="settings-form">
+            <div class="form-section">
+              <h3>Authentication</h3>
+              <div class="toggle-list">
+                <div class="toggle-item">
+                  <div class="toggle-info">
+                    <span class="toggle-label">Two-Factor Authentication</span>
+                    <span class="toggle-desc">Require 2FA for all users</span>
+                  </div>
+                  <label class="toggle-switch">
+                    <input type="checkbox" [(ngModel)]="securitySettings.twoFactorAuth" />
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+                <div class="toggle-item">
+                  <div class="toggle-info">
+                    <span class="toggle-label">Force Strong Passwords</span>
+                    <span class="toggle-desc">Enforce password complexity rules</span>
+                  </div>
+                  <label class="toggle-switch">
+                    <input type="checkbox" [(ngModel)]="securitySettings.forceStrongPasswords" />
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+                <div class="toggle-item">
+                  <div class="toggle-info">
+                    <span class="toggle-label">IP Whitelisting</span>
+                    <span class="toggle-desc">Restrict access to specific IPs</span>
+                  </div>
+                  <label class="toggle-switch">
+                    <input type="checkbox" [(ngModel)]="securitySettings.ipWhitelisting" />
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+                <div class="toggle-item">
+                  <div class="toggle-info">
+                    <span class="toggle-label">Audit Logging</span>
+                    <span class="toggle-desc">Track all user activities</span>
+                  </div>
+                  <label class="toggle-switch">
+                    <input type="checkbox" [(ngModel)]="securitySettings.auditLogging" />
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-section">
+              <h3>Security Policies</h3>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label>Password Expiry (days)</label>
+                  <input type="number" class="form-input" [(ngModel)]="securitySettings.passwordExpiryDays" />
+                </div>
+                <div class="form-group">
+                  <label>Max Login Attempts</label>
+                  <input type="number" class="form-input" [(ngModel)]="securitySettings.maxLoginAttempts" />
+                </div>
+                <div class="form-group">
+                  <label>Session Timeout (minutes)</label>
+                  <input type="number" class="form-input" [(ngModel)]="securitySettings.sessionTimeout" />
+                </div>
+              </div>
+            </div>
+          </div>
+        }
+
+        @case ('email') {
+          <div class="settings-form">
+            <div class="form-section">
+              <h3>SMTP Configuration</h3>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label>SMTP Host</label>
+                  <input type="text" class="form-input" [(ngModel)]="emailSettings.smtpHost" />
+                </div>
+                <div class="form-group">
+                  <label>SMTP Port</label>
+                  <input type="number" class="form-input" [(ngModel)]="emailSettings.smtpPort" />
+                </div>
+                <div class="form-group">
+                  <label>Username</label>
+                  <input type="text" class="form-input" [(ngModel)]="emailSettings.smtpUsername" />
+                </div>
+                <div class="form-group">
+                  <label>Password</label>
+                  <input type="password" class="form-input" [(ngModel)]="emailSettings.smtpPassword" />
+                </div>
+                <div class="form-group">
+                  <label>From Address</label>
+                  <input type="email" class="form-input" [(ngModel)]="emailSettings.fromAddress" />
+                </div>
+                <div class="form-group">
+                  <label>From Name</label>
+                  <input type="text" class="form-input" [(ngModel)]="emailSettings.fromName" />
+                </div>
+              </div>
+              <div class="toggle-item" style="margin-top: 1rem;">
+                <div class="toggle-info">
+                  <span class="toggle-label">Use SSL</span>
+                  <span class="toggle-desc">Secure connection for email sending</span>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" [(ngModel)]="emailSettings.useSSL" />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <button type="button" class="action-btn secondary" style="margin-top: 1rem;" (click)="testConnection()">
+                <i class="bi bi-send"></i>
+                Test Connection
+              </button>
+            </div>
+          </div>
+        }
+
+        @case ('localization') {
+          <div class="settings-form">
+            <div class="form-section">
+              <h3>Regional Settings</h3>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label>Timezone</label>
+                  <select class="form-input" [(ngModel)]="localizationSettings.timezone">
+                    <option value="Africa/Nairobi">Africa/Nairobi (UTC+3)</option>
+                    <option value="Africa/Lagos">Africa/Lagos (UTC+1)</option>
+                    <option value="Africa/Johannesburg">Africa/Johannesburg (UTC+2)</option>
+                    <option value="America/New_York">America/New_York (UTC-5)</option>
+                    <option value="Europe/London">Europe/London (UTC+0)</option>
+                    <option value="Asia/Dubai">Asia/Dubai (UTC+4)</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Date Format</label>
+                  <select class="form-input" [(ngModel)]="localizationSettings.dateFormat">
+                    <option value="YYYY-MM-DD">YYYY-MM-DD</option>
+                    <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+                    <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+                    <option value="DD-MM-YYYY">DD-MM-YYYY</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Time Format</label>
+                  <select class="form-input" [(ngModel)]="localizationSettings.timeFormat">
+                    <option value="24h">24-hour</option>
+                    <option value="12h">12-hour (AM/PM)</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Currency</label>
+                  <select class="form-input" [(ngModel)]="localizationSettings.currency">
+                    <option value="USD">USD ($)</option>
+                    <option value="EUR">EUR (€)</option>
+                    <option value="KES">KES (KSh)</option>
+                    <option value="GBP">GBP (£)</option>
+                    <option value="NGN">NGN (₦)</option>
+                    <option value="ZAR">ZAR (R)</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Language</label>
+                  <select class="form-input" [(ngModel)]="localizationSettings.language">
+                    <option value="English">English</option>
+                    <option value="French">French</option>
+                    <option value="Swahili">Swahili</option>
+                    <option value="Arabic">Arabic</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>First Day of Week</label>
+                  <select class="form-input" [(ngModel)]="localizationSettings.firstDayOfWeek">
+                    <option [value]="0">Sunday</option>
+                    <option [value]="1">Monday</option>
+                    <option [value]="6">Saturday</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+        }
+
+        @case ('advanced') {
+          <div class="settings-form">
+            <div class="form-section">
+              <h3>Performance</h3>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label>API Rate Limit (per minute)</label>
+                  <input type="number" class="form-input" [(ngModel)]="advancedSettings.apiRateLimit" />
+                </div>
+                <div class="form-group">
+                  <label>Cache Duration (seconds)</label>
+                  <input type="number" class="form-input" [(ngModel)]="advancedSettings.cacheDuration" />
+                </div>
+                <div class="form-group">
+                  <label>Max Upload Size (MB)</label>
+                  <input type="number" class="form-input" [(ngModel)]="advancedSettings.maxUploadSize" />
+                </div>
+                <div class="form-group">
+                  <label>Log Retention (days)</label>
+                  <input type="number" class="form-input" [(ngModel)]="advancedSettings.logRetention" />
+                </div>
+                <div class="form-group">
+                  <label>Backup Frequency</label>
+                  <select class="form-input" [(ngModel)]="advancedSettings.backupFrequency">
+                    <option value="hourly">Hourly</option>
+                    <option value="daily">Daily</option>
+                    <option value="weekly">Weekly</option>
+                    <option value="monthly">Monthly</option>
+                  </select>
+                </div>
+              </div>
+              <div class="toggle-item" style="margin-top: 1rem;">
+                <div class="toggle-info">
+                  <span class="toggle-label">Enable Compression</span>
+                  <span class="toggle-desc">Compress data for faster transfers</span>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" [(ngModel)]="advancedSettings.enableCompression" />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+          </div>
+        }
+      }
+    </div>
+  </main>
+</section>

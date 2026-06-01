@@ -141,7 +141,6 @@ export const adminMenuConfig: MenuItem[] = [
     icon: 'bi bi-geo-alt',
     children: [
       { label: 'All Locations', route: '/admin/locations', icon: 'bi bi-geo' },
-      { label: 'Add Location', route: '/admin/locations/add', icon: 'bi bi-plus-circle' },
       { label: 'Safety Boxes', route: '/admin/safety-boxes', icon: 'bi bi-box-seam' },
       { label: 'Shelf Management', route: '/admin/shelves', icon: 'bi bi-grid-3x3' },
     ],
@@ -162,14 +161,7 @@ export const adminMenuConfig: MenuItem[] = [
   {
     label: 'Requisitions',
     icon: 'bi bi-list-check',
-    children: [
-      { label: 'All Requests', icon: 'bi bi-list', route: '/admin/requisitions' },
-      { label: 'Pending Approvals', icon: 'bi bi-clock', route: '/admin/requisitions/pending' },
-      { label: 'Approved', icon: 'bi bi-check-circle', route: '/admin/requisitions/approved' },
-      { label: 'Rejected', icon: 'bi bi-x-circle', route: '/admin/requisitions/rejected' },
-      { label: 'Completed', icon: 'bi bi-check2-all', route: '/admin/requisitions/completed' },
-      { label: 'SIVs', icon: 'bi bi-file-text', route: '/admin/sivs' },
-    ],
+    route: '/admin/requisitions',
   },
   {
     label: 'Receiving',
@@ -194,15 +186,10 @@ export const adminMenuConfig: MenuItem[] = [
     ],
   },
   {
-    label: 'Reports & Settings',
-    icon: 'bi bi-gear-fill',
+    label: 'Reports',
+    icon: 'bi bi-bar-chart-fill',
     children: [
-      { label: 'Valuation Reports', route: '/admin/reports/valuation', icon: 'bi bi-file-earmark-bar-graph' },
-      { label: 'Requisition Reports', route: '/admin/reports/requisition', icon: 'bi bi-file-earmark-text' },
-      { label: 'Stock Reports', route: '/admin/reports/stock', icon: 'bi bi-boxes' },
-      { label: 'Issuance Reports', route: '/admin/reports/issuance', icon: 'bi bi-file-text' },
-      { label: 'Compliance Reports', route: '/admin/reports/compliance', icon: 'bi bi-shield-check' },
-      { label: 'Audit Reports', route: '/admin/reports/audit', icon: 'bi bi-file-earmark-spreadsheet' },
+      { label: 'All Reports', route: '/admin/reports', icon: 'bi bi-bar-chart-fill' },
       { label: 'System Settings', route: '/admin/settings', icon: 'bi bi-gear' },
       { label: 'Backup', route: '/admin/settings/backup', icon: 'bi bi-database' },
     ],

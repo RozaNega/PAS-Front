@@ -1,470 +1,541 @@
-<div class="shelf-locations-container">
-  <div class="page-header">
-    <div class="header-info">
-      <h1>Shelf Locations</h1>
-      <p class="subtitle">Manage all shelf locations and storage units across warehouses</p>
+<section class="shelf-locations-page">
+
+  @if (notification(); as note) {
+    <div class="notification-banner" [class]="note.type" (click)="notification.set(null)">
+      <i class="bi {{ notificationIcon(note.type) }}"></i>
+      <span>{{ note.message }}</span>
+      <i class="bi bi-x close-notif"></i>
     </div>
-    <button class="btn btn-primary" (click)="openAddModal()">
-      <i class="bi bi-plus-lg"></i> Add Shelf
-    </button>
-  </div>
+  }
+
+  <header class="page-header">
+    <div class="header-icon">
+      <i class="bi bi-grid-3x3"></i>
+    </div>
+    <div class="header-content">
+      <div class="header-text">
+        <h1>Shelf Locations</h1>
+        <p>{{ totalShelves() }} shelf location{{ totalShelves() !== 1 ? 's' : '' }} across {{ warehousesCovered() }} warehouse{{ warehousesCovered() !== 1 ? 's' : '' }}</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button type="button" class="action-btn secondary" (click)="exportCSV()">
+        <i class="bi bi-download"></i> Export CSV
+      </button>
+      <button type="button" class="action-btn primary" (click)="openAddModal()">
+        <i class="bi bi-plus-lg"></i> Add Shelf
+      </button>
+    </div>
+  </header>
 
   @if (isLoading()) {
-    <p class="mb-2">Loading shelves…</p>
-  }
-
-  @if (error()) {
-    <div class="alert alert-danger mb-2" role="alert">
-      {{ error() }}
-      <div class="mt-2">
-        <button type="button" class="btn btn-sm btn-primary" (click)="retryWarehouses()">Retry loading warehouses</button>
-      </div>
-      <p class="mt-2 mb-0 small text-muted">{{ apiConnectionHint }}</p>
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading shelf locations...</p>
     </div>
   }
 
-  <div class="filter-bar">
-    <div class="filter-group">
-      <label>Warehouse:</label>
-      <select
-        [ngModel]="selectedWarehouseId()"
-        (ngModelChange)="onWarehouseChange($event)"
-        [disabled]="!warehouseOptions().length">
-        @for (wh of warehouseOptions(); track wh.id) {
-          <option [value]="wh.id">{{ wh.warehouseName }} ({{ wh.warehouseCode }})</option>
-        }
-      </select>
-    </div>
-    <div class="filter-group">
-      <label>Aisle:</label>
-      <select [ngModel]="aisleFilter()" (ngModelChange)="onAisleFilterChange($event)">
-        @for (a of aisleOptions(); track a) {
-          <option [value]="a">{{ a }}</option>
-        }
-      </select>
-    </div>
-    <div class="search-box">
-      <i class="bi bi-search"></i>
-      <input
-        type="text"
-        [ngModel]="searchTerm()"
-        (ngModelChange)="onSearchChange($event)"
-        placeholder="Search by shelf ID, aisle, rack..." />
-    </div>
-  </div>
+  @if (!isLoading()) {
 
-  <!-- Summary Section -->
-  <div class="summary-section">
-    <h2>📊 SHELF SUMMARY</h2>
-    <div class="summary-grid">
-      <div class="summary-card">
-        <div class="summary-icon">🗄️</div>
-        <div class="summary-content">
-          <div class="summary-label">Total Shelves</div>
-          <div class="summary-value">{{ totalShelves() }}</div>
-          <div class="summary-sub">In {{ selectedWarehouseLabel() }}</div>
+    <section class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon violet">
+          <i class="bi bi-grid-3x3"></i>
         </div>
-      </div>
-      <div class="summary-card">
-        <div class="summary-icon">📦</div>
-        <div class="summary-content">
-          <div class="summary-label">Total Items</div>
-          <div class="summary-value">{{ totalItems() }}</div>
-          <div class="summary-sub">Stored on shelves</div>
+        <div class="stat-info">
+          <span class="stat-label">Total Shelves</span>
+          <span class="stat-value">{{ totalShelves() }}</span>
         </div>
+        <span class="stat-trend">All locations</span>
       </div>
-      <div class="summary-card">
-        <div class="summary-icon">💰</div>
-        <div class="summary-content">
-          <div class="summary-label">Total Value</div>
-          <div class="summary-value">{{ formatValue(totalValue()) }}</div>
-          <div class="summary-sub">Inventory value</div>
+      <div class="stat-card">
+        <div class="stat-icon blue">
+          <i class="bi bi-boxes"></i>
         </div>
-      </div>
-      <div class="summary-card">
-        <div class="summary-icon">📊</div>
-        <div class="summary-content">
-          <div class="summary-label">Avg. Occupancy</div>
-          <div class="summary-value">{{ avgOccupancy() }}%</div>
-          <div class="summary-sub">Capacity utilization</div>
+        <div class="stat-info">
+          <span class="stat-label">Total Items</span>
+          <span class="stat-value">{{ formatNumber(totalItems()) }}</span>
         </div>
+        <span class="stat-trend">Stored on shelves</span>
       </div>
-      <div class="summary-card">
-        <div class="summary-icon">⚠️</div>
-        <div class="summary-content">
-          <div class="summary-label">Empty Shelves</div>
-          <div class="summary-value">{{ emptyShelves() }}</div>
-          <div class="summary-sub">Available for use</div>
+      <div class="stat-card">
+        <div class="stat-icon emerald">
+          <i class="bi bi-coin"></i>
         </div>
+        <div class="stat-info">
+          <span class="stat-label">Total Value</span>
+          <span class="stat-value">{{ formatValue(totalValue()) }}</span>
+        </div>
+        <span class="stat-trend">Inventory valuation</span>
       </div>
-    </div>
-  </div>
+      <div class="stat-card">
+        <div class="stat-icon amber">
+          <i class="bi bi-graph-up-arrow"></i>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Avg Occupancy</span>
+          <span class="stat-value">{{ avgOccupancy() }}%</span>
+        </div>
+        <span class="stat-trend">Capacity utilized</span>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon cyan">
+          <i class="bi bi-box-seam"></i>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Empty Shelves</span>
+          <span class="stat-value">{{ emptyShelves() }}</span>
+        </div>
+        <span class="stat-trend">Available for use</span>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon rose">
+          <i class="bi bi-building"></i>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Warehouses Covered</span>
+          <span class="stat-value">{{ warehousesCovered() }}</span>
+        </div>
+        <span class="stat-trend">Total facilities</span>
+      </div>
+    </section>
 
-  <div class="shelf-map-section">
-    <div class="section-header">
-      <h3>🗺️ Shelf Map View</h3>
-    </div>
-    <div class="warehouse-map">
-      <div class="warehouse-title">{{ selectedWarehouseLabel() }}</div>
-      @if (!shelves().length) {
-        <p class="map-empty" style="padding: 1rem; color: #666;">
-          No shelves in this warehouse yet. Use <strong>Add Shelf</strong> to create locations, or choose another warehouse.
-        </p>
-      } @else {
-        <div class="aisle-section">
-          <div class="aisle-label">All shelves</div>
-          <div class="shelf-row" style="flex-wrap: wrap;">
-            @for (shelf of shelves(); track shelf.id) {
-              <div class="shelf-box" (click)="openEditModal(shelf)">
-                <div class="shelf-id">{{ shelf.aisle }}-{{ shelf.rack }}-{{ shelf.shelf }}</div>
-                <div class="shelf-items">{{ shelf.items }} items</div>
+    <section class="charts-grid">
+      <div class="panel chart-panel">
+        <div class="panel-header">
+          <h3><i class="bi bi-pie-chart-fill"></i> Occupancy Distribution</h3>
+        </div>
+        <div class="chart-body status-chart">
+          <div class="donut-container">
+            <svg viewBox="0 0 42 42" class="donut-svg">
+              <circle cx="21" cy="21" r="15.9" fill="none" stroke="var(--surface-border)" stroke-width="3.5"/>
+              <circle cx="21" cy="21" r="15.9" fill="none" stroke="#6b7280" stroke-width="3.5"
+                [attr.stroke-dasharray]="donutPercent('empty') + ' ' + (100 - donutPercent('empty'))"
+                [attr.stroke-dashoffset]="donutOffset('empty')" transform="rotate(-90 21 21)"/>
+              <circle cx="21" cy="21" r="15.9" fill="none" stroke="#f59e0b" stroke-width="3.5"
+                [attr.stroke-dasharray]="donutPercent('low') + ' ' + (100 - donutPercent('low'))"
+                [attr.stroke-dashoffset]="donutOffset('low')" transform="rotate(-90 21 21)"/>
+              <circle cx="21" cy="21" r="15.9" fill="none" stroke="#10b981" stroke-width="3.5"
+                [attr.stroke-dasharray]="donutPercent('medium') + ' ' + (100 - donutPercent('medium'))"
+                [attr.stroke-dashoffset]="donutOffset('medium')" transform="rotate(-90 21 21)"/>
+              <circle cx="21" cy="21" r="15.9" fill="none" stroke="#dc2626" stroke-width="3.5"
+                [attr.stroke-dasharray]="donutPercent('full') + ' ' + (100 - donutPercent('full'))"
+                [attr.stroke-dashoffset]="donutOffset('full')" transform="rotate(-90 21 21)"/>
+            </svg>
+          </div>
+          <div class="legend-list">
+            <div class="legend-item">
+              <span class="legend-dot empty-dot"></span>
+              <span class="legend-label">Empty (0%)</span>
+              <span class="legend-value">{{ occupancyDistribution().empty }}</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-dot low-dot"></span>
+              <span class="legend-label">Low (1-30%)</span>
+              <span class="legend-value">{{ occupancyDistribution().low }}</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-dot medium-dot"></span>
+              <span class="legend-label">Medium (31-70%)</span>
+              <span class="legend-value">{{ occupancyDistribution().medium }}</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-dot full-dot"></span>
+              <span class="legend-label">Full (71-100%)</span>
+              <span class="legend-value">{{ occupancyDistribution().full }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="panel chart-panel">
+        <div class="panel-header">
+          <h3><i class="bi bi-bar-chart-fill"></i> Warehouse Shelf Count</h3>
+        </div>
+        <div class="chart-body occupancy-chart">
+          @for (wh of warehouseShelfCount(); track wh.name) {
+            <div class="bar-row">
+              <div class="bar-label" title="{{ wh.name }}">
+                <span class="bar-name">{{ wh.name }}</span>
+                <span class="bar-pct">{{ wh.count }}</span>
               </div>
+              <div class="bar-track">
+                <div class="bar-fill" [style.width.%]="barWidth(wh.count)" [style.background]="'var(--primary-color)'"></div>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    </section>
+
+    <section class="filter-bar">
+      <div class="filter-row">
+        <div class="search-box">
+          <i class="bi bi-search"></i>
+          <input type="text" placeholder="Search by shelf code or name..."
+            [ngModel]="searchTerm()" (ngModelChange)="onSearchChange($event)">
+        </div>
+        <div class="filter-group">
+          <label>Warehouse</label>
+          <select class="filter-select" [ngModel]="selectedWarehouseId()" (ngModelChange)="onWarehouseChange($event)">
+            <option value="">All Warehouses</option>
+            @for (wh of warehouseOptions(); track wh.id) {
+              <option [value]="wh.id">{{ wh.warehouseName }}</option>
             }
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>Aisle</label>
+          <select class="filter-select" [ngModel]="aisleFilter()" (ngModelChange)="onAisleFilterChange($event)">
+            @for (a of aisleOptions(); track a) {
+              <option [value]="a">{{ a }}</option>
+            }
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>Occupancy</label>
+          <select class="filter-select" [ngModel]="occupancyFilter()" (ngModelChange)="onOccupancyFilterChange($event)">
+            @for (o of occupancyOptions; track o) {
+              <option [value]="o">{{ o }}</option>
+            }
+          </select>
+        </div>
+        <button type="button" class="icon-btn" (click)="clearFilters()" title="Clear filters">
+          <i class="bi bi-x-circle"></i>
+        </button>
+      </div>
+      @if (searchTerm() || selectedWarehouseId() || aisleFilter() !== 'All' || occupancyFilter() !== 'All') {
+        <div class="active-filters">
+          <span class="filter-chip">{{ filteredShelves().length }} result{{ filteredShelves().length !== 1 ? 's' : '' }}</span>
+        </div>
+      }
+    </section>
+
+    <div class="panel">
+      <div class="data-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Shelf Code</th>
+              <th>Name</th>
+              <th>Warehouse</th>
+              <th>Aisle/Rack/Shelf</th>
+              <th>Items</th>
+              <th>Capacity</th>
+              <th>Occupancy</th>
+              <th>Status</th>
+              <th class="text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (shelf of pagedShelves(); track shelf.id) {
+              <tr>
+                <td>
+                  <div class="cell-name" (click)="openDetailModal(shelf)" style="cursor:pointer">
+                    <div class="cell-icon"><i class="bi bi-grid-3x3"></i></div>
+                    <div>
+                      <span class="name">{{ shelf.shelfCode }}</span>
+                      <span class="meta">{{ shelf.shelfName }}</span>
+                    </div>
+                  </div>
+                </td>
+                <td>{{ shelf.shelfName }}</td>
+                <td>{{ shelf.warehouseName }}</td>
+                <td><code>{{ shelf.aisle }}/{{ shelf.section }}/{{ shelf.level }}</code></td>
+                <td>{{ formatNumber(shelf.items) }}</td>
+                <td>{{ formatNumber(shelf.capacity) }}</td>
+                <td>
+                  <div class="occ-bar-mini">
+                    <div class="occ-track">
+                      <div class="occ-fill" [style.width.%]="shelf.occupancy" [style.background]="getOccupancyColor(shelf.occupancy)"></div>
+                    </div>
+                    <span class="occ-text">{{ shelf.occupancy }}%</span>
+                  </div>
+                </td>
+                <td>
+                  <span class="status-badge {{ getStatusBadgeClass(shelf.isActive) }}">
+                    <i class="bi {{ getStatusIcon(shelf.isActive) }}"></i>
+                    {{ getStatusLabel(shelf.isActive) }}
+                  </span>
+                </td>
+                <td class="text-right">
+                  <div class="row-actions">
+                    <button class="icon-btn" (click)="openEditModal(shelf)" title="Edit"><i class="bi bi-pencil"></i></button>
+                    <button class="icon-btn danger" (click)="openDeleteModal(shelf)" title="Delete"><i class="bi bi-trash"></i></button>
+                  </div>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="9" class="empty-state">
+                  <i class="bi bi-inbox"></i>
+                  <p>No shelf locations found</p>
+                  @if (searchTerm() || selectedWarehouseId() || aisleFilter() !== 'All' || occupancyFilter() !== 'All') {
+                    <button class="action-btn secondary" (click)="clearFilters()">Clear Filters</button>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      @if (totalPages() > 1) {
+        <div class="pagination-bar">
+          <span class="page-info">Page {{ page() }} of {{ totalPages() }} ({{ filteredShelves().length }} total)</span>
+          <div class="page-controls">
+            <button class="icon-btn" [disabled]="page() === 1" (click)="goToPage(page() - 1)">
+              <i class="bi bi-chevron-left"></i>
+            </button>
+            @for (p of [].constructor(totalPages()); track $index) {
+              <button class="page-btn" [class.active]="page() === $index + 1" (click)="goToPage($index + 1)">
+                {{ $index + 1 }}
+              </button>
+            }
+            <button class="icon-btn" [disabled]="page() === totalPages()" (click)="goToPage(page() + 1)">
+              <i class="bi bi-chevron-right"></i>
+            </button>
           </div>
         </div>
       }
     </div>
-  </div>
+  }
 
-  <div class="table-section">
-    <div class="table-container">
-      <table class="shelves-table">
-        <thead>
-          <tr>
-            <th>Aisle</th>
-            <th>Rack</th>
-            <th>Shelf</th>
-            <th>Items</th>
-            <th>Value</th>
-            <th>Occupancy</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (shelf of filteredShelves(); track shelf.id) {
-            <tr>
-              <td>{{ shelf.aisle }}</td>
-              <td>{{ shelf.rack }}</td>
-              <td>{{ shelf.shelf }}</td>
-              <td>{{ shelf.items }}</td>
-              <td>{{ formatValue(shelf.value) }}</td>
-              <td>
-                <div class="occupancy-bar">
-                  <div class="occupancy-fill" [class]="getOccupancyColor(shelf.occupancy)" [style.width.%]="shelf.occupancy"></div>
-                </div>
-                <span class="occupancy-text">{{ shelf.occupancy }}%</span>
-              </td>
-              <td>
-                <div class="actions-cell">
-                  <button class="btn btn-sm btn-info" (click)="viewShelf(shelf)">View</button>
-                  <button class="btn btn-sm btn-warning" (click)="openEditModal(shelf)">Edit</button>
-                  <button class="btn btn-sm btn-danger" (click)="deleteShelf(shelf.id)">Delete</button>
-                  <button class="btn btn-sm btn-success" (click)="addItemToShelf(shelf)">Add Item</button>
-                </div>
-              </td>
-            </tr>
-          }
-        </tbody>
-      </table>
-    </div>
-    <div class="pagination-bar">
-      <div class="pagination-info">Showing {{ filteredShelves().length }} shelf(es)</div>
-      <div class="pagination-controls">
-        <button class="page-btn" disabled>Previous</button>
-        <button class="page-btn active">1</button>
-        <button class="page-btn">2</button>
-        <button class="page-btn">3</button>
-        <button class="page-btn">→</button>
-        <button class="page-btn">7</button>
+  @if (loadError(); as err) {
+    @if (!isLoading()) {
+      <div class="error-banner">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+        <span>{{ err }}</span>
+        <button class="action-btn secondary" (click)="loadData()">
+          <i class="bi bi-arrow-clockwise"></i> Retry
+        </button>
       </div>
-    </div>
-  </div>
+    }
+  }
 
-  <div class="bulk-actions">
-    <button class="btn btn-secondary" (click)="printQRCodes()" [disabled]="!filteredShelves().length">
-      <i class="bi bi-qr-code"></i> Print QR Codes
-    </button>
-    <button class="btn btn-secondary" (click)="openRearrangeModal()" [disabled]="!filteredShelves().length">
-      <i class="bi bi-arrow-left-right"></i> Rearrange Shelves
-    </button>
-    <button class="btn btn-secondary" (click)="exportShelfData()" [disabled]="!filteredShelves().length">
-      <i class="bi bi-download"></i> Export Shelf Data
-    </button>
-  </div>
-</div>
+</section>
 
 @if (showModal()) {
   <div class="modal-overlay" (click)="closeModal()">
-    <div class="modal-content" (click)="$event.stopPropagation()">
-      <div class="modal-header">
-        <h3>{{ selectedShelf() ? 'Edit Shelf Location' : 'Add New Shelf Location' }}</h3>
-        <button class="btn-close" (click)="closeModal()">
-          <i class="bi bi-x-lg"></i>
-        </button>
-      </div>
-      <div class="modal-body">
-        <div class="form-section">
-          <h4>Warehouse</h4>
-          <div class="form-field full-width">
-            <label for="modal-warehouse">Warehouse *</label>
-            <select
-              id="modal-warehouse"
-              name="modalWarehouse"
-              [(ngModel)]="modalDraft.warehouseId"
-              [disabled]="!warehouseOptions().length"
-            >
-              <option value="">— Select warehouse —</option>
-              @for (wh of warehouseOptions(); track wh.id) {
-                <option [value]="wh.id">{{ wh.warehouseName }} ({{ wh.warehouseCode }})</option>
+    <div class="modal-card" (click)="$event.stopPropagation()">
+
+      @if (modalMode() === 'add-edit') {
+        <div class="modal-header">
+          <h2><i class="bi bi-grid-3x3"></i> {{ isEditing() ? 'Edit Shelf Location' : 'Add Shelf Location' }}</h2>
+          <button class="icon-btn" (click)="closeModal()"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <div class="modal-body">
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Shelf Code <span class="required">*</span></label>
+              <input type="text" [(ngModel)]="modalForm.shelfCode" placeholder="A-R01-S01">
+              @if (fieldError('shelfCode')) {
+                <span class="form-error">{{ fieldError('shelfCode') }}</span>
               }
-            </select>
-            @if (!warehouseOptions().length) {
-              <p class="small text-danger mt-1">No warehouses loaded. Fix the API connection, then click Retry above.</p>
+            </div>
+            <div class="form-group">
+              <label>Shelf Name <span class="required">*</span></label>
+              <input type="text" [(ngModel)]="modalForm.shelfName" placeholder="Aisle A Rack 01 Shelf 01">
+              @if (fieldError('shelfName')) {
+                <span class="form-error">{{ fieldError('shelfName') }}</span>
+              }
+            </div>
+            <div class="form-group">
+              <label>Warehouse <span class="required">*</span></label>
+              <select [(ngModel)]="modalForm.warehouseId">
+                <option value="">Select warehouse</option>
+                @for (wh of warehouseOptions(); track wh.id) {
+                  <option [value]="wh.id">{{ wh.warehouseName }}</option>
+                }
+              </select>
+              @if (fieldError('warehouseId')) {
+                <span class="form-error">{{ fieldError('warehouseId') }}</span>
+              }
+            </div>
+            <div class="form-group">
+              <label>Aisle <span class="required">*</span></label>
+              <input type="text" [(ngModel)]="modalForm.aisle" placeholder="A">
+              @if (fieldError('aisle')) {
+                <span class="form-error">{{ fieldError('aisle') }}</span>
+              }
+            </div>
+            <div class="form-group">
+              <label>Section <span class="required">*</span></label>
+              <input type="text" [(ngModel)]="modalForm.section" placeholder="R01">
+              @if (fieldError('section')) {
+                <span class="form-error">{{ fieldError('section') }}</span>
+              }
+            </div>
+            <div class="form-group">
+              <label>Level <span class="required">*</span></label>
+              <input type="text" [(ngModel)]="modalForm.level" placeholder="S01">
+              @if (fieldError('level')) {
+                <span class="form-error">{{ fieldError('level') }}</span>
+              }
+            </div>
+            <div class="form-group">
+              <label>Position</label>
+              <input type="text" [(ngModel)]="modalForm.position" placeholder="1">
+            </div>
+            <div class="form-group">
+              <label>Capacity <span class="required">*</span></label>
+              <input type="number" [(ngModel)]="modalForm.capacity" placeholder="100" min="1">
+              @if (fieldError('capacity')) {
+                <span class="form-error">{{ fieldError('capacity') }}</span>
+              }
+            </div>
+            <div class="form-group full-width">
+              <label>Description</label>
+              <input type="text" [(ngModel)]="modalForm.description" placeholder="General storage">
+            </div>
+            <div class="form-group toggle-group">
+              <label>Status</label>
+              <div class="toggle-row">
+                <span [class.active-label]="!modalForm.isActive">Inactive</span>
+                <label class="toggle-switch">
+                  <input type="checkbox" [(ngModel)]="modalForm.isActive">
+                  <span class="toggle-slider"></span>
+                </label>
+                <span [class.active-label]="modalForm.isActive">Active</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="action-btn secondary" (click)="closeModal()">Cancel</button>
+          <button class="action-btn primary" (click)="saveShelf()">
+            <i class="bi bi-check-lg"></i> {{ isEditing() ? 'Update' : 'Create' }}
+          </button>
+        </div>
+      }
+
+      @if (modalMode() === 'detail') {
+        @let shelf = selectedShelf();
+        @if (shelf) {
+          <div class="modal-header">
+            <h2><i class="bi bi-grid-3x3"></i> {{ shelf.shelfCode }}</h2>
+            <button class="icon-btn" (click)="closeModal()"><i class="bi bi-x-lg"></i></button>
+          </div>
+          <div class="modal-body">
+            <div class="detail-grid">
+              <div class="detail-field">
+                <span class="detail-label">Shelf Code</span>
+                <span class="detail-value"><code>{{ shelf.shelfCode }}</code></span>
+              </div>
+              <div class="detail-field">
+                <span class="detail-label">Name</span>
+                <span class="detail-value">{{ shelf.shelfName }}</span>
+              </div>
+              <div class="detail-field">
+                <span class="detail-label">Warehouse</span>
+                <span class="detail-value">{{ shelf.warehouseName }}</span>
+              </div>
+              <div class="detail-field">
+                <span class="detail-label">Location</span>
+                <span class="detail-value">{{ shelf.aisle }}/{{ shelf.section }}/{{ shelf.level }}</span>
+              </div>
+              <div class="detail-field">
+                <span class="detail-label">Position</span>
+                <span class="detail-value">{{ shelf.position || '—' }}</span>
+              </div>
+              <div class="detail-field">
+                <span class="detail-label">Status</span>
+                <span class="detail-value">
+                  <span class="status-badge {{ getStatusBadgeClass(shelf.isActive) }}">
+                    <i class="bi {{ getStatusIcon(shelf.isActive) }}"></i> {{ getStatusLabel(shelf.isActive) }}
+                  </span>
+                </span>
+              </div>
+              <div class="detail-field">
+                <span class="detail-label">Capacity</span>
+                <span class="detail-value">{{ formatNumber(shelf.capacity) }} units</span>
+              </div>
+              <div class="detail-field">
+                <span class="detail-label">Current Items</span>
+                <span class="detail-value">{{ formatNumber(shelf.items) }}</span>
+              </div>
+              <div class="detail-field">
+                <span class="detail-label">Occupancy</span>
+                <span class="detail-value">
+                  <div class="occ-bar-mini inline">
+                    <div class="occ-track">
+                      <div class="occ-fill" [style.width.%]="shelf.occupancy" [style.background]="getOccupancyColor(shelf.occupancy)"></div>
+                    </div>
+                    <span class="occ-text">{{ shelf.occupancy }}%</span>
+                  </div>
+                </span>
+              </div>
+              <div class="detail-field">
+                <span class="detail-label">Stock Value</span>
+                <span class="detail-value">{{ formatValue(shelf.value) }}</span>
+              </div>
+              <div class="detail-field">
+                <span class="detail-label">Description</span>
+                <span class="detail-value">{{ shelf.description || '—' }}</span>
+              </div>
+              <div class="detail-field">
+                <span class="detail-label">Created</span>
+                <span class="detail-value">{{ formatDate(shelf.createdAt) }}</span>
+              </div>
+              @if (shelf.updatedAt) {
+                <div class="detail-field">
+                  <span class="detail-label">Updated</span>
+                  <span class="detail-value">{{ formatDate(shelf.updatedAt) }}</span>
+                </div>
+              }
+            </div>
+            @if (detailItems().length > 0) {
+              <div class="shelf-section">
+                <h4><i class="bi bi-boxes"></i> Items on Shelf ({{ detailItems().length }} types, {{ formatNumber(detailTotalItems()) }} total)</h4>
+                <div class="items-table-wrapper">
+                  <table class="items-table">
+                    <thead>
+                      <tr>
+                        <th>Item Name</th>
+                        <th>SKU</th>
+                        <th>Quantity</th>
+                        <th>Unit</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (item of detailItems(); track item.sku) {
+                        <tr>
+                          <td>{{ item.name }}</td>
+                          <td><code>{{ item.sku }}</code></td>
+                          <td>{{ formatNumber(item.quantity) }}</td>
+                          <td>{{ item.unit }}</td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             }
           </div>
-        </div>
-
-        <div class="form-section">
-          <h4>Shelf Location Details</h4>
-          <div class="form-grid">
-            <div class="form-field">
-              <label>Aisle *</label>
-              <input type="text" name="aisle" [(ngModel)]="modalDraft.aisle" placeholder="A-01">
-            </div>
-            <div class="form-field">
-              <label>Rack/Section *</label>
-              <input type="text" name="rack" [(ngModel)]="modalDraft.rack" placeholder="R-01">
-            </div>
-            <div class="form-field">
-              <label>Shelf Number *</label>
-              <input type="text" name="shelfNumber" [(ngModel)]="modalDraft.shelfNumber" placeholder="S-01">
-            </div>
-            <div class="form-field">
-              <label>Shelf Type *</label>
-              <select name="shelfType" [(ngModel)]="modalDraft.shelfType">
-                <option value="Standard">Standard</option>
-                <option value="Heavy Duty">Heavy Duty</option>
-                <option value="Cold Storage">Cold Storage</option>
-              </select>
-            </div>
-            <div class="form-field full-width">
-              <label>QR Code Value</label>
-              <input type="text" name="qr" [(ngModel)]="modalDraft.qrValue" placeholder="WH01-A01-R01-S01" disabled>
-            </div>
-          </div>
-        </div>
-
-        <div class="form-section">
-          <h4>Capacity & Restrictions</h4>
-          <div class="form-grid">
-            <div class="form-field">
-              <label>Max Capacity (Items)</label>
-              <input type="number" name="maxCap" [(ngModel)]="modalDraft.maxCapacity" placeholder="100">
-            </div>
-            <div class="form-field">
-              <label>Max Weight (kg)</label>
-              <input type="number" name="maxW" [(ngModel)]="modalDraft.maxWeight" placeholder="500">
-            </div>
-            <div class="form-field full-width">
-              <label>Category Restriction (Optional)</label>
-              <select name="cat" [(ngModel)]="modalDraft.categoryRestriction">
-                <option value="All Categories">All Categories</option>
-                <option value="Electronics">Electronics</option>
-                <option value="Furniture">Furniture</option>
-                <option value="Supplies">Supplies</option>
-              </select>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" (click)="closeModal()">Cancel</button>
-        <button class="btn btn-secondary" (click)="generateQR()">Generate QR</button>
-        <button class="btn btn-primary" (click)="saveShelf()">Save</button>
-      </div>
-    </div>
-  </div>
-}
-
-<!-- Beautiful Add Item Dialog -->
-<div class="dialog-overlay" *ngIf="showAddItemDialog" (click)="closeAddItemDialog()" 
-     style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.8); z-index: 9999; display: flex; align-items: center; justify-content: center;">
-  <div class="dialog-container" (click)="$event.stopPropagation()"
-       style="background: white; border-radius: 12px; padding: 20px; max-width: 500px; width: 90%; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
-    <div class="dialog-header">
-      <h3>
-        <i class="bi bi-plus-circle"></i>
-        Add Item to Shelf
-      </h3>
-      <button class="close-btn" (click)="closeAddItemDialog()">
-        <i class="bi bi-x-lg"></i>
-      </button>
-    </div>
-    
-    <div class="dialog-body">
-      <div class="shelf-info">
-        <div class="shelf-badge">
-          <i class="bi bi-geo-alt"></i>
-          <strong>{{ selectedShelfForItem?.aisle }}-{{ selectedShelfForItem?.rack }}-{{ selectedShelfForItem?.shelf }}</strong>
-        </div>
-        <p>Add items to this shelf location</p>
-      </div>
-
-      <form [formGroup]="addItemForm" class="item-form">
-        <div class="form-group">
-          <label for="itemName">
-            <i class="bi bi-box"></i>
-            Item Name *
-          </label>
-          <input 
-            id="itemName" 
-            type="text" 
-            formControlName="itemName" 
-            class="form-control" 
-            placeholder="Enter item name..."
-            autocomplete="off">
-          <div class="error-message" *ngIf="addItemForm.get('itemName')?.invalid && addItemForm.get('itemName')?.touched">
-            Item name is required
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label for="quantity">
-              <i class="bi bi-hash"></i>
-              Quantity *
-            </label>
-            <input 
-              id="quantity" 
-              type="number" 
-              formControlName="quantity" 
-              class="form-control" 
-              placeholder="0"
-              min="1">
-            <div class="error-message" *ngIf="addItemForm.get('quantity')?.invalid && addItemForm.get('quantity')?.touched">
-              Valid quantity required
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label for="unitPrice">
-              <i class="bi bi-currency-dollar"></i>
-              Unit Price *
-            </label>
-            <input 
-              id="unitPrice" 
-              type="number" 
-              formControlName="unitPrice" 
-              class="form-control" 
-              placeholder="0.00"
-              min="1"
-              step="0.01">
-            <div class="error-message" *ngIf="addItemForm.get('unitPrice')?.invalid && addItemForm.get('unitPrice')?.touched">
-              Valid price required
-            </div>
-          </div>
-        </div>
-
-        <div class="preview-section">
-          <div class="preview-label">Preview</div>
-          <div class="preview-content">
-            <span class="item-preview">{{ addItemForm.get('itemName')?.value || 'Item name' }}</span>
-            <span class="quantity-preview">{{ addItemForm.get('quantity')?.value || 0 }} units</span>
-            <span class="price-preview">${{ (addItemForm.get('quantity')?.value || 0) * (addItemForm.get('unitPrice')?.value || 0) }}</span>
-          </div>
-        </div>
-      </form>
-    </div>
-
-    <div class="dialog-footer">
-      <button type="button" class="btn btn-secondary" (click)="closeAddItemDialog()">
-        <i class="bi bi-x-circle"></i>
-        Cancel
-      </button>
-      <button 
-        type="button" 
-        class="btn btn-primary" 
-        (click)="saveItemToShelf()"
-        [disabled]="addItemForm.invalid">
-        <i class="bi bi-check-circle"></i>
-        Add Item
-      </button>
-    </div>
-  </div>
-</div>
-
-<!-- Rearrange Shelves Modal -->
-@if (showRearrangeModal()) {
-  <div class="modal-overlay" (click)="closeRearrangeModal()">
-    <div class="modal-content" (click)="$event.stopPropagation()">
-      <div class="modal-header">
-        <h3>Rearrange Shelf Location</h3>
-        <button class="btn-close" (click)="closeRearrangeModal()">
-          <i class="bi bi-x-lg"></i>
-        </button>
-      </div>
-      <div class="modal-body">
-        <div class="form-section">
-          <h4>Select Shelf to Rearrange</h4>
-          <div class="form-field full-width">
-            <label for="shelf-select">Shelf *</label>
-            <select
-              id="shelf-select"
-              (change)="rearrangeDraft.set({
-                shelfId: $any($event.target).value,
-                newAisle: '',
-                newRack: '',
-                newShelf: ''
-              })"
-            >
-              <option value="">— Select a shelf —</option>
-              @for (shelf of filteredShelves(); track shelf.id) {
-                <option [value]="shelf.id">
-                  {{ shelf.aisle }}-{{ shelf.rack }}-{{ shelf.shelf }}
-                </option>
-              }
-            </select>
-          </div>
-        </div>
-
-        @if (rearrangeDraft()) {
-          <div class="form-section">
-            <h4>New Location</h4>
-            <div class="form-grid">
-              <div class="form-field">
-                <label>New Aisle *</label>
-                <input
-                  type="text"
-                  [(ngModel)]="rearrangeDraft()!.newAisle"
-                  placeholder="A-01"
-                />
-              </div>
-              <div class="form-field">
-                <label>New Rack/Section *</label>
-                <input
-                  type="text"
-                  [(ngModel)]="rearrangeDraft()!.newRack"
-                  placeholder="R-01"
-                />
-              </div>
-              <div class="form-field">
-                <label>New Shelf Number *</label>
-                <input
-                  type="text"
-                  [(ngModel)]="rearrangeDraft()!.newShelf"
-                  placeholder="S-01"
-                />
-              </div>
-            </div>
+          <div class="modal-footer">
+            <button class="action-btn secondary" (click)="closeModal()">Close</button>
+            <button class="action-btn primary" (click)="openEditModal(shelf)"><i class="bi bi-pencil"></i> Edit</button>
           </div>
         }
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" (click)="closeRearrangeModal()">Cancel</button>
-        <button class="btn btn-primary" (click)="saveRearrangement()" [disabled]="!rearrangeDraft()">
-          Save Rearrangement
-        </button>
-      </div>
+      }
+
+      @if (modalMode() === 'delete') {
+        @let shelf = shelfToDelete();
+        @if (shelf) {
+          <div class="modal-header">
+            <h2><i class="bi bi-exclamation-triangle" style="color:#dc2626"></i> Confirm Delete</h2>
+            <button class="icon-btn" (click)="closeModal()"><i class="bi bi-x-lg"></i></button>
+          </div>
+          <div class="modal-body delete-body">
+            <div class="delete-icon"><i class="bi bi-trash3-fill"></i></div>
+            <p class="delete-warning">Are you sure you want to delete <strong>"{{ shelf.shelfCode }}"</strong>?</p>
+            <p class="delete-hint">This action cannot be undone. All items on this shelf will be unassigned.</p>
+          </div>
+          <div class="modal-footer">
+            <button class="action-btn secondary" (click)="closeModal()">Cancel</button>
+            <button class="action-btn danger" (click)="confirmDelete()"><i class="bi bi-trash"></i> Delete</button>
+          </div>
+        }
+      }
+
     </div>
   </div>
 }

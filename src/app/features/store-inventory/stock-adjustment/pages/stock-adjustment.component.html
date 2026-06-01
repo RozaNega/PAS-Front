@@ -1,150 +1,533 @@
-<div class="stock-adjustment-container">
-  <div class="page-header">
-    <div class="header-info">
-      <h1>Stock Adjustment</h1>
-      <p class="subtitle">Manually adjust inventory levels with approval workflow</p>
+<section class="stock-page">
+  <header class="page-header">
+    <div class="header-content">
+      <div class="header-icon">
+        <i class="bi bi-sliders"></i>
+      </div>
+      <div class="header-text">
+        <h1>Stock Adjustment</h1>
+        <p>Manually adjust inventory levels with approval workflow</p>
+      </div>
     </div>
-    <button class="btn btn-secondary" (click)="viewHistory()">
-      <i class="bi bi-clock-history"></i> History
-    </button>
-  </div>
+    <div class="header-actions">
+      @if (isUsingMock()) {
+        <span class="mock-badge" title="API unavailable - showing sample data"><i class="bi bi-database"></i> Sample</span>
+      }
+      <button type="button" class="action-btn secondary" (click)="loadData()">
+        <i class="bi bi-arrow-clockwise"></i> Refresh
+      </button>
+      <button type="button" class="action-btn primary" (click)="exportToCsv()">
+        <i class="bi bi-download"></i> Export CSV
+      </button>
+    </div>
+  </header>
 
-  @if (loadError()) {
-    <p class="adjustment-form" role="alert" style="color: #b00020;">{{ loadError() }}</p>
-  }
-  @if (submitMessage()) {
-    <p class="adjustment-form" style="padding: 0 1rem;">{{ submitMessage() }}</p>
+  @if (notification(); as n) {
+    <div class="notification-banner" [class.success]="n.type === 'success'" [class.error]="n.type === 'error'">
+      <i class="bi" [class.bi-check-circle-fill]="n.type === 'success'" [class.bi-exclamation-triangle-fill]="n.type === 'error'" [class.bi-info-circle-fill]="n.type === 'info'"></i>
+      <span>{{ n.message }}</span>
+      <button type="button" class="dismiss-btn" (click)="dismissNotification()"><i class="bi bi-x"></i></button>
+    </div>
   }
 
-  <div class="adjustment-form">
-    <div class="form-section">
-      <div class="section-header">
-        <h3>STEP 1: SELECT ITEM</h3>
+  @if (loading()) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <span>Loading stock data...</span>
+    </div>
+  }
+
+  @if (loadError(); as err) {
+    <div class="error-state">
+      <i class="bi bi-exclamation-triangle-fill"></i>
+      <span>{{ err }}</span>
+      <button type="button" class="action-btn secondary" (click)="loadData()">Retry</button>
+    </div>
+  }
+
+  @if (!loading()) {
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon blue"><i class="bi bi-calendar-check"></i></div>
+        <div class="stat-info">
+          <span class="stat-label">Adjustments This Month</span>
+          <span class="stat-value">{{ formatNumber(summaryStats().totalAdjustments) }}</span>
+          <span class="stat-trend">Current period</span>
+        </div>
       </div>
-      <div class="search-box">
-        <i class="bi bi-search"></i>
-        <input type="text" [value]="searchTerm()" (input)="onSearchChange($any($event.target).value)" placeholder="Search by SKU, Name, or Scan QR Code...">
-        <button class="btn btn-sm btn-secondary">📷 Scan</button>
+      <div class="stat-card">
+        <div class="stat-icon teal"><i class="bi bi-box-seam"></i></div>
+        <div class="stat-info">
+          <span class="stat-label">Items Adjusted</span>
+          <span class="stat-value">{{ formatNumber(summaryStats().totalItemsAdjusted) }}</span>
+          <span class="stat-trend">Unique SKUs</span>
+        </div>
       </div>
-      <div class="recent-items">
-        <div class="section-subtitle">Recent Items:</div>
-        @for (item of recentItems(); track item.sku) {
-          <div class="recent-item" [class.low-stock]="item.low" (click)="selectItem(item)">
-            <span class="item-name">{{ item.name }} ({{ item.sku }})</span>
-            <span class="item-current">Current: {{ item.current }} units</span>
-            @if (item.low) {
-              <span class="item-warning">⚠️ Low Stock</span>
+      <div class="stat-card">
+        <div class="stat-icon green"><i class="bi bi-graph-up-arrow"></i></div>
+        <div class="stat-info">
+          <span class="stat-label">Increases</span>
+          <span class="stat-value positive">{{ formatNumber(summaryStats().increases) }}</span>
+          <span class="stat-trend positive">Stock added</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon red"><i class="bi bi-graph-down-arrow"></i></div>
+        <div class="stat-info">
+          <span class="stat-label">Decreases</span>
+          <span class="stat-value negative">{{ formatNumber(summaryStats().decreases) }}</span>
+          <span class="stat-trend negative">Stock removed</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon orange"><i class="bi bi-arrow-left-right"></i></div>
+        <div class="stat-info">
+          <span class="stat-label">Net Change</span>
+          <span class="stat-value" [class.positive]="summaryStats().netQuantityChange >= 0" [class.negative]="summaryStats().netQuantityChange < 0">
+            {{ summaryStats().netQuantityChange >= 0 ? '+' : '' }}{{ formatNumber(summaryStats().netQuantityChange) }}
+          </span>
+          <span class="stat-trend" [class.positive]="summaryStats().netQuantityChange >= 0" [class.negative]="summaryStats().netQuantityChange < 0">
+            {{ summaryStats().netQuantityChange >= 0 ? 'Net positive' : 'Net negative' }}
+          </span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon purple"><i class="bi bi-clock"></i></div>
+        <div class="stat-info">
+          <span class="stat-label">Pending Approvals</span>
+          <span class="stat-value">{{ formatNumber(summaryStats().pendingApprovals) }}</span>
+          <span class="stat-trend">Awaiting review</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="charts-grid">
+      <div class="chart-card">
+        <div class="section-header">
+          <h3><i class="bi bi-bar-chart"></i> 6-Month Adjustment Trend</h3>
+        </div>
+        <div class="chart-body">
+          <div class="chart-legend">
+            <span class="legend-item"><span class="dot green"></span> Increases</span>
+            <span class="legend-item"><span class="dot red"></span> Decreases</span>
+          </div>
+          <div class="weekly-bars">
+            @for (month of monthlyTrends(); track $index) {
+              <div class="weekly-bar-group">
+                <div class="weekly-bar-stack">
+                  <div class="weekly-bar inflow" [style.height.%]="getBarPercent(month.increases, getMaxTrendValue())" [title]="'Increases: ' + formatNumber(month.increases)"></div>
+                  <div class="weekly-bar outflow" [style.height.%]="getBarPercent(month.decreases, getMaxTrendValue())" [title]="'Decreases: ' + formatNumber(month.decreases)"></div>
+                </div>
+                <div class="weekly-bar-label">{{ month.monthLabel }}</div>
+              </div>
             }
+          </div>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <div class="section-header">
+          <h3><i class="bi bi-pie-chart"></i> Adjustment Reason Breakdown</h3>
+        </div>
+        <div class="chart-body">
+          <div class="horiz-bar-list">
+            @for (dist of reasonBreakdown(); track dist.reason) {
+              <div class="horiz-bar-item">
+                <div class="horiz-bar-info">
+                  <span class="horiz-bar-name">{{ dist.reason }}</span>
+                  <span class="horiz-bar-count">{{ formatNumber(dist.count) }}</span>
+                </div>
+                <div class="horiz-bar-track">
+                  <div class="horiz-bar-fill" [style.width.%]="dist.percentage"></div>
+                </div>
+              </div>
+            } @empty {
+              <div class="empty-state">
+                <i class="bi bi-inbox"></i>
+                <span>No adjustment data available</span>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <h3><i class="bi bi-pencil-square"></i> New Adjustment</h3>
+      </div>
+      <div class="panel-body">
+        @if (submitMessage(); as msg) {
+          <div class="notification-banner" [class.success]="true">
+            <i class="bi bi-check-circle-fill"></i>
+            <span>{{ msg }}</span>
+          </div>
+        }
+
+        <div class="form-section">
+          <div class="section-header">
+            <h3>STEP 1: SELECT ITEM</h3>
+          </div>
+          <div class="filter-bar" style="margin-bottom: 1rem;">
+            <div class="filter-group">
+              <div class="filter-field search-field">
+                <i class="bi bi-search"></i>
+                <input type="text" placeholder="Search by SKU or item name..." [value]="searchTerm()" (input)="onSearchChange($any($event.target).value)">
+              </div>
+            </div>
+          </div>
+          <div style="max-height: 240px; overflow-y: auto; border: 1px solid var(--surface-border); border-radius: 8px;">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Item / SKU</th>
+                  <th>Current Stock</th>
+                  <th>Warehouse</th>
+                  <th>Shelf</th>
+                  <th>Status</th>
+                  <th class="actions-col"></th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (item of filteredItems(); track item.sku) {
+                  <tr [class.selected-row]="selectedRow()?.sku === item.sku" [class.low-stock-row]="item.low" (click)="selectItem(item)">
+                    <td>
+                      <div class="item-cell">
+                        <div class="item-avatar">{{ item.name.charAt(0) }}</div>
+                        <div>
+                          <div class="item-name">{{ item.name }}</div>
+                          <div class="item-meta mono">{{ item.sku }}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td><span class="qty-value">{{ formatNumber(item.current) }}</span></td>
+                    <td>{{ item.warehouse }}</td>
+                    <td class="mono">{{ item.shelf }}</td>
+                    <td>
+                      @if (item.low) {
+                        <span class="low-badge"><i class="bi bi-exclamation-triangle-fill"></i> Low Stock</span>
+                      } @else {
+                        <span class="ok-badge"><i class="bi bi-check-circle-fill"></i> OK</span>
+                      }
+                    </td>
+                    <td>
+                      <button type="button" class="icon-btn" title="Select item" (click)="$event.stopPropagation(); selectItem(item)">
+                        <i class="bi bi-arrow-right-circle"></i>
+                      </button>
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="6" class="empty-state">
+                      <i class="bi bi-inbox"></i>
+                      <span>No items found</span>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <div class="section-header">
+            <h3>STEP 2: ADJUSTMENT DETAILS</h3>
+          </div>
+
+          <div class="selected-item-info">
+            <div class="info-row">
+              <span>Selected Item:</span>
+              <span>{{ selectedItemLabel() || 'None selected' }}</span>
+            </div>
+            <div class="info-row">
+              <span>Location:</span>
+              <span>{{ locationLabel() }}</span>
+            </div>
+            <div class="info-row">
+              <span>Current Stock:</span>
+              <span class="qty-value">{{ formatNumber(currentQuantity()) }} units</span>
+            </div>
+          </div>
+
+          <div class="adjustment-details">
+            <div class="form-field">
+              <label>Adjustment Type</label>
+              <div class="radio-group">
+                <label class="radio-item">
+                  <input type="radio" name="adjType" value="Increase" [ngModel]="adjustmentType()" (ngModelChange)="onAdjustmentTypeChange($event)">
+                  <span class="radio-label"><i class="bi bi-arrow-up-circle green-text"></i> Increase (+)</span>
+                </label>
+                <label class="radio-item">
+                  <input type="radio" name="adjType" value="Decrease" [ngModel]="adjustmentType()" (ngModelChange)="onAdjustmentTypeChange($event)">
+                  <span class="radio-label"><i class="bi bi-arrow-down-circle red-text"></i> Decrease (-)</span>
+                </label>
+                <label class="radio-item">
+                  <input type="radio" name="adjType" value="Set" [ngModel]="adjustmentType()" (ngModelChange)="onAdjustmentTypeChange($event)">
+                  <span class="radio-label"><i class="bi bi-pin-angle"></i> Set to Exact</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="form-field">
+              <label>Quantity</label>
+              <input type="number" [ngModel]="quantityToAdjust()" (ngModelChange)="onQuantityChange($event)" min="1" class="form-input">
+              <span class="field-hint">Enter the quantity to {{ adjustmentType() === 'Increase' ? 'add' : adjustmentType() === 'Decrease' ? 'remove' : 'set' }}</span>
+            </div>
+
+            <div class="detail-row highlight">
+              <span>Current: {{ formatNumber(currentQuantity()) }} units</span>
+              <span class="arrow-icon"><i class="bi bi-arrow-right"></i></span>
+              <span class="qty-value" [class.negative]="newQuantity() < currentQuantity()" [class.positive]="newQuantity() > currentQuantity()">
+                {{ formatNumber(newQuantity()) }} units
+              </span>
+            </div>
+
+            @if (currentQuantity() > 0 && requiresApproval()) {
+              <div class="approval-notice">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                <span>Adjustment of {{ formatNumber(quantityToAdjust()) }} units (&gt;10% of current stock) requires approval</span>
+              </div>
+            }
+
+            <div class="form-field">
+              <label>Reason for Adjustment</label>
+              <select [ngModel]="reason()" (ngModelChange)="reason.set($event)" class="form-input">
+                <option value="">Select a reason</option>
+                @for (opt of reasonOptions; track opt) {
+                  <option [value]="opt">{{ opt }}</option>
+                }
+              </select>
+            </div>
+
+            <div class="form-field">
+              <label>Notes / Comments</label>
+              <textarea [ngModel]="notes()" (ngModelChange)="notes.set($event)" rows="2" class="form-input" placeholder="Describe the reason for this adjustment..."></textarea>
+            </div>
+          </div>
+
+          <div class="form-actions-inline">
+            <button type="button" class="action-btn secondary" (click)="resetForm()"><i class="bi bi-x-lg"></i> Clear</button>
+            <button type="button" class="action-btn primary" (click)="submitAdjustment()" [disabled]="!selectedRow() || !reason()">
+              <i class="bi bi-check-lg"></i> Submit Adjustment
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="filter-bar">
+      <div class="filter-group">
+        <div class="filter-field search-field">
+          <i class="bi bi-search"></i>
+          <input type="text" placeholder="Search history by item, SKU, or person..." [value]="historySearchTerm()" (input)="onHistorySearch($event)">
+        </div>
+        <div class="filter-field">
+          <i class="bi bi-calendar"></i>
+          <input type="date" [value]="dateFrom()" (change)="onDateFromChange($event)">
+        </div>
+        <div class="filter-field">
+          <span class="date-separator">to</span>
+          <input type="date" [value]="dateTo()" (change)="onDateToChange($event)">
+        </div>
+      </div>
+      <div class="filter-actions">
+        <button type="button" class="btn-filter" (click)="clearFilters()"><i class="bi bi-x-circle"></i> Clear</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <h3><i class="bi bi-clock-history"></i> Adjustment History</h3>
+        <span class="result-count">{{ displayRange().total }} result(s)</span>
+      </div>
+      <div class="panel-body no-padding">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th class="sortable" (click)="setSort('dateTime')">
+                Date <i [class]="getSortIndicator('dateTime')"></i>
+              </th>
+              <th class="sortable" (click)="setSort('item')">
+                Item <i [class]="getSortIndicator('item')"></i>
+              </th>
+              <th class="sortable" (click)="setSort('type')">
+                Type <i [class]="getSortIndicator('type')"></i>
+              </th>
+              <th class="text-right sortable" (click)="setSort('quantity')">
+                Quantity <i [class]="getSortIndicator('quantity')"></i>
+              </th>
+              <th>Before &rarr; After</th>
+              <th class="sortable" (click)="setSort('reason')">
+                Reason <i [class]="getSortIndicator('reason')"></i>
+              </th>
+              <th class="sortable" (click)="setSort('performedBy')">
+                By <i [class]="getSortIndicator('performedBy')"></i>
+              </th>
+              <th class="sortable" (click)="setSort('status')">
+                Status <i [class]="getSortIndicator('status')"></i>
+              </th>
+              <th class="actions-col"></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (rec of paginatedHistory(); track rec.id) {
+              <tr>
+                <td class="time-cell">{{ formatDateTime(rec.dateTime) }}</td>
+                <td>
+                  <div class="item-cell">
+                    <div class="item-avatar">{{ rec.item.charAt(0) }}</div>
+                    <div>
+                      <div class="item-name">{{ rec.item }}</div>
+                      <div class="item-meta mono">{{ rec.sku }}</div>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <span class="type-badge" [class]="getTypeBadgeClass(rec.type)">
+                    <i [class]="getTypeIconClass(rec.type)"></i>
+                    {{ rec.type }}
+                  </span>
+                </td>
+                <td class="text-right">
+                  <span class="qty-value" [class.positive]="rec.type === 'Increase'" [class.negative]="rec.type === 'Decrease'">
+                    {{ formatQuantity(rec.quantity, rec.type) }}
+                  </span>
+                </td>
+                <td>
+                  <span class="mono">{{ rec.stockBefore }} &rarr; {{ rec.stockAfter }}</span>
+                </td>
+                <td>
+                  <span class="notes-cell">{{ rec.reason }}</span>
+                </td>
+                <td>{{ rec.performedBy }}</td>
+                <td>
+                  <span class="type-badge" [class]="getStatusBadgeClass(rec.status)">
+                    <i [class]="getStatusIcon(rec.status)"></i>
+                    {{ rec.status }}
+                  </span>
+                </td>
+                <td>
+                  <div class="action-buttons">
+                    <button type="button" class="icon-btn" title="View Details" (click)="openDetail(rec)"><i class="bi bi-eye"></i></button>
+                  </div>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="9" class="empty-state">
+                  <i class="bi bi-inbox"></i>
+                  <span>No adjustments found. Try adjusting your filters.</span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    @if (displayRange().total > 0) {
+      <div class="pagination-bar">
+        <div class="pagination-info">
+          Showing {{ displayRange().start }}&ndash;{{ displayRange().end }} of {{ displayRange().total }}
+        </div>
+        <div class="pagination-controls">
+          <button type="button" class="page-btn" [disabled]="currentPage() === 1" (click)="goToPage(currentPage() - 1)"><i class="bi bi-chevron-left"></i></button>
+          @for (p of getPageArray(); track $index) {
+            <button type="button" class="page-btn" [class.active]="currentPage() === p" (click)="goToPage(p)">{{ p }}</button>
+          }
+          <button type="button" class="page-btn" [disabled]="currentPage() === totalPages()" (click)="goToPage(currentPage() + 1)"><i class="bi bi-chevron-right"></i></button>
+        </div>
+        <div class="rows-per-page">
+          <select [value]="pageSize()" (change)="onRowsPerPageChange($event)">
+            @for (opt of pageSizeOptions; track opt) {
+              <option [value]="opt">{{ opt }}</option>
+            }
+          </select> per page
+        </div>
+      </div>
+    }
+  }
+</section>
+
+@if (selectedDetail(); as sel) {
+  <div class="modal-overlay" (click)="closeDetail()">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3><i class="bi bi-info-circle-fill"></i> Adjustment Details</h3>
+        <button type="button" class="modal-close" (click)="closeDetail()"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="detail-section">
+          <h4>Adjustment Information</h4>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="label">Date / Time</span>
+              <span class="value">{{ formatDateTime(sel.dateTime) }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="label">Type</span>
+              <span class="value">
+                <span class="type-badge" [class]="getTypeBadgeClass(sel.type)">
+                  <i [class]="getTypeIconClass(sel.type)"></i>
+                  {{ sel.type }}
+                </span>
+              </span>
+            </div>
+            <div class="detail-item">
+              <span class="label">Item Name</span>
+              <span class="value">{{ sel.item }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="label">SKU</span>
+              <span class="value mono">{{ sel.sku }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="label">Quantity</span>
+              <span class="value" [class.positive]="sel.type === 'Increase'" [class.negative]="sel.type === 'Decrease'">
+                {{ formatQuantity(sel.quantity, sel.type) }}
+              </span>
+            </div>
+            <div class="detail-item">
+              <span class="label">Stock Before</span>
+              <span class="value mono">{{ formatNumber(sel.stockBefore) }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="label">Stock After</span>
+              <span class="value mono">{{ formatNumber(sel.stockAfter) }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="label">Reason</span>
+              <span class="value">{{ sel.reason }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="label">Performed By</span>
+              <span class="value">{{ sel.performedBy }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="label">Status</span>
+              <span class="value">
+                <span class="type-badge" [class]="getStatusBadgeClass(sel.status)">
+                  <i [class]="getStatusIcon(sel.status)"></i>
+                  {{ sel.status }}
+                </span>
+              </span>
+            </div>
+            <div class="detail-item">
+              <span class="label">Record ID</span>
+              <span class="value mono">{{ sel.id }}</span>
+            </div>
+          </div>
+        </div>
+        @if (sel.notes) {
+          <div class="detail-section">
+            <h4>Notes</h4>
+            <p class="detail-notes">{{ sel.notes }}</p>
           </div>
         }
       </div>
-    </div>
-
-    <div class="form-section">
-      <div class="section-header">
-        <h3>STEP 2: ADJUSTMENT DETAILS</h3>
+      <div class="modal-footer">
+        <button type="button" class="action-btn secondary" (click)="closeDetail()">Close</button>
       </div>
-      <div class="selected-item-info">
-        <div class="info-row">
-          <span>Item Selected:</span>
-          <span>{{ selectedItemLabel() || 'None selected' }}</span>
-        </div>
-        <div class="info-row">
-          <span>Current Location:</span>
-          <span>{{ locationLabel() }}</span>
-        </div>
-        <div class="info-row">
-          <span>Current Quantity:</span>
-          <span class="quantity-value">{{ currentQuantity() }} units</span>
-        </div>
-      </div>
-
-      <div class="adjustment-details">
-        <div class="form-field">
-          <label>Adjustment Type:</label>
-          <div class="radio-group">
-            <label class="radio-item">
-              <input type="radio" name="adjustmentType" value="Add" [ngModel]="adjustmentType()" (ngModelChange)="onAdjustmentTypeChange($event)">
-              <span class="radio-label">➕ Add (+)</span>
-            </label>
-            <label class="radio-item">
-              <input type="radio" name="adjustmentType" value="Remove" [ngModel]="adjustmentType()" (ngModelChange)="onAdjustmentTypeChange($event)">
-              <span class="radio-label">➖ Remove (-)</span>
-            </label>
-            <label class="radio-item">
-              <input type="radio" name="adjustmentType" value="Set" [ngModel]="adjustmentType()" (ngModelChange)="onAdjustmentTypeChange($event)">
-              <span class="radio-label">🎯 Set to Exact Value</span>
-            </label>
-          </div>
-        </div>
-
-        <div class="form-field">
-          <label>Quantity to Adjust:</label>
-          <input type="number" [ngModel]="quantityToAdjust()" (ngModelChange)="onQuantityChange($event)" placeholder="50">
-          <span class="field-hint">Enter the quantity to add, remove, or set</span>
-        </div>
-
-        <div class="detail-row highlight">
-          <span>New Quantity After Adjustment:</span>
-          <span class="quantity-value" [class.negative]="newQuantity() < 0">{{ newQuantity() }} units</span>
-          <span class="quantity-hint">(will be {{ newQuantity() < 0 ? '0' : newQuantity() }})</span>
-        </div>
-
-        <div class="form-field">
-          <label>Reason for Adjustment *</label>
-          <select [ngModel]="reason()" (ngModelChange)="reason.set($event)">
-            <option value="">Select a reason ▼</option>
-            <option value="Damaged Goods">📦 Damaged Goods</option>
-            <option value="Lost/Missing">🔍 Lost/Missing</option>
-            <option value="Inventory Count Correction">📊 Inventory Count Correction</option>
-            <option value="Quality Issue">⚠️ Quality Issue</option>
-            <option value="Expired">📅 Expired</option>
-            <option value="Return to Supplier">↩️ Return to Supplier</option>
-            <option value="Other">📝 Other</option>
-          </select>
-        </div>
-
-        <div class="form-field">
-          <label>Notes / Comments</label>
-          <textarea [ngModel]="notes()" (ngModelChange)="notes.set($event)" rows="3" placeholder="50 units found damaged during inspection - moisture damage"></textarea>
-        </div>
-      </div>
-    </div>
-
-    <div class="form-section">
-      <div class="section-header">
-        <h3>STEP 3: APPROVAL (if required)</h3>
-      </div>
-      <div class="approval-notice" [class.requires-approval]="requiresApproval()">
-        <span class="notice-icon">⚠️</span>
-        <span>Adjustment of -50 units (>10% of stock) requires approval</span>
-      </div>
-      @if (requiresApproval()) {
-        <div class="approval-info">
-          <div class="info-row">
-            <span>Requesting approval from:</span>
-            <span>John Doe (Store Manager)</span>
-          </div>
-          <div class="info-row">
-            <span>Approval status:</span>
-            <span class="status-pending">⏳ Pending</span>
-          </div>
-        </div>
-        <button class="btn btn-secondary btn-sm">📧 Send Approval Request</button>
-      } @else {
-        <div class="approval-info">
-          <div class="info-row">
-            <span>Approval status:</span>
-            <span class="status-not-required">✓ Not Required</span>
-          </div>
-        </div>
-      }
     </div>
   </div>
-
-  <div class="form-actions">
-    <button class="btn btn-secondary" (click)="cancelForm()">Cancel</button>
-    <button class="btn btn-secondary">💾 Save as Draft</button>
-    <button class="btn btn-primary" (click)="submitAdjustment()">✓ Submit Adjustment</button>
-  </div>
-</div>
+}

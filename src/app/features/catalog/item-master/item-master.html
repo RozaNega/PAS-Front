@@ -106,56 +106,160 @@
         <div class="create-panel__header">
           <div>
             <p class="section-label">Inventory Management</p>
-            <h2>Catalog New Item</h2>
+            <h2>Create New Item</h2>
+            <p class="create-subtitle">Add a new item to the master catalog</p>
           </div>
           <button type="button" class="close-btn" (click)="closeCreatePanel()">✕</button>
         </div>
 
         <form class="create-form" [formGroup]="createForm" (ngSubmit)="submitCreate()" novalidate>
           <div class="form-grid">
-            <label>
-              <span>SKU Code</span>
-              <input type="text" formControlName="sku" placeholder="e.g. OFF-DESK-001" />
+            <!-- SKU -->
+            <label class="form-field" [class.error]="createForm.get('sku')?.invalid && createForm.get('sku')?.touched">
+              <span class="field-label">SKU <span class="required-indicator">*</span></span>
+              <input
+                type="text"
+                formControlName="sku"
+                placeholder="e.g. OFF-DESK-001"
+                class="form-input"
+              />
+              @if (createForm.get('sku')?.invalid && createForm.get('sku')?.touched) {
+                <span class="error-message">
+                  @if (createForm.get('sku')?.errors?.['required']) {
+                    SKU is required.
+                  } @else if (createForm.get('sku')?.errors?.['minLength']) {
+                    SKU must be at least 3 characters.
+                  }
+                </span>
+              }
             </label>
 
-            <label>
-              <span>Item Name</span>
-              <input type="text" formControlName="itemName" placeholder="e.g. Ergonomic Office Chair" />
+            <!-- Item Name -->
+            <label class="form-field" [class.error]="createForm.get('itemName')?.invalid && createForm.get('itemName')?.touched">
+              <span class="field-label">Item Name <span class="required-indicator">*</span></span>
+              <input
+                type="text"
+                formControlName="itemName"
+                placeholder="e.g. Ergonomic Office Chair"
+                class="form-input"
+              />
+              @if (createForm.get('itemName')?.invalid && createForm.get('itemName')?.touched) {
+                <span class="error-message">
+                  @if (createForm.get('itemName')?.errors?.['required']) {
+                    Item name is required.
+                  } @else if (createForm.get('itemName')?.errors?.['minLength']) {
+                    Item name must be at least 2 characters.
+                  }
+                </span>
+              }
             </label>
 
-            <label>
-              <span>Category</span>
-              <select formControlName="categoryId">
+            <!-- Category -->
+            <label class="form-field" [class.error]="createForm.get('categoryId')?.invalid && createForm.get('categoryId')?.touched">
+              <span class="field-label">Category <span class="required-indicator">*</span></span>
+              <select
+                #categorySelect
+                formControlName="categoryId"
+                (change)="onCategorySelect(categorySelect.value)"
+                class="form-input"
+              >
+                <option value="">Select a category</option>
                 @for (cat of categories(); track cat.id) {
                   <option [value]="cat.id">{{ cat.name }}</option>
                 }
               </select>
+              @if (createForm.get('categoryId')?.invalid && createForm.get('categoryId')?.touched) {
+                <span class="error-message">Category is required.</span>
+              }
             </label>
 
-            <label>
-              <span>UoM</span>
-              <input type="text" formControlName="unitOfMeasure" placeholder="e.g. Piece, Set, Box" />
+            <!-- Unit of Measure -->
+            <label class="form-field" [class.error]="createForm.get('unitOfMeasure')?.invalid && createForm.get('unitOfMeasure')?.touched">
+              <span class="field-label">Unit of Measure <span class="required-indicator">*</span></span>
+              <select
+                formControlName="unitOfMeasure"
+                class="form-input"
+              >
+                <option value="PCS">PCS</option>
+                <option value="Units">Units</option>
+                <option value="Box">Box</option>
+                <option value="Set">Set</option>
+                <option value="Carton">Carton</option>
+                <option value="Pallet">Pallet</option>
+                <option value="Bag">Bag</option>
+                <option value="Bundle">Bundle</option>
+              </select>
+              @if (createForm.get('unitOfMeasure')?.invalid && createForm.get('unitOfMeasure')?.touched) {
+                <span class="error-message">Unit of measure is required.</span>
+              }
             </label>
 
-            <label>
-              <span>Starting Stock</span>
-              <input type="number" formControlName="stockQuantity" min="0" />
+            <!-- Initial Stock -->
+            <label class="form-field" [class.error]="createForm.get('stockQuantity')?.invalid && createForm.get('stockQuantity')?.touched">
+              <span class="field-label">Initial Stock <span class="required-indicator">*</span></span>
+              <input
+                type="number"
+                formControlName="stockQuantity"
+                min="0"
+                placeholder="0"
+                class="form-input"
+              />
+              @if (createForm.get('stockQuantity')?.invalid && createForm.get('stockQuantity')?.touched) {
+                <span class="error-message">
+                  @if (createForm.get('stockQuantity')?.errors?.['required']) {
+                    Stock quantity is required.
+                  } @else if (createForm.get('stockQuantity')?.errors?.['min']) {
+                    Stock must be 0 or greater.
+                  }
+                </span>
+              }
             </label>
 
-            <label>
-              <span>Minimum Stock Level</span>
-              <input type="number" formControlName="minStockLevel" min="0" />
-            </label>
-
-            <label class="checkbox-field">
-              <span>Requires Inspection</span>
-              <input type="checkbox" formControlName="requiresInspection" />
+            <!-- Minimum Stock Level -->
+            <label class="form-field" [class.error]="createForm.get('minStockLevel')?.invalid && createForm.get('minStockLevel')?.touched">
+              <span class="field-label">Minimum Stock Level <span class="required-indicator">*</span></span>
+              <input
+                type="number"
+                formControlName="minStockLevel"
+                min="0"
+                placeholder="0"
+                class="form-input"
+              />
+              <span class="help-text">Reorder point for automatic alerts</span>
+              @if (createForm.get('minStockLevel')?.invalid && createForm.get('minStockLevel')?.touched) {
+                <span class="error-message">
+                  @if (createForm.get('minStockLevel')?.errors?.['required']) {
+                    Minimum stock level is required.
+                  } @else if (createForm.get('minStockLevel')?.errors?.['min']) {
+                    Must be 0 or greater.
+                  }
+                </span>
+              }
             </label>
           </div>
 
+          <!-- Checkboxes -->
+          <div class="form-checkboxes">
+            <label class="checkbox-label">
+              <input type="checkbox" formControlName="requiresInspection" />
+              <span>Requires Inspection</span>
+              <span class="help-text">Check if this item needs QC inspection before use</span>
+            </label>
+          </div>
+
+          <!-- Form Actions -->
           <div class="create-actions">
-            <button type="button" class="secondary-pill" (click)="closeCreatePanel()">Cancel</button>
-            <button type="submit" class="primary-pill" [disabled]="createForm.invalid || isSubmitting()">{{ isSubmitting() ? 'Saving...' : 'Save to Database' }}</button>
+            <button type="button" class="secondary-pill" (click)="closeCreatePanel()">
+              <i class="bi bi-x-circle"></i> Cancel
+            </button>
+            <button
+              type="submit"
+              class="primary-pill"
+              [disabled]="createForm.invalid || isSubmitting()"
+            >
+              <i class="bi bi-check-circle"></i>
+              {{ isSubmitting() ? 'Saving...' : 'Save to Database' }}
+            </button>
           </div>
         </form>
       </section>

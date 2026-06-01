@@ -53,6 +53,7 @@ export class ItemMaster {
     sku: ['', [Validators.required, Validators.minLength(3)]],
     itemName: ['', [Validators.required, Validators.minLength(2)]],
     categoryId: ['', [Validators.required]],
+    categoryName: ['', [Validators.required]],
     unitOfMeasure: ['PCS', [Validators.required]],
     stockQuantity: [0, [Validators.required, Validators.min(0)]],
     requiresInspection: [false],
@@ -212,7 +213,22 @@ export class ItemMaster {
   protected closeCreatePanel(): void {
     this.showCreatePanel.set(false);
     this.createForm.reset();
-    this.createForm.patchValue({ unitOfMeasure: 'PCS', stockQuantity: 0, requiresInspection: false, minStockLevel: 0 });
+    this.createForm.patchValue({
+      unitOfMeasure: 'PCS',
+      stockQuantity: 0,
+      requiresInspection: false,
+      minStockLevel: 0,
+    });
+  }
+
+  protected onCategorySelect(categoryId: string): void {
+    const selected = this.categories().find((c) => c.id === categoryId);
+    if (selected) {
+      this.createForm.patchValue({
+        categoryId: selected.id,
+        categoryName: selected.name,
+      });
+    }
   }
 
   protected submitCreate(): void {
