@@ -1,7 +1,6 @@
 import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
-  ApiServiceRequestRow,
   ServiceRequest,
   WorkflowService,
   WORKFLOW_APPROVED_ACTIVE_STATUSES,
@@ -119,16 +118,17 @@ export class RequestsSummaryPageComponent implements OnInit, OnDestroy {
       .pipe(take(1))
       .subscribe({
         next: (res) => {
-          const items = (res as { data?: { items?: unknown[] } })?.data?.items ?? [];
+          const items = this.workflowService.extractApiServiceRequestRows(res);
           const user = this.currentUserService.getCurrentUserValue();
-          const employeeId = this.currentUserService.getUserId() || 'emp_001';
+          const employeeId = this.currentUserService.getUserId() || '';
           const identity = {
             email: user?.email,
             fullName: user?.fullName,
             username: user?.username,
+            employeeCode: user?.employeeCode,
           };
 
-          this.workflowService.mergeApiServiceRequests(items as ApiServiceRequestRow[], {
+          this.workflowService.mergeApiServiceRequests(items, {
             managerQueueId: this.workflowService.getAssignedManagerQueueId(),
             employeeIdFilter: employeeId,
             employeeIdentity: identity,
@@ -141,14 +141,14 @@ export class RequestsSummaryPageComponent implements OnInit, OnDestroy {
   }
 
   private recomputeStats(): void {
-    const employeeId = this.currentUserService.getUserId() || 'emp_001';
-    const email = this.currentUserService.getCurrentUserValue()?.email;
+    const employeeId = this.currentUserService.getUserId() || '';
     const user = this.currentUserService.getCurrentUserValue();
 
     const requests = this.workflowService.getRequestsForEmployee(employeeId, {
-      email,
+      email: user?.email,
       fullName: user?.fullName,
       username: user?.username,
+      employeeCode: user?.employeeCode,
     });
     const countedRequests = requests.filter((request) => this.isCountedRequest(request));
     const valueRequests = requests.filter((request) => this.isValuedRequest(request));

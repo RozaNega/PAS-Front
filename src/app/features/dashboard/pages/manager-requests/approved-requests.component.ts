@@ -59,16 +59,9 @@ export class ApprovedRequestsComponent implements OnInit, OnDestroy {
       approvedRequests.map((req) => ({
         id: req.id,
         requestNumber: req.srNumber,
-        requesterName: req.employeeName,
-        department: req.department,
-        status: req.status,
         priority: req.priority,
-        requestedDate: req.submittedDate.toLocaleDateString(),
         approvedDate: req.managerReviewDate ? req.managerReviewDate.toLocaleDateString() : 'N/A',
-        itemCount: req.items.length,
-        estimatedValue: req.estimatedCost || 0,
         description: req.justification,
-        approvedBy: req.managerName || 'Manager',
       })),
     );
   }

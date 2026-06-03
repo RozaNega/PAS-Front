@@ -49,7 +49,7 @@ export class Register {
           Validators.pattern(/^[a-zA-Z0-9_]+$/),
         ],
       ],
-      phoneNumber: ['', [Validators.required, Validators.pattern(/^\+?[0-9\s()-]{7,20}$/)]],
+      phoneNumber: ['', [Validators.required, Validators.pattern(/^\d{10}$/)]],
       email: ['', [Validators.required, Validators.email, Validators.maxLength(100)]],
       department: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
       employeeCode: ['', [Validators.required, this.employeeCodeValidator.bind(this)]],
@@ -236,8 +236,8 @@ export class Register {
     }
 
     // Phone number validation
-    if (data.phoneNumber && !/^\+?[0-9\s()-]{7,20}$/.test(data.phoneNumber)) {
-      errors.push('Please enter a valid phone number.');
+    if (data.phoneNumber && !/^\d{10}$/.test(data.phoneNumber)) {
+      errors.push('Phone number must be exactly 10 digits.');
     }
 
     // Employee code validation

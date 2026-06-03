@@ -11,18 +11,22 @@
           <div class="request-number">{{ req.requestNumber }}</div>
           <div class="status-badge rejected">Rejected</div>
         </div>
-        <div class="request-body">
-          <p class="description">{{ req.description }}</p>
-          <div class="rejection-reason">
-            <i class="bi bi-exclamation-triangle"></i>
-            <span><strong>Reason:</strong> {{ req.rejectionReason }}</span>
+
+        <h3 class="request-title">{{ req.description }}</h3>
+
+        <div class="rejection-reason">
+          <i class="bi bi-exclamation-triangle"></i>
+          <span><strong>Reason:</strong> {{ req.rejectionReason }}</span>
+        </div>
+
+        <div class="request-meta">
+          <div class="meta-item">
+            <i class="bi bi-flag"></i>
+            <span>Priority: {{ req.priority }}</span>
           </div>
-          <div class="request-details">
-            <div class="detail-row"><span class="label">Requester:</span><span class="value">{{ req.requesterName }} ({{ req.department }})</span></div>
-            <div class="detail-row"><span class="label">Items:</span><span class="value">{{ req.itemCount }}</span></div>
-            <div class="detail-row"><span class="label">Value:</span><span class="value">${{ req.estimatedValue.toLocaleString() }}</span></div>
-            <div class="detail-row"><span class="label">Rejected By:</span><span class="value">{{ req.rejectedBy }}</span></div>
-            <div class="detail-row"><span class="label">Rejected Date:</span><span class="value">{{ req.rejectedDate }}</span></div>
+          <div class="meta-item">
+            <i class="bi bi-x-circle"></i>
+            <span>Rejected: {{ req.rejectedDate }}</span>
           </div>
         </div>
       </div>
