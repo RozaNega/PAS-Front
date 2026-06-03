@@ -1,19 +1,18 @@
 ﻿import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { CalendarWidgetComponent } from '../../../../shared/components/calendar-widget/calendar-widget.component';
+
 import { DashboardService, DashboardStatistics } from '../../../../core/services/dashboard.service';
+
+import { NgxEchartsDirective, provideEchartsCore } from 'ngx-echarts';
+import * as echarts from 'echarts/core';
+import { BarChart, LineChart, PieChart } from 'echarts/charts';
+import { GridComponent, LegendComponent, TooltipComponent, TitleComponent } from 'echarts/components';
+import { CanvasRenderer } from 'echarts/renderers';
+
+echarts.use([LineChart, PieChart, BarChart, TooltipComponent, GridComponent, LegendComponent, TitleComponent, CanvasRenderer]);
 
 type GRNStatus = 'Pending' | 'Received' | 'Rejected';
 type Priority = 'Urgent' | 'Medium' | 'Normal';
-
-interface GRN {
-  readonly id: number;
-  readonly grnNo: string;
-  readonly supplier: string;
-  readonly items: string;
-  readonly date: string;
-  readonly status: GRNStatus;
-}
 
 interface KPICard {
   readonly title: string;
@@ -23,6 +22,13 @@ interface KPICard {
   readonly color: string;
   readonly icon: string;
   readonly route: string;
+}
+
+interface StockCategory {
+  readonly name: string;
+  readonly percentage: number;
+  readonly units: number;
+  readonly color: string;
 }
 
 interface PendingIssue {
@@ -57,17 +63,27 @@ interface RecentReceiving {
   readonly time: string;
 }
 
-interface StockCategory {
-  readonly name: string;
-  readonly percentage: number;
-  readonly units: number;
-  readonly color: string;
+interface GRN {
+  readonly id: number;
+  readonly grnNo: string;
+  readonly supplier: string;
+  readonly items: string;
+  readonly date: string;
+  readonly status: GRNStatus;
+}
+
+interface WeeklyTrend {
+  label: string;
+  total: number;
+  electronics: number;
+  furniture: number;
 }
 
 @Component({
   selector: 'app-storekeeper-dashboard',
   standalone: true,
-  imports: [RouterLink, CalendarWidgetComponent],
+  imports: [RouterLink, NgxEchartsDirective],
+  providers: [provideEchartsCore({ echarts })],
   templateUrl: './storekeeper-dashboard.component.html',
   styleUrl: './storekeeper-dashboard.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -76,130 +92,32 @@ export class StorekeeperDashboardComponent implements OnInit {
   readonly router = inject(Router);
   private readonly dashboardService = inject(DashboardService);
 
-  // Signals for reactive state
   readonly isLoading = signal(false);
   readonly statistics = signal<DashboardStatistics | null>(null);
   readonly kpiCards = signal<KPICard[]>([]);
 
   readonly defaultKPICards: KPICard[] = [
-    {
-      title: 'Total Items in Stock',
-      value: '0',
-      secondary: 'Loading...',
-      trend: '---',
-      color: 'orange',
-      icon: 'bi bi-boxes',
-      route: '/storekeeper/inventory',
-    },
-    {
-      title: 'Pending Issues',
-      value: '0',
-      secondary: 'Loading...',
-      trend: '---',
-      color: 'red',
-      icon: 'bi bi-arrow-up-circle',
-      route: '/storekeeper/issuing/pending',
-    },
-    {
-      title: 'Pending Receivings',
-      value: '0',
-      secondary: 'Loading...',
-      trend: '---',
-      color: 'yellow',
-      icon: 'bi bi-arrow-down-circle',
-      route: '/storekeeper/receiving/pending',
-    },
-    {
-      title: 'Low Stock Alerts',
-      value: '0',
-      secondary: 'Loading...',
-      trend: '---',
-      color: 'red',
-      icon: 'bi bi-exclamation-triangle',
-      route: '/storekeeper/inventory/low-stock',
-    },
-    {
-      title: 'Issued This Week',
-      value: '0',
-      secondary: 'Loading...',
-      trend: '---',
-      color: 'green',
-      icon: 'bi bi-check-circle',
-      route: '/storekeeper/reports/issuance',
-    },
+    { title: 'Total Items in Stock', value: '0', secondary: 'Loading...', trend: '---', color: 'orange', icon: 'bi bi-boxes', route: '/storekeeper/inventory' },
+    { title: 'Pending Issues', value: '0', secondary: 'Loading...', trend: '---', color: 'red', icon: 'bi bi-arrow-up-circle', route: '/storekeeper/issuing' },
+    { title: 'Pending Receivings', value: '0', secondary: 'Loading...', trend: '---', color: 'yellow', icon: 'bi bi-arrow-down-circle', route: '/storekeeper/receiving' },
+    { title: 'Low Stock Alerts', value: '0', secondary: 'Loading...', trend: '---', color: 'red', icon: 'bi bi-exclamation-triangle', route: '/storekeeper/inventory/low-stock' },
+    { title: 'Issued This Week', value: '0', secondary: 'Loading...', trend: '---', color: 'green', icon: 'bi bi-check-circle', route: '/storekeeper/reports' },
   ];
 
-  ngOnInit(): void {
-    this.loadDashboardData();
-  }
-
-  loadDashboardData(): void {
-    this.isLoading.set(true);
-    this.dashboardService.getStatistics().subscribe({
-      next: (response) => {
-        if (response.success && response.data) {
-          this.statistics.set(response.data);
-          this.updateKPICards(response.data);
-        }
-        this.isLoading.set(false);
-      },
-      error: (error) => {
-        console.error('Error loading dashboard data:', error);
-        this.kpiCards.set(this.defaultKPICards);
-        this.isLoading.set(false);
-      }
-    });
-  }
-
-  updateKPICards(stats: DashboardStatistics): void {
-    this.kpiCards.set([
-      {
-        title: 'Total Items in Stock',
-        value: stats.totalItems.toLocaleString(),
-        secondary: 'Value: Calculating...',
-        trend: '---',
-        color: 'orange',
-        icon: 'bi bi-boxes',
-        route: '/storekeeper/inventory',
-      },
-      {
-        title: 'Pending Issues',
-        value: stats.pendingRequisitions.toString(),
-        secondary: 'Urgent: 0',
-        trend: '🔴',
-        color: 'red',
-        icon: 'bi bi-arrow-up-circle',
-        route: '/storekeeper/issuing/pending',
-      },
-      {
-        title: 'Pending Receivings',
-        value: stats.pendingInspections.toString(),
-        secondary: 'Awaiting inspection: 0',
-        trend: '🟡',
-        color: 'yellow',
-        icon: 'bi bi-arrow-down-circle',
-        route: '/storekeeper/receiving/pending',
-      },
-      {
-        title: 'Low Stock Alerts',
-        value: stats.lowStockItemsCount.toString(),
-        secondary: 'Critical: 0',
-        trend: '🔴',
-        color: 'red',
-        icon: 'bi bi-exclamation-triangle',
-        route: '/storekeeper/inventory/low-stock',
-      },
-      {
-        title: 'Issued This Week',
-        value: stats.issuedRequisitions.toString(),
-        secondary: 'VS last week',
-        trend: '---',
-        color: 'green',
-        icon: 'bi bi-check-circle',
-        route: '/storekeeper/reports/issuance',
-      },
-    ]);
-  }
+  readonly weeklyTrends: WeeklyTrend[] = [
+    { label: 'W1', total: 4200, electronics: 1800, furniture: 1200 },
+    { label: 'W2', total: 4350, electronics: 1900, furniture: 1250 },
+    { label: 'W3', total: 4100, electronics: 1750, furniture: 1180 },
+    { label: 'W4', total: 4450, electronics: 2000, furniture: 1300 },
+    { label: 'W5', total: 4600, electronics: 2100, furniture: 1350 },
+    { label: 'W6', total: 4500, electronics: 2050, furniture: 1320 },
+    { label: 'W7', total: 4700, electronics: 2200, furniture: 1400 },
+    { label: 'W8', total: 4900, electronics: 2300, furniture: 1450 },
+    { label: 'W9', total: 4800, electronics: 2250, furniture: 1420 },
+    { label: 'W10', total: 5100, electronics: 2400, furniture: 1500 },
+    { label: 'W11', total: 5000, electronics: 2350, furniture: 1480 },
+    { label: 'W12', total: 5200, electronics: 2450, furniture: 1520 },
+  ];
 
   readonly stockCategories: StockCategory[] = [
     { name: 'Electronics', percentage: 35, units: 4320, color: '#3B82F6' },
@@ -236,40 +154,12 @@ export class StorekeeperDashboardComponent implements OnInit {
   ];
 
   readonly recentGRNs: GRN[] = [
-    {
-      id: 1,
-      grnNo: 'GRN-001',
-      supplier: 'Tech Supplies',
-      items: 'Laptop x5',
-      date: '2024-04-28',
-      status: 'Pending',
-    },
-    {
-      id: 2,
-      grnNo: 'GRN-002',
-      supplier: 'XYZ Corp',
-      items: 'Monitor x10',
-      date: '2024-04-27',
-      status: 'Received',
-    },
-    {
-      id: 3,
-      grnNo: 'GRN-003',
-      supplier: 'ABC Supplies',
-      items: 'Keyboard x20',
-      date: '2024-04-26',
-      status: 'Rejected',
-    },
+    { id: 1, grnNo: 'GRN-001', supplier: 'Tech Supplies', items: 'Laptop x5', date: '2024-04-28', status: 'Pending' },
+    { id: 2, grnNo: 'GRN-002', supplier: 'XYZ Corp', items: 'Monitor x10', date: '2024-04-27', status: 'Received' },
+    { id: 3, grnNo: 'GRN-003', supplier: 'ABC Supplies', items: 'Keyboard x20', date: '2024-04-26', status: 'Rejected' },
   ];
 
-  readonly recentActivity: string[] = [
-    'GRN #1234 received from Tech Supplies',
-    'Stock level low for Item #5678',
-    'SIV #9999 completed',
-    'Warehouse A capacity updated',
-  ];
-
-  // Quick Scan Data
+  today = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
   isScanning = false;
   scannedItem = {
     name: 'Dell XPS Laptop',
@@ -278,40 +168,126 @@ export class StorekeeperDashboardComponent implements OnInit {
     stock: 23,
   };
 
+  ngOnInit(): void {
+    this.loadDashboardData();
+  }
+
+  loadDashboardData(): void {
+    this.isLoading.set(true);
+    this.dashboardService.getStatistics().subscribe({
+      next: (response) => {
+        if (response.success && response.data) {
+          this.statistics.set(response.data);
+          this.updateKPICards(response.data);
+        }
+        this.isLoading.set(false);
+      },
+      error: () => {
+        this.kpiCards.set(this.defaultKPICards);
+        this.isLoading.set(false);
+      }
+    });
+  }
+
+  updateKPICards(stats: DashboardStatistics): void {
+    this.kpiCards.set([
+      { title: 'Total Items in Stock', value: stats.totalItems.toLocaleString(), secondary: 'Items in inventory', trend: '12% vs last month', color: 'orange', icon: 'bi bi-boxes', route: '/storekeeper/inventory' },
+      { title: 'Pending Issues', value: stats.pendingRequisitions.toString(), secondary: 'Awaiting fulfillment', trend: stats.pendingRequisitions > 0 ? 'Needs attention' : 'All clear', color: 'red', icon: 'bi bi-arrow-up-circle', route: '/storekeeper/issuing' },
+      { title: 'Pending Receivings', value: stats.pendingInspections.toString(), secondary: 'Awaiting inspection', trend: stats.pendingInspections > 0 ? 'Pending' : 'No items', color: 'yellow', icon: 'bi bi-arrow-down-circle', route: '/storekeeper/receiving' },
+      { title: 'Low Stock Alerts', value: stats.lowStockItemsCount.toString(), secondary: 'Items need reordering', trend: stats.lowStockItemsCount > 0 ? 'Action required' : 'Stock healthy', color: 'red', icon: 'bi bi-exclamation-triangle', route: '/storekeeper/inventory/low-stock' },
+      { title: 'Issued This Week', value: stats.issuedRequisitions.toString(), secondary: 'Items issued', trend: '---', color: 'green', icon: 'bi bi-check-circle', route: '/storekeeper/reports' },
+    ]);
+  }
+
+  get trendChartOpts(): Record<string, unknown> {
+    return {
+      tooltip: { trigger: 'axis', axisPointer: { type: 'cross' } },
+      legend: { data: ['Total Stock', 'Electronics', 'Furniture'], bottom: 0, textStyle: { color: '#64748b', fontSize: 11 } },
+      grid: { left: '2%', right: '2%', bottom: '20%', top: '3%', containLabel: true },
+      xAxis: { type: 'category', data: this.weeklyTrends.map(w => w.label), axisLabel: { color: '#94a3b8', fontSize: 10 }, axisLine: { show: false }, axisTick: { show: false } },
+      yAxis: { type: 'value', axisLabel: { color: '#94a3b8', fontSize: 10 }, splitLine: { lineStyle: { color: 'rgba(148,163,184,0.12)', type: 'dashed' } } },
+      series: [
+        {
+          name: 'Total Stock', type: 'line', smooth: true,
+          data: this.weeklyTrends.map(w => w.total),
+          lineStyle: { width: 3, color: '#6366f1' },
+          itemStyle: { color: '#6366f1' },
+          areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: 'rgba(99,102,241,0.3)' }, { offset: 1, color: 'rgba(99,102,241,0.02)' }]) as any },
+          symbol: 'circle', symbolSize: 6,
+          animationDuration: 1000,
+        },
+        {
+          name: 'Electronics', type: 'line', smooth: true,
+          data: this.weeklyTrends.map(w => w.electronics),
+          lineStyle: { width: 2, color: '#10b981' },
+          itemStyle: { color: '#10b981' },
+          symbol: 'diamond', symbolSize: 5,
+          animationDuration: 1200,
+        },
+        {
+          name: 'Furniture', type: 'line', smooth: true,
+          data: this.weeklyTrends.map(w => w.furniture),
+          lineStyle: { width: 2, color: '#f59e0b' },
+          itemStyle: { color: '#f59e0b' },
+          symbol: 'triangle', symbolSize: 5,
+          animationDuration: 1400,
+        },
+      ]
+    };
+  }
+
+  get categoryChartOpts(): Record<string, unknown> {
+    return {
+      tooltip: { trigger: 'item', formatter: '{b}: {c} units ({d}%)' },
+      series: [{
+        type: 'pie',
+        radius: ['45%', '70%'],
+        center: ['50%', '50%'],
+        avoidLabelOverlap: true,
+        padAngle: 2,
+        itemStyle: { borderRadius: 6, borderColor: '#fff', borderWidth: 2 },
+        label: { show: true, position: 'outside', formatter: '{b}\n{d}%', color: '#94a3b8', fontSize: 10, lineHeight: 14, fontWeight: 600 },
+        emphasis: { itemStyle: { shadowBlur: 15, shadowOffsetX: 0, shadowColor: 'rgba(0,0,0,0.15)' } },
+        animationDuration: 1000, animationEasing: 'cubicOut',
+        labelLine: { length: 8, length2: 12, smooth: true },
+        data: this.stockCategories.map(c => ({ name: c.name, value: c.units, itemStyle: { color: c.color } })),
+      }]
+    };
+  }
+
   getPriorityClass(priority: Priority): string {
     switch (priority) {
-      case 'Urgent':
-        return 'priority-urgent';
-      case 'Medium':
-        return 'priority-medium';
-      case 'Normal':
-        return 'priority-normal';
-      default:
-        return 'priority-normal';
+      case 'Urgent': return 'priority-urgent';
+      case 'Medium': return 'priority-medium';
+      case 'Normal': return 'priority-normal';
+      default: return 'priority-normal';
     }
   }
 
-  getPriorityIcon(priority: Priority): string {
+  getPriorityColor(priority: Priority): string {
     switch (priority) {
-      case 'Urgent':
-        return '🔴';
-      case 'Medium':
-        return '🟡';
-      case 'Normal':
-        return '🟢';
-      default:
-        return '🟢';
+      case 'Urgent': return '#ef4444';
+      case 'Medium': return '#f59e0b';
+      case 'Normal': return '#10b981';
+      default: return '#10b981';
+    }
+  }
+
+  getStatusClass(status: GRNStatus): string {
+    switch (status) {
+      case 'Pending': return 'status-pending';
+      case 'Received': return 'status-received';
+      case 'Rejected': return 'status-rejected';
+      default: return '';
     }
   }
 
   processIssue(id: string): void {
-    console.log(`Processing issue ${id}`);
-    this.router.navigate(['/storekeeper/issuing/pending']);
+    this.router.navigate(['/storekeeper/issuing']);
   }
 
   startInspection(id: string): void {
-    console.log(`Starting inspection for ${id}`);
-    this.router.navigate(['/storekeeper/receiving/inspection']);
+    this.router.navigate(['/storekeeper/receiving']);
   }
 
   toggleScanner(): void {
@@ -319,36 +295,38 @@ export class StorekeeperDashboardComponent implements OnInit {
   }
 
   viewItemDetails(): void {
-    console.log('Viewing item details');
+    this.router.navigate(['/storekeeper/inventory'], { queryParams: { search: this.scannedItem.sku } });
   }
 
   issueItem(): void {
-    console.log('Issuing item');
-    this.router.navigate(['/storekeeper/issuing/create']);
+    this.router.navigate(['/storekeeper/issuing']);
   }
 
   transferStock(): void {
-    console.log('Transferring stock');
     this.router.navigate(['/storekeeper/inventory/transfer']);
   }
 
   adjustStock(): void {
-    console.log('Adjusting stock');
     this.router.navigate(['/storekeeper/inventory/adjustment']);
   }
 
-  refreshData() {
+  refreshData(): void {
     this.loadDashboardData();
   }
 
-  viewAllGRNs() {
+  viewAllGRNs(): void {
     this.router.navigate(['/storekeeper/receiving']);
   }
 
-  receiveGRN(id: number) {
-    const grn = this.recentGRNs.find(g => g.id === id);
-    if (grn) {
-      console.log(`Receiving GRN ${id}`);
-    }
+  receiveGRN(id: number): void {
+    this.router.navigate(['/storekeeper/receiving']);
+  }
+
+  viewGRN(grn: GRN): void {
+    this.router.navigate(['/storekeeper/receiving']);
+  }
+
+  formatNumber(n: number): string {
+    return n.toLocaleString();
   }
 }

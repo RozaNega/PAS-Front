@@ -1,0 +1,130 @@
+<div class="container-fluid p-4">
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <h2 class="mb-1 fw-bold" style="color: #1a237e;">Create New Request</h2>
+          <p class="text-muted mb-0">Fill in the details below to submit a new request</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-lg-8">
+      <div class="card border-0 shadow-sm" style="border-radius: 12px;">
+        <div class="card-body p-4">
+          <form [formGroup]="requestForm" (ngSubmit)="onSubmit()">
+            <!-- Request Type -->
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Request Type <span class="text-danger">*</span></label>
+              <select class="form-select" formControlName="requestType" (change)="onRequestTypeChange()">
+                <option value="">Select request type</option>
+                <option value="item">Item Request</option>
+                <option value="service">Service Request</option>
+              </select>
+              <div class="text-danger small" *ngIf="requestForm.get('requestType')?.invalid && requestForm.get('requestType')?.touched">
+                Request type is required
+              </div>
+            </div>
+
+            <!-- Category -->
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Category <span class="text-danger">*</span></label>
+              <select class="form-select" formControlName="category">
+                <option value="">Select category</option>
+                <option *ngFor="let cat of categories" [value]="cat.categoryName || cat.name">{{ cat.categoryName || cat.name }}</option>
+              </select>
+              <div class="text-danger small" *ngIf="requestForm.get('category')?.invalid && requestForm.get('category')?.touched">
+                Category is required
+              </div>
+            </div>
+
+            <!-- Title -->
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Title <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" formControlName="title" placeholder="Enter request title" />
+              <div class="text-danger small" *ngIf="requestForm.get('title')?.invalid && requestForm.get('title')?.touched">
+                Title is required
+              </div>
+            </div>
+
+            <!-- Description -->
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Description <span class="text-danger">*</span></label>
+              <textarea class="form-control" formControlName="description" rows="4" placeholder="Describe your request in detail"></textarea>
+              <div class="text-danger small" *ngIf="requestForm.get('description')?.invalid && requestForm.get('description')?.touched">
+                Description is required
+              </div>
+            </div>
+
+            <!-- Priority -->
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Priority <span class="text-danger">*</span></label>
+              <select class="form-select" formControlName="priority">
+                <option value="">Select priority</option>
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+                <option value="urgent">Urgent</option>
+              </select>
+              <div class="text-danger small" *ngIf="requestForm.get('priority')?.invalid && requestForm.get('priority')?.touched">
+                Priority is required
+              </div>
+            </div>
+
+            <!-- Item-specific fields (shown when requestType is 'item') -->
+            <div *ngIf="requestForm.get('requestType')?.value === 'item'">
+              <div class="mb-3">
+                <label class="form-label fw-semibold">Select Item</label>
+                <select class="form-select" formControlName="itemId">
+                  <option value="">Select an item</option>
+                  <option *ngFor="let item of items" [value]="item.id">{{ item.itemName || item.name }}</option>
+                </select>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label fw-semibold">Select Shelf</label>
+                <select class="form-select" formControlName="shelfId">
+                  <option value="">Select a shelf</option>
+                  <option *ngFor="let shelf of shelves" [value]="shelf.id">{{ shelf.shelfName || shelf.name }}</option>
+                </select>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label fw-semibold">Quantity <span class="text-danger">*</span></label>
+                <input type="number" class="form-control" formControlName="quantity" min="1" placeholder="Enter quantity" />
+              </div>
+            </div>
+
+            <!-- Submit buttons -->
+            <div class="d-flex gap-2 mt-4">
+              <button type="submit" class="btn btn-primary" [disabled]="requestForm.invalid || isSubmitting">
+                <span class="spinner-border spinner-border-sm me-1" *ngIf="isSubmitting" role="status"></span>
+                {{ isSubmitting ? 'Submitting...' : 'Submit Request' }}
+              </button>
+              <button type="button" class="btn btn-outline-secondary" (click)="resetForm()">Reset</button>
+              <button type="button" class="btn btn-outline-secondary" routerLink="/requests">Cancel</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="col-lg-4">
+      <div class="card border-0 shadow-sm mb-3" style="border-radius: 12px;">
+        <div class="card-body">
+          <h6 class="fw-bold mb-3"><i class="bi bi-info-circle me-2"></i>Guidelines</h6>
+          <ul class="small text-muted mb-0 ps-3">
+            <li class="mb-2">Fill in all required fields marked with <span class="text-danger">*</span></li>
+            <li class="mb-2">Provide a clear and detailed description</li>
+            <li class="mb-2">Select the appropriate priority level</li>
+            <li class="mb-2">Attach supporting documents if needed</li>
+            <li class="mb-2">Review before submitting</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

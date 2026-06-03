@@ -2,7 +2,14 @@ import { Component, signal, computed, inject, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
+import { NgxEchartsDirective, provideEchartsCore } from 'ngx-echarts';
+import * as echarts from 'echarts/core';
+import { BarChart, PieChart } from 'echarts/charts';
+import { TooltipComponent, GridComponent, LegendComponent } from 'echarts/components';
+import { CanvasRenderer } from 'echarts/renderers';
 import { WarehousesService, WarehouseDto } from '../../../../core/services/warehouses.service';
+
+echarts.use([BarChart, PieChart, TooltipComponent, GridComponent, LegendComponent, CanvasRenderer]);
 
 interface Warehouse {
   id: string;
@@ -32,7 +39,8 @@ interface ShelfInfo {
 @Component({
   selector: 'app-warehouses',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, NgxEchartsDirective],
+  providers: [provideEchartsCore({ echarts })],
   templateUrl: './warehouses.component.html',
   styleUrls: ['./warehouses.component.scss']
 })
@@ -65,8 +73,8 @@ export class WarehousesComponent {
   };
 
   formErrors = signal<Record<string, string>>({});
-
   warehouses = signal<Warehouse[]>([]);
+  bulkSelection = signal<Set<string>>(new Set());
 
   statusDistribution = computed(() => {
     const whs = this.warehouses();
@@ -78,25 +86,14 @@ export class WarehousesComponent {
   });
 
   totalWarehouses = computed(() => this.warehouses().length);
-
-  totalItems = computed(() =>
-    this.warehouses().reduce((sum, w) => sum + w.items, 0)
-  );
-
-  totalValue = computed(() =>
-    this.warehouses().reduce((sum, w) => sum + w.value, 0)
-  );
-
+  totalItems = computed(() => this.warehouses().reduce((sum, w) => sum + w.items, 0));
+  totalValue = computed(() => this.warehouses().reduce((sum, w) => sum + w.value, 0));
   avgOccupancy = computed(() => {
     const whs = this.warehouses();
     if (whs.length === 0) return 0;
     return Math.round(whs.reduce((sum, w) => sum + w.occupancy, 0) / whs.length);
   });
-
-  activeWarehouseCount = computed(() =>
-    this.warehouses().filter(w => w.status === 'Active').length
-  );
-
+  activeWarehouseCount = computed(() => this.warehouses().filter(w => w.status === 'Active').length);
   capacityUtilization = computed(() => {
     const whs = this.warehouses();
     if (whs.length === 0) return 0;
@@ -128,7 +125,102 @@ export class WarehousesComponent {
     return this.filteredWarehouses().slice(start, start + this.pageSize);
   });
 
+  selectAllChecked = computed(() => {
+    const paged = this.pagedWarehouses();
+    const selected = this.bulkSelection();
+    return paged.length > 0 && paged.every(w => selected.has(w.id));
+  });
+
+  showBulkActions = computed(() => this.bulkSelection().size > 0);
+
   detailShelves = signal<ShelfInfo[]>([]);
+
+  occupancyChartOptions = computed(() => {
+    const whs = this.warehouses();
+    if (whs.length === 0) return {};
+    const names = [...whs].map(w => w.name).reverse();
+    const values = [...whs].map(w => w.occupancy).reverse();
+    return {
+      tooltip: {
+        trigger: 'axis',
+        axisPointer: { type: 'shadow' },
+        formatter: (params: { name: string; value: number }[]) => {
+          const p = params[0];
+          return `<strong>${p.name}</strong><br/>Occupancy: <strong>${p.value}%</strong>`;
+        }
+      },
+      grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+      xAxis: {
+        type: 'value',
+        max: 100,
+        axisLabel: { fontSize: 10, color: '#94a3b8' },
+        splitLine: { lineStyle: { color: '#1e293b', type: 'dashed' } },
+        axisLine: { show: false }
+      },
+      yAxis: {
+        type: 'category',
+        data: names,
+        axisLabel: { fontSize: 10, color: '#94a3b8', fontWeight: 600 },
+        axisLine: { show: false },
+        axisTick: { show: false }
+      },
+      series: [{
+        type: 'bar',
+        data: values.map((v: number) => ({
+          value: v,
+          itemStyle: {
+            color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
+              { offset: 0, color: this.getOccupancyColor(v) + '44' },
+              { offset: 1, color: this.getOccupancyColor(v) }
+            ]),
+            borderRadius: [0, 6, 6, 0]
+          }
+        })),
+        barWidth: 14,
+        barMaxWidth: 20,
+        animationDuration: 1200,
+        animationEasing: 'cubicOut'
+      }]
+    };
+  });
+
+  statusChartOptions = computed(() => {
+    const dist = this.statusDistribution();
+    if (dist.total === 0) return {};
+    return {
+      tooltip: {
+        trigger: 'item',
+        formatter: (p: { name: string; value: number; percent: number }) =>
+          `<strong>${p.name}</strong><br/>${p.value} warehouse${p.value !== 1 ? 's' : ''} (<strong>${p.percent}%</strong>)`
+      },
+      series: [{
+        type: 'pie',
+        radius: ['55%', '75%'],
+        avoidLabelOverlap: true,
+        center: ['50%', '50%'],
+        label: {
+          show: true,
+          position: 'outside',
+          formatter: '{b}\n{d}%',
+          fontSize: 11,
+          fontWeight: 600,
+          color: '#94a3b8',
+          lineHeight: 16
+        },
+        labelLine: { length: 12, length2: 8, lineStyle: { color: '#334155' } },
+        emphasis: {
+          itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: 'rgba(0,0,0,0.3)' }
+        },
+        data: [
+          { value: dist.active, name: 'Active', itemStyle: { color: new echarts.graphic.LinearGradient(0, 0, 1, 1, [{ offset: 0, color: '#34d399' }, { offset: 1, color: '#10b981' }]) } },
+          { value: dist.limited, name: 'Limited', itemStyle: { color: new echarts.graphic.LinearGradient(0, 0, 1, 1, [{ offset: 0, color: '#fbbf24' }, { offset: 1, color: '#f59e0b' }]) } },
+          { value: dist.inactive, name: 'Inactive', itemStyle: { color: new echarts.graphic.LinearGradient(0, 0, 1, 1, [{ offset: 0, color: '#f87171' }, { offset: 1, color: '#ef4444' }]) } },
+        ],
+        animationDuration: 1000,
+        animationEasing: 'cubicOut'
+      }]
+    };
+  });
 
   constructor() {
     effect(() => {
@@ -157,6 +249,7 @@ export class WarehousesComponent {
   loadWarehouses(): void {
     this.isLoading.set(true);
     this.loadError.set(null);
+    this.bulkSelection.set(new Set());
     this.warehousesService.getAll().subscribe({
       next: (response) => {
         const rows = Array.isArray(response.data) ? response.data : [];
@@ -245,6 +338,44 @@ export class WarehousesComponent {
     }
   }
 
+  toggleSelect(id: string): void {
+    this.bulkSelection.update(sel => {
+      const next = new Set(sel);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }
+
+  toggleSelectAll(): void {
+    this.bulkSelection.update(sel => {
+      const paged = this.pagedWarehouses();
+      const allSelected = paged.every(w => sel.has(w.id));
+      if (allSelected) {
+        const next = new Set(sel);
+        paged.forEach(w => next.delete(w.id));
+        return next;
+      } else {
+        const next = new Set(sel);
+        paged.forEach(w => next.add(w.id));
+        return next;
+      }
+    });
+  }
+
+  deleteSelected(): void {
+    const selected = this.bulkSelection();
+    if (selected.size === 0) return;
+    const count = selected.size;
+    this.warehouses.update(whs => whs.filter(w => !selected.has(w.id)));
+    this.notification.set({ type: 'success', message: `${count} warehouse${count !== 1 ? 's' : ''} deleted successfully.` });
+    this.bulkSelection.set(new Set());
+    this.page.set(1);
+  }
+
   openAddModal(): void {
     this.selectedWarehouse.set(null);
     this.modalForm = {
@@ -313,18 +444,10 @@ export class WarehousesComponent {
 
   validateForm(): boolean {
     const errors: Record<string, string> = {};
-    if (!this.modalForm.warehouseName.trim()) {
-      errors['warehouseName'] = 'Warehouse name is required';
-    }
-    if (!this.modalForm.warehouseCode.trim()) {
-      errors['warehouseCode'] = 'Warehouse code is required';
-    }
-    if (!this.modalForm.location.trim()) {
-      errors['location'] = 'Location is required';
-    }
-    if (this.modalForm.capacity <= 0) {
-      errors['capacity'] = 'Capacity must be greater than 0';
-    }
+    if (!this.modalForm.warehouseName.trim()) errors['warehouseName'] = 'Warehouse name is required';
+    if (!this.modalForm.warehouseCode.trim()) errors['warehouseCode'] = 'Warehouse code is required';
+    if (!this.modalForm.location.trim()) errors['location'] = 'Location is required';
+    if (this.modalForm.capacity <= 0) errors['capacity'] = 'Capacity must be greater than 0';
     this.formErrors.set(errors);
     return Object.keys(errors).length === 0;
   }
@@ -352,11 +475,9 @@ export class WarehousesComponent {
         name: this.modalForm.warehouseName,
         code: this.modalForm.warehouseCode,
         location: this.modalForm.location,
-        items: 0,
-        value: 0,
+        items: 0, value: 0,
         capacity: this.modalForm.capacity,
-        occupancy: 0,
-        shelfCount: 0,
+        occupancy: 0, shelfCount: 0,
         status: this.modalForm.isActive ? 'Active' : 'Inactive',
         managerName: this.modalForm.managerName,
         contactNumber: this.modalForm.contactNumber,
@@ -456,21 +577,5 @@ export class WarehousesComponent {
       info: 'bi-info-circle-fill',
     };
     return icons[type] || 'bi-info-circle-fill';
-  }
-
-  statusPercent(status: 'active' | 'limited' | 'inactive'): number {
-    const dist = this.statusDistribution();
-    const map: Record<string, number> = {
-      active: dist.active,
-      limited: dist.limited,
-      inactive: dist.inactive,
-    };
-    return Math.round((map[status] / dist.total) * 100);
-  }
-
-  chartMaxOccupancy(): number {
-    const whs = this.warehouses();
-    if (whs.length === 0) return 100;
-    return Math.max(...whs.map(w => w.occupancy), 100);
   }
 }

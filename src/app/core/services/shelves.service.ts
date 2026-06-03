@@ -171,6 +171,16 @@ export class ShelvesService {
     );
   }
 
+  getShelves(params?: {
+    warehouseId?: string;
+    searchTerm?: string;
+    isActive?: boolean;
+    pageNumber?: number;
+    pageSize?: number;
+  }): Observable<ApiResponse<ShelfLocationDto[]>> {
+    return this.getAll(params);
+  }
+
   private normalizeEnvelope<T>(raw: unknown): ApiResponse<T> {
     const env = unwrapPasEnvelope<unknown>(raw);
     const data =

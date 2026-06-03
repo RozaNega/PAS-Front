@@ -1,9 +1,7 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import {
-  ItemMasterBulkUpdateRequest,
   ItemMasterListDto,
   ItemMasterService,
-  ItemMasterWriteRequest,
 } from '../../../../core/services/item-master.service';
 import { finalize, forkJoin, map, Observable, of, tap } from 'rxjs';
 
@@ -36,11 +34,11 @@ export class ItemMasterApi {
   refresh(): void {
     this.loadingSignal.set(true);
     console.log('=== ITEM MASTER API: Refreshing items ===');
-    this.itemService.getItemMasters({ pageSize: 1000 }).subscribe({
-      next: (res) => {
+    this.itemService.getItemMasters(1, 1000).subscribe({
+      next: (res: any) => {
         console.log('=== ITEM MASTER API: Response received ===');
         console.log('Response:', res);
-        if (res.success && res.data) {
+        if (res.success && res.data?.items) {
           console.log('Items loaded:', res.data.items);
           this.itemsSignal.set(res.data.items);
         } else {
@@ -57,10 +55,10 @@ export class ItemMasterApi {
   }
 
   getById(id: string) {
-    return this.items().find((item) => item.id === id);
+    return this.items().find((item) => String(item.id) === id);
   }
 
-  create(payload: Partial<ItemMasterWriteRequest> & Record<string, unknown>) {
+  create(payload: Record<string, unknown>) {
     console.log('=== ITEM MASTER API: Creating item ===');
     console.log('Payload:', payload);
     return this.itemService.createItemMaster(payload).pipe(
@@ -75,10 +73,10 @@ export class ItemMasterApi {
     );
   }
 
-  update(id: string, payload: Partial<ItemMasterWriteRequest> & Record<string, unknown>) {
+  update(id: string, payload: Record<string, unknown>) {
     console.log('=== ITEM MASTER API: Updating item ===');
     console.log('ID:', id, 'Payload:', payload);
-    return this.itemService.updateItemMaster(id, payload).pipe(
+    return this.itemService.updateItemMaster(Number(id), payload).pipe(
       tap(res => {
         console.log('=== ITEM MASTER API: Update response ===');
         console.log('Response:', res);
@@ -93,7 +91,7 @@ export class ItemMasterApi {
   remove(id: string): Observable<void> {
     console.log('=== ITEM MASTER API: Deleting item ===');
     console.log('ID:', id);
-    return this.itemService.deleteItemMaster(id).pipe(
+    return this.itemService.deleteItemMaster(Number(id)).pipe(
       tap((res) => {
       console.log('=== ITEM MASTER API: Delete response ===');
       console.log('Response:', res);
@@ -118,10 +116,10 @@ export class ItemMasterApi {
         return of(null);
       }
 
-      const currentMinimum = item.minStockLevel ?? item.minimumThreshold ?? 0;
+      const currentMinimum = item.minStockLevel ?? item['minimumThreshold'] ?? 0;
       const minStockLevel = Math.max(0, currentMinimum + adjustment);
 
-      return this.itemService.updateItemMaster(id, { minStockLevel });
+      return this.itemService.updateItemMaster(Number(id), { minStockLevel });
     });
 
     this.loadingSignal.set(true);
@@ -132,13 +130,13 @@ export class ItemMasterApi {
     );
   }
 
-  bulkEdit(itemIds: string[], updates: Partial<ItemMasterBulkUpdateRequest> & Record<string, unknown>): Observable<void> {
+  bulkEdit(itemIds: string[], updates: Record<string, unknown>): Observable<void> {
     if (itemIds.length === 0) {
       return of(void 0);
     }
 
     this.loadingSignal.set(true);
-    const updates$ = itemIds.map((id) => this.itemService.updateItemMaster(id, updates));
+    const updates$ = itemIds.map((id) => this.itemService.updateItemMaster(Number(id), updates));
 
     return forkJoin(updates$).pipe(
       tap(() => this.refresh()),
@@ -148,7 +146,7 @@ export class ItemMasterApi {
   }
 
   bulkExport(itemIds: string[]): void {
-    const items = this.items().filter(item => itemIds.includes(item.id));
+    const items = this.items().filter(item => itemIds.includes(String(item.id)));
     if (items.length === 0) {
       alert('No items to export');
       return;
@@ -185,7 +183,7 @@ export class ItemMasterApi {
       item.currentStock ?? item.stockQuantity ?? 0,
       item.reservedStock ?? 0,
       item.availableStock ?? 0,
-      item.minStockLevel ?? item.minimumThreshold ?? 0,
+      item.minStockLevel ?? item['minimumThreshold'] ?? 0,
       item.requiresInspection ? 'Yes' : 'No',
       item.isLowStock ? 'Yes' : 'No',
     ]);

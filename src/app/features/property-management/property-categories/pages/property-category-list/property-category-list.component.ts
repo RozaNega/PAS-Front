@@ -231,14 +231,15 @@ export class PropertyCategoryListComponent implements OnInit {
       .subscribe({
         next: (response) => {
           if (response.success && response.data) {
-            const transformedCategories = response.data.map(cat => ({
+            const items = (response.data as any).items ?? response.data as any;
+            const transformedCategories = (Array.isArray(items) ? items : []).map((cat: any) => ({
               id: cat.id,
-              name: cat.name,
+              name: cat.name ?? '',
               icon: '💻',
-              parentId: cat.parentCategoryId || null,
-              subcategories: [],
+              parentId: cat.parentCategoryId ?? null,
+              subcategories: [] as Category[],
               propertiesCount: 0,
-              status: (cat.isActive ? 'Active' : 'Inactive') as 'Active' | 'Inactive',
+              status: (cat.isActive !== false ? 'Active' : 'Inactive') as 'Active' | 'Inactive',
               color: 'blue',
               displayOrder: 1
             }));
@@ -329,10 +330,10 @@ export class PropertyCategoryListComponent implements OnInit {
     this.loading.set(true);
 
     if (editing) {
-      this.categoriesService.update(editing.id, {
+      this.categoriesService.update(Number(editing.id), {
         name: data.name,
         description: data.description,
-        parentCategoryId: data.parentId || null
+        parentCategoryId: data.parentId ? Number(data.parentId) : undefined
       }).pipe(finalize(() => this.loading.set(false)))
       .subscribe({
         next: (response) => {
@@ -353,7 +354,7 @@ export class PropertyCategoryListComponent implements OnInit {
       this.categoriesService.createCategory({
         name: data.name,
         description: data.description,
-        parentCategoryId: data.parentId || null
+        parentCategoryId: data.parentId ? Number(data.parentId) : undefined
       }).pipe(finalize(() => this.loading.set(false)))
       .subscribe({
         next: (response) => {

@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
-    "start": "ng serve --open",
+    "start": "ng serve --open --proxy-config proxy.conf.json",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
@@ -43,6 +43,7 @@
     "express": "^5.1.0",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.7",
+    "jsqr": "^1.4.0",
     "ngx-echarts": "^21.0.0",
     "ngx-pagination": "^6.0.3",
     "primeng": "^21.1.6",

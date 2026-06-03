@@ -1,28 +1,25 @@
 <section class="current-stock" aria-label="Current Stock Status">
-  <!-- Header -->
   <header class="page-header">
     <div class="header-content">
       <h1>Current Stock</h1>
-      <p>Real-time inventory levels across all locations</p>
+      <p>Live inventory levels across all locations</p>
     </div>
-    <button type="button" class="action-btn secondary" (click)="exportData()">
-      <i class="bi bi-download"></i>
-      Export
-    </button>
-    <button type="button" class="action-btn secondary" (click)="refreshData()" [disabled]="loading()">
-      <i class="bi bi-arrow-clockwise"></i>
-      Refresh
-    </button>
+    <div class="header-actions">
+      <button type="button" class="action-btn secondary" (click)="refreshData()" [disabled]="loading()">
+        <i class="bi bi-arrow-clockwise"></i>
+        {{ loading() ? 'Refreshing...' : 'Refresh' }}
+      </button>
+      <button type="button" class="action-btn primary" (click)="exportData()" [disabled]="filteredStock().length === 0">
+        <i class="bi bi-download"></i>
+        Export
+      </button>
+    </div>
   </header>
 
   @if (loadError()) {
-    <p class="filter-bar" role="alert" style="color: #b00020; margin: 0.5rem 0;">{{ loadError() }}</p>
-  }
-  @if (loading()) {
-    <p class="filter-bar" style="margin: 0.5rem 0;">Loading stock…</p>
+    <p class="filter-bar" role="alert" style="color: #b00020; margin: 0;">{{ loadError() }}</p>
   }
 
-  <!-- Filter Bar -->
   <section class="filter-bar" aria-label="Filter stock">
     <div class="filter-row">
       <div class="search-box">
@@ -35,324 +32,376 @@
         >
       </div>
       <div class="filter-group">
-        <label>📍 Warehouse:</label>
-        <select
-          class="filter-select"
-          [ngModel]="warehouseFilter()"
-          (ngModelChange)="warehouseFilter.set($event); onWarehouseFilterChange()"
-        >
+        <label><i class="bi bi-geo-alt"></i> Warehouse:</label>
+        <select class="filter-select" [ngModel]="warehouseFilter()" (ngModelChange)="warehouseFilter.set($event); onWarehouseFilterChange()">
           @for (wh of warehouses(); track wh) {
             <option [value]="wh">{{ wh }}</option>
           }
         </select>
       </div>
       <div class="filter-group">
-        <label>🏷️ Category:</label>
-        <select
-          class="filter-select"
-          [ngModel]="categoryFilter()"
-          (ngModelChange)="categoryFilter.set($event)"
-        >
+        <label><i class="bi bi-tag"></i> Category:</label>
+        <select class="filter-select" [ngModel]="categoryFilter()" (ngModelChange)="categoryFilter.set($event)">
           @for (cat of categories; track cat) {
             <option [value]="cat">{{ cat }}</option>
           }
         </select>
       </div>
       <div class="filter-group">
-        <label>🔧 Status:</label>
-        <select
-          class="filter-select"
-          [ngModel]="statusFilter()"
-          (ngModelChange)="statusFilter.set($event)"
-        >
+        <label><i class="bi bi-activity"></i> Status:</label>
+        <select class="filter-select" [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event)">
           @for (st of statuses; track st) {
             <option [value]="st">{{ st }}</option>
           }
         </select>
       </div>
-      <div class="filter-info">
-        <span>📅 Live data from server</span>
-      </div>
+      <button type="button" class="reset-filters" (click)="resetFilters()">
+        <i class="bi bi-x-circle"></i> Reset
+      </button>
     </div>
   </section>
 
-  <!-- Stock Summary Cards -->
-  <section class="stock-summary" aria-label="Stock Summary">
-    <h2>📊 STOCK SUMMARY CARDS</h2>
-    <div class="summary-grid">
-      <div class="summary-card">
-        <p class="summary-icon">📦</p>
-        <p class="summary-label">Total Items</p>
-        <p class="summary-value">{{ formatNumber(summary().totalItems) }}</p>
-        <p class="summary-sub">▲ +8.3%</p>
-      </div>
-      <div class="summary-card">
-        <p class="summary-icon">💰</p>
-        <p class="summary-label">Total Value</p>
-        <p class="summary-value">{{ formatValue(summary().totalValue) }}</p>
-        <p class="summary-sub">▲ +12.5%</p>
-      </div>
-      <div class="summary-card">
-        <p class="summary-icon">📈</p>
-        <p class="summary-label">Total Units</p>
-        <p class="summary-value">{{ formatNumber(summary().totalUnits) }}</p>
-        <p class="summary-sub">▼ -2.1%</p>
-      </div>
-      <div class="summary-card critical">
-        <p class="summary-icon">⚠️</p>
-        <p class="summary-label">Low Stock</p>
-        <p class="summary-value">{{ summary().lowStock }}</p>
-        <p class="summary-sub">🔴 Critical</p>
-      </div>
-      <div class="summary-card">
-        <p class="summary-icon">🟢</p>
-        <p class="summary-label">In Stock</p>
-        <p class="summary-value">{{ formatNumber(summary().inStock) }}</p>
-        <p class="summary-sub">🟡 96%</p>
+  @if (loading()) {
+    <div class="stock-summary">
+      <div class="loading-row">
+        <div class="spinner"></div>
+        <span>Loading stock data...</span>
       </div>
     </div>
-  </section>
+  }
 
-  <!-- Bulk Actions -->
-  <section class="bulk-actions" aria-label="Bulk actions">
-    <div class="bulk-row">
-      <button class="btn btn-sm" (click)="selectAll()">Select All</button>
-      <button class="btn btn-sm" (click)="selectLowStock()">Select Low Stock</button>
-      <button class="btn btn-sm" (click)="selectOutOfStock()">Select Out of Stock</button>
-      <button class="btn btn-sm" (click)="clearSelection()">Clear Selection</button>
-      <div class="bulk-spacer"></div>
-      <button class="btn btn-primary btn-sm" (click)="openBulkAdjustModal()">Bulk Adjust Stock</button>
-      <button class="btn btn-secondary btn-sm" (click)="bulkExport()">Bulk Export</button>
-      <button class="btn btn-success btn-sm" (click)="bulkGenerateQRCodes()">Generate QR Codes</button>
-    </div>
-  </section>
+  @if (!loading()) {
+    <section class="stock-summary" aria-label="Stock Summary">
+      <div class="summary-grid">
+        <div class="summary-card">
+          <div class="summary-icon-wrap icon-blue"><i class="bi bi-box-seam"></i></div>
+          <p class="summary-label">Total Items</p>
+          <p class="summary-value">{{ formatNumber(summary().totalItems) }}</p>
+          <p class="summary-sub">Distinct items in live inventory</p>
+        </div>
+        <div class="summary-card">
+          <div class="summary-icon-wrap icon-purple"><i class="bi bi-currency-dollar"></i></div>
+          <p class="summary-label">Total Value</p>
+          <p class="summary-value">{{ formatValue(summary().totalValue) }}</p>
+          <p class="summary-sub">Current valuation from backend</p>
+        </div>
+        <div class="summary-card">
+          <div class="summary-icon-wrap icon-green"><i class="bi bi-boxes"></i></div>
+          <p class="summary-label">Total Units</p>
+          <p class="summary-value">{{ formatNumber(summary().totalUnits) }}</p>
+          <p class="summary-sub">Current quantity on hand</p>
+        </div>
+        <div class="summary-card critical">
+          <div class="summary-icon-wrap icon-red"><i class="bi bi-exclamation-triangle"></i></div>
+          <p class="summary-label">Low Stock</p>
+          <p class="summary-value">{{ summary().lowStock }}</p>
+          <p class="summary-sub">Items below minimum threshold</p>
+        </div>
+        <div class="summary-card">
+          <div class="summary-icon-wrap icon-teal"><i class="bi bi-check-circle"></i></div>
+          <p class="summary-label">In Stock</p>
+          <p class="summary-value">{{ formatNumber(summary().inStock) }}</p>
+          <p class="summary-sub">Items with positive quantity</p>
+        </div>
+      </div>
+    </section>
 
-  <!-- Current Stock Table -->
-  <section class="stock-table-section" aria-label="Current Stock Table">
-    <h2>📋 CURRENT STOCK TABLE</h2>
-    <div class="table-container">
-      <table class="stock-table">
-        <thead>
-          <tr>
+    @if (stockItems().length > 0) {
+      <section class="charts-grid" aria-label="Stock charts">
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <div class="chart-card-header-left">
+              <h3>Stock Status</h3>
+              <span class="chart-badge">Distribution</span>
+            </div>
+            <i class="bi bi-pie-chart chart-card-icon"></i>
+          </div>
+          <div class="chart-wrapper">
+            <div echarts [options]="statusChartOpts" class="echart-container"></div>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <div class="chart-card-header-left">
+              <h3>Stock by Category</h3>
+              <span class="chart-badge">Units</span>
+            </div>
+            <i class="bi bi-bar-chart chart-card-icon"></i>
+          </div>
+          <div class="chart-wrapper">
+            <div echarts [options]="categoryChartOpts" class="echart-container"></div>
+          </div>
+        </div>
+      </section>
+    }
+
+    <section class="bulk-actions" aria-label="Bulk actions">
+      <div class="bulk-row">
+        <button class="btn" (click)="selectAll()"><i class="bi bi-check-all"></i> Select All</button>
+        <button class="btn" (click)="selectLowStock()"><i class="bi bi-exclamation-diamond"></i> Low Stock</button>
+        <button class="btn" (click)="selectOutOfStock()"><i class="bi bi-x-octagon"></i> Out of Stock</button>
+        <button class="btn" (click)="clearSelection()"><i class="bi bi-x-square"></i> Clear</button>
+        <div class="bulk-spacer"></div>
+        <button class="btn btn-primary" (click)="openBulkAdjustModal()"><i class="bi bi-sliders"></i> Bulk Adjust</button>
+        <button class="btn btn-secondary" (click)="bulkExport()"><i class="bi bi-download"></i> Export</button>
+        <button class="btn btn-success" (click)="bulkGenerateQRCodes()"><i class="bi bi-qr-code"></i> QR Codes</button>
+      </div>
+      @if (selected().size > 0) {
+        <div style="margin-top: 0.75rem; font-size: 0.82rem; color: var(--primary-color); font-weight: 600;">
+          <i class="bi bi-check-circle"></i> {{ selected().size }} item(s) selected
+        </div>
+      }
+    </section>
+
+    <section class="stock-table-section" aria-label="Current Stock Table">
+      <div class="table-container">
+        <table class="stock-table">
+          <thead>
+            <tr>
               <th style="width: 48px; text-align: center;">
                 <input type="checkbox" [checked]="selected().size === filteredStock().length && filteredStock().length > 0" (change)="selected().size === filteredStock().length ? clearSelection() : selectAll()" />
               </th>
-            <th>SKU</th>
-            <th>Item Name</th>
-            <th>Category</th>
-            <th>Warehouse</th>
-            <th>Shelf</th>
-            <th>Quantity</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (item of filteredStock(); track item.id) {
-            <tr (click)="openDetailsModal(item)" class="clickable-row">
-              <td style="text-align: center;">
-                <input type="checkbox" [checked]="isSelected(item.id)" (click)="$event.stopPropagation()" (change)="toggleSelect(item.id)" />
-              </td>
-              <td>{{ item.sku }}</td>
-              <td>{{ item.name }}</td>
-              <td>{{ item.category }}</td>
-              <td>{{ item.warehouse }}</td>
-              <td>{{ item.shelf }}</td>
-              <td>{{ item.quantity }}</td>
-              <td>
-                <span class="status-badge {{ getStatusColor(item.status) }}">
-                  {{ getStatusEmoji(item.status) }} {{ item.status === 'good' ? 'Good' : item.status === 'low' ? 'Low' : 'Critical' }}
-                </span>
-              </td>
+              <th>SKU</th>
+              <th>Item Name</th>
+              <th>Category</th>
+              <th>Warehouse</th>
+              <th>Shelf</th>
+              <th>Quantity</th>
+              <th>Available</th>
+              <th>Reserved</th>
+              <th>Status</th>
             </tr>
-          }
-        </tbody>
-      </table>
-      <p class="table-footer">Showing 1-{{ filteredStock().length }} of {{ formatNumber(summary().totalItems) }} items</p>
-    </div>
-  </section>
+          </thead>
+          <tbody>
+            @for (item of filteredStock(); track item.id) {
+              <tr (click)="openDetailsModal(item)" class="clickable-row">
+                <td style="text-align: center;" (click)="$event.stopPropagation()">
+                  <input type="checkbox" [checked]="isSelected(item.id)" (change)="toggleSelect(item.id)" />
+                </td>
+                <td><span class="mono">{{ item.sku }}</span></td>
+                <td><strong>{{ item.name }}</strong></td>
+                <td>{{ item.category }}</td>
+                <td>{{ item.warehouse }}</td>
+                <td>{{ item.shelf }}</td>
+                <td><strong>{{ formatNumber(item.quantity) }}</strong></td>
+                <td>{{ formatNumber(item.available) }}</td>
+                <td>{{ formatNumber(item.reserved) }}</td>
+                <td>
+                  <span class="status-badge {{ getStatusColor(item.status) }}">
+                    {{ getStatusEmoji(item.status) }} {{ statusLabel(item.status) }}
+                  </span>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="10" class="empty-state">
+                  <i class="bi bi-inbox"></i>
+                  <span>No stock items match your filters.</span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <p class="table-footer">
+        <span>Showing {{ filteredStock().length }} of {{ formatNumber(summary().totalItems) }} items</span>
+        @if (filteredStock().length < summary().totalItems) {
+          <span style="color: var(--primary-color); font-size: 0.78rem;">
+            <i class="bi bi-funnel"></i> Filtered
+          </span>
+        }
+      </p>
+    </section>
+  }
 
-  <!-- Stock Details Modal -->
-  @if (showDetailsModal() && selectedStock()) {
+  @if (showDetailsModal() && selectedStock(); as item) {
     <div class="modal-overlay" (click)="closeModal()">
       <div class="modal-content" (click)="$event.stopPropagation()">
         <div class="modal-header">
-          <h2>Stock Details: {{ selectedStock()!.name }} (SKU: {{ selectedStock()!.sku }})</h2>
-          <button type="button" class="close-btn" (click)="closeModal()">
-            <i class="bi bi-x-lg"></i>
-          </button>
+          <h2><i class="bi bi-box-seam"></i> {{ item.name }}</h2>
+          <button type="button" class="close-btn" (click)="closeModal()"><i class="bi bi-x-lg"></i></button>
         </div>
-
         <div class="modal-body">
-          <!-- Item Information -->
           <section class="modal-section">
-            <h3>📦 ITEM INFORMATION</h3>
+            <h3><i class="bi bi-info-circle"></i> Item Information</h3>
             <div class="info-grid">
               <div class="info-item">
-                <span class="info-label">Item Name:</span>
-                <span class="info-value">{{ selectedStock()!.name }}</span>
+                <span class="info-label">Item Name</span>
+                <span class="info-value">{{ item.name }}</span>
               </div>
               <div class="info-item">
-                <span class="info-label">SKU:</span>
-                <span class="info-value">{{ selectedStock()!.sku }}</span>
+                <span class="info-label">SKU</span>
+                <span class="info-value">{{ item.sku }}</span>
               </div>
               <div class="info-item">
-                <span class="info-label">Description:</span>
-                <span class="info-value">13th Gen Intel i7, 16GB RAM 512GB SSD, Windows 11 Pro</span>
+                <span class="info-label">Category</span>
+                <span class="info-value">{{ item.category }}</span>
               </div>
               <div class="info-item">
-                <span class="info-label">Category:</span>
-                <span class="info-value">{{ selectedStock()!.category }}</span>
+                <span class="info-label">Status</span>
+                <span class="info-value">
+                  <span class="status-badge {{ getStatusColor(item.status) }}">
+                    {{ getStatusEmoji(item.status) }} {{ statusLabel(item.status) }}
+                  </span>
+                </span>
               </div>
               <div class="info-item">
-                <span class="info-label">Unit Price:</span>
-                <span class="info-value">$2,499</span>
+                <span class="info-label">Quantity</span>
+                <span class="info-value">{{ formatNumber(item.quantity) }}</span>
               </div>
               <div class="info-item">
-                <span class="info-label">Min Stock:</span>
-                <span class="info-value">10 units</span>
+                <span class="info-label">Available</span>
+                <span class="info-value">{{ formatNumber(item.available) }}</span>
               </div>
               <div class="info-item">
-                <span class="info-label">Max Stock:</span>
-                <span class="info-value">100 units</span>
+                <span class="info-label">Reserved</span>
+                <span class="info-value">{{ formatNumber(item.reserved) }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Warehouse / Shelf</span>
+                <span class="info-value">{{ item.warehouse }} / {{ item.shelf }}</span>
               </div>
             </div>
           </section>
 
-          <!-- Stock Locations -->
           <section class="modal-section">
-            <h3>📍 STOCK LOCATIONS</h3>
-            <div class="table-container">
-              <table class="locations-table">
-                <thead>
-                  <tr>
-                    <th>Warehouse</th>
-                    <th>Shelf Location</th>
-                    <th>Quantity</th>
-                    <th>Reserved</th>
-                    <th>Available</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @for (loc of stockLocations(); track loc.shelfLocation) {
+            <h3><i class="bi bi-geo-alt"></i> Stock Locations</h3>
+            @if (stockLocations().length > 0) {
+              <div class="table-container">
+                <table class="locations-table">
+                  <thead>
                     <tr>
-                      <td>{{ loc.warehouse }}</td>
-                      <td>{{ loc.shelfLocation }}</td>
-                      <td>{{ loc.quantity }}</td>
-                      <td>{{ loc.reserved }}</td>
-                      <td>{{ loc.available }}</td>
-                      <td>
-                        <div class="action-icons">
-                          <button type="button" class="icon-btn" title="Issue" (click)="$event.stopPropagation(); issueItem(selectedStock()!)">📦</button>
-                          <button type="button" class="icon-btn" title="Transfer" (click)="$event.stopPropagation(); transferStock(selectedStock()!)">🔄</button>
-                          <button type="button" class="icon-btn" title="Adjust" (click)="$event.stopPropagation(); openItemAdjustModal(selectedStock()!)">📝</button>
-                          <button type="button" class="btn btn-sm" style="background-color: #dc3545; color: white; border: none;" title="Delete">Delete</button>
-                        </div>
-                      </td>
+                      <th>Warehouse</th>
+                      <th>Shelf Location</th>
+                      <th>Quantity</th>
+                      <th>Reserved</th>
+                      <th>Available</th>
                     </tr>
-                  }
-                </tbody>
-              </table>
-              <p class="table-footer">Total: {{ selectedStock()!.quantity }} units | Reserved: {{ selectedStock()!.reserved }} units | Available: {{ selectedStock()!.available }} units</p>
-            </div>
+                  </thead>
+                  <tbody>
+                    @for (loc of stockLocations(); track loc.warehouse + loc.shelfLocation) {
+                      <tr>
+                        <td>{{ loc.warehouse }}</td>
+                        <td>{{ loc.shelfLocation }}</td>
+                        <td>{{ loc.quantity }}</td>
+                        <td>{{ loc.reserved }}</td>
+                        <td>{{ loc.available }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            } @else {
+              <p style="color: var(--text-color-muted); font-size: 0.85rem;">No location details available for this item.</p>
+            }
           </section>
 
-          <!-- Stock Movement History -->
           <section class="modal-section">
-            <h3>📈 STOCK MOVEMENT HISTORY (Last 30 days)</h3>
-            <div class="table-container">
-              <table class="movements-table">
-                <thead>
-                  <tr>
-                    <th>Date</th>
-                    <th>Type</th>
-                    <th>Quantity</th>
-                    <th>Reference</th>
-                    <th>User</th>
-                    <th>Balance</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @for (mov of stockMovements(); track mov.reference) {
+            <h3><i class="bi bi-arrow-left-right"></i> Stock Movement History</h3>
+            @if (stockMovements().length > 0) {
+              <div class="table-container">
+                <table class="movements-table">
+                  <thead>
                     <tr>
-                      <td>{{ mov.date }}</td>
-                      <td>{{ mov.type }}</td>
-                      <td>{{ mov.quantity > 0 ? '+' : '' }}{{ mov.quantity }}</td>
-                      <td>{{ mov.reference }}</td>
-                      <td>{{ mov.user }}</td>
-                      <td>{{ mov.balance }}</td>
+                      <th>Date</th>
+                      <th>Type</th>
+                      <th>Quantity</th>
+                      <th>Reference</th>
+                      <th>Location</th>
                     </tr>
-                  }
-                </tbody>
-              </table>
-              <button type="button" class="action-btn secondary small">View Full History →</button>
-            </div>
+                  </thead>
+                  <tbody>
+                    @for (mov of stockMovements(); track mov.date + mov.reference) {
+                      <tr>
+                        <td>{{ mov.date }}</td>
+                        <td>{{ mov.type }}</td>
+                        <td [style.color]="mov.quantity > 0 ? '#059669' : '#dc2626'" style="font-weight: 700;">
+                          {{ mov.quantity > 0 ? '+' : '' }}{{ mov.quantity }}
+                        </td>
+                        <td>{{ mov.reference }}</td>
+                        <td>{{ mov.location }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            } @else {
+              <p style="color: var(--text-color-muted); font-size: 0.85rem;">No recent movement history available for this item.</p>
+            }
           </section>
         </div>
-
         <div class="modal-footer">
-          <button type="button" class="action-btn primary" (click)="issueItem(selectedStock()!)">Issue Item</button>
-          <button type="button" class="action-btn primary" (click)="transferStock(selectedStock()!)">Transfer Stock</button>
-          <button type="button" class="action-btn primary" (click)="openItemAdjustModal(selectedStock()!)">Adjust Stock</button>
-          <button type="button" class="action-btn secondary" (click)="printLabel(selectedStock()!)">Print Label</button>
-          <button type="button" class="action-btn secondary" (click)="viewQR(selectedStock()!)">View QR</button>
           <button type="button" class="action-btn secondary" (click)="closeModal()">Close</button>
         </div>
       </div>
     </div>
   }
 
-  <!-- Bulk Adjust Modal -->
   @if (showBulkAdjustModal()) {
     <div class="modal-overlay" (click)="closeBulkAdjustModal()">
-      <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-content" (click)="$event.stopPropagation()" style="max-width: 480px;">
         <div class="modal-header">
-          <h3>Bulk Adjust Stock</h3>
-          <button class="close-btn" (click)="closeBulkAdjustModal()">✕</button>
+          <h3><i class="bi bi-sliders"></i> Bulk Adjust Stock</h3>
+          <button class="close-btn" (click)="closeBulkAdjustModal()"><i class="bi bi-x-lg"></i></button>
         </div>
         <div class="modal-body">
-          <label>Quantity</label>
-          <input type="number" [ngModel]="bulkAdjustQty()" (ngModelChange)="bulkAdjustQty.set($event)" />
-          <label>Type</label>
-          <select [ngModel]="bulkAdjustType()" (ngModelChange)="bulkAdjustType.set($event)">
-            <option value="increase">increase</option>
-            <option value="decrease">decrease</option>
-            <option value="set">set</option>
-          </select>
-          <label>Reason</label>
-          <input type="text" [ngModel]="bulkAdjustReason()" (ngModelChange)="bulkAdjustReason.set($event)" />
+          <div style="display: flex; flex-direction: column; gap: 1rem;">
+            <div>
+              <label style="display: block; font-size: 0.82rem; font-weight: 600; color: var(--text-color-muted); margin-bottom: 0.35rem;">Quantity</label>
+              <input type="number" [ngModel]="bulkAdjustQty()" (ngModelChange)="bulkAdjustQty.set($event)" style="width: 100%; padding: 0.65rem; border: 1px solid var(--surface-border); border-radius: 8px; background: var(--surface-section); color: var(--text-color); font-family: inherit; font-size: 0.9rem;" />
+            </div>
+            <div>
+              <label style="display: block; font-size: 0.82rem; font-weight: 600; color: var(--text-color-muted); margin-bottom: 0.35rem;">Adjustment Type</label>
+              <select [ngModel]="bulkAdjustType()" (ngModelChange)="bulkAdjustType.set($event)" style="width: 100%; padding: 0.65rem; border: 1px solid var(--surface-border); border-radius: 8px; background: var(--surface-section); color: var(--text-color); font-family: inherit; font-size: 0.9rem;">
+                <option value="increase">Increase</option>
+                <option value="decrease">Decrease</option>
+                <option value="set">Set</option>
+              </select>
+            </div>
+            <div>
+              <label style="display: block; font-size: 0.82rem; font-weight: 600; color: var(--text-color-muted); margin-bottom: 0.35rem;">Reason</label>
+              <input type="text" [ngModel]="bulkAdjustReason()" (ngModelChange)="bulkAdjustReason.set($event)" style="width: 100%; padding: 0.65rem; border: 1px solid var(--surface-border); border-radius: 8px; background: var(--surface-section); color: var(--text-color); font-family: inherit; font-size: 0.9rem;" />
+            </div>
+          </div>
         </div>
         <div class="modal-footer">
-          <button class="btn btn-secondary" (click)="closeBulkAdjustModal()">Cancel</button>
-          <button class="btn btn-primary" (click)="performBulkAdjust()">Submit</button>
+          <button class="action-btn secondary" (click)="closeBulkAdjustModal()">Cancel</button>
+          <button class="action-btn primary" (click)="performBulkAdjust()">Submit</button>
         </div>
       </div>
     </div>
   }
 
-  <!-- Item Adjust Modal -->
   @if (showItemAdjustModal() && activeItemForAdjust()) {
     <div class="modal-overlay" (click)="closeItemAdjustModal()">
-      <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-content" (click)="$event.stopPropagation()" style="max-width: 480px;">
         <div class="modal-header">
-          <h3>Adjust: {{ activeItemForAdjust()!.name }}</h3>
-          <button class="close-btn" (click)="closeItemAdjustModal()">✕</button>
+          <h3><i class="bi bi-sliders"></i> Adjust: {{ activeItemForAdjust()!.name }}</h3>
+          <button class="close-btn" (click)="closeItemAdjustModal()"><i class="bi bi-x-lg"></i></button>
         </div>
         <div class="modal-body">
-          <label>Quantity</label>
-          <input type="number" [ngModel]="bulkAdjustQty()" (ngModelChange)="bulkAdjustQty.set($event)" />
-          <label>Type</label>
-          <select [ngModel]="bulkAdjustType()" (ngModelChange)="bulkAdjustType.set($event)">
-            <option value="increase">increase</option>
-            <option value="decrease">decrease</option>
-            <option value="set">set</option>
-          </select>
-          <label>Reason</label>
-          <input type="text" [ngModel]="bulkAdjustReason()" (ngModelChange)="bulkAdjustReason.set($event)" />
+          <div style="display: flex; flex-direction: column; gap: 1rem;">
+            <div>
+              <label style="display: block; font-size: 0.82rem; font-weight: 600; color: var(--text-color-muted); margin-bottom: 0.35rem;">Quantity</label>
+              <input type="number" [ngModel]="bulkAdjustQty()" (ngModelChange)="bulkAdjustQty.set($event)" style="width: 100%; padding: 0.65rem; border: 1px solid var(--surface-border); border-radius: 8px; background: var(--surface-section); color: var(--text-color); font-family: inherit; font-size: 0.9rem;" />
+            </div>
+            <div>
+              <label style="display: block; font-size: 0.82rem; font-weight: 600; color: var(--text-color-muted); margin-bottom: 0.35rem;">Adjustment Type</label>
+              <select [ngModel]="bulkAdjustType()" (ngModelChange)="bulkAdjustType.set($event)" style="width: 100%; padding: 0.65rem; border: 1px solid var(--surface-border); border-radius: 8px; background: var(--surface-section); color: var(--text-color); font-family: inherit; font-size: 0.9rem;">
+                <option value="increase">Increase</option>
+                <option value="decrease">Decrease</option>
+                <option value="set">Set</option>
+              </select>
+            </div>
+            <div>
+              <label style="display: block; font-size: 0.82rem; font-weight: 600; color: var(--text-color-muted); margin-bottom: 0.35rem;">Reason</label>
+              <input type="text" [ngModel]="bulkAdjustReason()" (ngModelChange)="bulkAdjustReason.set($event)" style="width: 100%; padding: 0.65rem; border: 1px solid var(--surface-border); border-radius: 8px; background: var(--surface-section); color: var(--text-color); font-family: inherit; font-size: 0.9rem;" />
+            </div>
+          </div>
         </div>
         <div class="modal-footer">
-          <button class="btn btn-secondary" (click)="closeItemAdjustModal()">Cancel</button>
-          <button class="btn btn-primary" (click)="performItemAdjust()">Submit</button>
+          <button class="action-btn secondary" (click)="closeItemAdjustModal()">Cancel</button>
+          <button class="action-btn primary" (click)="performItemAdjust()">Submit</button>
         </div>
       </div>
     </div>

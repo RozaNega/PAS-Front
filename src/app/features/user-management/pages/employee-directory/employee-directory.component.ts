@@ -1,8 +1,9 @@
 import { Component, signal, computed, inject, OnInit, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterLink } from '@angular/router';
-import { EmployeesService, EmployeeDto } from '../../../../core/services/employees.service';
+import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { EmployeesService } from '../../../../core/services/employees.service';
+import type { Employee as EmployeeDto } from '../../../../core/services/employees.service';
 
 interface Employee {
   id: string;
@@ -14,26 +15,26 @@ interface Employee {
   position: string;
   hasUserAccount: boolean;
   joinDate?: Date;
-  status: 'Active' | 'Inactive' | 'On Leave';
+  status: 'Active' | 'Inactive';
   avatar: string;
 }
 
 const MOCK_EMPLOYEES: Employee[] = [
   { id: '1', name: 'John Doe', employeeCode: 'EMP-001', email: 'john.doe@company.com', phone: '+1 555-0101', department: 'IT', position: 'Senior Developer', hasUserAccount: true, joinDate: new Date('2024-01-15'), status: 'Active', avatar: 'JD' },
   { id: '2', name: 'Sarah Smith', employeeCode: 'EMP-002', email: 'sarah.smith@company.com', phone: '+1 555-0102', department: 'Operations', position: 'Operations Manager', hasUserAccount: true, joinDate: new Date('2024-02-20'), status: 'Active', avatar: 'SS' },
-  { id: '3', name: 'Mike Wilson', employeeCode: 'EMP-003', email: 'mike.wilson@company.com', phone: '+1 555-0103', department: 'Warehouse', position: 'Store Officer', hasUserAccount: true, joinDate: new Date('2024-03-10'), status: 'Active', avatar: 'MW' },
+  { id: '3', name: 'Mike Wilson', employeeCode: 'EMP-003', email: 'mike.wilson@company.com', phone: '+1 555-0103', department: 'Warehouse', position: 'Warehouse Supervisor', hasUserAccount: true, joinDate: new Date('2024-03-10'), status: 'Active', avatar: 'MW' },
   { id: '4', name: 'Peter Chen', employeeCode: 'EMP-004', email: 'peter.chen@company.com', phone: '+1 555-0104', department: 'HR', position: 'HR Coordinator', hasUserAccount: false, joinDate: new Date('2024-04-05'), status: 'Inactive', avatar: 'PC' },
   { id: '5', name: 'Lisa Wong', employeeCode: 'EMP-005', email: 'lisa.wong@company.com', phone: '+1 555-0105', department: 'Finance', position: 'Finance Manager', hasUserAccount: true, joinDate: new Date('2024-01-28'), status: 'Active', avatar: 'LW' },
-  { id: '6', name: 'Robert Brown', employeeCode: 'EMP-006', email: 'robert.brown@company.com', phone: '+1 555-0106', department: 'Compliance', position: 'Compliance Auditor', hasUserAccount: true, joinDate: new Date('2024-05-12'), status: 'Active', avatar: 'RB' },
+  { id: '6', name: 'Robert Brown', employeeCode: 'EMP-006', email: 'robert.brown@company.com', phone: '+1 555-0106', department: 'Compliance', position: 'Compliance Officer', hasUserAccount: true, joinDate: new Date('2024-05-12'), status: 'Active', avatar: 'RB' },
   { id: '7', name: 'Alice Johnson', employeeCode: 'EMP-007', email: 'alice.johnson@company.com', phone: '+1 555-0107', department: 'Property', position: 'Property Officer', hasUserAccount: true, joinDate: new Date('2024-06-01'), status: 'Active', avatar: 'AJ' },
-  { id: '8', name: 'David Lee', employeeCode: 'EMP-008', email: 'david.lee@company.com', phone: '+1 555-0108', department: 'Warehouse', position: 'Store Assistant', hasUserAccount: false, joinDate: new Date('2024-03-22'), status: 'On Leave', avatar: 'DL' },
+  { id: '8', name: 'David Lee', employeeCode: 'EMP-008', email: 'david.lee@company.com', phone: '+1 555-0108', department: 'Warehouse', position: 'Store Assistant', hasUserAccount: false, joinDate: new Date('2024-03-22'), status: 'Inactive', avatar: 'DL' },
   { id: '9', name: 'Elena Garcia', employeeCode: 'EMP-009', email: 'elena.garcia@company.com', phone: '+1 555-0109', department: 'Sales', position: 'Sales Representative', hasUserAccount: true, joinDate: new Date('2024-07-08'), status: 'Active', avatar: 'EG' },
-  { id: '10', name: 'Kevin Martin', employeeCode: 'EMP-010', email: 'kevin.martin@company.com', phone: '+1 555-0110', department: 'IT', position: 'System Admin', hasUserAccount: true, joinDate: new Date('2024-02-14'), status: 'Active', avatar: 'KM' },
-  { id: '11', name: 'Neha Patel', employeeCode: 'EMP-011', email: 'neha.patel@company.com', phone: '+1 555-0111', department: 'IT', position: 'DevOps Engineer', hasUserAccount: true, joinDate: new Date('2024-01-10'), status: 'Active', avatar: 'NP' },
+  { id: '10', name: 'Kevin Martin', employeeCode: 'EMP-010', email: 'kevin.martin@company.com', phone: '+1 555-0110', department: 'IT', position: 'IT Manager', hasUserAccount: true, joinDate: new Date('2024-02-14'), status: 'Active', avatar: 'KM' },
+  { id: '11', name: 'Neha Patel', employeeCode: 'EMP-011', email: 'neha.patel@company.com', phone: '+1 555-0111', department: 'IT', position: 'System Admin', hasUserAccount: true, joinDate: new Date('2024-01-10'), status: 'Active', avatar: 'NP' },
   { id: '12', name: 'Tom Clark', employeeCode: 'EMP-012', email: 'tom.clark@company.com', phone: '+1 555-0112', department: 'Operations', position: 'Department Head', hasUserAccount: true, joinDate: new Date('2024-04-18'), status: 'Active', avatar: 'TC' },
   { id: '13', name: 'Julia Rodriguez', employeeCode: 'EMP-013', email: 'julia.rodriguez@company.com', phone: '+1 555-0113', department: 'HR', position: 'HR Assistant', hasUserAccount: false, joinDate: new Date('2024-08-25'), status: 'Active', avatar: 'JR' },
-  { id: '14', name: 'Henry Kim', employeeCode: 'EMP-014', email: 'henry.kim@company.com', phone: '+1 555-0114', department: 'Warehouse', position: 'Inventory Clerk', hasUserAccount: false, joinDate: new Date('2024-05-30'), status: 'Inactive', avatar: 'HK' },
-  { id: '15', name: 'Megan White', employeeCode: 'EMP-015', email: 'megan.white@company.com', phone: '+1 555-0115', department: 'Compliance', position: 'Risk Analyst', hasUserAccount: true, joinDate: new Date('2024-06-20'), status: 'Active', avatar: 'MW' },
+  { id: '14', name: 'Henry Kim', employeeCode: 'EMP-014', email: 'henry.kim@company.com', phone: '+1 555-0114', department: 'Warehouse', position: 'Store Officer', hasUserAccount: false, joinDate: new Date('2024-05-30'), status: 'Inactive', avatar: 'HK' },
+  { id: '15', name: 'Megan White', employeeCode: 'EMP-015', email: 'megan.white@company.com', phone: '+1 555-0115', department: 'Compliance', position: 'Internal Auditor', hasUserAccount: true, joinDate: new Date('2024-06-20'), status: 'Active', avatar: 'MW' },
 ];
 
 @Component({
@@ -44,7 +45,6 @@ const MOCK_EMPLOYEES: Employee[] = [
   styleUrls: ['./employee-directory.component.scss']
 })
 export class EmployeeDirectoryComponent implements OnInit {
-  private readonly router = inject(Router);
   private readonly employeesService = inject(EmployeesService);
 
   searchQuery = signal('');
@@ -58,25 +58,20 @@ export class EmployeeDirectoryComponent implements OnInit {
 
   employees = signal<Employee[]>([]);
   totalEmployees = signal(0);
+  useMockData = signal(false);
 
   showDetailModal = signal(false);
-  showEditModal = signal(false);
-  selectedEmployee = signal<Employee | null>(null);
-  editForm = signal<Partial<Employee>>({});
   showExportDropdown = signal(false);
-
-  useMockData = signal(false);
+  selectedEmployee = signal<Employee | null>(null);
 
   constructor() {
     effect(() => {
-      this.searchQuery(); this.departmentFilter(); this.statusFilter(); this.positionFilter();
+      this.searchQuery(); this.departmentFilter(); this.statusFilter();
       if (!this.useMockData()) this.loadEmployees();
     });
   }
 
-  ngOnInit(): void {
-    this.loadEmployees();
-  }
+  ngOnInit(): void { this.loadEmployees(); }
 
   loadEmployees(): void {
     this.loading.set(true);
@@ -84,10 +79,10 @@ export class EmployeeDirectoryComponent implements OnInit {
     const params: any = {};
     if (this.searchQuery()) params.searchTerm = this.searchQuery();
     if (this.departmentFilter() !== 'All') params.department = this.departmentFilter();
-    this.employeesService.getAll(params).subscribe({
-      next: (response) => {
+    (this.employeesService as any).getAll(params).subscribe({
+      next: (response: any) => {
         if (response.success !== false && Array.isArray(response.data) && response.data.length) {
-          const mapped = response.data.map((emp: EmployeeDto) => ({
+          const mapped = response.data.map((emp: any) => ({
             id: emp.id, name: emp.fullName || '', employeeCode: emp.employeeCode || '',
             email: '', phone: '', department: emp.department || '', position: '',
             hasUserAccount: false, status: 'Active' as const,
@@ -97,15 +92,15 @@ export class EmployeeDirectoryComponent implements OnInit {
           this.totalEmployees.set(mapped.length);
           this.useMockData.set(false);
         } else {
-          this.fallbackToMock();
+          this.fallback();
         }
         this.loading.set(false);
       },
-      error: () => { this.fallbackToMock(); this.loading.set(false); }
+      error: () => { this.fallback(); this.loading.set(false); }
     });
   }
 
-  private fallbackToMock(): void {
+  private fallback(): void {
     this.employees.set(MOCK_EMPLOYEES);
     this.totalEmployees.set(MOCK_EMPLOYEES.length);
     this.useMockData.set(true);
@@ -117,10 +112,7 @@ export class EmployeeDirectoryComponent implements OnInit {
 
   filteredEmployees = computed(() => {
     let result = [...this.employees()];
-    if (this.searchQuery()) {
-      const q = this.searchQuery().toLowerCase();
-      result = result.filter(e => e.name.toLowerCase().includes(q) || e.email.toLowerCase().includes(q) || e.employeeCode.toLowerCase().includes(q) || e.position.toLowerCase().includes(q));
-    }
+    if (this.searchQuery()) { const q = this.searchQuery().toLowerCase(); result = result.filter(e => e.name.toLowerCase().includes(q) || e.email.toLowerCase().includes(q) || e.employeeCode.toLowerCase().includes(q) || e.position.toLowerCase().includes(q)); }
     if (this.departmentFilter() !== 'All') result = result.filter(e => e.department === this.departmentFilter());
     if (this.statusFilter() !== 'All') result = result.filter(e => e.status === this.statusFilter());
     if (this.positionFilter() !== 'All') result = result.filter(e => e.position === this.positionFilter());
@@ -135,7 +127,7 @@ export class EmployeeDirectoryComponent implements OnInit {
   totalPages = computed(() => Math.max(1, Math.ceil(this.filteredEmployees().length / this.rowsPerPage())));
   displayRange = computed(() => {
     const total = this.filteredEmployees().length;
-    if (total === 0) return { start: 0, end: 0 };
+    if (!total) return { start: 0, end: 0 };
     const start = (this.currentPage() - 1) * this.rowsPerPage() + 1;
     return { start, end: Math.min(this.currentPage() * this.rowsPerPage(), total) };
   });
@@ -145,9 +137,8 @@ export class EmployeeDirectoryComponent implements OnInit {
     return {
       total: all.length,
       active: all.filter(e => e.status === 'Active').length,
-      onLeave: all.filter(e => e.status === 'On Leave').length,
       withAccount: all.filter(e => e.hasUserAccount).length,
-      departments: [...new Set(all.map(e => e.department))].length,
+      departments: new Set(all.map(e => e.department)).size,
     };
   });
 
@@ -157,15 +148,12 @@ export class EmployeeDirectoryComponent implements OnInit {
   onPositionFilter(e: Event): void { this.positionFilter.set((e.target as HTMLSelectElement).value); this.currentPage.set(1); }
   onRowsPerPageChange(e: Event): void { this.rowsPerPage.set(+(e.target as HTMLSelectElement).value); this.currentPage.set(1); }
 
-  resetFilters(): void {
-    this.searchQuery.set(''); this.departmentFilter.set('All'); this.statusFilter.set('All'); this.positionFilter.set('All'); this.currentPage.set(1);
-  }
-
+  resetFilters(): void { this.searchQuery.set(''); this.departmentFilter.set('All'); this.statusFilter.set('All'); this.positionFilter.set('All'); this.currentPage.set(1); }
   goToPage(page: number): void { this.currentPage.set(page); }
 
   getStatusColor(status: string): string {
-    const colors: Record<string, string> = { 'Active': 'green', 'Inactive': 'gray', 'On Leave': 'orange' };
-    return colors[status] || 'gray';
+    const c: Record<string, string> = { 'Active': 'green', 'Inactive': 'gray' };
+    return c[status] || 'gray';
   }
 
   viewEmployee(emp: Employee): void {
@@ -173,19 +161,16 @@ export class EmployeeDirectoryComponent implements OnInit {
     this.showDetailModal.set(true);
   }
 
-  closeDetailModal(): void {
-    this.showDetailModal.set(false);
-    this.selectedEmployee.set(null);
-  }
+  closeDetailModal(): void { this.showDetailModal.set(false); this.selectedEmployee.set(null); }
 
   createUserAccount(emp: Employee): void {
-    this.router.navigate(['/admin/users/add'], { queryParams: { employeeCode: emp.employeeCode, fullName: emp.name, email: emp.email, department: emp.department } });
+    alert(`User account creation for ${emp.name} is in development.`);
   }
 
   deleteEmployee(emp: Employee): void {
-    if (!confirm(`Delete ${emp.name}? This action cannot be undone.`)) return;
-    this.employeesService.delete(emp.id).subscribe({
-      next: (response) => { if (response.success) { this.useMockData() ? this.employees.set(this.employees().filter(e => e.id !== emp.id)) : this.loadEmployees(); } },
+    if (!confirm(`Delete ${emp.name}? This cannot be undone.`)) return;
+    (this.employeesService as any).delete(emp.id).subscribe({
+      next: (response: any) => { if (response.success) this.useMockData() ? this.employees.set(this.employees().filter(e => e.id !== emp.id)) : this.loadEmployees(); },
       error: () => this.employees.set(this.employees().filter(e => e.id !== emp.id))
     });
   }
@@ -197,33 +182,9 @@ export class EmployeeDirectoryComponent implements OnInit {
     return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   }
 
-  editEmployee(id: string): void {
-    this.router.navigate(['/admin/users/employees', id, 'edit']);
+  editEmployee(emp: Employee): void {
+    alert(`Editing ${emp.name} is in development.`);
   }
 
-  openEditModal(emp: Employee): void {
-    this.selectedEmployee.set(emp);
-    this.editForm.set({ ...emp });
-    this.showEditModal.set(true);
-  }
-
-  closeEditModal(): void {
-    this.showEditModal.set(false);
-    this.selectedEmployee.set(null);
-    this.editForm.set({});
-  }
-
-  saveEdit(): void {
-    const form = this.editForm();
-    this.employees.set(this.employees().map(e => e.id === form.id ? { ...e, ...form } as Employee : e));
-    this.closeEditModal();
-  }
-
-  updateEditName(e: Event): void { this.editForm.update(f => ({ ...f, name: (e.target as HTMLInputElement).value })); }
-  updateEditEmployeeCode(e: Event): void { this.editForm.update(f => ({ ...f, employeeCode: (e.target as HTMLInputElement).value })); }
-  updateEditEmail(e: Event): void { this.editForm.update(f => ({ ...f, email: (e.target as HTMLInputElement).value })); }
-  updateEditPhone(e: Event): void { this.editForm.update(f => ({ ...f, phone: (e.target as HTMLInputElement).value })); }
-  updateEditDepartment(e: Event): void { this.editForm.update(f => ({ ...f, department: (e.target as HTMLInputElement).value })); }
-  updateEditPosition(e: Event): void { this.editForm.update(f => ({ ...f, position: (e.target as HTMLInputElement).value })); }
-  updateEditStatus(e: Event): void { this.editForm.update(f => ({ ...f, status: (e.target as HTMLSelectElement).value as 'Active' | 'Inactive' | 'On Leave' })); }
+  Math = Math;
 }

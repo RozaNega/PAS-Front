@@ -1,5 +1,7 @@
-import { Component, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ComplianceDataService } from '../../../../core/services/compliance-data.service';
+import { ServiceRequestDto } from '../../../../core/services/requisitions.service';
 
 interface Audit {
   id: string;
@@ -18,8 +20,42 @@ interface Audit {
   templateUrl: './completed-audits.component.html',
   styleUrls: ['./completed-audits.component.scss']
 })
-export class CompletedAuditsComponent {
-  protected readonly audits = signal<Audit[]>([
-    { id: '1', auditId: 'AUD-2024-001', type: 'Request Review', completedBy: 'Officer A', completedDate: '2024-01-20', findings: 2, riskLevel: 'Low' }
-  ]);
+export class CompletedAuditsComponent implements OnInit {
+  private readonly complianceData = inject(ComplianceDataService);
+  protected readonly audits = signal<Audit[]>([]);
+
+  ngOnInit(): void {
+    this.complianceData.getServiceRequests().subscribe((requests) => {
+      this.audits.set(
+        requests
+          .filter((request) => this.isCompleted(request.status))
+          .map((request) => this.toAudit(request)),
+      );
+    });
+  }
+
+  private toAudit(request: ServiceRequestDto): Audit {
+    return {
+      id: `aud_comp_${request.id}`,
+      auditId: `AUD-${(request.requestNumber || request.id).replace(/^SR-/, '')}`,
+      type: 'Requisition Clearance',
+      completedBy: request.approvedBy || 'Approver',
+      completedDate: this.toDateOnly(request.approvedDate || request.requestDate),
+      findings: 0,
+      riskLevel: this.riskFromQuantity(request.quantity),
+    };
+  }
+
+  private isCompleted(status: string): boolean {
+    const normalized = status?.toLowerCase() ?? '';
+    return normalized.includes('complete') || normalized.includes('approved') || normalized.includes('issued');
+  }
+
+  private riskFromQuantity(quantity: number): string {
+    return quantity > 10 ? 'High' : 'Low';
+  }
+
+  private toDateOnly(value?: string): string {
+    return value ? new Date(value).toISOString().split('T')[0] : '';
+  }
 }

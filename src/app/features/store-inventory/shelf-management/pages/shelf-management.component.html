@@ -1,31 +1,71 @@
 <div class="shelf-management-container">
   <div class="page-header">
+    <div class="header-accent-bar"></div>
     <div class="header-info">
-      <h1>Shelf Management</h1>
-      <p class="subtitle">Live shelf locations from the server (ShelfLocations API)</p>
+      <div class="header-icon-wrap">
+        <i class="bi bi-layers"></i>
+      </div>
+      <div>
+        <h1>Shelf Management</h1>
+        <p class="subtitle">Live shelf locations from the server (ShelfLocations API)</p>
+      </div>
+    </div>
+    <div class="header-badge">
+      <span class="badge-warehouse"><i class="bi bi-building"></i> {{ selectedWarehouseLabel() }}</span>
     </div>
   </div>
 
   @if (error()) {
-    <div class="alert alert-danger mb-3" role="alert">{{ error() }}</div>
+    <div class="error-alert" role="alert">
+      <div class="error-icon-wrap"><i class="bi bi-exclamation-triangle-fill"></i></div>
+      <span>{{ error() }}</span>
+      <div class="error-actions">
+        <button type="button" class="error-retry" (click)="reloadAll()" title="Retry"><i class="bi bi-arrow-clockwise"></i> Retry</button>
+        <button type="button" class="error-dismiss" (click)="error.set(null)"><i class="bi bi-x-lg"></i></button>
+      </div>
+    </div>
   }
 
+  @if (loading() && !shelfRows().length) {
+    <div class="skeleton-section">
+      <div class="skeleton-grid">
+        <div class="skeleton-card"><div class="skeleton-pulse skeleton-icon"></div><div class="skeleton-pulse skeleton-line skeleton-line-sm"></div><div class="skeleton-pulse skeleton-line skeleton-line-lg"></div></div>
+        <div class="skeleton-card"><div class="skeleton-pulse skeleton-icon"></div><div class="skeleton-pulse skeleton-line skeleton-line-sm"></div><div class="skeleton-pulse skeleton-line skeleton-line-lg"></div></div>
+        <div class="skeleton-card"><div class="skeleton-pulse skeleton-icon"></div><div class="skeleton-pulse skeleton-line skeleton-line-sm"></div><div class="skeleton-pulse skeleton-line skeleton-line-lg"></div></div>
+        <div class="skeleton-card"><div class="skeleton-pulse skeleton-icon"></div><div class="skeleton-pulse skeleton-line skeleton-line-sm"></div><div class="skeleton-pulse skeleton-line skeleton-line-lg"></div></div>
+        <div class="skeleton-card"><div class="skeleton-pulse skeleton-icon"></div><div class="skeleton-pulse skeleton-line skeleton-line-sm"></div><div class="skeleton-pulse skeleton-line skeleton-line-lg"></div></div>
+        <div class="skeleton-card"><div class="skeleton-pulse skeleton-icon"></div><div class="skeleton-pulse skeleton-line skeleton-line-sm"></div><div class="skeleton-pulse skeleton-line skeleton-line-lg"></div></div>
+      </div>
+      <div class="skeleton-table">
+        <div class="skeleton-pulse skeleton-table-header"></div>
+        @for (i of [1,2,3,4]; track i) {
+          <div class="skeleton-pulse skeleton-table-row"></div>
+        }
+      </div>
+    </div>
+  }
+
+  @if (!loading() || shelfRows().length) {
   <div class="filter-bar">
-    <label>Warehouse:</label>
-    <select
-      [ngModel]="selectedWarehouseId()"
-      (ngModelChange)="onWarehouseChange($event)"
-      [disabled]="loadingWarehouses() || !warehouses().length">
-      @for (wh of warehouses(); track wh.id) {
-        <option [value]="wh.id">{{ wh.warehouseName }} ({{ wh.warehouseCode }})</option>
-      }
-    </select>
-    <label>Aisle filter:</label>
-    <select [ngModel]="aisleFilter()" (ngModelChange)="onAisleChange($event)">
-      @for (a of aisles; track a) {
-        <option [value]="a">{{ a }}</option>
-      }
-    </select>
+    <div class="filter-item">
+      <i class="bi bi-building"></i>
+      <select
+        [ngModel]="selectedWarehouseId()"
+        (ngModelChange)="onWarehouseChange($event)"
+        [disabled]="loadingWarehouses() || !warehouses().length">
+        @for (wh of warehouses(); track wh.id) {
+          <option [value]="wh.id">{{ wh.warehouseName }} ({{ wh.warehouseCode }})</option>
+        }
+      </select>
+    </div>
+    <div class="filter-item">
+      <i class="bi bi-diagram-3"></i>
+      <select [ngModel]="aisleFilter()" (ngModelChange)="onAisleChange($event)">
+        @for (a of aisles; track a) {
+          <option [value]="a">{{ a }}</option>
+        }
+      </select>
+    </div>
     <div class="search-box">
       <i class="bi bi-search"></i>
       <input
@@ -33,111 +73,242 @@
         [ngModel]="searchTerm()"
         (ngModelChange)="onSearchChange($event)"
         placeholder="Search shelf code or location…" />
+      @if (searchTerm()) {
+        <button class="search-clear" (click)="onSearchChange('')"><i class="bi bi-x-circle-fill"></i></button>
+      }
     </div>
   </div>
 
-  <!-- Shelf Summary -->
-  <div class="summary-section">
-    <h2>SHELF SUMMARY</h2>
-    <div class="summary-grid">
-      <div class="summary-card">
-        <div class="summary-icon">🗄️</div>
-        <div class="summary-content">
-          <div class="summary-label">Total Shelves</div>
-          <div class="summary-value">{{ totalShelves() }}</div>
+  <div class="summary-grid">
+    <div class="summary-card card-total">
+      <div class="card-glow"></div>
+      <div class="card-icon-wrap"><i class="bi bi-layers"></i></div>
+      <div class="card-content">
+        <div class="card-label">Total Shelves</div>
+        <div class="card-value">{{ totalShelves() }}</div>
+        @if (totalShelves() > 0) {
+          <div class="card-trend"><i class="bi bi-building"></i> {{ selectedWarehouseLabel() }}</div>
+        }
+      </div>
+    </div>
+    <div class="summary-card card-occupied">
+      <div class="card-glow"></div>
+      <div class="card-icon-wrap"><i class="bi bi-box-seam"></i></div>
+      <div class="card-content">
+        <div class="card-label">With Stock</div>
+        <div class="card-value">{{ occupiedShelves() }}</div>
+        @if (totalShelves() > 0) {
+          <div class="card-trend"><i class="bi bi-arrow-up"></i> {{ (occupiedShelves() / totalShelves() * 100).toFixed(1) }}% of total</div>
+        }
+      </div>
+    </div>
+    <div class="summary-card card-empty">
+      <div class="card-glow"></div>
+      <div class="card-icon-wrap"><i class="bi bi-inbox"></i></div>
+      <div class="card-content">
+        <div class="card-label">Empty / No Stock</div>
+        <div class="card-value">{{ emptyShelves() }}</div>
+        @if (totalShelves() > 0) {
+          <div class="card-trend"><i class="bi bi-arrow-down"></i> {{ (emptyShelves() / totalShelves() * 100).toFixed(1) }}% of total</div>
+        }
+      </div>
+    </div>
+    <div class="summary-card card-utilization">
+      <div class="card-glow"></div>
+      <div class="card-icon-wrap"><i class="bi bi-graph-up-arrow"></i></div>
+      <div class="card-content">
+        <div class="card-label">Avg. Fill %</div>
+        <div class="card-value">{{ utilizationPct() }}%</div>
+        <div class="card-trend">
+          @if (utilizationPct() >= 60) {
+            <span class="trend-badge trend-good"><i class="bi bi-check-circle-fill"></i> Healthy</span>
+          } @else if (utilizationPct() >= 30) {
+            <span class="trend-badge trend-warn"><i class="bi bi-exclamation-circle-fill"></i> Moderate</span>
+          } @else {
+            <span class="trend-badge trend-bad"><i class="bi bi-x-circle-fill"></i> Low</span>
+          }
         </div>
       </div>
-      <div class="summary-card">
-        <div class="summary-icon">📦</div>
-        <div class="summary-content">
-          <div class="summary-label">With stock</div>
-          <div class="summary-value">{{ occupiedShelves() }}</div>
-        </div>
+    </div>
+    <div class="summary-card card-capacity">
+      <div class="card-glow"></div>
+      <div class="card-icon-wrap"><i class="bi bi-speedometer2"></i></div>
+      <div class="card-content">
+        <div class="card-label">Total Capacity</div>
+        <div class="card-value">{{ totalCapacity() | number }}</div>
+        <div class="card-trend"><i class="bi bi-boxes"></i> Units across all shelves</div>
       </div>
-      <div class="summary-card">
-        <div class="summary-icon">📭</div>
-        <div class="summary-content">
-          <div class="summary-label">Empty / no stock</div>
-          <div class="summary-value">{{ emptyShelves() }}</div>
-        </div>
-      </div>
-      <div class="summary-card">
-        <div class="summary-icon">📊</div>
-        <div class="summary-content">
-          <div class="summary-label">Avg. fill %</div>
-          <div class="summary-value">{{ utilizationPct() }}%</div>
-        </div>
+    </div>
+    <div class="summary-card card-items">
+      <div class="card-glow"></div>
+      <div class="card-icon-wrap"><i class="bi bi-box"></i></div>
+      <div class="card-content">
+        <div class="card-label">Items on Hand</div>
+        <div class="card-value">{{ totalItemsOnHand() | number }}</div>
+        <div class="card-trend"><i class="bi bi-archive"></i> {{ activeShelves() }} active shelves</div>
       </div>
     </div>
   </div>
 
-  <!-- Shelf Visual Map (from live data, first racks) -->
+  <div class="charts-grid charts-grid-3">
+    <div class="chart-card">
+      <div class="chart-header">
+        <h3><i class="bi bi-pie-chart"></i> Occupancy Distribution</h3>
+        <span class="chart-subtitle">Shelf count by occupancy range</span>
+      </div>
+      <div class="chart-body">
+        @if (filteredRows().length) {
+          <div echarts [options]="pieChartOpts()" class="echart-container"></div>
+        } @else {
+          <div class="chart-empty"><i class="bi bi-bar-chart"></i> No data to display</div>
+        }
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header">
+        <h3><i class="bi bi-bar-chart"></i> Aisle Occupancy</h3>
+        <span class="chart-subtitle">Average occupancy per aisle</span>
+      </div>
+      <div class="chart-body">
+        @if (filteredRows().length) {
+          <div echarts [options]="barChartOpts()" class="echart-container"></div>
+        } @else {
+          <div class="chart-empty"><i class="bi bi-bar-chart"></i> No data to display</div>
+        }
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header">
+        <h3><i class="bi bi-speedometer2"></i> Overall Capacity</h3>
+        <span class="chart-subtitle">Warehouse utilization rate</span>
+      </div>
+      <div class="chart-body">
+        @if (filteredRows().length) {
+          <div echarts [options]="gaugeChartOpts()" class="echart-container echart-gauge"></div>
+        } @else {
+          <div class="chart-empty"><i class="bi bi-speedometer2"></i> No data to display</div>
+        }
+      </div>
+    </div>
+  </div>
+
+  <div class="charts-grid charts-grid-2">
+    <div class="chart-card">
+      <div class="chart-header">
+        <h3><i class="bi bi-pie-chart"></i> Category Distribution</h3>
+        <span class="chart-subtitle">Shelves grouped by category</span>
+      </div>
+      <div class="chart-body">
+        @if (filteredRows().length) {
+          <div echarts [options]="categoryPieOpts()" class="echart-container"></div>
+        } @else {
+          <div class="chart-empty"><i class="bi bi-pie-chart"></i> No data to display</div>
+        }
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header">
+        <h3><i class="bi bi-graph-up"></i> Activity Trend</h3>
+        <span class="chart-subtitle">Last 6 months shelf additions</span>
+      </div>
+      <div class="chart-body">
+        <div echarts [options]="lineChartOpts()" class="echart-container"></div>
+      </div>
+    </div>
+  </div>
+
   <div class="map-section">
-    <h3>SHELF SNAPSHOT</h3>
+    <div class="section-header">
+      <h3><i class="bi bi-grid-3x3-gap"></i> Shelf Snapshot</h3>
+      <span class="section-badge">{{ filteredRows().slice(0, 9).length }} of {{ filteredRows().length }} shown</span>
+    </div>
     <div class="shelf-map">
-      <div class="map-header">TOP SHELVES BY CODE</div>
       <div class="rack-row">
-        @for (s of filteredRows().slice(0, 7); track s.id) {
-          <div class="rack-box">
+        @for (s of filteredRows().slice(0, 9); track s.id) {
+          <div class="rack-box" [class.rack-high]="s.occupancy >= 75" [class.rack-mid]="s.occupancy >= 25 && s.occupancy < 75" [class.rack-low]="s.occupancy < 25">
+            <div class="rack-indicator" [style.width.%]="s.occupancy"></div>
             <div class="rack-label">SHELF</div>
             <div class="rack-code">{{ s.code }}</div>
-            <div class="occupancy-bar" [class]="getOccupancyColor(s.occupancy)">
-              {{ getOccupancyBar(s.occupancy) }}
+            <div class="rack-fill-bar">
+              <div class="rack-fill" [style.width.%]="s.occupancy" [class.fill-green]="s.occupancy >= 50" [class.fill-yellow]="s.occupancy >= 25 && s.occupancy < 50" [class.fill-red]="s.occupancy < 25"></div>
             </div>
-            <div class="rack-items">{{ s.items }}</div>
-            <div class="rack-percent">{{ s.occupancy }}%</div>
+            <div class="rack-stats">
+              <span class="rack-items"><i class="bi bi-box"></i> {{ s.items }}</span>
+              <span class="rack-percent">{{ s.occupancy }}%</span>
+            </div>
+            <div class="rack-hover-bar">
+              <div class="rack-hover-fill" [style.width.%]="s.occupancy" [class.fill-green]="s.occupancy >= 50" [class.fill-yellow]="s.occupancy >= 25 && s.occupancy < 50" [class.fill-red]="s.occupancy < 25"></div>
+            </div>
           </div>
         }
       </div>
     </div>
   </div>
 
-  <!-- Shelf List -->
   <div class="shelf-list-section">
-    <h3>SHELF LIST</h3>
-    @if (loading()) {
-      <p class="text-muted">Loading shelves…</p>
-    }
+    <div class="section-header">
+      <h3><i class="bi bi-table"></i> Shelf List</h3>
+      <div class="section-header-right">
+        <span class="section-badge">{{ filteredRows().length }} shelf{{ filteredRows().length !== 1 ? 'ves' : 'f' }}</span>
+      </div>
+    </div>
     <div class="table-container">
       <table class="shelf-table">
         <thead>
           <tr>
             <th>Shelf Code</th>
             <th>Location</th>
-            <th>Items (qty)</th>
-            <th>Value</th>
+            <th>Items</th>
             <th>Occupancy</th>
-            <th>Notes</th>
+            <th>Status</th>
             <th>Actions</th>
           </tr>
         </thead>
         <tbody>
           @for (shelf of filteredRows(); track shelf.id) {
             <tr>
-              <td>{{ shelf.code }}</td>
-              <td>{{ shelf.location }}</td>
-              <td>{{ shelf.items }}</td>
-              <td>—</td>
               <td>
-                <div class="occupancy-display">
-                  <span class="occupancy-bar-text">{{ getOccupancyBar(shelf.occupancy) }}</span>
+                <span class="shelf-code-badge">{{ shelf.code }}</span>
+              </td>
+              <td class="location-cell">
+                <i class="bi bi-geo-alt"></i>
+                {{ shelf.location }}
+              </td>
+              <td>
+                <span class="items-count">{{ shelf.items }}</span>
+              </td>
+              <td>
+                <div class="occupancy-cell">
+                  <div class="occupancy-track" [class.track-green]="shelf.occupancy >= 50" [class.track-yellow]="shelf.occupancy >= 25 && shelf.occupancy < 50" [class.track-red]="shelf.occupancy < 25">
+                    <div class="occupancy-fill" [style.width.%]="shelf.occupancy" [class.fill-green]="shelf.occupancy >= 50" [class.fill-yellow]="shelf.occupancy >= 25 && shelf.occupancy < 50" [class.fill-red]="shelf.occupancy < 25"></div>
+                  </div>
+                  <span class="occupancy-pct" [class.text-green]="shelf.occupancy >= 50" [class.text-yellow]="shelf.occupancy >= 25 && shelf.occupancy < 50" [class.text-red]="shelf.occupancy < 25">{{ shelf.occupancy }}%</span>
                 </div>
               </td>
-              <td>{{ shelf.category }}</td>
+              <td>
+                <span class="status-badge" [class.status-active]="shelf.isActive" [class.status-inactive]="!shelf.isActive">
+                  <span class="status-dot"></span>
+                  {{ shelf.isActive ? 'Active' : 'Inactive' }}
+                </span>
+              </td>
               <td>
                 <div class="actions-cell">
-                  <button type="button" class="action-btn" (click)="viewShelf(shelf)" title="View">
-                    <i class="bi bi-eye"></i>
-                  </button>
-                  <button type="button" class="action-btn" (click)="editShelf(shelf)" title="Details">
-                    <i class="bi bi-pencil"></i>
-                  </button>
-                  <button type="button" class="action-btn" (click)="printShelf(shelf)" title="Print">
-                    <i class="bi bi-printer"></i>
-                  </button>
-                  <button type="button" class="action-btn" (click)="deleteShelf(shelf)" title="Delete">
-                    <i class="bi bi-trash"></i>
-                  </button>
+                  <button type="button" class="action-btn action-view" (click)="viewShelf(shelf)" title="View"><i class="bi bi-eye"></i></button>
+                  <button type="button" class="action-btn action-edit" (click)="editShelf(shelf)" title="Details"><i class="bi bi-pencil"></i></button>
+                  <button type="button" class="action-btn action-print" (click)="printShelf(shelf)" title="Print"><i class="bi bi-printer"></i></button>
+                  <button type="button" class="action-btn action-delete" (click)="deleteShelf(shelf)" title="Delete"><i class="bi bi-trash"></i></button>
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="6">
+                <div class="empty-state">
+                  <div class="empty-icon"><i class="bi bi-inbox"></i></div>
+                  <div class="empty-text">No shelves found matching your criteria.</div>
+                  @if (searchTerm() || aisleFilter() !== 'All Aisles') {
+                    <button type="button" class="empty-reset" (click)="onSearchChange(''); onAisleChange('All Aisles')"><i class="bi bi-arrow-counterclockwise"></i> Clear filters</button>
+                  }
                 </div>
               </td>
             </tr>
@@ -146,82 +317,88 @@
       </table>
     </div>
     <div class="pagination-bar">
-      <div class="pagination-info">Showing {{ filteredRows().length }} shelf(es)</div>
+      <div class="pagination-info">Showing {{ filteredRows().length }} shelf{{ filteredRows().length !== 1 ? 'ves' : 'f' }}</div>
     </div>
   </div>
 
-  <!-- Bulk Actions -->
   <div class="bulk-actions-section">
-    <h3>BULK ACTIONS</h3>
+    <div class="bulk-header">
+      <div class="bulk-header-icon"><i class="bi bi-tools"></i></div>
+      <span>Bulk Actions</span>
+    </div>
     <div class="bulk-actions">
-      <button type="button" class="btn btn-secondary" (click)="openAddShelfModal()" [disabled]="saving() || !selectedWarehouseId()">
-        <i class="bi bi-plus"></i> Add New Shelf
+      <button type="button" class="bulk-btn bulk-add" (click)="openAddShelfModal()" [disabled]="saving() || !selectedWarehouseId()">
+        <i class="bi bi-plus-lg"></i> Add New Shelf
       </button>
-      <button class="btn btn-secondary" (click)="openRearrangeModal()">
+      <button class="bulk-btn bulk-rearrange" (click)="openRearrangeModal()">
         <i class="bi bi-arrow-repeat"></i> Rearrange Shelves
       </button>
-      <button class="btn btn-secondary" (click)="openMoveItemsModal()">
-        <i class="bi bi-box"></i> Move Items
+      <button class="bulk-btn bulk-move" (click)="openMoveItemsModal()">
+        <i class="bi bi-boxes"></i> Move Items
       </button>
-      <button class="btn btn-secondary">
-        <i class="bi bi-printer"></i> Print QR Codes
+      <button class="bulk-btn bulk-print">
+        <i class="bi bi-upc-scan"></i> Print QR Codes
       </button>
-      <button class="btn btn-secondary">
+      <button class="bulk-btn bulk-export">
         <i class="bi bi-download"></i> Export List
       </button>
     </div>
   </div>
+  }
 </div>
 
-<!-- Add New Shelf Modal -->
 @if (showAddShelfModal()) {
   <div class="modal-overlay" (click)="closeAddShelfModal()">
-    <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-content glass-modal" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <h3>Add New Shelf Location</h3>
-        <button type="button" class="btn-close" (click)="closeAddShelfModal()">
+        <div class="modal-header-left">
+          <div class="modal-icon"><i class="bi bi-plus-circle"></i></div>
+          <h3>Add New Shelf Location</h3>
+        </div>
+        <button type="button" class="modal-close" (click)="closeAddShelfModal()">
           <i class="bi bi-x-lg"></i>
         </button>
       </div>
       <div class="modal-body">
         <div class="warehouse-info">
-          <span>Warehouse ID: {{ selectedWarehouseId() }}</span>
+          <i class="bi bi-building"></i>
+          <span>Warehouse: <strong>{{ selectedWarehouseLabel() }}</strong></span>
         </div>
         <div class="form-section">
-          <h4>SHELF LOCATION DETAILS</h4>
+          <h4><i class="bi bi-geo-alt"></i> SHELF LOCATION DETAILS</h4>
           <div class="form-grid">
             <div class="form-field">
-              <label>Shelf code *</label>
+              <label>Shelf code <span class="required">*</span></label>
               <input type="text" name="shelfCode" [(ngModel)]="addForm.shelfCode" placeholder="e.g. A-01-R-01-S-01" />
             </div>
             <div class="form-field">
-              <label>Shelf name *</label>
+              <label>Shelf name</label>
               <input type="text" name="shelfName" [(ngModel)]="addForm.shelfName" placeholder="Display name" />
             </div>
             <div class="form-field">
               <label>Aisle</label>
-              <input type="text" name="aisle" [(ngModel)]="addForm.aisle" />
+              <input type="text" name="aisle" [(ngModel)]="addForm.aisle" placeholder="e.g. A-01" />
             </div>
             <div class="form-field">
               <label>Section</label>
-              <input type="text" name="section" [(ngModel)]="addForm.section" />
+              <input type="text" name="section" [(ngModel)]="addForm.section" placeholder="e.g. R-01" />
             </div>
             <div class="form-field">
               <label>Level</label>
-              <input type="text" name="level" [(ngModel)]="addForm.level" />
+              <input type="text" name="level" [(ngModel)]="addForm.level" placeholder="e.g. L-01" />
             </div>
             <div class="form-field">
               <label>Position</label>
-              <input type="text" name="position" [(ngModel)]="addForm.position" />
+              <input type="text" name="position" [(ngModel)]="addForm.position" placeholder="e.g. P-01" />
             </div>
           </div>
-          <div class="form-field">
+          <div class="form-field form-field-full">
             <label>Description</label>
-            <input type="text" name="description" [(ngModel)]="addForm.description" />
+            <input type="text" name="description" [(ngModel)]="addForm.description" placeholder="Optional description" />
           </div>
         </div>
         <div class="form-section">
-          <h4>CAPACITY</h4>
+          <h4><i class="bi bi-speedometer2"></i> CAPACITY</h4>
           <div class="form-grid">
             <div class="form-field">
               <label>Max capacity (units)</label>
@@ -234,63 +411,86 @@
         <button type="button" class="btn btn-secondary" (click)="closeAddShelfModal()" [disabled]="saving()">Cancel</button>
         <button type="button" class="btn btn-primary" (click)="createShelf()" [disabled]="saving()">
           @if (saving()) { <span class="spinner-border spinner-border-sm me-1"></span> }
-          Create Shelf
+          <i class="bi bi-check-lg"></i> Create Shelf
         </button>
       </div>
     </div>
   </div>
 }
 
-<!-- Shelf Details Modal -->
 @if (showShelfDetailsModal() && selectedShelf()) {
   <div class="modal-overlay" (click)="closeShelfDetailsModal()">
-    <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-content glass-modal" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <h3>Shelf: {{ selectedShelf()!.code }}</h3>
-        <button type="button" class="btn-close" (click)="closeShelfDetailsModal()">
+        <div class="modal-header-left">
+          <div class="modal-icon"><i class="bi bi-info-circle"></i></div>
+          <h3>Shelf: {{ selectedShelf()!.code }}</h3>
+        </div>
+        <button type="button" class="modal-close" (click)="closeShelfDetailsModal()">
           <i class="bi bi-x-lg"></i>
         </button>
       </div>
       <div class="modal-body">
+        <div class="shelf-detail-hero">
+          <div class="detail-badge" [class.active-badge]="selectedShelf()!.isActive" [class.inactive-badge]="!selectedShelf()!.isActive">
+            <span class="badge-dot" [class.dot-active]="selectedShelf()!.isActive" [class.dot-inactive]="!selectedShelf()!.isActive"></span>
+            {{ selectedShelf()!.isActive ? 'Active' : 'Inactive' }}
+          </div>
+        </div>
         <div class="shelf-info-grid">
           <div class="detail-item">
-            <label>Location:</label>
+            <label><i class="bi bi-geo-alt"></i> Location</label>
             <span>{{ selectedShelf()!.location }}</span>
           </div>
           <div class="detail-item">
-            <label>Items on hand:</label>
+            <label><i class="bi bi-box"></i> Items on hand</label>
             <span>{{ selectedShelf()!.items }}</span>
           </div>
           <div class="detail-item">
-            <label>Capacity:</label>
+            <label><i class="bi bi-speedometer2"></i> Capacity</label>
             <span>{{ selectedShelf()!.raw.capacity ?? '—' }}</span>
           </div>
           <div class="detail-item">
-            <label>Active:</label>
-            <span>{{ selectedShelf()!.isActive ? 'Yes' : 'No' }}</span>
+            <label><i class="bi bi-percent"></i> Occupancy</label>
+            <span>
+              <div class="occupancy-track-sm" [class.track-green]="selectedShelf()!.occupancy >= 50" [class.track-yellow]="selectedShelf()!.occupancy >= 25 && selectedShelf()!.occupancy < 50" [class.track-red]="selectedShelf()!.occupancy < 25">
+                <div class="occupancy-fill-sm" [style.width.%]="selectedShelf()!.occupancy" [class.fill-green]="selectedShelf()!.occupancy >= 50" [class.fill-yellow]="selectedShelf()!.occupancy >= 25 && selectedShelf()!.occupancy < 50" [class.fill-red]="selectedShelf()!.occupancy < 25"></div>
+              </div>
+              {{ selectedShelf()!.occupancy }}%
+            </span>
+          </div>
+          <div class="detail-item detail-item-full">
+            <label><i class="bi bi-info-circle"></i> Description</label>
+            <span>{{ selectedShelf()!.raw.description || '—' }}</span>
+          </div>
+          <div class="detail-item">
+            <label><i class="bi bi-upc-scan"></i> Shelf Code</label>
+            <span class="detail-mono">{{ selectedShelf()!.code }}</span>
           </div>
         </div>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-primary" (click)="closeShelfDetailsModal()">Close</button>
+        <button type="button" class="btn btn-primary" (click)="closeShelfDetailsModal()"><i class="bi bi-check-lg"></i> Close</button>
       </div>
     </div>
   </div>
 }
 
-<!-- Rearrange Shelves Modal -->
 @if (showRearrangeModal()) {
   <div class="modal-overlay" (click)="closeRearrangeModal()">
-    <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-content glass-modal modal-lg" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <h3>Rearrange Shelves - {{ selectedWarehouseLabel() }}</h3>
-        <button class="btn-close" (click)="closeRearrangeModal()">
+        <div class="modal-header-left">
+          <div class="modal-icon"><i class="bi bi-arrow-repeat"></i></div>
+          <h3>Rearrange Shelves — {{ selectedWarehouseLabel() }}</h3>
+        </div>
+        <button class="modal-close" (click)="closeRearrangeModal()">
           <i class="bi bi-x-lg"></i>
         </button>
       </div>
       <div class="modal-body">
         <div class="drag-drop-section">
-          <h4>DRAG & DROP TO REARRANGE</h4>
+          <h4><i class="bi bi-grid-3x3"></i> DRAG & DROP TO REARRANGE</h4>
           <div class="rack-grid">
             @for (i of [1,2,3,4]; track i) {
               <div class="drag-rack">
@@ -304,19 +504,19 @@
           </div>
         </div>
         <div class="rearrange-options">
-          <h4>REARRANGEMENT OPTIONS</h4>
+          <h4><i class="bi bi-sliders"></i> REARRANGEMENT OPTIONS</h4>
           <div class="radio-group">
             <label class="radio-label">
-              <input type="radio" name="rearrange" checked> Manual Drag & Drop (Current)
+              <input type="radio" name="rearrange" checked /> <span class="radio-custom"></span> Manual Drag & Drop
             </label>
             <label class="radio-label">
-              <input type="radio" name="rearrange"> Auto-optimize by Category
+              <input type="radio" name="rearrange" /> <span class="radio-custom"></span> Auto-optimize by Category
             </label>
             <label class="radio-label">
-              <input type="radio" name="rearrange"> Auto-optimize by Frequency
+              <input type="radio" name="rearrange" /> <span class="radio-custom"></span> Auto-optimize by Frequency
             </label>
             <label class="radio-label">
-              <input type="radio" name="rearrange"> Reset to Original Layout
+              <input type="radio" name="rearrange" /> <span class="radio-custom"></span> Reset to Original Layout
             </label>
           </div>
         </div>
@@ -324,25 +524,27 @@
       <div class="modal-footer">
         <button class="btn btn-secondary" (click)="closeRearrangeModal()">Cancel</button>
         <button class="btn btn-secondary">Preview Changes</button>
-        <button class="btn btn-primary" (click)="rearrangeShelves()">Apply Layout</button>
+        <button class="btn btn-primary" (click)="rearrangeShelves()"><i class="bi bi-check-lg"></i> Apply Layout</button>
       </div>
     </div>
   </div>
 }
 
-<!-- Move Items Modal -->
 @if (showMoveItemsModal()) {
   <div class="modal-overlay" (click)="closeMoveItemsModal()">
-    <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-content glass-modal" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <h3>Move Items Between Shelves</h3>
-        <button class="btn-close" (click)="closeMoveItemsModal()">
+        <div class="modal-header-left">
+          <div class="modal-icon"><i class="bi bi-boxes"></i></div>
+          <h3>Move Items Between Shelves</h3>
+        </div>
+        <button class="modal-close" (click)="closeMoveItemsModal()">
           <i class="bi bi-x-lg"></i>
         </button>
       </div>
       <div class="modal-body">
         <div class="source-section">
-          <h4>SELECT SOURCE SHELF</h4>
+          <h4><i class="bi bi-box-arrow-up"></i> SELECT SOURCE SHELF</h4>
           <div class="form-field">
             <label>Source Shelf:</label>
             <select>
@@ -353,21 +555,21 @@
           </div>
         </div>
         <div class="items-selection">
-          <h4>ITEMS ON SOURCE SHELF</h4>
+          <h4><i class="bi bi-list-check"></i> ITEMS ON SOURCE SHELF</h4>
           <div class="checkbox-group">
             <label class="checkbox-label">
-              <input type="checkbox" checked> Dell XPS Laptop (LAP-001) - 35 units
+              <input type="checkbox" checked /> <span class="checkbox-custom"></span> Dell XPS Laptop (LAP-001) — 35 units
             </label>
             <label class="checkbox-label">
-              <input type="checkbox"> HP Monitor (MON-002) - 15 units
+              <input type="checkbox" /> <span class="checkbox-custom"></span> HP Monitor (MON-002) — 15 units
             </label>
             <label class="checkbox-label">
-              <input type="checkbox" checked> USB Cables (CAB-004) - 50 units
+              <input type="checkbox" checked /> <span class="checkbox-custom"></span> USB Cables (CAB-004) — 50 units
             </label>
           </div>
         </div>
         <div class="destination-section">
-          <h4>SELECT DESTINATION SHELF</h4>
+          <h4><i class="bi bi-box-arrow-in-down"></i> SELECT DESTINATION SHELF</h4>
           <div class="form-field">
             <label>Destination Shelf:</label>
             <select>
@@ -377,11 +579,12 @@
             </select>
           </div>
           <div class="capacity-info">
+            <i class="bi bi-speedometer2"></i>
             <span>Available Capacity: 266 units (500 capacity - 234 used)</span>
           </div>
         </div>
         <div class="move-summary">
-          <h4>MOVE SUMMARY</h4>
+          <h4><i class="bi bi-calculator"></i> MOVE SUMMARY</h4>
           <div class="summary-list">
             <div class="summary-item">
               <label>Items to move:</label>
@@ -400,7 +603,7 @@
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary" (click)="closeMoveItemsModal()">Cancel</button>
-        <button class="btn btn-primary" (click)="moveItems()">Move Items</button>
+        <button class="btn btn-primary" (click)="moveItems()"><i class="bi bi-check-lg"></i> Move Items</button>
       </div>
     </div>
   </div>

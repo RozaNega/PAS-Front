@@ -1,14 +1,16 @@
 {
   "/api": {
-    "target": "http://localhost:4000",
+    "target": "http://localhost:5028",
     "secure": false,
     "changeOrigin": true,
-    "logLevel": "debug"
+    "logLevel": "debug",
+    "followRedirects": false
   },
   "/hubs": {
-    "target": "http://localhost:4000",
+    "target": "http://localhost:5028",
     "secure": false,
     "changeOrigin": true,
-    "ws": true
+    "ws": true,
+    "logLevel": "debug"
   }
 }

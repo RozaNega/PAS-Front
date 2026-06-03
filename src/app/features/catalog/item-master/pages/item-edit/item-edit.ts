@@ -50,7 +50,7 @@ export class ItemEdit {
       }
 
       if (!this.selectedItemId()) {
-        this.selectedItemId.set(items[0].id);
+        this.selectedItemId.set(String(items[0].id));
       }
 
       const selected = this.selectedItem();
@@ -59,7 +59,7 @@ export class ItemEdit {
         this.editForm.setValue({
           sku: selected.sku,
           itemName: selected.itemName,
-          categoryId: selected.categoryId ?? '',
+          categoryId: String(selected['categoryId'] ?? ''),
           categoryName: selected.categoryName ?? '',
           unitOfMeasure: selected.unitOfMeasure,
           stockQuantity: selected.stockQuantity ?? 0,

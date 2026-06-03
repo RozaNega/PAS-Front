@@ -11,6 +11,6 @@ export class ItemService {
   constructor(private apiService: ApiService) {}
 
   getItems(params?: any): Observable<ApiResponse<PaginatedResult<any>>> {
-    return this.apiService.get<ApiResponse<PaginatedResult<any>>>(API_ENDPOINTS.ITEMS.GET_ALL, params);
+    return this.apiService.get<PaginatedResult<any>>(API_ENDPOINTS.ITEMS.GET_ALL, params);
   }
 }

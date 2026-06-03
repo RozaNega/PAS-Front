@@ -1,9 +1,16 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { NgxEchartsDirective, provideEchartsCore } from 'ngx-echarts';
+import * as echarts from 'echarts/core';
+import { BarChart, PieChart, LineChart, GaugeChart } from 'echarts/charts';
+import { GridComponent, LegendComponent, TooltipComponent, TitleComponent } from 'echarts/components';
+import { CanvasRenderer } from 'echarts/renderers';
 import { ShelvesService, ShelfLocationDto, CreateShelfLocationRequest } from '../../../../core/services/shelves.service';
 import { WarehousesService, WarehouseDto } from '../../../../core/services/warehouses.service';
 import { InventoryService } from '../../../../core/services/inventory.service';
+
+echarts.use([PieChart, BarChart, LineChart, GaugeChart, TooltipComponent, GridComponent, LegendComponent, TitleComponent, CanvasRenderer]);
 
 export interface ShelfRow {
   id: string;
@@ -20,9 +27,11 @@ export interface ShelfRow {
 @Component({
   selector: 'app-shelf-management',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, NgxEchartsDirective],
+  providers: [provideEchartsCore({ echarts })],
   templateUrl: './shelf-management.component.html',
   styleUrls: ['./shelf-management.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ShelfManagementComponent implements OnInit {
   private readonly shelvesService = inject(ShelvesService);
@@ -77,6 +86,164 @@ export class ShelfManagementComponent implements OnInit {
     if (!rows.length) return 0;
     const sum = rows.reduce((a, r) => a + r.occupancy, 0);
     return Math.round(sum / rows.length);
+  });
+
+  readonly totalCapacity = computed(() =>
+    this.shelfRows().reduce((a, r) => a + (r.raw.capacity ?? 0), 0),
+  );
+
+  readonly totalItemsOnHand = computed(() =>
+    this.shelfRows().reduce((a, r) => a + r.items, 0),
+  );
+
+  readonly activeShelves = computed(() =>
+    this.shelfRows().filter(r => r.isActive).length,
+  );
+
+  readonly categoryBreakdown = computed(() => {
+    const map: Record<string, number> = {};
+    for (const r of this.shelfRows()) {
+      const cat = r.category && r.category !== '—' ? r.category : 'Uncategorized';
+      map[cat] = (map[cat] || 0) + 1;
+    }
+    return map;
+  });
+
+  readonly occupancyDistribution = computed(() => {
+    const rows = this.filteredRows();
+    const buckets = [0, 0, 0, 0];
+    for (const r of rows) {
+      const pct = r.occupancy;
+      if (pct <= 25) buckets[0]++;
+      else if (pct <= 50) buckets[1]++;
+      else if (pct <= 75) buckets[2]++;
+      else buckets[3]++;
+    }
+    return buckets;
+  });
+
+  readonly aisleNames = computed(() => {
+    const names = new Set<string>();
+    for (const r of this.filteredRows()) {
+      const a = r.raw.aisle;
+      if (a) names.add(a);
+    }
+    return Array.from(names).sort();
+  });
+
+  readonly aisleOccupancy = computed(() => {
+    const map = new Map<string, { sum: number; count: number }>();
+    for (const r of this.filteredRows()) {
+      const aisle = r.raw.aisle || 'Unknown';
+      const cur = map.get(aisle) ?? { sum: 0, count: 0 };
+      cur.sum += r.occupancy;
+      cur.count++;
+      map.set(aisle, cur);
+    }
+    return Array.from(map.entries()).map(([name, { sum, count }]) => ({
+      name,
+      avg: Math.round(sum / count),
+    }));
+  });
+
+  readonly pieChartOpts = computed<Record<string, unknown>>(() => {
+    const dist = this.occupancyDistribution();
+    const total = dist.reduce((a, b) => a + b, 0);
+    return {
+      tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+      graphic: [{
+        type: 'text', left: 'center', top: 'center',
+        style: { text: `${total}`, fill: '#1e293b', fontSize: 24, fontWeight: 800, fontFamily: 'Inter, sans-serif' },
+      }],
+      series: [{
+        type: 'pie', radius: ['50%', '75%'], center: ['50%', '50%'],
+        avoidLabelOverlap: false,
+        label: { show: true, position: 'outside', formatter: '{b}\n{d}%', color: '#94a3b8', fontSize: 11, lineHeight: 16, fontWeight: 600 },
+        emphasis: { itemStyle: { shadowBlur: 15, shadowOffsetX: 0, shadowColor: 'rgba(0,0,0,0.2)' } },
+        animationDuration: 1000, animationEasing: 'cubicOut',
+        data: [
+          { name: '0-25%', value: dist[0], itemStyle: { color: new echarts.graphic.LinearGradient(0, 0, 1, 1, [{ offset: 0, color: '#ef4444' }, { offset: 1, color: '#dc2626' }]) } },
+          { name: '25-50%', value: dist[1], itemStyle: { color: new echarts.graphic.LinearGradient(0, 0, 1, 1, [{ offset: 0, color: '#f59e0b' }, { offset: 1, color: '#d97706' }]) } },
+          { name: '50-75%', value: dist[2], itemStyle: { color: new echarts.graphic.LinearGradient(0, 0, 1, 1, [{ offset: 0, color: '#3b82f6' }, { offset: 1, color: '#2563eb' }]) } },
+          { name: '75-100%', value: dist[3], itemStyle: { color: new echarts.graphic.LinearGradient(0, 0, 1, 1, [{ offset: 0, color: '#10b981' }, { offset: 1, color: '#059669' }]) } },
+        ],
+      }],
+    };
+  });
+
+  readonly barChartOpts = computed<Record<string, unknown>>(() => {
+    const data = this.aisleOccupancy();
+    return {
+      tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, formatter: '{b}: {c}%' },
+      grid: { left: '3%', right: '5%', bottom: '15%', top: '8%', containLabel: true },
+      xAxis: { type: 'category', data: data.map(d => d.name), axisLabel: { color: '#94a3b8', fontWeight: 600, rotate: data.length > 4 ? 25 : 0 }, axisLine: { show: false }, axisTick: { show: false } },
+      yAxis: { type: 'value', max: 100, axisLabel: { color: '#94a3b8', formatter: '{value}%' }, splitLine: { lineStyle: { color: 'rgba(148,163,184,0.12)' } } },
+      series: [{
+        type: 'bar', data: data.map(d => ({
+          value: d.avg,
+          itemStyle: { color: d.avg >= 75 ? new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: '#10b981' }, { offset: 1, color: '#059669' }]) : d.avg >= 50 ? new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: '#3b82f6' }, { offset: 1, color: '#2563eb' }]) : d.avg >= 25 ? new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: '#f59e0b' }, { offset: 1, color: '#d97706' }]) : new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: '#ef4444' }, { offset: 1, color: '#dc2626' }]), borderRadius: [6, 6, 0, 0] },
+        })),
+        barWidth: '55%', animationDuration: 800, animationEasing: 'elasticOut',
+      }],
+    };
+  });
+
+  readonly gaugeChartOpts = computed<Record<string, unknown>>(() => {
+    const pct = this.utilizationPct();
+    return {
+      tooltip: { formatter: '{b}: {c}%' },
+      series: [{
+        type: 'gauge', startAngle: 210, endAngle: -30,
+        center: ['50%', '55%'], radius: '85%',
+        min: 0, max: 100,
+        progress: { show: true, width: 10, itemStyle: { color: pct >= 75 ? '#10b981' : pct >= 50 ? '#3b82f6' : pct >= 25 ? '#f59e0b' : '#ef4444' } },
+        axisLine: { lineStyle: { width: 10, color: [[0.25, '#ef4444'], [0.5, '#f59e0b'], [0.75, '#3b82f6'], [1, '#10b981']] } },
+        axisTick: { show: false },
+        splitLine: { length: 8, lineStyle: { width: 2, color: '#475569' } },
+        axisLabel: { color: '#94a3b8', fontSize: 10, distance: 20 },
+        pointer: { show: true, length: '60%', width: 4, itemStyle: { color: '#1e293b' } },
+        detail: { formatter: '{value}%', fontSize: 18, fontWeight: 700, color: '#1e293b', offsetCenter: [0, '60%'] },
+        data: [{ value: pct, name: 'Utilization' }],
+        animationDuration: 1200, animationEasing: 'cubicOut',
+      }],
+    };
+  });
+
+  readonly lineChartOpts = computed<Record<string, unknown>>(() => {
+    return {
+      tooltip: { trigger: 'axis', formatter: '{b}: {c} shelves' },
+      grid: { left: '3%', right: '4%', bottom: '12%', top: '8%', containLabel: true },
+      xAxis: { type: 'category', data: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'], axisLabel: { color: '#94a3b8', fontWeight: 600 }, axisLine: { show: false }, axisTick: { show: false } },
+      yAxis: { type: 'value', axisLabel: { color: '#94a3b8' }, splitLine: { lineStyle: { color: 'rgba(148,163,184,0.12)' } } },
+      series: [{
+        type: 'line', data: [12, 19, 8, 15, 22, 18],
+        smooth: true,
+        lineStyle: { width: 3, color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [{ offset: 0, color: '#6366f1' }, { offset: 1, color: '#8b5cf6' }]) },
+        areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: 'rgba(99,102,241,0.3)' }, { offset: 1, color: 'rgba(99,102,241,0.02)' }]) },
+        symbol: 'circle', symbolSize: 8,
+        itemStyle: { color: '#6366f1' },
+        animationDuration: 1000, animationEasing: 'cubicOut',
+      }],
+    };
+  });
+
+  readonly categoryPieOpts = computed<Record<string, unknown>>(() => {
+    const map = this.categoryBreakdown();
+    const entries = Object.entries(map);
+    const palette = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#f97316', '#84cc16'];
+    return {
+      tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+      series: [{
+        type: 'pie', radius: ['45%', '70%'],
+        label: { show: true, position: 'outside', formatter: '{b}', color: '#94a3b8', fontSize: 11, fontWeight: 600 },
+        emphasis: { itemStyle: { shadowBlur: 10, shadowColor: 'rgba(0,0,0,0.2)' } },
+        data: entries.map(([name, count], i) => ({
+          name, value: count,
+          itemStyle: { color: palette[i % palette.length] },
+        })),
+        animationDuration: 800, animationEasing: 'cubicOut',
+      }],
+    };
   });
 
   filteredRows = computed(() => {

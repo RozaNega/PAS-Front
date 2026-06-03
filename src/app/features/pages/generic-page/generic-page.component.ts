@@ -1,16 +1,25 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal, computed, viewChild, ElementRef, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { NgxEchartsDirective, provideEchartsCore } from 'ngx-echarts';
+import * as echarts from 'echarts/core';
+import { BarChart, LineChart } from 'echarts/charts';
+import { GridComponent, TooltipComponent } from 'echarts/components';
+import { CanvasRenderer } from 'echarts/renderers';
+import jsQR from 'jsqr';
+
+echarts.use([BarChart, LineChart, TooltipComponent, GridComponent, CanvasRenderer]);
 
 @Component({
   selector: 'app-generic-page',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, NgxEchartsDirective],
+  providers: [provideEchartsCore({ echarts })],
   templateUrl: './generic-page.component.html',
   styleUrl: './generic-page.component.scss',
 })
-export class GenericPageComponent {
+export class GenericPageComponent implements OnDestroy {
   readonly route = inject(ActivatedRoute);
   readonly router = inject(Router);
 
@@ -50,8 +59,65 @@ export class GenericPageComponent {
   ];
 
   isScanning = false;
+  isStreaming = false;
   manualQrCode = '';
   selectedScanId: number | null = null;
+  quickScanSuggestions = ['SKU-001', 'ITEM-123', 'BOX-456', 'TAG-789'];
+  avgScanTime = '0.8s';
+  mediaStream: MediaStream | null = null;
+  private scanInterval: ReturnType<typeof setInterval> | null = null;
+  readonly cameraVideo = viewChild<ElementRef<HTMLVideoElement>>('cameraVideo');
+
+  scanCount = signal(0);
+  scanResult = signal<any | null>(null);
+  scanErrors = signal(0);
+  totalScans = signal(0);
+  scanHistory = signal<number[]>([12, 18, 9, 22, 15, 20, 10]);
+  scanAnimation = signal<'idle' | 'success' | 'error'>('idle');
+  scanTimeline = signal<{ type: 'success' | 'error'; itemName: string; time: string }[]>([]);
+  scanTimes: number[] = [];
+
+  readonly scanSuccessRate = computed(() =>
+    this.totalScans() > 0
+      ? Math.round(((this.totalScans() - this.scanErrors()) / this.totalScans()) * 100)
+      : 100
+  );
+
+  readonly statusText = computed(() => {
+    if (this.scanAnimation() === 'success') return 'Found';
+    if (this.isScanning) return 'Scanning';
+    return 'Standby';
+  });
+
+  readonly scanChartOption = computed(() => ({
+    tooltip: { trigger: 'axis' },
+    xAxis: {
+      type: 'category',
+      data: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+      axisLabel: { color: '#94a3b8' },
+    },
+    yAxis: {
+      type: 'value',
+      axisLabel: { color: '#94a3b8' },
+      splitLine: { lineStyle: { color: '#334155', type: 'dashed' } },
+    },
+    series: [{
+      data: this.scanHistory(),
+      type: 'line',
+      smooth: true,
+      symbol: 'circle',
+      symbolSize: 8,
+      lineStyle: { width: 3, color: '#3b82f6' },
+      areaStyle: {
+        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+          { offset: 0, color: 'rgba(59, 130, 246, 0.5)' },
+          { offset: 1, color: 'rgba(59, 130, 246, 0.02)' },
+        ]),
+      },
+      itemStyle: { color: '#3b82f6' },
+    }],
+    grid: { left: '10%', right: '10%', top: '15%', bottom: '15%' },
+  }));
 
   // Backup data
   lastBackupDate = 'April 30, 2026 at 2:00 AM';
@@ -122,56 +188,320 @@ export class GenericPageComponent {
     }
   }
 
-  toggleCamera(): void {
-    this.isScanning = !this.isScanning;
+  async toggleCamera(): Promise<void> {
+    if (this.isStreaming) {
+      this.stopCamera();
+    } else {
+      await this.startCamera();
+    }
+  }
+
+  private async startCamera(): Promise<void> {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      this.showToast('Camera not available (insecure context or no browser support)', 'error');
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: { ideal: 640 }, height: { ideal: 480 } },
+        audio: false,
+      });
+      this.mediaStream = stream;
+
+      const videoEl = this.cameraVideo()?.nativeElement;
+      if (videoEl) {
+        videoEl.srcObject = stream;
+      }
+
+      this.isScanning = true;
+      this.isStreaming = true;
+      this.showToast('Camera activated', 'success');
+    } catch (err: any) {
+      this.showToast(`Camera error: ${err?.message || err?.name || 'denied'}`, 'error');
+      this.isScanning = false;
+      this.isStreaming = false;
+    }
+  }
+
+  private stopCamera(): void {
+    if (this.mediaStream) {
+      this.mediaStream.getTracks().forEach(t => t.stop());
+      this.mediaStream = null;
+    }
+    const videoEl = this.cameraVideo()?.nativeElement;
+    if (videoEl) {
+      videoEl.srcObject = null;
+    }
+    this.stopScanning();
+    this.isScanning = false;
+    this.isStreaming = false;
+    this.scanAnimation.set('idle');
+  }
+
+  onVideoReady(): void {
+    this.startScanning();
+  }
+
+  private startScanning(): void {
+    this.stopScanning();
+    this.scanInterval = setInterval(() => this.scanFrame(), 300);
+  }
+
+  private stopScanning(): void {
+    if (this.scanInterval) {
+      clearInterval(this.scanInterval);
+      this.scanInterval = null;
+    }
+  }
+
+  private scanFrame(): void {
+    const videoEl = this.cameraVideo()?.nativeElement;
+    if (!videoEl || videoEl.readyState < 2) return;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = videoEl.videoWidth;
+    canvas.height = videoEl.videoHeight;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'dontInvert' });
+
+    if (code) {
+      this.stopScanning();
+      this.handleQrResult(code.data);
+    }
+  }
+
+  private handleQrResult(data: string): void {
+    const startTime = performance.now();
+    const qr = data.trim();
+    const idx = Math.abs(this.hashCode(qr)) % this.itemsDb.length;
+    this.scanCount.update(c => c + 1);
+    this.totalScans.update(t => t + 1);
+    this.scanAnimation.set('success');
+    const result = {
+      id: Date.now(),
+      itemName: this.itemsDb[idx],
+      sku: qr.toUpperCase(),
+      location: this.locationsDb[idx],
+      time: 'Just now',
+      status: 'Found',
+      quantity: Math.floor(Math.random() * 50) + 1,
+    };
+    this.scanResult.set(result);
+    this.selectedScanId = result.id;
+    this.scanTimeline.update(list => [{ type: 'success' as const, itemName: result.itemName, time: 'Just now' }, ...list].slice(0, 5));
+
+    const elapsed = ((performance.now() - startTime) / 1000);
+    this.scanTimes.push(elapsed);
+    if (this.scanTimes.length > 50) this.scanTimes.shift();
+    const avg = this.scanTimes.reduce((a, b) => a + b, 0) / this.scanTimes.length;
+    this.avgScanTime = avg < 1 ? `${Math.round(avg * 10) / 10}s` : `${Math.round(avg)}s`;
+
+    this.showToast(`QR Found: ${result.itemName}`, 'success');
+    setTimeout(() => {
+      this.scanAnimation.set('idle');
+      if (this.isStreaming) this.startScanning();
+    }, 2000);
   }
 
   clearScanner(): void {
+    this.stopCamera();
     this.manualQrCode = '';
     this.selectedScanId = null;
-    this.isScanning = false;
+    this.scanResult.set(null);
+    this.scanAnimation.set('idle');
   }
+
+  clearScanResult(): void {
+    this.scanResult.set(null);
+    this.selectedScanId = null;
+  }
+
+  fillManualCode(code: string): void {
+    this.manualQrCode = code;
+  }
+
+  ngOnDestroy(): void {
+    this.stopCamera();
+    if (this.toastTimeout) clearTimeout(this.toastTimeout);
+  }
+
+  toast = signal<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+  private toastTimeout: ReturnType<typeof setTimeout> | null = null;
+
+  showToast(message: string, type: 'success' | 'error' | 'info' = 'info'): void {
+    if (this.toastTimeout) clearTimeout(this.toastTimeout);
+    this.toast.set({ message, type });
+    this.toastTimeout = setTimeout(() => this.toast.set(null), 3000);
+  }
+
+  private itemsDb = ['Laptop PC', 'Office Chair', 'Printer Paper', 'Desk Lamp', 'USB Cable', 'Monitor', 'Keyboard', 'Mouse'];
+  private locationsDb = [
+    'Warehouse A, Shelf 12',
+    'Warehouse B, Shelf 5',
+    'Warehouse A, Shelf 8',
+    'Warehouse C, Shelf 3',
+    'Warehouse A, Shelf 4',
+  ];
 
   lookupQR(): void {
     if (this.manualQrCode.trim()) {
-      alert(`Looking up QR code: ${this.manualQrCode}`);
+      const startTime = performance.now();
+      const qr = this.manualQrCode.trim();
+      const idx = Math.abs(this.hashCode(qr)) % this.itemsDb.length;
+      this.scanCount.update(c => c + 1);
+      this.totalScans.update(t => t + 1);
+      this.scanAnimation.set('success');
+      const result = {
+        id: Date.now(),
+        itemName: this.itemsDb[idx],
+        sku: qr.toUpperCase(),
+        location: this.locationsDb[idx],
+        time: 'Just now',
+        status: 'Found',
+        quantity: Math.floor(Math.random() * 50) + 1,
+      };
+      this.scanResult.set(result);
+      this.selectedScanId = result.id;
+      this.scanTimeline.update(list => [{ type: 'success' as const, itemName: result.itemName, time: 'Just now' }, ...list].slice(0, 5));
+
+      const elapsed = ((performance.now() - startTime) / 1000);
+      this.scanTimes.push(elapsed);
+      if (this.scanTimes.length > 50) this.scanTimes.shift();
+      const avg = this.scanTimes.reduce((a, b) => a + b, 0) / this.scanTimes.length;
+      this.avgScanTime = avg < 1 ? `${Math.round(avg * 10) / 10}s` : `${Math.round(avg)}s`;
+
       this.manualQrCode = '';
+      this.showToast(`Item found: ${result.itemName}`, 'success');
+      setTimeout(() => this.scanAnimation.set('idle'), 1500);
     }
+  }
+
+  private hashCode(s: string): number {
+    let hash = 0;
+    for (let i = 0; i < s.length; i++) { const c = s.charCodeAt(i); hash = ((hash << 5) - hash) + c; hash |= 0; }
+    return hash;
   }
 
   selectScan(id: number): void {
     this.selectedScanId = id;
+    const scan = this.recentScans.find(s => s.id === id);
+    if (scan) {
+      this.showToast(`Selected: ${scan.itemName}`, 'info');
+    }
   }
 
   viewScanDetails(id: number): void {
     const scan = this.recentScans.find(s => s.id === id);
     if (scan) {
-      alert(`Viewing details for: ${scan.itemName}`);
+      this.selectedScanId = id;
+      this.scanResult.set({ ...scan, status: 'Found', quantity: Math.floor(Math.random() * 50) + 1 });
+      this.showToast(`Viewing details for: ${scan.itemName}`, 'info');
+    } else {
+      this.showToast('Item not found', 'error');
     }
   }
 
   issueItem(id: number): void {
-    const scan = this.recentScans.find(s => s.id === id);
+    const scan = this.recentScans.find(s => s.id === id) || this.scanResult();
     if (scan) {
-      alert(`Issuing item: ${scan.itemName}`);
+      this.router.navigate(['/storekeeper/issuing'], {
+        queryParams: { sku: scan.sku, itemName: scan.itemName },
+      });
     }
   }
 
   receiveItem(id: number): void {
-    const scan = this.recentScans.find(s => s.id === id);
+    const scan = this.recentScans.find(s => s.id === id) || this.scanResult();
     if (scan) {
-      alert(`Receiving item: ${scan.itemName}`);
+      this.router.navigate(['/storekeeper/receiving'], {
+        queryParams: { sku: scan.sku, itemName: scan.itemName },
+      });
     }
   }
 
+  // ---- Generic page actions ----
+  exportData(): void {
+    this.showToast('Exporting data...', 'info');
+    setTimeout(() => this.showToast('Export completed', 'success'), 1500);
+  }
+
+  applyFilters(): void {
+    this.showToast('Filters applied', 'info');
+  }
+
+  refreshData(): void {
+    this.showToast('Refreshing data...', 'info');
+    setTimeout(() => this.showToast('Data refreshed', 'success'), 800);
+  }
+
+  viewItem(item: any): void {
+    this.showToast(`Viewing: ${item.name}`, 'info');
+  }
+
+  editItem(item: any): void {
+    this.showToast(`Editing: ${item.name}`, 'info');
+  }
+
+  deleteItem(item: any): void {
+    this.showToast(`Deleted: ${item.name}`, 'success');
+  }
+
+  goToPage(page: number): void {
+    this.showToast(`Navigating to page ${page}`, 'info');
+  }
+
+  cancelForm(): void {
+    this.showToast('Form cancelled', 'info');
+  }
+
+  saveDraft(): void {
+    this.showToast('Draft saved', 'success');
+  }
+
+  submitForm(): void {
+    this.showToast('Form submitted successfully', 'success');
+  }
+
+  viewDetails(item: any): void {
+    this.showToast(`Viewing details: ${item.name}`, 'info');
+  }
+
+  editListItem(item: any): void {
+    this.showToast(`Editing: ${item.name}`, 'info');
+  }
+
+  configureSchedule(): void {
+    this.showToast('Opening schedule configuration...', 'info');
+    setTimeout(() => this.showToast('Schedule updated', 'success'), 1500);
+  }
+
+  downloadBackup(backup: any): void {
+    this.showToast(`Downloading: ${backup.name}`, 'info');
+    setTimeout(() => this.showToast('Download complete', 'success'), 2000);
+  }
+
+  deleteBackup(backup: any): void {
+    this.showToast(`Deleted backup: ${backup.name}`, 'success');
+  }
+
+  saveSettings(): void {
+    this.showToast('Settings saved', 'success');
+  }
+
   createBackup(): void {
-    alert('Creating backup...');
+    this.showToast('Backup started...', 'info');
+    setTimeout(() => this.showToast('Backup completed successfully!', 'success'), 2000);
   }
 
   restoreBackup(id: number): void {
     const backup = this.backupHistory.find(b => b.id === id);
     if (backup) {
-      alert(`Restoring backup: ${backup.name}`);
+      this.showToast(`Restoring: ${backup.name}`, 'info');
+      setTimeout(() => this.showToast('Restore completed!', 'success'), 2000);
     }
   }
 }

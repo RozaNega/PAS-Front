@@ -1,4 +1,4 @@
-﻿import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
@@ -173,12 +173,14 @@ function getItemStatus(currentStock: number, minThreshold: number, maxThreshold:
   if (maxThreshold > 0 && currentStock >= maxThreshold) return { status: 'Overstocked', statusClass: 'overstocked' };
   return { status: 'In Stock', statusClass: 'in-stock' };
 }
+
 @Component({
   selector: 'app-stock-overview',
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './stock-overview.component.html',
   styleUrls: ['./stock-overview.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class StockOverviewComponent implements OnInit {
   private readonly inventory = inject(InventoryService);

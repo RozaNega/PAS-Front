@@ -22,7 +22,7 @@ export interface ServiceRequestDto {
 export interface CreateServiceRequestDto {
   items: {
     itemId: string;
-    srDetailId?: string;
+    srDetailId?: string | null;
     requestedQty: number;
     preferredShelfId: string;
     notes?: string;
@@ -46,51 +46,51 @@ export class RequisitionsService {
 
   // Service Requests
   getAllServiceRequests(params?: any): Observable<ApiResponseModel<ServiceRequestDto[]>> {
-    return this.apiService.get<ApiResponseModel<ServiceRequestDto[]>>('ServiceRequests', params);
+    return this.apiService.get<ServiceRequestDto[]>('ServiceRequests', params);
   }
 
   getServiceRequestById(id: string): Observable<ApiResponseModel<ServiceRequestDto>> {
-    return this.apiService.get<ApiResponseModel<ServiceRequestDto>>(`ServiceRequests/${id}`);
+    return this.apiService.get<ServiceRequestDto>(`ServiceRequests/${id}`);
   }
 
   createServiceRequest(data: CreateServiceRequestDto): Observable<ApiResponseModel<string>> {
-    return this.apiService.post<ApiResponseModel<string>>('ServiceRequests', { command: data });
+    return this.apiService.post<string>('ServiceRequests', { command: data });
   }
 
   updateServiceRequest(id: string, data: any): Observable<ApiResponseModel<any>> {
-    return this.apiService.put<ApiResponseModel<any>>(`ServiceRequests/${id}`, data);
+    return this.apiService.put<any>(`ServiceRequests/${id}`, data);
   }
 
   deleteServiceRequest(id: string): Observable<ApiResponseModel<any>> {
-    return this.apiService.delete<ApiResponseModel<any>>(`ServiceRequests/${id}`);
+    return this.apiService.delete<any>(`ServiceRequests/${id}`);
   }
 
   approveServiceRequest(id: string, data?: any): Observable<ApiResponseModel<any>> {
-    return this.apiService.post<ApiResponseModel<any>>(`ServiceRequests/${id}/approve`, data || {});
+    return this.apiService.post<any>(`ServiceRequests/${id}/approve`, data || {});
   }
 
   rejectServiceRequest(id: string, data?: any): Observable<ApiResponseModel<any>> {
-    return this.apiService.post<ApiResponseModel<any>>(`ServiceRequests/${id}/reject`, data || {});
+    return this.apiService.post<any>(`ServiceRequests/${id}/reject`, data || {});
   }
 
   issueServiceRequest(id: string, data?: any): Observable<ApiResponseModel<any>> {
-    return this.apiService.post<ApiResponseModel<any>>(`ServiceRequests/${id}/issue`, data || {});
+    return this.apiService.post<any>(`ServiceRequests/${id}/issue`, data || {});
   }
 
   // Store Issue Vouchers
   getAllSIVs(params?: any): Observable<ApiResponseModel<StoreIssueVoucherDto[]>> {
-    return this.apiService.get<ApiResponseModel<StoreIssueVoucherDto[]>>('StoreIssueVouchers', params);
+    return this.apiService.get<StoreIssueVoucherDto[]>('StoreIssueVouchers', params);
   }
 
   getSIVById(id: string): Observable<ApiResponseModel<StoreIssueVoucherDto>> {
-    return this.apiService.get<ApiResponseModel<StoreIssueVoucherDto>>(`StoreIssueVouchers/${id}`);
+    return this.apiService.get<StoreIssueVoucherDto>(`StoreIssueVouchers/${id}`);
   }
 
   createSIV(data: any): Observable<ApiResponseModel<string>> {
-    return this.apiService.post<ApiResponseModel<string>>('StoreIssueVouchers', data);
+    return this.apiService.post<string>('StoreIssueVouchers', data);
   }
 
   deleteSIV(id: string): Observable<ApiResponseModel<any>> {
-    return this.apiService.delete<ApiResponseModel<any>>(`StoreIssueVouchers/${id}`);
+    return this.apiService.delete<any>(`StoreIssueVouchers/${id}`);
   }
 }

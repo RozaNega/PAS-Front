@@ -218,6 +218,22 @@ export class ServiceRequestService {
     );
   }
 
+  getServiceRequests(params?: any): Observable<ApiResponse<ServiceRequestDto[]>> {
+    return this.getAll(params);
+  }
+
+  getServiceRequestById(id: string): Observable<ApiResponse<ServiceRequestDetailDto>> {
+    return this.getById(id);
+  }
+
+  issueServiceRequest(data: IssueServiceRequestRequest): Observable<ApiResponse<string>> {
+    return this.issue(data);
+  }
+
+  approveServiceRequest(data: ApproveServiceRequestRequest): Observable<ApiResponse<unknown>> {
+    return this.approve(data);
+  }
+
   private normalizeEnvelope<T>(raw: unknown): ApiResponse<T> {
     const env = unwrapPasEnvelope<unknown>(raw);
     const data =

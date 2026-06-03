@@ -30,7 +30,7 @@
         <select formControlName="parentCategoryId">
           <option value="">None</option>
           @for (category of categories(); track category.id) {
-            @if (category.id !== selectedCategoryId()) {
+            @if (('' + category.id) !== selectedCategoryId()) {
               <option [value]="category.id">{{ category.name }}</option>
             }
           }

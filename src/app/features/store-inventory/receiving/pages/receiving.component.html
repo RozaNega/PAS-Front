@@ -1,0 +1,526 @@
+<div class="receiving-page">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="header-left">
+      <div class="header-icon"><i class="bi bi-truck"></i></div>
+      <div class="header-text">
+        <h1>Goods Receiving</h1>
+        <p class="subtitle">Manage GRNs, inspections, and receiving history</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-outline" (click)="activeTab.set('inspection')"><i class="bi bi-search"></i> Inspections ({{ pendingInspections() }})</button>
+      <button class="btn btn-primary" (click)="activeTab.set('grn')"><i class="bi bi-plus-lg"></i> Create GRN</button>
+    </div>
+  </div>
+
+  <!-- Tab Navigation -->
+  <div class="tab-nav">
+    <button class="tab-btn" [class.active]="activeTab() === 'summary'" (click)="activeTab.set('summary')">
+      <i class="bi bi-speedometer2"></i> Summary
+    </button>
+    <button class="tab-btn" [class.active]="activeTab() === 'grn'" (click)="activeTab.set('grn')">
+      <i class="bi bi-file-earmark-plus"></i> Goods Received Note
+    </button>
+    <button class="tab-btn" [class.active]="activeTab() === 'inspection'" (click)="activeTab.set('inspection')">
+      <i class="bi bi-clipboard-check"></i> Incoming Inspections
+      @if (pendingInspections() > 0) { <span class="tab-badge">{{ pendingInspections() }}</span> }
+    </button>
+    <button class="tab-btn" [class.active]="activeTab() === 'history'" (click)="activeTab.set('history')">
+      <i class="bi bi-clock-history"></i> Receiving History
+    </button>
+  </div>
+
+  <!-- ═══════════════════════ SUMMARY TAB ═══════════════════════ -->
+  @if (activeTab() === 'summary') {
+    <div class="tab-content">
+      <div class="kpi-grid">
+        <div class="kpi-card pending">
+          <div class="kpi-icon"><i class="bi bi-clock"></i></div>
+          <div class="kpi-content">
+            <span class="kpi-value">{{ totalPendingGRNs() }}</span>
+            <span class="kpi-label">Pending GRNs</span>
+          </div>
+          <div class="kpi-trend warn">Awaiting processing</div>
+        </div>
+        <div class="kpi-card urgent">
+          <div class="kpi-icon"><i class="bi bi-exclamation-triangle"></i></div>
+          <div class="kpi-content">
+            <span class="kpi-value">{{ pendingInspections() }}</span>
+            <span class="kpi-label">Pending Inspections</span>
+          </div>
+          <div class="kpi-trend down">Needs attention</div>
+        </div>
+        <div class="kpi-card success">
+          <div class="kpi-icon"><i class="bi bi-check-circle"></i></div>
+          <div class="kpi-content">
+            <span class="kpi-value">{{ receivedToday() }}</span>
+            <span class="kpi-label">Received Today</span>
+          </div>
+          <div class="kpi-trend up">+1 from yesterday</div>
+        </div>
+        <div class="kpi-card primary">
+          <div class="kpi-icon"><i class="bi bi-boxes"></i></div>
+          <div class="kpi-content">
+            <span class="kpi-value">{{ totalItemsReceived() }}</span>
+            <span class="kpi-label">Total Items Received</span>
+          </div>
+          <div class="kpi-trend up">All time</div>
+        </div>
+        <div class="kpi-card info">
+          <div class="kpi-icon"><i class="bi bi-calendar-check"></i></div>
+          <div class="kpi-content">
+            <span class="kpi-value">{{ totalGRNsThisMonth() }}</span>
+            <span class="kpi-label">GRNs This Month</span>
+          </div>
+          <div class="kpi-trend up">On track</div>
+        </div>
+      </div>
+
+      <div class="charts-row">
+        <div class="chart-card">
+          <div class="chart-header"><h3>Receiving Trend</h3><span class="chart-badge">Last 8 weeks</span></div>
+          <div class="chart-body"><div echarts [options]="trendChartOpts" class="chart"></div></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header"><h3>Supplier Distribution</h3><span class="chart-badge">By volume</span></div>
+          <div class="chart-body"><div echarts [options]="supplierChartOpts" class="chart pie"></div></div>
+        </div>
+      </div>
+
+      <div class="quick-actions">
+        <h3>Quick Actions</h3>
+        <div class="action-grid">
+          <button class="action-card" (click)="activeTab.set('grn')">
+            <i class="bi bi-file-earmark-plus"></i>
+            <span>Create GRN</span>
+            <small>Record new goods receipt</small>
+          </button>
+          <button class="action-card" (click)="activeTab.set('inspection')">
+            <i class="bi bi-clipboard-check"></i>
+            <span>Inspect Items</span>
+            <small>{{ pendingInspections() }} items to inspect</small>
+          </button>
+          <button class="action-card" (click)="activeTab.set('history')">
+            <i class="bi bi-clock-history"></i>
+            <span>View History</span>
+            <small>{{ totalGRNs() }} past receipts</small>
+          </button>
+          <button class="action-card" (click)="activeTab.set('inspection')">
+            <i class="bi bi-bar-chart"></i>
+            <span>Inspection Reports</span>
+            <small>Quality analysis</small>
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ═══════════════════════ GOODS RECEIVED NOTE TAB ═══════════════════════ -->
+  @if (activeTab() === 'grn') {
+    <div class="tab-content">
+      <div class="wizard-header">
+        <h2>{{ getGrnStepTitle() }}</h2>
+        <div class="step-indicator">
+          <div class="step-progress">
+            @for (s of [1,2,3,4]; track s) {
+              <div class="step-dot" [class.active]="grnStep() >= s" [class.current]="grnStep() === s">
+                <div class="dot">{{ s }}</div>
+                <div class="step-label">{{ ['Shipment', 'Items', 'Batch', 'Submit'][s-1] }}</div>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 1: Shipment Information -->
+      @if (grnStep() === 1) {
+        <div class="form-section animate-in">
+          <div class="section-title"><i class="bi bi-truck"></i> Shipment Information</div>
+          <div class="info-grid">
+            <div class="info-item">
+              <span class="info-label">Supplier</span>
+              <div class="search-box full-width" style="margin-top: 4px;">
+                <i class="bi bi-search"></i>
+                <input type="text" placeholder="Search supplier..." [ngModel]="searchSupplier()" (ngModelChange)="searchSupplier.set($event)" />
+              </div>
+              <div class="supplier-list">
+                @for (sup of filteredSuppliers(); track sup.id) {
+                  <div class="supplier-item" [class.selected]="selectedSupplier()?.id === sup.id" (click)="selectSupplier(sup)">
+                    <i class="bi bi-building"></i> {{ sup.name }}
+                  </div>
+                }
+              </div>
+            </div>
+            <div class="info-item">
+              <span class="info-label">PO Number</span>
+              <input type="text" class="form-input" placeholder="e.g. PO-2024-101" [ngModel]="poNumber()" (ngModelChange)="poNumber.set($event)" />
+            </div>
+            <div class="info-item">
+              <span class="info-label">Delivery Note #</span>
+              <input type="text" class="form-input" placeholder="Supplier DN number" [ngModel]="deliveryNote()" (ngModelChange)="deliveryNote.set($event)" />
+            </div>
+            <div class="info-item">
+              <span class="info-label">Received Date</span>
+              <input type="date" class="form-input" [ngModel]="receivedDate()" (ngModelChange)="receivedDate.set($event)" />
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- Step 2: Items & Quantities -->
+      @if (grnStep() === 2) {
+        <div class="form-section animate-in">
+          <div class="section-title"><i class="bi bi-boxes"></i> Items & Quantities</div>
+          @for (item of grnItems(); track item.sku) {
+            <div class="item-row">
+              <div class="item-row-header">
+                <strong>{{ item.itemName }}</strong>
+                <span class="item-sku">{{ item.sku }}</span>
+              </div>
+              <div class="item-inputs">
+                <div class="input-group"><label>Ordered</label><input type="number" [value]="item.ordered" disabled /></div>
+                <div class="input-group"><label>Delivered</label><input type="number" [value]="item.delivered" /></div>
+                <div class="input-group"><label>Accepted</label><input type="number" [value]="item.accepted" /></div>
+                <div class="input-group"><label>Rejected</label><input type="number" [value]="item.rejected" /></div>
+                <div class="input-group"><label>UOM</label><input type="text" [value]="item.uom" disabled /></div>
+              </div>
+            </div>
+          }
+        </div>
+      }
+
+      <!-- Step 3: Batch / Lot Details -->
+      @if (grnStep() === 3) {
+        <div class="form-section animate-in">
+          <div class="section-title"><i class="bi bi-upc-scan"></i> Batch / Lot Details</div>
+          @for (item of grnItems(); track item.sku) {
+            <div class="item-row">
+              <div class="item-row-header">
+                <strong>{{ item.itemName }}</strong>
+                <span class="item-sku">{{ item.sku }}</span>
+              </div>
+              <div class="item-inputs">
+                <div class="input-group"><label>Batch / Lot #</label><input type="text" placeholder="Enter batch number" /></div>
+                <div class="input-group"><label>Manufacturing Date</label><input type="date" /></div>
+                <div class="input-group"><label>Expiry Date</label><input type="date" /></div>
+                <div class="input-group"><label>Storage Location</label>
+                  <select><option value="">Select location</option><option value="A-R01">Aisle A - Rack 01</option><option value="B-R02">Aisle B - Rack 02</option><option value="C-R03">Aisle C - Rack 03</option></select>
+                </div>
+              </div>
+            </div>
+          }
+          <div class="notes-area">
+            <label>Additional Notes</label>
+            <textarea class="form-textarea" placeholder="Inspection notes, quality observations..." [ngModel]="notes()" (ngModelChange)="notes.set($event)"></textarea>
+          </div>
+        </div>
+      }
+
+      <!-- Step 4: Review & Submit -->
+      @if (grnStep() === 4) {
+        <div class="form-section animate-in">
+          <div class="section-title"><i class="bi bi-file-earmark-text"></i> Review & Submit</div>
+          <div class="info-grid">
+            <div class="info-item"><span class="info-label">GRN Number</span><span class="info-value grn-num">{{ grnNumber() }}</span></div>
+            <div class="info-item"><span class="info-label">Supplier</span><span class="info-value">{{ selectedSupplier()?.name }}</span></div>
+            <div class="info-item"><span class="info-label">PO Number</span><span class="info-value">{{ poNumber() }}</span></div>
+            <div class="info-item"><span class="info-label">Received Date</span><span class="info-value">{{ receivedDate() }}</span></div>
+            <div class="info-item"><span class="info-label">Total Items</span><span class="info-value">{{ grnItems().length }}</span></div>
+            <div class="info-item"><span class="info-label">Total Qty</span><span class="info-value">{{ grnItems().reduce((s, i) => s + i.accepted, 0) }}</span></div>
+          </div>
+          <div class="checkbox-group">
+            <label class="check-label"><input type="checkbox" #cb1 [checked]="generatePrint()" (change)="generatePrint.set(cb1.checked)" /> Generate printable GRN</label>
+            <label class="check-label"><input type="checkbox" #cb2 [checked]="notifySupplier()" (change)="notifySupplier.set(cb2.checked)" /> Notify supplier</label>
+            <label class="check-label"><input type="checkbox" #cb3 [checked]="attachDocuments()" (change)="attachDocuments.set(cb3.checked)" /> Attach delivery documents</label>
+          </div>
+        </div>
+      }
+
+      <div class="step-navigation">
+        <div>
+          @if (grnStep() > 1) {
+            <button class="btn btn-outline" (click)="grnPreviousStep()"><i class="bi bi-arrow-left"></i> Previous</button>
+          }
+          @if (grnStep() === 1) {
+            <button class="btn btn-outline" (click)="cancelGRN()">Cancel</button>
+          }
+        </div>
+        <div>
+          @if (grnStep() < totalGrnSteps) {
+            <button class="btn btn-primary" [disabled]="grnStep() === 1 && !selectedSupplier()" (click)="grnNextStep()">Next <i class="bi bi-arrow-right"></i></button>
+          }
+          @if (grnStep() === totalGrnSteps) {
+            <button class="btn btn-primary" [disabled]="isLoading()" (click)="submitGRN()">
+              @if (isLoading()) { <i class="bi bi-arrow-repeat spinning"></i> } @else { <i class="bi bi-check-lg"></i> }
+              Submit GRN
+            </button>
+          }
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ═══════════════════════ INCOMING INSPECTIONS TAB ═══════════════════════ -->
+  @if (activeTab() === 'inspection') {
+    <div class="tab-content">
+      <div class="toolbar">
+        <div class="search-box">
+          <i class="bi bi-search"></i>
+          <input type="text" placeholder="Search GRN# or supplier..." [ngModel]="inspectionSearch()" (ngModelChange)="inspectionSearch.set($event)" />
+        </div>
+        <div class="filter-group">
+          <i class="bi bi-flag"></i>
+          <select [ngModel]="inspectionFilter()" (ngModelChange)="inspectionFilter.set($event)">
+            @for (f of inspectionFilters; track f) { <option [value]="f">{{ f }}</option> }
+          </select>
+        </div>
+        <div class="filter-group">
+          <i class="bi bi-exclamation-triangle"></i>
+          <select [ngModel]="inspectionPriority()" (ngModelChange)="inspectionPriority.set($event)">
+            @for (p of priorities; track p) { <option [value]="p">{{ p }}</option> }
+          </select>
+        </div>
+      </div>
+
+      <div class="inspection-grid">
+        @for (insp of filteredInspections(); track insp.id) {
+          <div class="inspection-card">
+            <div class="inspection-card-header">
+              <span class="insp-grn">{{ insp.grnNumber }}</span>
+              <span class="insp-status" [style.background]="getInspectionStatusColor(insp.status) + '18'" [style.color]="getInspectionStatusColor(insp.status)">{{ insp.status }}</span>
+            </div>
+            <div class="inspection-card-body">
+              <div class="insp-row"><i class="bi bi-building"></i> {{ insp.supplier }}</div>
+              <div class="insp-row"><i class="bi bi-calendar"></i> {{ insp.receivedDate }}</div>
+              <div class="insp-row"><i class="bi bi-person"></i> {{ insp.inspector }}</div>
+              <div class="insp-row"><i class="bi bi-boxes"></i> {{ insp.items.length }} items</div>
+              <div class="insp-priority" [style.color]="getPriorityColor(insp.priority)">
+                <i class="bi bi-flag"></i> {{ insp.priority }} Priority
+              </div>
+            </div>
+            <div class="inspection-card-footer">
+              @if (insp.status === 'Pending' || insp.status === 'In Progress') {
+                <button class="btn btn-primary btn-sm" (click)="openInspectionModal(insp)"><i class="bi bi-clipboard-check"></i> Inspect</button>
+              } @else {
+                <button class="btn btn-outline btn-sm" (click)="openInspectionModal(insp)"><i class="bi bi-eye"></i> View</button>
+              }
+              @if (insp.status === 'Pending') {
+                <button class="btn btn-outline btn-sm" (click)="assignInspector(insp)"><i class="bi bi-person-plus"></i> Assign</button>
+              }
+            </div>
+          </div>
+        }
+      </div>
+
+      @if (!filteredInspections().length) {
+        <div class="empty-state">
+          <div class="empty-icon"><i class="bi bi-check2-circle"></i></div>
+          <h3>No inspections found</h3>
+          <p>All items have been inspected or no results match your filters.</p>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- ═══════════════════════ RECEIVING HISTORY TAB ═══════════════════════ -->
+  @if (activeTab() === 'history') {
+    <div class="tab-content">
+      <div class="toolbar">
+        <div class="search-box">
+          <i class="bi bi-search"></i>
+          <input type="text" placeholder="Search GRN#, PO#, supplier..." [ngModel]="historySearch()" (ngModelChange)="historySearch.set($event)" />
+        </div>
+        <div class="filter-group">
+          <i class="bi bi-calendar"></i>
+          <input type="date" [ngModel]="historyDateStart()" (ngModelChange)="historyDateStart.set($event)" />
+        </div>
+        <div class="filter-group">
+          <i class="bi bi-calendar"></i>
+          <input type="date" [ngModel]="historyDateEnd()" (ngModelChange)="historyDateEnd.set($event)" />
+        </div>
+        <div class="filter-group">
+          <i class="bi bi-tag"></i>
+          <select [ngModel]="historyStatus()" (ngModelChange)="historyStatus.set($event)">
+            <option value="All">All Status</option>
+            <option value="Completed">Completed</option>
+            <option value="Under Review">Under Review</option>
+            <option value="Returned">Returned</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="summary-grid">
+        <div class="stat-card"><span class="stat-value">{{ totalGRNs() }}</span><span class="stat-label">Total GRNs</span></div>
+        <div class="stat-card"><span class="stat-value">{{ totalItemsReceivedHistory() }}</span><span class="stat-label">Items Received</span></div>
+        <div class="stat-card"><span class="stat-value">{{ formatValue(totalValueReceived()) }}</span><span class="stat-label">Total Value</span></div>
+        <div class="stat-card"><span class="stat-value">{{ avgInspectionTime() }}</span><span class="stat-label">Avg Inspection Time</span></div>
+      </div>
+
+      <div class="content-grid">
+        <div class="content-main">
+          <div class="section-title"><i class="bi bi-table"></i> Receiving History</div>
+          <div class="table-wrapper">
+            <table class="history-table">
+              <thead><tr><th>GRN#</th><th>Date</th><th>Supplier</th><th>PO#</th><th>Items</th><th>Value</th><th>Status</th><th>Actions</th></tr></thead>
+              <tbody>
+                @for (record of filteredHistory(); track record.grnNumber) {
+                  <tr>
+                    <td><span class="grn-badge">{{ record.grnNumber }}</span></td>
+                    <td>{{ record.date }}</td>
+                    <td>{{ record.supplier }}</td>
+                    <td>{{ record.poNumber }}</td>
+                    <td>{{ record.items }}</td>
+                    <td class="value-cell">${{ record.value }}</td>
+                    <td><span class="status-chip" [class.completed]="record.status === 'Completed'" [class.review]="record.status === 'Under Review'" [class.returned]="record.status === 'Returned'">{{ record.status }}</span></td>
+                    <td>
+                      <div class="action-btns">
+                        <button class="action-btn" title="View" (click)="openHistoryModal(record)"><i class="bi bi-eye"></i></button>
+                        <button class="action-btn" title="Print" (click)="printGRN(record)"><i class="bi bi-printer"></i></button>
+                        <button class="action-btn" title="Email" (click)="emailGRN(record)"><i class="bi bi-envelope"></i></button>
+                        <button class="action-btn" title="Download" (click)="downloadGRN(record)"><i class="bi bi-download"></i></button>
+                      </div>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="content-side">
+          <div class="section-title"><i class="bi bi-bar-chart"></i> Top Suppliers</div>
+          <div class="top-items-list">
+            @for (sup of topSuppliers(); track sup.name) {
+              <div class="top-item">
+                <div class="top-item-header">
+                  <span class="top-item-name">{{ sup.name }}</span>
+                  <span class="top-item-pct">{{ sup.percentage }}%</span>
+                </div>
+                <div class="progress-bar"><div class="progress-fill" [style.width.%]="sup.percentage"></div></div>
+                <div class="top-item-stats">
+                  <span>{{ sup.deliveries }} deliveries</span>
+                  <span>{{ formatValue(sup.value) }}</span>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ═══════════════════════ INSPECTION MODAL ═══════════════════════ -->
+  @if (showInspectionModal() && selectedInspection()) {
+    <div class="modal-overlay" (click)="closeInspectionModal()">
+      <div class="modal-content modal-lg" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div class="modal-header-left">
+            <div class="modal-icon"><i class="bi bi-clipboard-check"></i></div>
+            <div>
+              <h3>Inspection: {{ selectedInspection()?.grnNumber }}</h3>
+              <p>{{ selectedInspection()?.supplier }}</p>
+            </div>
+          </div>
+          <button class="modal-close" (click)="closeInspectionModal()"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <div class="modal-body">
+          <div class="info-grid">
+            <div class="info-item"><span class="info-label">GRN#</span><span class="info-value grn-num">{{ selectedInspection()?.grnNumber }}</span></div>
+            <div class="info-item"><span class="info-label">Supplier</span><span class="info-value">{{ selectedInspection()?.supplier }}</span></div>
+            <div class="info-item"><span class="info-label">Received Date</span><span class="info-value">{{ selectedInspection()?.receivedDate }}</span></div>
+            <div class="info-item"><span class="info-label">Inspector</span><span class="info-value">{{ selectedInspection()?.inspector }}</span></div>
+          </div>
+          <div class="inspection-items-section">
+            <h4>Inspection Items</h4>
+            <table class="items-table">
+              <thead><tr><th>Item</th><th>SKU</th><th>Delivered</th><th>Passed</th><th>Failed</th><th>Status</th></tr></thead>
+              <tbody>
+                @for (item of selectedInspection()?.items; track item.sku) {
+                  <tr>
+                    <td>{{ item.itemName }}</td>
+                    <td>{{ item.sku }}</td>
+                    <td>{{ item.delivered }}</td>
+                    <td><input type="number" class="qty-input" [value]="item.passed" /></td>
+                    <td><input type="number" class="qty-input" [value]="item.failed" /></td>
+                    <td><span class="item-status" [class.avail]="item.status === 'Passed'" [class.low]="item.status === 'Failed' || item.status === 'Partial'">{{ item.status }}</span></td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <div class="inspection-result-section">
+            <h4>Inspection Result</h4>
+            <div class="result-options">
+              <label class="radio-label"><input type="radio" name="result" [checked]="inspectionResult() === 'Pass'" (change)="inspectionResult.set('Pass')" /> Pass</label>
+              <label class="radio-label"><input type="radio" name="result" [checked]="inspectionResult() === 'Fail'" (change)="inspectionResult.set('Fail')" /> Fail</label>
+              <label class="radio-label"><input type="radio" name="result" [checked]="inspectionResult() === 'Conditional Pass'" (change)="inspectionResult.set('Conditional Pass')" /> Conditional Pass</label>
+            </div>
+            <div class="notes-area">
+              <label>Inspection Notes</label>
+              <textarea class="form-textarea" placeholder="Enter detailed inspection notes..." [ngModel]="inspectionNotes()" (ngModelChange)="inspectionNotes.set($event)"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline" (click)="closeInspectionModal()">Cancel</button>
+          <button class="btn btn-primary" [disabled]="isLoading()" (click)="submitInspection()">
+            @if (isLoading()) { <i class="bi bi-arrow-repeat spinning"></i> } @else { <i class="bi bi-check-lg"></i> }
+            Submit Inspection
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ═══════════════════════ HISTORY DETAILS MODAL ═══════════════════════ -->
+  @if (showHistoryModal() && selectedHistory()) {
+    <div class="modal-overlay" (click)="closeHistoryModal()">
+      <div class="modal-content modal-lg" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div class="modal-header-left">
+            <div class="modal-icon"><i class="bi bi-file-earmark-text"></i></div>
+            <div>
+              <h3>GRN: {{ selectedHistory()?.grnNumber }}</h3>
+              <p>Receiving details</p>
+            </div>
+          </div>
+          <button class="modal-close" (click)="closeHistoryModal()"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <div class="modal-body">
+          <div class="grn-header">
+            <div class="grn-company">PAS Logistics</div>
+            <div class="grn-title">Goods Received Note</div>
+          </div>
+          <div class="info-grid">
+            <div class="info-item"><span class="info-label">GRN#</span><span class="info-value grn-num">{{ selectedHistory()?.grnNumber }}</span></div>
+            <div class="info-item"><span class="info-label">Date</span><span class="info-value">{{ selectedHistory()?.date }}</span></div>
+            <div class="info-item"><span class="info-label">Supplier</span><span class="info-value">{{ selectedHistory()?.supplier }}</span></div>
+            <div class="info-item"><span class="info-label">PO#</span><span class="info-value">{{ selectedHistory()?.poNumber }}</span></div>
+            <div class="info-item"><span class="info-label">Inspected By</span><span class="info-value">{{ selectedHistory()?.inspectedBy }}</span></div>
+            <div class="info-item"><span class="info-label">Status</span><span class="info-value">{{ selectedHistory()?.status }}</span></div>
+          </div>
+          <div class="items-issued-section">
+            <h4>Items Received</h4>
+            <table class="items-table">
+              <thead><tr><th>#</th><th>Item</th><th>Qty</th><th>UOM</th><th>Price</th><th>Total</th></tr></thead>
+              <tbody>
+                <tr><td>1</td><td>Sample Item</td><td>1</td><td>PCS</td><td>$100</td><td>$100</td></tr>
+              </tbody>
+              <tfoot><tr class="total-row"><td colspan="5">Total</td><td>${{ selectedHistory()?.value }}</td></tr></tfoot>
+            </table>
+          </div>
+          <div class="signatures-section">
+            <div class="signature-box"><label>Received By</label><div class="sig-line"></div></div>
+            <div class="signature-box"><label>Inspected By</label><div class="sig-line"></div></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline" (click)="printGRN(selectedHistory()!)"><i class="bi bi-printer"></i> Print</button>
+          <button class="btn btn-outline" (click)="downloadGRN(selectedHistory()!)"><i class="bi bi-file-pdf"></i> Download PDF</button>
+          <button class="btn btn-outline" (click)="emailGRN(selectedHistory()!)"><i class="bi bi-envelope"></i> Email Copy</button>
+          <button class="btn btn-primary" (click)="closeHistoryModal()">Close</button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

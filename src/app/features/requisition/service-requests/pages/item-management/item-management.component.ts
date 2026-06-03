@@ -57,7 +57,7 @@ export class ItemManagementComponent implements OnInit {
         if (this.availableItems.length === 0) {
           this.availableItems = [
             {
-              id: '1',
+              id: 1,
               itemName: 'Dell XPS Laptop',
               sku: 'DELL-XPS-15',
               description: 'High-performance laptop',
@@ -72,9 +72,9 @@ export class ItemManagementComponent implements OnInit {
               categoryId: '1',
               categoryName: 'Electronics',
               isActive: true
-            },
+            } as ItemMasterListDto,
             {
-              id: '2',
+              id: 2,
               itemName: 'HP 27" Monitor',
               sku: 'HP-MON-27',
               description: '27-inch LED monitor',
@@ -89,9 +89,9 @@ export class ItemManagementComponent implements OnInit {
               categoryId: '1',
               categoryName: 'Electronics',
               isActive: true
-            },
+            } as ItemMasterListDto,
             {
-              id: '3',
+              id: 3,
               itemName: 'Logitech Mouse',
               sku: 'LOG-MOUSE-01',
               description: 'Wireless optical mouse',
@@ -106,7 +106,7 @@ export class ItemManagementComponent implements OnInit {
               categoryId: '1',
               categoryName: 'Electronics',
               isActive: true
-            }
+            } as ItemMasterListDto
           ];
         }
         this.isLoading = false;
@@ -116,39 +116,39 @@ export class ItemManagementComponent implements OnInit {
         // Load sample items on error
         this.availableItems = [
           {
-            id: '1',
+            id: 1,
             itemName: 'Dell XPS Laptop',
             sku: 'DELL-XPS-15',
             description: 'High-performance laptop',
             unitOfMeasure: 'Units',
             stockQuantity: 45,
-              currentStock: 45,
-              reservedStock: 0,
-              availableStock: 45,
-              minStockLevel: 10,
-              requiresInspection: false,
-              isLowStock: false,
+            currentStock: 45,
+            reservedStock: 0,
+            availableStock: 45,
+            minStockLevel: 10,
+            requiresInspection: false,
+            isLowStock: false,
             categoryId: '1',
             categoryName: 'Electronics',
             isActive: true
-          },
+          } as ItemMasterListDto,
           {
-            id: '2',
+            id: 2,
             itemName: 'HP 27" Monitor',
             sku: 'HP-MON-27',
             description: '27-inch LED monitor',
             unitOfMeasure: 'Units',
             stockQuantity: 67,
-              currentStock: 67,
-              reservedStock: 0,
-              availableStock: 67,
-              minStockLevel: 10,
-              requiresInspection: false,
-              isLowStock: false,
+            currentStock: 67,
+            reservedStock: 0,
+            availableStock: 67,
+            minStockLevel: 10,
+            requiresInspection: false,
+            isLowStock: false,
             categoryId: '1',
             categoryName: 'Electronics',
             isActive: true
-          }
+          } as ItemMasterListDto
         ];
         this.isLoading = false;
       }
@@ -168,10 +168,10 @@ export class ItemManagementComponent implements OnInit {
 
     const itemData: ServiceRequestItem = {
       id: this.editingItem?.id || this.generateId(),
-      itemId: selectedItem.id,
-      itemName: selectedItem.itemName,
-      sku: selectedItem.sku,
-      unitOfMeasure: selectedItem.unitOfMeasure,
+      itemId: String(selectedItem.id),
+      itemName: selectedItem.itemName ?? '',
+      sku: selectedItem.sku ?? '',
+      unitOfMeasure: selectedItem.unitOfMeasure ?? '',
       requestedQty: formValue.requestedQty,
       issuedQty: 0,
       pendingQty: formValue.requestedQty,
@@ -230,13 +230,13 @@ export class ItemManagementComponent implements OnInit {
 
   get selectedItemName(): string {
     const itemId = this.itemForm.get('itemId')?.value;
-    const item = this.availableItems.find(i => i.id === itemId);
+    const item = this.availableItems.find(i => String(i.id) === itemId);
     return item?.itemName || '';
   }
 
   get selectedItemStock(): number {
     const itemId = this.itemForm.get('itemId')?.value;
-    const item = this.availableItems.find(i => i.id === itemId);
+    const item = this.availableItems.find(i => String(i.id) === itemId);
     return item?.stockQuantity || 0;
   }
 
@@ -245,7 +245,7 @@ export class ItemManagementComponent implements OnInit {
   }
 
   getAvailableStock(itemId: string): number {
-    const item = this.availableItems.find(i => i.id === itemId);
+    const item = this.availableItems.find(i => String(i.id) === itemId);
     return item?.stockQuantity || 0;
   }
 

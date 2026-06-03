@@ -18,22 +18,22 @@ export class PropertyCategoryService {
   constructor(private apiService: ApiService) {}
 
   getAll(params?: any): Observable<ApiResponseModel<PropertyCategoryDto[]>> {
-    return this.apiService.get<ApiResponseModel<PropertyCategoryDto[]>>('PropertyCategories', params);
+    return this.apiService.get<PropertyCategoryDto[]>('PropertyCategories', params);
   }
 
   getById(id: string): Observable<ApiResponseModel<PropertyCategoryDto>> {
-    return this.apiService.get<ApiResponseModel<PropertyCategoryDto>>(`PropertyCategories/${id}`);
+    return this.apiService.get<PropertyCategoryDto>(`PropertyCategories/${id}`);
   }
 
   create(data: any): Observable<ApiResponseModel<string>> {
-    return this.apiService.post<ApiResponseModel<string>>('PropertyCategories', data);
+    return this.apiService.post<string>('PropertyCategories', data);
   }
 
   update(id: string, data: any): Observable<ApiResponseModel<any>> {
-    return this.apiService.put<ApiResponseModel<any>>(`PropertyCategories/${id}`, data);
+    return this.apiService.put<any>(`PropertyCategories/${id}`, data);
   }
 
   delete(id: string): Observable<ApiResponseModel<any>> {
-    return this.apiService.delete<ApiResponseModel<any>>(`PropertyCategories/${id}`);
+    return this.apiService.delete<any>(`PropertyCategories/${id}`);
   }
 }

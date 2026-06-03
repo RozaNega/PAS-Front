@@ -139,12 +139,12 @@ export class RolesPermissionsComponent implements OnInit {
   ];
 
   ngOnInit(): void {
-    this.rolesService.getAll().subscribe({
-      next: (res) => {
+    this.rolesService.getRoles().subscribe({
+      next: (res: any) => {
         if (res.success && res.data?.length) {
           const palette = ['red', 'blue', 'green', 'gray', 'purple', 'orange'];
           this.roles.set(
-            res.data.map((r, i) => ({
+            (res.data as any[]).map((r: any, i: number) => ({
               id: r.id,
               name: r.roleName,
               userCount: r.userCount ?? 0,
@@ -157,7 +157,7 @@ export class RolesPermissionsComponent implements OnInit {
           }
         }
       },
-      error: (err) => console.error('Failed to load roles', err),
+      error: (err: any) => console.error('Failed to load roles', err),
     });
   }
 

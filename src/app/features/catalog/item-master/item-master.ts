@@ -10,7 +10,13 @@ import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { finalize } from 'rxjs';
 import { ItemMasterApi } from './services/item-master-api';
 import { CategoriesService, CategoryDto } from '../../../core/services/categories.service';
-import { ItemMasterBulkUpdateRequest, ItemMasterListDto } from '../../../core/services/item-master.service';
+import { ItemMasterListDto } from '../../../core/services/item-master.service';
+
+interface ItemMasterBulkUpdateRequest {
+  categoryId: string;
+  unitOfMeasure: string;
+  requiresInspection: boolean;
+}
 
 interface PageNotice {
   type: 'success' | 'error' | 'info';
@@ -77,10 +83,10 @@ export class ItemMaster {
   });
 
   constructor() {
-    this.categoriesService.getAll({ includeInactive: false }).subscribe({
+    this.categoriesService.getAll().subscribe({
       next: (response) => {
         if (response.success && response.data) {
-          this.categoryList.set(response.data);
+          this.categoryList.set(response.data.items);
         }
       },
       error: (error) => {
@@ -102,7 +108,7 @@ export class ItemMaster {
 
     let result = items.filter((item) => {
       const currentStock = item.currentStock ?? item.stockQuantity ?? 0;
-      const minStockLevel = item.minStockLevel ?? item.minimumThreshold ?? 0;
+      const minStockLevel = item.minStockLevel ?? item['minimumThreshold'] ?? 0;
       const categoryName = item.categoryName || '';
 
       const matchesSearch =
@@ -111,7 +117,7 @@ export class ItemMaster {
         item.itemName.toLowerCase().includes(term) ||
         categoryName.toLowerCase().includes(term);
 
-      const matchesCategory = cat === 'all' || item.categoryId === cat;
+      const matchesCategory = cat === 'all' || item['categoryId'] === cat;
       const matchesStatus =
         status === 'all' ||
         (status === 'healthy' && currentStock > minStockLevel) ||
@@ -188,7 +194,7 @@ export class ItemMaster {
   }
 
   protected getMinimumStockLevel(item: ItemMasterListDto): number {
-    return item.minStockLevel ?? item.minimumThreshold ?? 0;
+    return item.minStockLevel ?? item['minimumThreshold'] ?? 0;
   }
 
   protected getStockStatus(item: ItemMasterListDto): 'Healthy' | 'Low Stock' | 'Out of Stock' {
@@ -222,11 +228,11 @@ export class ItemMaster {
   }
 
   protected onCategorySelect(categoryId: string): void {
-    const selected = this.categories().find((c) => c.id === categoryId);
+    const selected = this.categories().find((c) => String(c.id) === categoryId);
     if (selected) {
       this.createForm.patchValue({
-        categoryId: selected.id,
-        categoryName: selected.name,
+        categoryId: String(selected.id),
+        categoryName: selected.categoryName ?? selected.name ?? '',
       });
     }
   }
@@ -259,10 +265,10 @@ export class ItemMaster {
     this.editForm.patchValue({
       sku: item.sku,
       itemName: item.itemName,
-      categoryId: item.categoryId ?? '',
+      categoryId: String(item['categoryId'] ?? ''),
       unitOfMeasure: item.unitOfMeasure,
       requiresInspection: item.requiresInspection ?? false,
-      minStockLevel: item.minStockLevel ?? item.minimumThreshold ?? 0,
+      minStockLevel: item.minStockLevel ?? item['minimumThreshold'] ?? 0,
     });
     this.showEditModal.set(true);
   }
@@ -279,7 +285,7 @@ export class ItemMaster {
 
     this.isSubmitting.set(true);
     this.itemApi
-      .update(itemId, this.editForm.getRawValue())
+      .update(String(itemId), this.editForm.getRawValue())
       .pipe(finalize(() => this.isSubmitting.set(false)))
       .subscribe({
         next: (response) => {
@@ -310,7 +316,7 @@ export class ItemMaster {
     if (this.selectedIds().size === this.filteredItems().length) {
       this.selectedIds.set(new Set());
     } else {
-      this.selectedIds.set(new Set(this.filteredItems().map((i) => i.id)));
+      this.selectedIds.set(new Set(this.filteredItems().map((i) => String(i.id))));
     }
   }
 
@@ -323,12 +329,12 @@ export class ItemMaster {
       const currentStock = item.currentStock ?? 0;
       const minStockLevel = item.minStockLevel ?? 0;
       return currentStock > 0 && currentStock <= minStockLevel;
-    }).map((item) => item.id);
+    }).map((item) => String(item.id));
     this.selectedIds.set(new Set(ids));
   }
 
   protected selectOutOfStock(): void {
-    const ids = this.filteredItems().filter((item) => (item.currentStock ?? 0) === 0).map((item) => item.id);
+    const ids = this.filteredItems().filter((item) => (item.currentStock ?? 0) === 0).map((item) => String(item.id));
     this.selectedIds.set(new Set(ids));
   }
 
@@ -414,7 +420,7 @@ export class ItemMaster {
   }
 
   protected onGenerateQR(): void {
-    const selected = this.filteredItems().filter((i) => this.selectedIds().has(i.id));
+    const selected = this.filteredItems().filter((i) => this.selectedIds().has(String(i.id)));
     if (selected.length === 0) {
       this.showNotice('info', 'Select items first', 'Choose one or more items before generating QR codes.');
       return;
@@ -438,7 +444,7 @@ export class ItemMaster {
   }
 
   protected exportVisible(): void {
-    const ids = this.filteredItems().map(i => i.id);
+    const ids = this.filteredItems().map(i => String(i.id));
     if (ids.length === 0) {
       this.showNotice('info', 'Nothing to export', 'Use the filters to show items before exporting.');
       return;
@@ -469,7 +475,7 @@ export class ItemMaster {
     }
 
     this.isSubmitting.set(true);
-    this.itemApi.remove(item.id).pipe(finalize(() => this.isSubmitting.set(false))).subscribe({
+    this.itemApi.remove(String(item.id)).pipe(finalize(() => this.isSubmitting.set(false))).subscribe({
       next: () => {
         this.showNotice('success', 'Item deleted', `${item.itemName} was removed from the database.`);
       },

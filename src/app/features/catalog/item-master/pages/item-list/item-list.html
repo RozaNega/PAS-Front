@@ -57,9 +57,9 @@
           </thead>
           <tbody>
             @for (item of items(); track item.id) {
-              <tr [class.row-selected]="isSelected(item.id)">
+              <tr [class.row-selected]="isSelected('' + item.id)">
                 <td class="checkbox-col">
-                  <input type="checkbox" [checked]="isSelected(item.id)" (change)="toggleSelection(item.id)">
+                  <input type="checkbox" [checked]="isSelected('' + item.id)" (change)="toggleSelection('' + item.id)">
                 </td>
                 <td><span class="sku-badge">{{ item.sku }}</span></td>
                 <td class="item-name-cell">

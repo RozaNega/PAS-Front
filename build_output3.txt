@@ -1,0 +1,2100 @@
+
+> pas-frontend@0.0.0 build
+> ng build
+
+[33m❯[39m Building...
+[32m✔[39m Building...
+[35mPrerendered 0 static routes.[39m
+Application bundle generation failed. [31.026 seconds] - 2026-06-01T18:25:12.507Z
+
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8103: NG8103: The `*ngFor` directive was used in the template, but neither the `NgFor` directive nor the `CommonModule` was imported. Use Angular's built-in control flow @for or make sure that either the `NgFor` directive or the `CommonModule` is included in the `@Component.imports` array of this component. Find more at https://v21.angular.dev/extended-diagnostics/NG8103[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/admin-dashboard/admin-dashboard.component.html:24:36:
+[37m      24 │     <div class="col-xl-3 col-md-6" *[32mngFor[37m="let card of kpiCards">
+         ╵                                     [32m~~~~~[0m
+
+  Warning occurs in the template of component AdminDashboardComponent.
+
+    src/app/features/admin/admin-dashboard/admin-dashboard.component.ts:35:15:
+[37m      35 │   templateUrl: [32m'./admin-dashboard.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8103: NG8103: The `*ngIf` directive was used in the template, but neither the `NgIf` directive nor the `CommonModule` was imported. Use Angular's built-in control flow @if or make sure that either the `NgIf` directive or the `CommonModule` is included in the `@Component.imports` array of this component. Find more at https://v21.angular.dev/extended-diagnostics/NG8103[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/admin-dashboard/admin-dashboard.component.html:36:21:
+[37m      36 │                     *[32mngIf[37m="card.trend !== undefined">
+         ╵                      [32m~~~~[0m
+
+  Warning occurs in the template of component AdminDashboardComponent.
+
+    src/app/features/admin/admin-dashboard/admin-dashboard.component.ts:35:15:
+[37m      35 │   templateUrl: [32m'./admin-dashboard.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8103: NG8103: The `*ngIf` directive was used in the template, but neither the `NgIf` directive nor the `CommonModule` was imported. Use Angular's built-in control flow @if or make sure that either the `NgIf` directive or the `CommonModule` is included in the `@Component.imports` array of this component. Find more at https://v21.angular.dev/extended-diagnostics/NG8103[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/admin-dashboard/admin-dashboard.component.html:62:16:
+[37m      62 │           <div *[32mngIf[37m="recentActivities.length === 0" class="text-c...
+         ╵                 [32m~~~~[0m
+
+  Warning occurs in the template of component AdminDashboardComponent.
+
+    src/app/features/admin/admin-dashboard/admin-dashboard.component.ts:35:15:
+[37m      35 │   templateUrl: [32m'./admin-dashboard.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8103: NG8103: The `*ngIf` directive was used in the template, but neither the `NgIf` directive nor the `CommonModule` was imported. Use Angular's built-in control flow @if or make sure that either the `NgIf` directive or the `CommonModule` is included in the `@Component.imports` array of this component. Find more at https://v21.angular.dev/extended-diagnostics/NG8103[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/admin-dashboard/admin-dashboard.component.html:66:42:
+[37m      66 │ ...ul class="list-unstyled mb-0" *[32mngIf[37m="recentActivities.length > 0">
+         ╵                                   [32m~~~~[0m
+
+  Warning occurs in the template of component AdminDashboardComponent.
+
+    src/app/features/admin/admin-dashboard/admin-dashboard.component.ts:35:15:
+[37m      35 │   templateUrl: [32m'./admin-dashboard.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8103: NG8103: The `*ngFor` directive was used in the template, but neither the `NgFor` directive nor the `CommonModule` was imported. Use Angular's built-in control flow @for or make sure that either the `NgFor` directive or the `CommonModule` is included in the `@Component.imports` array of this component. Find more at https://v21.angular.dev/extended-diagnostics/NG8103[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/admin-dashboard/admin-dashboard.component.html:67:57:
+[37m      67 │ ...border-bottom border-light" *[32mngFor[37m="let activity of recentActiv...
+         ╵                                 [32m~~~~~[0m
+
+  Warning occurs in the template of component AdminDashboardComponent.
+
+    src/app/features/admin/admin-dashboard/admin-dashboard.component.ts:35:15:
+[37m      35 │   templateUrl: [32m'./admin-dashboard.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8103: NG8103: The `*ngFor` directive was used in the template, but neither the `NgFor` directive nor the `CommonModule` was imported. Use Angular's built-in control flow @for or make sure that either the `NgFor` directive or the `CommonModule` is included in the `@Component.imports` array of this component. Find more at https://v21.angular.dev/extended-diagnostics/NG8103[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/admin-dashboard/admin-dashboard.component.html:96:16:
+[37m      96 │           <div *[32mngFor[37m="let stat of quickStats" class="mb-3">
+         ╵                 [32m~~~~~[0m
+
+  Warning occurs in the template of component AdminDashboardComponent.
+
+    src/app/features/admin/admin-dashboard/admin-dashboard.component.ts:35:15:
+[37m      35 │   templateUrl: [32m'./admin-dashboard.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8103: NG8103: The `*ngIf` directive was used in the template, but neither the `NgIf` directive nor the `CommonModule` was imported. Use Angular's built-in control flow @if or make sure that either the `NgIf` directive or the `CommonModule` is included in the `@Component.imports` array of this component. Find more at https://v21.angular.dev/extended-diagnostics/NG8103[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/requests/create-request/create-request.component.html:26:46:
+[37m      26 │ ...iv class="text-danger small" *[32mngIf[37m="requestForm.get('requestTyp...
+         ╵                                  [32m~~~~[0m
+
+  Warning occurs in the template of component CreateRequestComponent.
+
+    src/app/features/requests/create-request/create-request.component.ts:11:15:
+[37m      11 │   templateUrl: [32m'./create-request.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8103: NG8103: The `*ngFor` directive was used in the template, but neither the `NgFor` directive nor the `CommonModule` was imported. Use Angular's built-in control flow @for or make sure that either the `NgFor` directive or the `CommonModule` is included in the `@Component.imports` array of this component. Find more at https://v21.angular.dev/extended-diagnostics/NG8103[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/requests/create-request/create-request.component.html:36:25:
+[37m      36 │                 <option *[32mngFor[37m="let cat of categories" [value]="ca...
+         ╵                          [32m~~~~~[0m
+
+  Warning occurs in the template of component CreateRequestComponent.
+
+    src/app/features/requests/create-request/create-request.component.ts:11:15:
+[37m      11 │   templateUrl: [32m'./create-request.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8103: NG8103: The `*ngIf` directive was used in the template, but neither the `NgIf` directive nor the `CommonModule` was imported. Use Angular's built-in control flow @if or make sure that either the `NgIf` directive or the `CommonModule` is included in the `@Component.imports` array of this component. Find more at https://v21.angular.dev/extended-diagnostics/NG8103[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/requests/create-request/create-request.component.html:38:46:
+[37m      38 │ ...iv class="text-danger small" *[32mngIf[37m="requestForm.get('category')...
+         ╵                                  [32m~~~~[0m
+
+  Warning occurs in the template of component CreateRequestComponent.
+
+    src/app/features/requests/create-request/create-request.component.ts:11:15:
+[37m      11 │   templateUrl: [32m'./create-request.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8103: NG8103: The `*ngIf` directive was used in the template, but neither the `NgIf` directive nor the `CommonModule` was imported. Use Angular's built-in control flow @if or make sure that either the `NgIf` directive or the `CommonModule` is included in the `@Component.imports` array of this component. Find more at https://v21.angular.dev/extended-diagnostics/NG8103[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/requests/create-request/create-request.component.html:47:46:
+[37m      47 │ ...iv class="text-danger small" *[32mngIf[37m="requestForm.get('title')?.i...
+         ╵                                  [32m~~~~[0m
+
+  Warning occurs in the template of component CreateRequestComponent.
+
+    src/app/features/requests/create-request/create-request.component.ts:11:15:
+[37m      11 │   templateUrl: [32m'./create-request.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8103: NG8103: The `*ngIf` directive was used in the template, but neither the `NgIf` directive nor the `CommonModule` was imported. Use Angular's built-in control flow @if or make sure that either the `NgIf` directive or the `CommonModule` is included in the `@Component.imports` array of this component. Find more at https://v21.angular.dev/extended-diagnostics/NG8103[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/requests/create-request/create-request.component.html:56:46:
+[37m      56 │ ...iv class="text-danger small" *[32mngIf[37m="requestForm.get('descriptio...
+         ╵                                  [32m~~~~[0m
+
+  Warning occurs in the template of component CreateRequestComponent.
+
+    src/app/features/requests/create-request/create-request.component.ts:11:15:
+[37m      11 │   templateUrl: [32m'./create-request.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8103: NG8103: The `*ngIf` directive was used in the template, but neither the `NgIf` directive nor the `CommonModule` was imported. Use Angular's built-in control flow @if or make sure that either the `NgIf` directive or the `CommonModule` is included in the `@Component.imports` array of this component. Find more at https://v21.angular.dev/extended-diagnostics/NG8103[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/requests/create-request/create-request.component.html:71:46:
+[37m      71 │ ...iv class="text-danger small" *[32mngIf[37m="requestForm.get('priority')...
+         ╵                                  [32m~~~~[0m
+
+  Warning occurs in the template of component CreateRequestComponent.
+
+    src/app/features/requests/create-request/create-request.component.ts:11:15:
+[37m      11 │   templateUrl: [32m'./create-request.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8103: NG8103: The `*ngIf` directive was used in the template, but neither the `NgIf` directive nor the `CommonModule` was imported. Use Angular's built-in control flow @if or make sure that either the `NgIf` directive or the `CommonModule` is included in the `@Component.imports` array of this component. Find more at https://v21.angular.dev/extended-diagnostics/NG8103[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/requests/create-request/create-request.component.html:77:18:
+[37m      77 │             <div *[32mngIf[37m="requestForm.get('requestType')?.value === ...
+         ╵                   [32m~~~~[0m
+
+  Warning occurs in the template of component CreateRequestComponent.
+
+    src/app/features/requests/create-request/create-request.component.ts:11:15:
+[37m      11 │   templateUrl: [32m'./create-request.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8103: NG8103: The `*ngFor` directive was used in the template, but neither the `NgFor` directive nor the `CommonModule` was imported. Use Angular's built-in control flow @for or make sure that either the `NgFor` directive or the `CommonModule` is included in the `@Component.imports` array of this component. Find more at https://v21.angular.dev/extended-diagnostics/NG8103[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/requests/create-request/create-request.component.html:82:27:
+[37m      82 │                   <option *[32mngFor[37m="let item of items" [value]="item...
+         ╵                            [32m~~~~~[0m
+
+  Warning occurs in the template of component CreateRequestComponent.
+
+    src/app/features/requests/create-request/create-request.component.ts:11:15:
+[37m      11 │   templateUrl: [32m'./create-request.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8103: NG8103: The `*ngFor` directive was used in the template, but neither the `NgFor` directive nor the `CommonModule` was imported. Use Angular's built-in control flow @for or make sure that either the `NgFor` directive or the `CommonModule` is included in the `@Component.imports` array of this component. Find more at https://v21.angular.dev/extended-diagnostics/NG8103[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/requests/create-request/create-request.component.html:90:27:
+[37m      90 │                   <option *[32mngFor[37m="let shelf of shelves" [value]="s...
+         ╵                            [32m~~~~~[0m
+
+  Warning occurs in the template of component CreateRequestComponent.
+
+    src/app/features/requests/create-request/create-request.component.ts:11:15:
+[37m      11 │   templateUrl: [32m'./create-request.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8103: NG8103: The `*ngIf` directive was used in the template, but neither the `NgIf` directive nor the `CommonModule` was imported. Use Angular's built-in control flow @if or make sure that either the `NgIf` directive or the `CommonModule` is included in the `@Component.imports` array of this component. Find more at https://v21.angular.dev/extended-diagnostics/NG8103[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/requests/create-request/create-request.component.html:103:69:
+[37m      103 │ ...der spinner-border-sm me-1" *[32mngIf[37m="isSubmitting" role="status"...
+          ╵                                 [32m~~~~[0m
+
+  Warning occurs in the template of component CreateRequestComponent.
+
+    src/app/features/requests/create-request/create-request.component.ts:11:15:
+[37m      11 │   templateUrl: [32m'./create-request.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m
+[1m[31m[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2769: No overload matches this call.
+  Overload 1 of 5, '(method: "POST", url: string, body: T | null, init?: { headers?: HttpHeaders | undefined; context?: HttpContext | undefined; reportProgress?: boolean | undefined; ... 13 more ...; timeout?: number | undefined; } | undefined): HttpRequest<...>', gave the following error.
+    Argument of type 'string' is not assignable to parameter of type '"POST"'.
+  Overload 2 of 5, '(method: "PUT" | "PATCH", url: string, body: T | null, init?: { headers?: HttpHeaders | undefined; context?: HttpContext | undefined; reportProgress?: boolean | undefined; ... 12 more ...; referrerPolicy?: ReferrerPolicy | undefined; } | undefined): HttpRequest<...>', gave the following error.
+    Argument of type 'string' is not assignable to parameter of type '"PUT" | "PATCH"'.
+  Overload 3 of 5, '(method: string, url: string, body: T | null, init?: { headers?: HttpHeaders | undefined; context?: HttpContext | undefined; reportProgress?: boolean | undefined; ... 13 more ...; timeout?: number | undefined; } | undefined): HttpRequest<...>', gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type 'T | null'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/core/services/api.service.ts:132:20:
+[37m      132 │     const req = new [32mHttpRequest[37m<T>(method, url, body, {
+          ╵                     [32m~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2558: Expected 0 type arguments, but got 1.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/core/services/profile.service.ts:25:46:
+[37m      25 │ ...oadProfilePhoto<[32mApiResponseModel<string> | string[37m>(id, file).pipe(
+         ╵                    [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2551: Property 'isSuccess' does not exist on type 'ApiResponseModel<RegisterApiResponse>'. Did you mean 'success'?[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/core/services/registration.service.ts:61:79:
+[37m      61 │ ...rue || response.succeeded === true || response.[32misSuccess[37m === true;
+         ╵                                                   [32m~~~~~~~~~[0m
+
+  'success' is declared here.
+
+    src/app/core/models/api-response.model.ts:2:2:
+[37m      2 │   [32msuccess[37m: boolean;
+        ╵   [32m~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG2003: No suitable injection token for parameter 'api' of class 'ServiceRequestService'.
+  Consider using the @Inject decorator to specify an injection token.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/core/services/service-request.service.ts:50:12:
+[37m      50 │     private [32mapi[37m: ApiService,
+         ╵             [32m~~~[0m
+
+  This type does not have a value, so it cannot be used as injection token.
+
+    src/app/core/services/service-request.service.ts:50:17:
+[37m      50 │     private api: [32mApiService[37m,
+         ╵                  [32m~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2304: Cannot find name 'ApiService'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/core/services/service-request.service.ts:50:17:
+[37m      50 │     private api: [32mApiService[37m,
+         ╵                  [32m~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2552: Cannot find name 'PasResponse'. Did you mean 'Response'?[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/core/services/service-request.service.ts:53:73:
+[37m      53 │ ... number = 10): Observable<[32mPasResponse[37m<PaginatedResponse<Service...
+         ╵                              [32m~~~~~~~~~~~[0m
+
+  'Response' is declared here.
+
+    node_modules/typescript/lib/lib.dom.d.ts:26367:12:
+[37m      26367 │ declare var [32mResponse[37m: {
+            ╵             [32m~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2552: Cannot find name 'map'. Did you mean 'Map'?[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/core/services/service-request.service.ts:96:6:
+[37m      96 │       [32mmap[37m(response => {
+         ╵       [32m~~~[0m
+
+  'Map' is declared here.
+
+    node_modules/typescript/lib/lib.es2015.collection.d.ts:53:12:
+[37m      53 │ declare var [32mMap[37m: MapConstructor;
+         ╵             [32m~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS7006: Parameter 'response' implicitly has an 'any' type.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/core/services/service-request.service.ts:96:10:
+[37m      96 │       map([32mresponse[37m => {
+         ╵           [32m~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'ngClass' since it isn't a known property of 'i'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/admin-dashboard/admin-dashboard.component.html:30:26:
+[37m      30 │ ...       <i class="bi" [32m[ngClass]="card.icon"[37m style="font-size: 1....
+         ╵                         [32m~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component AdminDashboardComponent.
+
+    src/app/features/admin/admin-dashboard/admin-dashboard.component.ts:35:15:
+[37m      35 │   templateUrl: [32m'./admin-dashboard.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'ngClass' since it isn't a known property of 'span'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/admin-dashboard/admin-dashboard.component.html:35:34:
+[37m      35 │ ...lass="badge" [32m[ngClass]="card.trendUp ? 'bg-success' : 'bg-danger'"[37m
+         ╵                 [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component AdminDashboardComponent.
+
+    src/app/features/admin/admin-dashboard/admin-dashboard.component.ts:35:15:
+[37m      35 │   templateUrl: [32m'./admin-dashboard.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'ngClass' since it isn't a known property of 'i'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/admin-dashboard/admin-dashboard.component.html:37:30:
+[37m      37 │ ...lass="bi" [32m[ngClass]="card.trendUp ? 'bi-arrow-up' : 'bi-arrow-d[37m...
+         ╵              [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component AdminDashboardComponent.
+
+    src/app/features/admin/admin-dashboard/admin-dashboard.component.ts:35:15:
+[37m      35 │   templateUrl: [32m'./admin-dashboard.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG2008: Could not find stylesheet file './admin-dashboard.component.scss'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/admin/admin-dashboard/admin-dashboard.component.ts:36:14:
+[37m      36 │   styleUrls: [[32m'./admin-dashboard.component.scss'[37m]
+         ╵               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'items' does not exist on type 'User | UserPaginatedResponse'.
+  Property 'items' does not exist on type 'User'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/auth/pages/login/login.ts:125:49:
+[37m      125 │           if (response.success && response.data?.[32mitems[37m?.length) {
+          ╵                                                  [32m~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'items' does not exist on type 'User | UserPaginatedResponse'.
+  Property 'items' does not exist on type 'User'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/auth/pages/login/login.ts:127:45:
+[37m      127 │             const exactMatch = response.data.[32mitems[37m.find(
+          ╵                                              [32m~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS7006: Parameter 'u' implicitly has an 'any' type.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/auth/pages/login/login.ts:128:15:
+[37m      128 │               ([32mu[37m) => u.username.toLowerCase() === username.toLowe...
+          ╵                [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'items' does not exist on type 'User | UserPaginatedResponse'.
+  Property 'items' does not exist on type 'User'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/auth/pages/login/login.ts:130:59:
+[37m      130 │ ...      const userId = exactMatch?.id || response.data.[32mitems[37m[0].id;
+          ╵                                                         [32m~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'id' does not exist on type 'User | UserPaginatedResponse'.
+  Property 'id' does not exist on type 'UserPaginatedResponse'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/auth/pages/login/login.ts:138:55:
+[37m      138 │               if (directRes.success && directRes.data?.[32mid[37m) {
+          ╵                                                        [32m~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'id' does not exist on type 'User | UserPaginatedResponse'.
+  Property 'id' does not exist on type 'UserPaginatedResponse'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/auth/pages/login/login.ts:139:65:
+[37m      139 │ ...            return this.usersService.activate(directRes.data.[32mid[37m);
+          ╵                                                                 [32m~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'name' does not exist on type 'Category'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/categories/categories.html:88:50:
+[37m      88 │                   <option [value]="cat.id">{{ cat.[32mname[37m }}</option>
+         ╵                                                   [32m~~~~[0m
+
+  Error occurs in the template of component Categories.
+
+    src/app/features/catalog/categories/categories.ts:18:15:
+[37m      18 │   templateUrl: [32m'./categories.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'name' does not exist on type 'Category'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/categories/categories.html:160:65:
+[37m      160 │ ...   <div class="category-icon">{{ category.[32mname[37m.charAt(0) }}</div>
+          ╵                                              [32m~~~~[0m
+
+  Error occurs in the template of component Categories.
+
+    src/app/features/catalog/categories/categories.ts:18:15:
+[37m      18 │   templateUrl: [32m'./categories.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'name' does not exist on type 'Category'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/categories/categories.html:162:59:
+[37m      162 │ ...                    <span class="name">{{ category.[32mname[37m }}</span>
+          ╵                                                       [32m~~~~[0m
+
+  Error occurs in the template of component Categories.
+
+    src/app/features/catalog/categories/categories.ts:18:15:
+[37m      18 │   templateUrl: [32m'./categories.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'split' does not exist on type 'number'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/categories/categories.html:163:65:
+[37m      163 │ ...  <span class="id">UID: {{ category.id.[32msplit[37m('-').pop() }}</span>
+          ╵                                           [32m~~~~~[0m
+
+  Error occurs in the template of component Categories.
+
+    src/app/features/catalog/categories/categories.ts:18:15:
+[37m      18 │   templateUrl: [32m'./categories.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2551: Property 'parentCategoryName' does not exist on type 'Category'. Did you mean 'categoryName'?[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/categories/categories.html:169:73:
+[37m      169 │ ...n class="parent-tag" [class.root]="!category.[32mparentCategoryName[37m">
+          ╵                                                 [32m~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component Categories.
+
+    src/app/features/catalog/categories/categories.ts:18:15:
+[37m      18 │   templateUrl: [32m'./categories.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2551: Property 'parentCategoryName' does not exist on type 'Category'. Did you mean 'categoryName'?[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/categories/categories.html:170:38:
+[37m      170 │ ...                      {{ category.[32mparentCategoryName[37m || 'Root' }}
+          ╵                                      [32m~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component Categories.
+
+    src/app/features/catalog/categories/categories.ts:18:15:
+[37m      18 │   templateUrl: [32m'./categories.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'subCategoriesCount' does not exist on type 'Category'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/categories/categories.html:173:38:
+[37m      173 │ ...                  <td>{{ category.[32msubCategoriesCount[37m || 0 }}</td>
+          ╵                                      [32m~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component Categories.
+
+    src/app/features/catalog/categories/categories.ts:18:15:
+[37m      18 │   templateUrl: [32m'./categories.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'itemsCount' does not exist on type 'Category'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/categories/categories.html:174:38:
+[37m      174 │                       <td>{{ category.[32mitemsCount[37m || 0 }}</td>
+          ╵                                       [32m~~~~~~~~~~[0m
+
+  Error occurs in the template of component Categories.
+
+    src/app/features/catalog/categories/categories.ts:18:15:
+[37m      18 │   templateUrl: [32m'./categories.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2345: Argument of type 'number' is not assignable to parameter of type 'string'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/categories/categories.html:177:88:
+[37m      177 │ ...="categoryApi.remove(category.[32mid[37m)"><i class="bi bi-trash"></i>...
+          ╵                                  [32m~~[0m
+
+  Error occurs in the template of component Categories.
+
+    src/app/features/catalog/categories/categories.ts:18:15:
+[37m      18 │   templateUrl: [32m'./categories.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'name' does not exist on type 'Category'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/categories/categories.ts:45:17:
+[37m      45 │         category.[32mname[37m.toLowerCase().includes(term) ||
+         ╵                  [32m~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2551: Property 'parentCategoryName' does not exist on type 'Category'. Did you mean 'categoryName'?[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/categories/categories.ts:47:18:
+[37m      47 │         (category.[32mparentCategoryName[37m?.toLowerCase().includes(term)...
+         ╵                   [32m~~~~~~~~~~~~~~~~~~[0m
+
+  'categoryName' is declared here.
+
+    src/app/core/services/categories.service.ts:9:2:
+[37m      9 │   [32mcategoryName[37m: string;
+        ╵   [32m~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'parentCategoryId' does not exist on type 'Category'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/categories/categories.ts:50:44:
+[37m      50 │ ...r === 'root' ? category.[32mparentCategoryId[37m === null : category.pa...
+         ╵                            [32m~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'parentCategoryId' does not exist on type 'Category'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/categories/categories.ts:50:81:
+[37m      50 │ ...CategoryId === null : category.[32mparentCategoryId[37m === parentFilter);
+         ╵                                   [32m~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'itemsCount' does not exist on type 'Category'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/categories/categories.ts:57:18:
+[37m      57 │         return (b.[32mitemsCount[37m ?? 0) - (a.itemsCount ?? 0);
+         ╵                   [32m~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'itemsCount' does not exist on type 'Category'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/categories/categories.ts:57:40:
+[37m      57 │         return (b.itemsCount ?? 0) - (a.[32mitemsCount[37m ?? 0);
+         ╵                                         [32m~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'subCategoriesCount' does not exist on type 'Category'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/categories/categories.ts:61:18:
+[37m      61 │         return (b.[32msubCategoriesCount[37m ?? 0) - (a.subCategoriesCount...
+         ╵                   [32m~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'subCategoriesCount' does not exist on type 'Category'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/categories/categories.ts:61:48:
+[37m      61 │ ... return (b.subCategoriesCount ?? 0) - (a.[32msubCategoriesCount[37m ?? 0);
+         ╵                                             [32m~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'name' does not exist on type 'Category'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/categories/categories.ts:64:15:
+[37m      64 │       return a.[32mname[37m.localeCompare(b.name);
+         ╵                [32m~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'name' does not exist on type 'Category'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/categories/categories.ts:64:36:
+[37m      64 │       return a.name.localeCompare(b.[32mname[37m);
+         ╵                                     [32m~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'itemsCount' does not exist on type 'Category'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/categories/categories.ts:70:76:
+[37m      70 │ ...es.reduce((sum, category) => sum + (category.[32mitemsCount[37m ?? 0), 0);
+         ╵                                                 [32m~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'subCategoriesCount' does not exist on type 'Category'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/categories/categories.ts:71:76:
+[37m      71 │ ...e((sum, category) => sum + (category.[32msubCategoriesCount[37m ?? 0), 0);
+         ╵                                         [32m~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'parentCategoryId' does not exist on type 'Category'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/categories/categories.ts:72:59:
+[37m      72 │ ...((category) => category.[32mparentCategoryId[37m !== null) ?? categorie...
+         ╵                            [32m~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'name' does not exist on type 'Category'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/categories/categories.ts:78:46:
+[37m      78 │       { label: 'Latest Node', value: deepest?.[32mname[37m ?? 'N/A' },
+         ╵                                               [32m~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'name' does not exist on type 'Category'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/categories/categories.ts:85:74:
+[37m      85 │ ...map((category) => ({ label: category.[32mname[37m, value: category.id })),
+         ╵                                         [32m~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'name' does not exist on type 'Category'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/categories/pages/category-create/category-create.html:21:52:
+[37m      21 │           <option [value]="category.id">{{ category.[32mname[37m }}</option>
+         ╵                                                     [32m~~~~[0m
+
+  Error occurs in the template of component CategoryCreate.
+
+    src/app/features/catalog/categories/pages/category-create/category-create.ts:10:15:
+[37m      10 │   templateUrl: [32m'./category-create.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'name' does not exist on type 'Category'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/categories/pages/category-detail/category-detail.html:11:52:
+[37m      11 │           <option [value]="category.id">{{ category.[32mname[37m }}</option>
+         ╵                                                     [32m~~~~[0m
+
+  Error occurs in the template of component CategoryDetail.
+
+    src/app/features/catalog/categories/pages/category-detail/category-detail.ts:15:15:
+[37m      15 │   templateUrl: [32m'./category-detail.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2345: Argument of type 'number' is not assignable to parameter of type 'string'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/categories/pages/category-detail/category-detail.ts:31:28:
+[37m      31 │         this.selectedId.set([32mcategories[0].id[37m);
+         ╵                             [32m~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'name' does not exist on type 'Category'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/categories/pages/category-edit/category-edit.html:12:52:
+[37m      12 │           <option [value]="category.id">{{ category.[32mname[37m }}</option>
+         ╵                                                     [32m~~~~[0m
+
+  Error occurs in the template of component CategoryEdit.
+
+    src/app/features/catalog/categories/pages/category-edit/category-edit.ts:17:15:
+[37m      17 │   templateUrl: [32m'./category-edit.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2367: This comparison appears to be unintentional because the types 'number' and 'string' have no overlap.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/categories/pages/category-edit/category-edit.html:33:17:
+[37m      33 │             @if ([32mcategory.id !== selectedCategoryId()[37m) {
+         ╵                  [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component CategoryEdit.
+
+    src/app/features/catalog/categories/pages/category-edit/category-edit.ts:17:15:
+[37m      17 │   templateUrl: [32m'./category-edit.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'name' does not exist on type 'Category'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/categories/pages/category-edit/category-edit.html:34:56:
+[37m      34 │ ...        <option [value]="category.id">{{ category.[32mname[37m }}</option>
+         ╵                                                      [32m~~~~[0m
+
+  Error occurs in the template of component CategoryEdit.
+
+    src/app/features/catalog/categories/pages/category-edit/category-edit.ts:17:15:
+[37m      17 │   templateUrl: [32m'./category-edit.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2345: Argument of type 'number' is not assignable to parameter of type 'string'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/categories/pages/category-edit/category-edit.ts:49:36:
+[37m      49 │         this.selectedCategoryId.set([32mcategories[0].id[37m);
+         ╵                                     [32m~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'name' does not exist on type 'Category'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/categories/pages/category-edit/category-edit.ts:56:25:
+[37m      56 │           name: selected.[32mname[37m,
+         ╵                          [32m~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'parentCategoryId' does not exist on type 'Category'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/categories/pages/category-edit/category-edit.ts:58:37:
+[37m      58 │           parentCategoryId: selected.[32mparentCategoryId[37m ?? '',
+         ╵                                      [32m~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'name' does not exist on type 'Category'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/categories/pages/category-list/category-list.html:21:28:
+[37m      21 │             <td>{{ category.[32mname[37m }}</td>
+         ╵                             [32m~~~~[0m
+
+  Error occurs in the template of component CategoryListComponent.
+
+    src/app/features/catalog/categories/pages/category-list/category-list.ts:10:15:
+[37m      10 │   templateUrl: [32m'./category-list.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2551: Property 'parentCategoryName' does not exist on type 'Category'. Did you mean 'categoryName'?[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/categories/pages/category-list/category-list.html:23:28:
+[37m      23 │             <td>{{ category.[32mparentCategoryName[37m || '-' }}</td>
+         ╵                             [32m~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component CategoryListComponent.
+
+    src/app/features/catalog/categories/pages/category-list/category-list.ts:10:15:
+[37m      10 │   templateUrl: [32m'./category-list.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'subCategoriesCount' does not exist on type 'Category'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/categories/pages/category-list/category-list.html:24:28:
+[37m      24 │             <td>{{ category.[32msubCategoriesCount[37m }}</td>
+         ╵                             [32m~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component CategoryListComponent.
+
+    src/app/features/catalog/categories/pages/category-list/category-list.ts:10:15:
+[37m      10 │   templateUrl: [32m'./category-list.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'itemsCount' does not exist on type 'Category'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/categories/pages/category-list/category-list.html:25:28:
+[37m      25 │             <td>{{ category.[32mitemsCount[37m }}</td>
+         ╵                             [32m~~~~~~~~~~[0m
+
+  Error occurs in the template of component CategoryListComponent.
+
+    src/app/features/catalog/categories/pages/category-list/category-list.ts:10:15:
+[37m      10 │   templateUrl: [32m'./category-list.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2345: Argument of type 'number' is not assignable to parameter of type 'string'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/categories/pages/category-list/category-list.ts:20:28:
+[37m      20 │     this.categoryApi.remove([32mcategory.id[37m);
+         ╵                             [32m~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2345: Argument of type 'number' is not assignable to parameter of type 'string'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/categories/services/category-api.ts:23:14:
+[37m      23 │       map.set([32mc.id[37m, { id: c.id, name: c.name, description: c.descr...
+         ╵               [32m~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'name' does not exist on type 'Category'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/categories/services/category-api.ts:23:40:
+[37m      23 │ ...set(c.id, { id: c.id, name: c.[32mname[37m, description: c.description ...
+         ╵                                  [32m~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2345: Argument of type 'number' is not assignable to parameter of type 'string'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/categories/services/category-api.ts:28:27:
+[37m      28 │       const node = map.get([32mc.id[37m)!;
+         ╵                            [32m~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'parentCategoryId' does not exist on type 'Category'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/categories/services/category-api.ts:29:12:
+[37m      29 │       if (c.[32mparentCategoryId[37m && map.has(c.parentCategoryId)) {
+         ╵             [32m~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'parentCategoryId' does not exist on type 'Category'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/categories/services/category-api.ts:29:42:
+[37m      29 │       if (c.parentCategoryId && map.has(c.[32mparentCategoryId[37m)) {
+         ╵                                           [32m~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'parentCategoryId' does not exist on type 'Category'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/categories/services/category-api.ts:30:33:
+[37m      30 │         const parent = map.get(c.[32mparentCategoryId[37m);
+         ╵                                  [32m~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'parentCategoryId' does not exist on type 'Category'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/categories/services/category-api.ts:41:53:
+[37m      41 │ ...his.categories().filter((category) => !category.[32mparentCategoryId[37m),
+         ╵                                                    [32m~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'itemsCount' does not exist on type 'Category'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/categories/services/category-api.ts:47:64:
+[37m      47 │ ...().reduce((sum, category) => sum + (category.[32mitemsCount[37m || 0), 0),
+         ╵                                                 [32m~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2345: Argument of type 'PaginatedResponse<Category>' is not assignable to parameter of type 'Category[]'.
+  Type 'PaginatedResponse<Category>' is missing the following properties from type 'Category[]': length, pop, push, concat, and 29 more.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/categories/services/category-api.ts:61:36:
+[37m      61 │           this.categoriesSignal.set([32mres.data[37m);
+         ╵                                     [32m~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2345: Argument of type 'string' is not assignable to parameter of type 'number'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/categories/services/category-api.ts:76:39:
+[37m      76 │     return this.categoryService.update([32mpayload.id[37m, payload).pipe(
+         ╵                                        [32m~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2345: Argument of type 'string' is not assignable to parameter of type 'number'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/categories/services/category-api.ts:84:32:
+[37m      84 │     this.categoryService.delete([32mid[37m).subscribe({
+         ╵                                 [32m~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2367: This comparison appears to be unintentional because the types 'number' and 'string' have no overlap.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/categories/services/category-api.ts:92:48:
+[37m      92 │     return this.categories().find((category) => [32mcategory.id === id[37m);
+         ╵                                                 [32m~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'parentCategoryId' does not exist on type 'Category'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/categories/services/category-api.ts:100:53:
+[37m      100 │ ...gories: this.categories().filter(c => c.[32mparentCategoryId[37m === id),
+          ╵                                            [32m~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'name' does not exist on type 'Category'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/item-master/item-master.html:78:44:
+[37m      78 │             <option [value]="cat.id">{{ cat.[32mname[37m }}</option>
+         ╵                                             [32m~~~~[0m
+
+  Error occurs in the template of component ItemMaster.
+
+    src/app/features/catalog/item-master/item-master.ts:26:15:
+[37m      26 │   templateUrl: [32m'./item-master.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'name' does not exist on type 'Category'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/item-master/item-master.html:168:50:
+[37m      168 │                   <option [value]="cat.id">{{ cat.[32mname[37m }}</option>
+          ╵                                                   [32m~~~~[0m
+
+  Error occurs in the template of component ItemMaster.
+
+    src/app/features/catalog/item-master/item-master.ts:26:15:
+[37m      26 │   templateUrl: [32m'./item-master.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'name' does not exist on type 'Category'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/item-master/item-master.html:428:50:
+[37m      428 │                   <option [value]="cat.id">{{ cat.[32mname[37m }}</option>
+          ╵                                                   [32m~~~~[0m
+
+  Error occurs in the template of component ItemMaster.
+
+    src/app/features/catalog/item-master/item-master.ts:26:15:
+[37m      26 │   templateUrl: [32m'./item-master.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'name' does not exist on type 'Category'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/item-master/item-master.html:520:54:
+[37m      520 │ ...                 <option [value]="cat.id">{{ cat.[32mname[37m }}</option>
+          ╵                                                     [32m~~~~[0m
+
+  Error occurs in the template of component ItemMaster.
+
+    src/app/features/catalog/item-master/item-master.ts:26:15:
+[37m      26 │   templateUrl: [32m'./item-master.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2305: Module '"../../../core/services/item-master.service"' has no exported member 'ItemMasterBulkUpdateRequest'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/item-master/item-master.ts:13:9:
+[37m      13 │ import { [32mItemMasterBulkUpdateRequest[37m, ItemMasterListDto } from '.....
+         ╵          [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2305: Module '"../../../core/services/item-master.service"' has no exported member 'ItemMasterListDto'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/item-master/item-master.ts:13:38:
+[37m      13 │ ...sterBulkUpdateRequest, [32mItemMasterListDto[37m } from '../../../core/...
+         ╵                           [32m~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2345: Argument of type '{ includeInactive: boolean; }' is not assignable to parameter of type 'number'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/item-master/item-master.ts:80:34:
+[37m      80 │ ...s.categoriesService.getAll([32m{ includeInactive: false }[37m).subscribe({
+         ╵                               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2345: Argument of type 'PaginatedResponse<Category>' is not assignable to parameter of type 'Category[]'.
+  Type 'PaginatedResponse<Category>' is missing the following properties from type 'Category[]': length, pop, push, concat, and 29 more.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/item-master/item-master.ts:83:32:
+[37m      83 │           this.categoryList.set([32mresponse.data[37m);
+         ╵                                 [32m~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2367: This comparison appears to be unintentional because the types 'number' and 'string' have no overlap.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/item-master/item-master.ts:225:51:
+[37m      225 │ ...st selected = this.categories().find((c) => [32mc.id === categoryId[37m);
+          ╵                                                [32m~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2322: Type 'number' is not assignable to type 'string'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/item-master/item-master.ts:228:8:
+[37m      228 │         [32mcategoryId[37m: selected.id,
+          ╵         [32m~~~~~~~~~~[0m
+
+  The expected type comes from property 'categoryId' which is declared here on type 'Partial<{ sku: string; itemName: string; categoryId: string; categoryName: string; unitOfMeasure: string; stockQuantity: number; requiresInspection: boolean; minStockLevel: number; }>'
+
+    src/app/features/catalog/item-master/item-master.ts:55:4:
+[37m      55 │     [32mcategoryId: ['', [Validators.required]][37m,
+         ╵     [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'name' does not exist on type 'Category'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/item-master/item-master.ts:229:31:
+[37m      229 │         categoryName: selected.[32mname[37m,
+          ╵                                [32m~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'name' does not exist on type 'Category'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/item-master/pages/item-create/item-create.html:72:21:
+[37m      72 │               {{ cat.[32mname[37m }}
+         ╵                      [32m~~~~[0m
+
+  Error occurs in the template of component ItemCreate.
+
+    src/app/features/catalog/item-master/pages/item-create/item-create.ts:14:15:
+[37m      14 │   templateUrl: [32m'./item-create.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2367: This comparison appears to be unintentional because the types 'number' and 'string' have no overlap.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/item-master/pages/item-create/item-create.ts:58:49:
+[37m      58 │ ...const selected = this.categories().find(c => [32mc.id === categoryId[37m);
+         ╵                                                 [32m~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2322: Type 'number' is not assignable to type 'string'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/item-master/pages/item-create/item-create.ts:61:8:
+[37m      61 │         [32mcategoryId[37m: selected.id,
+         ╵         [32m~~~~~~~~~~[0m
+
+  The expected type comes from property 'categoryId' which is declared here on type 'Partial<{ sku: string; itemName: string; categoryId: string; categoryName: string; unitOfMeasure: string; stockQuantity: number; minStockLevel: number; description: string; requiresInspection: boolean; isActive: boolean; }>'
+
+    src/app/features/catalog/item-master/pages/item-create/item-create.ts:30:4:
+[37m      30 │     [32mcategoryId: ['', [Validators.required]][37m,
+         ╵     [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'name' does not exist on type 'Category'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/item-master/pages/item-create/item-create.ts:62:31:
+[37m      62 │         categoryName: selected.[32mname[37m
+         ╵                                [32m~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2305: Module '"../../../../../core/services/item-master.service"' has no exported member 'ItemMasterListDto'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/item-master/pages/item-list/item-list.ts:4:9:
+[37m      4 │ import { [32mItemMasterListDto[37m } from '../../../../../core/services/ite...
+        ╵          [32m~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2305: Module '"../../../../core/services/item-master.service"' has no exported member 'ItemMasterBulkUpdateRequest'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/item-master/services/item-master-api.ts:3:2:
+[37m      3 │   [32mItemMasterBulkUpdateRequest[37m,
+        ╵   [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2305: Module '"../../../../core/services/item-master.service"' has no exported member 'ItemMasterListDto'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/item-master/services/item-master-api.ts:4:2:
+[37m      4 │   [32mItemMasterListDto[37m,
+        ╵   [32m~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2305: Module '"../../../../core/services/item-master.service"' has no exported member 'ItemMasterWriteRequest'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/item-master/services/item-master-api.ts:6:2:
+[37m      6 │   [32mItemMasterWriteRequest[37m,
+        ╵   [32m~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2345: Argument of type '{ pageSize: number; }' is not assignable to parameter of type 'number'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/item-master/services/item-master-api.ts:39:36:
+[37m      39 │     this.itemService.getItemMasters([32m{ pageSize: 1000 }[37m).subscribe({
+         ╵                                     [32m~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'items' does not exist on type 'string | ItemMaster | ItemMasterPaginatedResponse'.
+  Property 'items' does not exist on type 'string'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/item-master/services/item-master-api.ts:44:48:
+[37m      44 │           console.log('Items loaded:', res.data.[32mitems[37m);
+         ╵                                                 [32m~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'items' does not exist on type 'string | ItemMaster | ItemMasterPaginatedResponse'.
+  Property 'items' does not exist on type 'string'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/item-master/services/item-master-api.ts:45:40:
+[37m      45 │           this.itemsSignal.set(res.data.[32mitems[37m);
+         ╵                                         [32m~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2345: Argument of type 'string' is not assignable to parameter of type 'number'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/item-master/services/item-master-api.ts:81:45:
+[37m      81 │     return this.itemService.updateItemMaster([32mid[37m, payload).pipe(
+         ╵                                              [32m~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2345: Argument of type 'string' is not assignable to parameter of type 'number'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/item-master/services/item-master-api.ts:96:45:
+[37m      96 │     return this.itemService.deleteItemMaster([32mid[37m).pipe(
+         ╵                                              [32m~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2345: Argument of type 'string' is not assignable to parameter of type 'number'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/item-master/services/item-master-api.ts:124:47:
+[37m      124 │ ... return this.itemService.updateItemMaster([32mid[37m, { minStockLevel });
+          ╵                                              [32m~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2345: Argument of type 'string' is not assignable to parameter of type 'number'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/item-master/services/item-master-api.ts:141:75:
+[37m      141 │ ...mIds.map((id) => this.itemService.updateItemMaster([32mid[37m, updates));
+          ╵                                                       [32m~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2322: Type 'Observable<ApiResponseModel<ApiResponse<PaginatedResult<any>>>>' is not assignable to type 'Observable<ApiResponse<PaginatedResult<any>>>'.
+  Type 'ApiResponseModel<ApiResponse<PaginatedResult<any>>>' is not assignable to type 'ApiResponse<PaginatedResult<any>>'.
+    Types of property 'message' are incompatible.
+      Type 'string | undefined' is not assignable to type 'string'.
+        Type 'undefined' is not assignable to type 'string'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/catalog/item-master/services/item.service.ts:14:4:
+[37m      14 │     [32mreturn[37m this.apiService.get<ApiResponse<PaginatedResult<any>>>(...
+         ╵     [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2345: Argument of type 'Record<string, unknown> | undefined' is not assignable to parameter of type 'HttpParams | Record<string, string | number | boolean | readonly (string | number | boolean)[]> | undefined'.
+  Type 'Record<string, unknown>' is not assignable to type 'HttpParams | Record<string, string | number | boolean | readonly (string | number | boolean)[]> | undefined'.
+    Type 'Record<string, unknown>' is missing the following properties from type 'HttpParams': map, encoder, updates, cloneFrom, and 10 more.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/common/notifications/services/notification-feature.service.ts:33:77:
+[37m      33 │ ...ce.get<unknown>(API_ENDPOINTS.NOTIFICATIONS.GET_ALL, [32mparams[37m).pipe(
+         ╵                                                         [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2554: Expected 0-1 arguments, but got 2.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/pages/employee-dashboard/employee-dashboard.component.ts:741:37:
+[37m      741 │ ...sts(undefined, [32m{ headers: { 'X-Suppress-Error-Toast': 'true' } }[37m)
+          ╵                   [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2305: Module '"../../../../core/services/inventory.service"' has no exported member 'ShelfLocationDto'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/pages/employee-requests/create-request.component.ts:16:27:
+[37m      16 │ import { InventoryService, [32mShelfLocationDto[37m } from '../../../../co...
+         ╵                            [32m~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2305: Module '"../../../../core/services/item-master.service"' has no exported member 'ItemMasterListDto'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/pages/employee-requests/create-request.component.ts:19:2:
+[37m      19 │   [32mItemMasterListDto[37m,
+         ╵   [32m~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2305: Module '"../../../../core/services/item-master.service"' has no exported member 'ItemStockLocationDto'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/pages/employee-requests/create-request.component.ts:20:2:
+[37m      20 │   [32mItemStockLocationDto[37m,
+         ╵   [32m~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'getAllShelves' does not exist on type 'InventoryService'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/pages/employee-requests/create-request.component.ts:216:37:
+[37m      216 │       shelves: this.inventoryService.[32mgetAllShelves[37m().pipe(
+          ╵                                      [32m~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS18046: 'res' is of type 'unknown'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/pages/employee-requests/create-request.component.ts:217:21:
+[37m      217 │         map((res) => [32mres[37m.data ?? []),
+          ╵                      [32m~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'getById' does not exist on type 'ItemMasterService'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/pages/employee-requests/create-request.component.ts:258:27:
+[37m      258 │     this.itemMasterService.[32mgetById[37m(selected.itemId).subscribe({
+          ╵                            [32m~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS7006: Parameter 'res' implicitly has an 'any' type.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/pages/employee-requests/create-request.component.ts:259:13:
+[37m      259 │       next: ([32mres[37m) => {
+          ╵              [32m~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'getAllShelves' does not exist on type 'InventoryService'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/pages/employee-requests/create-request.component.ts:358:53:
+[37m      358 │ ... ensureShelfExists$ = this.inventoryService.[32mgetAllShelves[37m().pipe(
+          ╵                                                [32m~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS18046: 'res' is of type 'unknown'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/pages/employee-requests/create-request.component.ts:359:19:
+[37m      359 │       map((res) => [32mres[37m.data ?? []),
+          ╵                    [32m~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS18046: 'shelves' is of type 'unknown'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/pages/employee-requests/create-request.component.ts:362:12:
+[37m      362 │         if ([32mshelves[37m.length > 0) return of(shelves);
+          ╵             [32m~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'getAllWarehouses' does not exist on type 'InventoryService'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/pages/employee-requests/create-request.component.ts:363:37:
+[37m      363 │         return this.inventoryService.[32mgetAllWarehouses[37m().pipe(
+          ╵                                      [32m~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS18046: 'res' is of type 'unknown'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/pages/employee-requests/create-request.component.ts:364:23:
+[37m      364 │           map((res) => [32mres[37m.data ?? []),
+          ╵                        [32m~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'createWarehouse' does not exist on type 'InventoryService'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/pages/employee-requests/create-request.component.ts:370:15:
+[37m      370 │               .[32mcreateWarehouse[37m({ name: 'Main Warehouse', location...
+          ╵                [32m~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS18046: 'res' is of type 'unknown'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/pages/employee-requests/create-request.component.ts:371:40:
+[37m      371 │               .pipe(map((res) => String([32mres[37m.data ?? '')));
+          ╵                                         [32m~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'createShelf' does not exist on type 'InventoryService'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/pages/employee-requests/create-request.component.ts:375:41:
+[37m      375 │             return this.inventoryService.[32mcreateShelf[37m({
+          ╵                                          [32m~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'getAllShelves' does not exist on type 'InventoryService'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/pages/employee-requests/create-request.component.ts:390:34:
+[37m      390 │             this.inventoryService.[32mgetAllShelves[37m().pipe(
+          ╵                                   [32m~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS18046: 'res' is of type 'unknown'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/pages/employee-requests/create-request.component.ts:391:27:
+[37m      391 │               map((res) => [32mres[37m.data ?? []),
+          ╵                            [32m~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS7006: Parameter 'shelves' implicitly has an 'any' type.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/pages/employee-requests/create-request.component.ts:404:13:
+[37m      404 │       next: ([32mshelves[37m) => {
+          ╵              [32m~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2551: Property 'deleteServiceRequest' does not exist on type 'ServiceRequestService'. Did you mean 'getServiceRequests'?[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/pages/employee-requests/pending-requests.component.ts:122:31:
+[37m      122 │ ...serviceRequestService.[32mdeleteServiceRequest[37m(requestId).subscribe({
+          ╵                          [32m~~~~~~~~~~~~~~~~~~~~[0m
+
+  'getServiceRequests' is declared here.
+
+    src/app/features/requisition/service-requests/services/service-request.service.ts:221:2:
+[37m      221 │   [32mgetServiceRequests[37m(params?: any): Observable<ApiResponse<Servic...
+          ╵   [32m~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2305: Module '"../../../../core/services/inventory.service"' has no exported member 'ShelfLocationDto'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/pages/employee-returns/create-return.component.ts:10:27:
+[37m      10 │ import { InventoryService, [32mShelfLocationDto[37m } from '../../../../co...
+         ╵                            [32m~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'getAllShelves' does not exist on type 'InventoryService'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/pages/employee-returns/create-return.component.ts:205:26:
+[37m      205 │     this.inventoryService.[32mgetAllShelves[37m().subscribe({
+          ╵                           [32m~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS7006: Parameter 'res' implicitly has an 'any' type.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/pages/employee-returns/create-return.component.ts:206:13:
+[37m      206 │       next: ([32mres[37m) => {
+          ╵              [32m~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS7006: Parameter 'err' implicitly has an 'any' type.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/pages/employee-returns/create-return.component.ts:221:14:
+[37m      221 │       error: ([32merr[37m) => {
+          ╵               [32m~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'approveServiceRequest' does not exist on type 'ServiceRequestService'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/pages/manager-approval-dashboard/manager-approval-dashboard.component.ts:304:7:
+[37m      304 │       .[32mapproveServiceRequest[37m({ id: requestId, remarks: 'Approved ...
+          ╵        [32m~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2551: Property 'rejectServiceRequest' does not exist on type 'ServiceRequestService'. Did you mean 'getServiceRequests'?[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/pages/manager-approval-dashboard/manager-approval-dashboard.component.ts:324:7:
+[37m      324 │       .[32mrejectServiceRequest[37m({ id: requestId, reason: reason || 'R...
+          ╵        [32m~~~~~~~~~~~~~~~~~~~~[0m
+
+  'getServiceRequests' is declared here.
+
+    src/app/features/requisition/service-requests/services/service-request.service.ts:221:2:
+[37m      221 │   [32mgetServiceRequests[37m(params?: any): Observable<ApiResponse<Servic...
+          ╵   [32m~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'approveServiceRequest' does not exist on type 'ServiceRequestService'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/pages/manager-approvals/pending-approvals.component.ts:47:7:
+[37m      47 │       .[32mapproveServiceRequest[37m({ id, remarks: 'Approved from pending...
+         ╵        [32m~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2551: Property 'rejectServiceRequest' does not exist on type 'ServiceRequestService'. Did you mean 'getServiceRequests'?[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/pages/manager-approvals/pending-approvals.component.ts:65:7:
+[37m      65 │       .[32mrejectServiceRequest[37m({ id, reason: reason || 'Rejected from...
+         ╵        [32m~~~~~~~~~~~~~~~~~~~~[0m
+
+  'getServiceRequests' is declared here.
+
+    src/app/features/requisition/service-requests/services/service-request.service.ts:221:2:
+[37m      221 │   [32mgetServiceRequests[37m(params?: any): Observable<ApiResponse<Servic...
+          ╵   [32m~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2554: Expected 0-1 arguments, but got 2.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/pages/manager-dashboard/manager-dashboard.component.ts:466:37:
+[37m      466 │ ...sts(undefined, [32m{ headers: { 'X-Suppress-Error-Toast': 'true' } }[37m)
+          ╵                   [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'approveServiceRequest' does not exist on type 'ServiceRequestService'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/pages/manager-requests/pending-requests.component.ts:74:7:
+[37m      74 │       .[32mapproveServiceRequest[37m({ id, remarks: 'Approved from pending...
+         ╵        [32m~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2551: Property 'rejectServiceRequest' does not exist on type 'ServiceRequestService'. Did you mean 'getServiceRequests'?[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/pages/manager-requests/pending-requests.component.ts:96:7:
+[37m      96 │       .[32mrejectServiceRequest[37m({ id, reason: reason || 'Rejected from...
+         ╵        [32m~~~~~~~~~~~~~~~~~~~~[0m
+
+  'getServiceRequests' is declared here.
+
+    src/app/features/requisition/service-requests/services/service-request.service.ts:221:2:
+[37m      221 │   [32mgetServiceRequests[37m(params?: any): Observable<ApiResponse<Servic...
+          ╵   [32m~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2554: Expected 0-1 arguments, but got 2.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/dashboard/pages/requests-summary-page/requests-summary-page.component.ts:118:37:
+[37m      118 │ ...sts(undefined, [32m{ headers: { 'X-Suppress-Error-Toast': 'true' } }[37m)
+          ╵                   [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG2008: Could not find template file './employee-dashboard.component.html'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/employee/employee-dashboard/employee-dashboard.component.ts:22:15:
+[37m      22 │   templateUrl: [32m'./employee-dashboard.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2551: Property 'currentUserValue' does not exist on type 'AuthService'. Did you mean 'currentUser$'?[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/employee/employee-dashboard/employee-dashboard.component.ts:51:40:
+[37m      51 │     this.currentUser = this.authService.[32mcurrentUserValue[37m;
+         ╵                                         [32m~~~~~~~~~~~~~~~~[0m
+
+  'currentUser$' is declared here.
+
+    src/app/core/services/auth.service.ts:52:9:
+[37m      52 │   public [32mcurrentUser$[37m = this.currentUserSubject.asObservable();
+         ╵          [32m~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2741: Property 'liveAttendees' is missing in type 'import("C:/Users/kidist/pas-frontend/src/app/core/services/admin-dashboard.service").DashboardData' but required in type 'DashboardData'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/employee/employee-dashboard/employee-dashboard.component.ts:69:10:
+[37m      69 │           [32mthis.dashboardData[37m = response.data;
+         ╵           [32m~~~~~~~~~~~~~~~~~~[0m
+
+  'liveAttendees' is declared here.
+
+    src/app/features/employee/employee-dashboard/employee-dashboard.component.ts:14:2:
+[37m      14 │   [32mliveAttendees[37m: any;
+         ╵   [32m~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2305: Module '"../../../../core/services/item-master.service"' has no exported member 'ItemMasterListDto'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/inventory/pages/stock-adjustment/stock-adjustment.component.ts:6:28:
+[37m      6 │ ...rt { ItemMasterService, [32mItemMasterListDto[37m } from '../../../../co...
+        ╵                            [32m~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'items' does not exist on type 'string | ItemMaster | ItemMasterPaginatedResponse'.
+  Property 'items' does not exist on type 'string'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/inventory/pages/stock-adjustment/stock-adjustment.component.ts:99:71:
+[37m      99 │ ...sponse.success !== false && Array.isArray(response.data?.[32mitems[37m)) {
+         ╵                                                             [32m~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'items' does not exist on type 'string | ItemMaster | ItemMasterPaginatedResponse'.
+  Property 'items' does not exist on type 'string'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/inventory/pages/stock-adjustment/stock-adjustment.component.ts:100:39:
+[37m      100 │           this.items.set(response.data.[32mitems[37m);
+          ╵                                        [32m~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG2008: Could not find template file './manager-approval-dashboard.component.html'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/manager/manager-approval-dashboard/manager-approval-dashboard.component.ts:22:15:
+[37m      22 │   templateUrl: [32m'./manager-approval-dashboard.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2307: Cannot find module '../../../core/services/notifications.service' or its corresponding type declarations.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/notifications/notifications-page/notifications-page.component.ts:4:37:
+[37m      4 │ ...tionsService } from [32m'../../../core/services/notifications.service'[37m;
+        ╵                        [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG2008: Could not find template file './notifications-page.component.html'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/notifications/notifications-page/notifications-page.component.ts:18:15:
+[37m      18 │   templateUrl: [32m'./notifications-page.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS7006: Parameter 'response' implicitly has an 'any' type.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/notifications/notifications-page/notifications-page.component.ts:59:13:
+[37m      59 │       next: ([32mresponse[37m) => {
+         ╵              [32m~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG2008: Could not find template file './property-category-list.component.html'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/property-category/property-category-list.component.ts:7:15:
+[37m      7 │   templateUrl: [32m'./property-category-list.component.html'[37m,
+        ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2322: Type 'Observable<ApiResponseModel<ApiResponseModel<LocationDto[]>>>' is not assignable to type 'Observable<ApiResponseModel<LocationDto[]>>'.
+  Type 'ApiResponseModel<ApiResponseModel<LocationDto[]>>' is not assignable to type 'ApiResponseModel<LocationDto[]>'.
+    Type 'ApiResponseModel<LocationDto[]>' is missing the following properties from type 'LocationDto[]': length, pop, push, concat, and 29 more.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/property-management/locations/services/location.service.ts:22:4:
+[37m      22 │     [32mreturn[37m this.apiService.get<ApiResponseModel<LocationDto[]>>('L...
+         ╵     [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2322: Type 'Observable<ApiResponseModel<ApiResponseModel<LocationDto>>>' is not assignable to type 'Observable<ApiResponseModel<LocationDto>>'.
+  Type 'ApiResponseModel<ApiResponseModel<LocationDto>>' is not assignable to type 'ApiResponseModel<LocationDto>'.
+    Type 'ApiResponseModel<LocationDto>' is missing the following properties from type 'LocationDto': id, name, isActive[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/property-management/locations/services/location.service.ts:26:4:
+[37m      26 │     [32mreturn[37m this.apiService.get<ApiResponseModel<LocationDto>>(`Loc...
+         ╵     [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2322: Type 'Observable<ApiResponseModel<ApiResponseModel<string>>>' is not assignable to type 'Observable<ApiResponseModel<string>>'.
+  Type 'ApiResponseModel<ApiResponseModel<string>>' is not assignable to type 'ApiResponseModel<string>'.
+    Type 'ApiResponseModel<string>' is not assignable to type 'string'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/property-management/locations/services/location.service.ts:30:4:
+[37m      30 │     [32mreturn[37m this.apiService.post<ApiResponseModel<string>>('Locatio...
+         ╵     [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2322: Type 'Observable<ApiResponseModel<ApiResponse<PaginatedResult<Property>>>>' is not assignable to type 'Observable<ApiResponse<PaginatedResult<Property>>>'.
+  Type 'ApiResponseModel<ApiResponse<PaginatedResult<Property>>>' is not assignable to type 'ApiResponse<PaginatedResult<Property>>'.
+    Types of property 'message' are incompatible.
+      Type 'string | undefined' is not assignable to type 'string'.
+        Type 'undefined' is not assignable to type 'string'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/property-management/properties/services/property.service.ts:15:4:
+[37m      15 │     [32mreturn[37m this.apiService.get<ApiResponse<PaginatedResult<Propert...
+         ╵     [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2322: Type 'Observable<ApiResponseModel<ApiResponse<PropertyDetail>>>' is not assignable to type 'Observable<ApiResponse<PropertyDetail>>'.
+  Type 'ApiResponseModel<ApiResponse<PropertyDetail>>' is not assignable to type 'ApiResponse<PropertyDetail>'.
+    Types of property 'message' are incompatible.
+      Type 'string | undefined' is not assignable to type 'string'.
+        Type 'undefined' is not assignable to type 'string'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/property-management/properties/services/property.service.ts:19:4:
+[37m      19 │     [32mreturn[37m this.apiService.get<ApiResponse<PropertyDetail>>(API_EN...
+         ╵     [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2322: Type 'Observable<ApiResponseModel<ApiResponse<string>>>' is not assignable to type 'Observable<ApiResponse<string>>'.
+  Type 'ApiResponseModel<ApiResponse<string>>' is not assignable to type 'ApiResponse<string>'.
+    Types of property 'message' are incompatible.
+      Type 'string | undefined' is not assignable to type 'string'.
+        Type 'undefined' is not assignable to type 'string'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/property-management/properties/services/property.service.ts:23:4:
+[37m      23 │     [32mreturn[37m this.apiService.post<ApiResponse<string>>(API_ENDPOINTS...
+         ╵     [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2322: Type 'Observable<ApiResponseModel<ApiResponse<object>>>' is not assignable to type 'Observable<ApiResponse<object>>'.
+  Type 'ApiResponseModel<ApiResponse<object>>' is not assignable to type 'ApiResponse<object>'.
+    Types of property 'message' are incompatible.
+      Type 'string | undefined' is not assignable to type 'string'.
+        Type 'undefined' is not assignable to type 'string'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/property-management/properties/services/property.service.ts:27:4:
+[37m      27 │     [32mreturn[37m this.apiService.put<ApiResponse<object>>(API_ENDPOINTS....
+         ╵     [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2322: Type 'Observable<ApiResponseModel<ApiResponse<object>>>' is not assignable to type 'Observable<ApiResponse<object>>'.
+  Type 'ApiResponseModel<ApiResponse<object>>' is not assignable to type 'ApiResponse<object>'.
+    Types of property 'message' are incompatible.
+      Type 'string | undefined' is not assignable to type 'string'.
+        Type 'undefined' is not assignable to type 'string'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/property-management/properties/services/property.service.ts:31:4:
+[37m      31 │     [32mreturn[37m this.apiService.delete<ApiResponse<object>>(API_ENDPOIN...
+         ╵     [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2322: Type 'Observable<ApiResponseModel<ApiResponse<object>>>' is not assignable to type 'Observable<ApiResponse<object>>'.
+  Type 'ApiResponseModel<ApiResponse<object>>' is not assignable to type 'ApiResponse<object>'.
+    Types of property 'message' are incompatible.
+      Type 'string | undefined' is not assignable to type 'string'.
+        Type 'undefined' is not assignable to type 'string'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/property-management/properties/services/property.service.ts:35:4:
+[37m      35 │     [32mreturn[37m this.apiService.post<ApiResponse<object>>(API_ENDPOINTS...
+         ╵     [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2322: Type 'Observable<ApiResponseModel<ApiResponse<Property[]>>>' is not assignable to type 'Observable<ApiResponse<Property[]>>'.
+  Type 'ApiResponseModel<ApiResponse<Property[]>>' is not assignable to type 'ApiResponse<Property[]>'.
+    Types of property 'message' are incompatible.
+      Type 'string | undefined' is not assignable to type 'string'.
+        Type 'undefined' is not assignable to type 'string'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/property-management/properties/services/property.service.ts:39:4:
+[37m      39 │     [32mreturn[37m this.apiService.get<ApiResponse<Property[]>>(API_ENDPOI...
+         ╵     [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'map' does not exist on type 'PaginatedResponse<Category>'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/property-management/property-categories/pages/property-category-list/property-category-list.component.ts:234:56:
+[37m      234 │ ...        const transformedCategories = response.data.[32mmap[37m(cat => ({
+          ╵                                                        [32m~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS7006: Parameter 'cat' implicitly has an 'any' type.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/property-management/property-categories/pages/property-category-list/property-category-list.component.ts:234:60:
+[37m      234 │ ...        const transformedCategories = response.data.map([32mcat[37m => ({
+          ╵                                                            [32m~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2554: Expected 2 arguments, but got 1.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/property-management/property-categories/pages/property-category-list/property-category-list.component.ts:332:29:
+[37m      332 │       this.categoriesService.[32mupdate[37m({
+          ╵                              [32m~~~~~~[0m
+
+  An argument for 'category' was not provided.
+
+    src/app/core/services/categories.service.ts:54:21:
+[37m      54 │   update(id: number, [32mcategory: Partial<Category>[37m): Observable<ApiR...
+         ╵                      [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2353: Object literal may only specify known properties, and 'name' does not exist in type 'Partial<Category>'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/property-management/property-categories/pages/property-category-list/property-category-list.component.ts:355:8:
+[37m      355 │         [32mname[37m: data.name,
+          ╵         [32m~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2322: Type 'Observable<ApiResponseModel<ApiResponseModel<PropertyCategoryDto[]>>>' is not assignable to type 'Observable<ApiResponseModel<PropertyCategoryDto[]>>'.
+  Type 'ApiResponseModel<ApiResponseModel<PropertyCategoryDto[]>>' is not assignable to type 'ApiResponseModel<PropertyCategoryDto[]>'.
+    Type 'ApiResponseModel<PropertyCategoryDto[]>' is missing the following properties from type 'PropertyCategoryDto[]': length, pop, push, concat, and 29 more.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/property-management/property-categories/services/property-category.service.ts:21:4:
+[37m      21 │     [32mreturn[37m this.apiService.get<ApiResponseModel<PropertyCategoryDt...
+         ╵     [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2322: Type 'Observable<ApiResponseModel<ApiResponseModel<PropertyCategoryDto>>>' is not assignable to type 'Observable<ApiResponseModel<PropertyCategoryDto>>'.
+  Type 'ApiResponseModel<ApiResponseModel<PropertyCategoryDto>>' is not assignable to type 'ApiResponseModel<PropertyCategoryDto>'.
+    Type 'ApiResponseModel<PropertyCategoryDto>' is missing the following properties from type 'PropertyCategoryDto': id, name, code, isActive[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/property-management/property-categories/services/property-category.service.ts:25:4:
+[37m      25 │     [32mreturn[37m this.apiService.get<ApiResponseModel<PropertyCategoryDt...
+         ╵     [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2322: Type 'Observable<ApiResponseModel<ApiResponseModel<string>>>' is not assignable to type 'Observable<ApiResponseModel<string>>'.
+  Type 'ApiResponseModel<ApiResponseModel<string>>' is not assignable to type 'ApiResponseModel<string>'.
+    Type 'ApiResponseModel<string>' is not assignable to type 'string'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/property-management/property-categories/services/property-category.service.ts:29:4:
+[37m      29 │     [32mreturn[37m this.apiService.post<ApiResponseModel<string>>('Propert...
+         ╵     [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2322: Type 'Observable<ApiResponseModel<ApiResponseModel<PropertyTypeDto[]>>>' is not assignable to type 'Observable<ApiResponseModel<PropertyTypeDto[]>>'.
+  Type 'ApiResponseModel<ApiResponseModel<PropertyTypeDto[]>>' is not assignable to type 'ApiResponseModel<PropertyTypeDto[]>'.
+    Type 'ApiResponseModel<PropertyTypeDto[]>' is missing the following properties from type 'PropertyTypeDto[]': length, pop, push, concat, and 29 more.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/property-management/property-types/services/property-type.service.ts:21:4:
+[37m      21 │     [32mreturn[37m this.apiService.get<ApiResponseModel<PropertyTypeDto[]>...
+         ╵     [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2322: Type 'Observable<ApiResponseModel<ApiResponseModel<PropertyTypeDto>>>' is not assignable to type 'Observable<ApiResponseModel<PropertyTypeDto>>'.
+  Type 'ApiResponseModel<ApiResponseModel<PropertyTypeDto>>' is not assignable to type 'ApiResponseModel<PropertyTypeDto>'.
+    Type 'ApiResponseModel<PropertyTypeDto>' is missing the following properties from type 'PropertyTypeDto': id, name, code, isActive[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/property-management/property-types/services/property-type.service.ts:25:4:
+[37m      25 │     [32mreturn[37m this.apiService.get<ApiResponseModel<PropertyTypeDto>>(...
+         ╵     [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2322: Type 'Observable<ApiResponseModel<ApiResponseModel<string>>>' is not assignable to type 'Observable<ApiResponseModel<string>>'.
+  Type 'ApiResponseModel<ApiResponseModel<string>>' is not assignable to type 'ApiResponseModel<string>'.
+    Type 'ApiResponseModel<string>' is not assignable to type 'string'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/property-management/property-types/services/property-type.service.ts:29:4:
+[37m      29 │     [32mreturn[37m this.apiService.post<ApiResponseModel<string>>('Propert...
+         ╵     [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2322: Type 'Observable<ApiResponseModel<ApiResponseModel<SafetyBoxDto[]>>>' is not assignable to type 'Observable<ApiResponseModel<SafetyBoxDto[]>>'.
+  Type 'ApiResponseModel<ApiResponseModel<SafetyBoxDto[]>>' is not assignable to type 'ApiResponseModel<SafetyBoxDto[]>'.
+    Type 'ApiResponseModel<SafetyBoxDto[]>' is missing the following properties from type 'SafetyBoxDto[]': length, pop, push, concat, and 29 more.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/property-management/safety-boxes/services/safety-box.service.ts:24:4:
+[37m      24 │     [32mreturn[37m this.apiService.get<ApiResponseModel<SafetyBoxDto[]>>('...
+         ╵     [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2322: Type 'Observable<ApiResponseModel<ApiResponseModel<SafetyBoxDto>>>' is not assignable to type 'Observable<ApiResponseModel<SafetyBoxDto>>'.
+  Type 'ApiResponseModel<ApiResponseModel<SafetyBoxDto>>' is not assignable to type 'ApiResponseModel<SafetyBoxDto>'.
+    Type 'ApiResponseModel<SafetyBoxDto>' is missing the following properties from type 'SafetyBoxDto': id, boxNumber, locationId, shelfId, and 3 more.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/property-management/safety-boxes/services/safety-box.service.ts:28:4:
+[37m      28 │     [32mreturn[37m this.apiService.get<ApiResponseModel<SafetyBoxDto>>(`Sa...
+         ╵     [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2322: Type 'Observable<ApiResponseModel<ApiResponseModel<SafetyBoxDto[]>>>' is not assignable to type 'Observable<ApiResponseModel<SafetyBoxDto[]>>'.
+  Type 'ApiResponseModel<ApiResponseModel<SafetyBoxDto[]>>' is not assignable to type 'ApiResponseModel<SafetyBoxDto[]>'.
+    Type 'ApiResponseModel<SafetyBoxDto[]>' is missing the following properties from type 'SafetyBoxDto[]': length, pop, push, concat, and 29 more.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/property-management/safety-boxes/services/safety-box.service.ts:32:4:
+[37m      32 │     [32mreturn[37m this.apiService.get<ApiResponseModel<SafetyBoxDto[]>>(`...
+         ╵     [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2322: Type 'Observable<ApiResponseModel<ApiResponseModel<string>>>' is not assignable to type 'Observable<ApiResponseModel<string>>'.
+  Type 'ApiResponseModel<ApiResponseModel<string>>' is not assignable to type 'ApiResponseModel<string>'.
+    Type 'ApiResponseModel<string>' is not assignable to type 'string'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/property-management/safety-boxes/services/safety-box.service.ts:36:4:
+[37m      36 │     [32mreturn[37m this.apiService.post<ApiResponseModel<string>>('SafetyB...
+         ╵     [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2345: Argument of type 'Record<string, unknown> | undefined' is not assignable to parameter of type 'HttpParams | Record<string, string | number | boolean | readonly (string | number | boolean)[]> | undefined'.
+  Type 'Record<string, unknown>' is not assignable to type 'HttpParams | Record<string, string | number | boolean | readonly (string | number | boolean)[]> | undefined'.
+    Type 'Record<string, unknown>' is missing the following properties from type 'HttpParams': map, encoder, updates, cloneFrom, and 10 more.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/receiving/inspections/services/inspection.service.ts:25:55:
+[37m      25 │     return this.apiService.get<unknown>('Inspections', [32mparams[37m).pipe(
+         ╵                                                        [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2345: Argument of type 'Record<string, unknown> | undefined' is not assignable to parameter of type 'HttpParams | Record<string, string | number | boolean | readonly (string | number | boolean)[]> | undefined'.
+  Type 'Record<string, unknown>' is not assignable to type 'HttpParams | Record<string, string | number | boolean | readonly (string | number | boolean)[]> | undefined'.
+    Type 'Record<string, unknown>' is missing the following properties from type 'HttpParams': map, encoder, updates, cloneFrom, and 10 more.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/receiving/receiving-notes/services/receiving-note.service.ts:72:58:
+[37m      72 │ ...eturn this.apiService.get<unknown>('ReceivingNotes', [32mparams[37m).pipe(
+         ╵                                                         [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2345: Argument of type 'Record<string, unknown> | undefined' is not assignable to parameter of type 'HttpParams | Record<string, string | number | boolean | readonly (string | number | boolean)[]> | undefined'.
+  Type 'Record<string, unknown>' is not assignable to type 'HttpParams | Record<string, string | number | boolean | readonly (string | number | boolean)[]> | undefined'.
+    Type 'Record<string, unknown>' is missing the following properties from type 'HttpParams': map, encoder, updates, cloneFrom, and 10 more.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/receiving/suppliers/services/supplier.service.ts:107:73:
+[37m      107 │ ...rvice.get<unknown>(API_ENDPOINTS.SUPPLIERS.GET_ALL, [32mparams[37m).pipe(
+          ╵                                                        [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2322: Type 'Observable<ApiResponseModel<ApiResponse<InventoryValuationReport>>>' is not assignable to type 'Observable<ApiResponse<InventoryValuationReport>>'.
+  Type 'ApiResponseModel<ApiResponse<InventoryValuationReport>>' is not assignable to type 'ApiResponse<InventoryValuationReport>'.
+    Types of property 'message' are incompatible.
+      Type 'string | undefined' is not assignable to type 'string'.
+        Type 'undefined' is not assignable to type 'string'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/reports/services/report.service.ts:40:4:
+[37m      40 │     [32mreturn[37m this.apiService.get<ApiResponse<InventoryValuationRepor...
+         ╵     [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2345: Argument of type 'Record<string, unknown> | undefined' is not assignable to parameter of type 'HttpParams | Record<string, string | number | boolean | readonly (string | number | boolean)[]> | undefined'.
+  Type 'Record<string, unknown>' is not assignable to type 'HttpParams | Record<string, string | number | boolean | readonly (string | number | boolean)[]> | undefined'.
+    Type 'Record<string, unknown>' is missing the following properties from type 'HttpParams': map, encoder, updates, cloneFrom, and 10 more.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/reports/services/report.service.ts:40:113:
+[37m      40 │ ...uationReport>>(API_ENDPOINTS.REPORTS.INVENTORY_VALUATION, [32mparams[37m);
+         ╵                                                              [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2322: Type 'Observable<ApiResponseModel<ApiResponse<unknown>>>' is not assignable to type 'Observable<ApiResponse<unknown>>'.
+  Type 'ApiResponseModel<ApiResponse<unknown>>' is not assignable to type 'ApiResponse<unknown>'.
+    Types of property 'message' are incompatible.
+      Type 'string | undefined' is not assignable to type 'string'.
+        Type 'undefined' is not assignable to type 'string'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/reports/services/report.service.ts:44:4:
+[37m      44 │     [32mreturn[37m this.apiService.get<ApiResponse<unknown>>(API_ENDPOINTS...
+         ╵     [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2345: Argument of type 'Record<string, unknown> | undefined' is not assignable to parameter of type 'HttpParams | Record<string, string | number | boolean | readonly (string | number | boolean)[]> | undefined'.
+  Type 'Record<string, unknown>' is not assignable to type 'HttpParams | Record<string, string | number | boolean | readonly (string | number | boolean)[]> | undefined'.
+    Type 'Record<string, unknown>' is missing the following properties from type 'HttpParams': map, encoder, updates, cloneFrom, and 10 more.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/reports/services/report.service.ts:44:85:
+[37m      44 │ ...get<ApiResponse<unknown>>(API_ENDPOINTS.REPORTS.DISPOSAL, [32mparams[37m);
+         ╵                                                              [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2322: Type 'Observable<ApiResponseModel<ApiResponse<unknown>>>' is not assignable to type 'Observable<ApiResponse<unknown>>'.
+  Type 'ApiResponseModel<ApiResponse<unknown>>' is not assignable to type 'ApiResponse<unknown>'.
+    Types of property 'message' are incompatible.
+      Type 'string | undefined' is not assignable to type 'string'.
+        Type 'undefined' is not assignable to type 'string'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/reports/services/report.service.ts:48:4:
+[37m      48 │     [32mreturn[37m this.apiService.get<ApiResponse<unknown>>(API_ENDPOINTS...
+         ╵     [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2345: Argument of type 'Record<string, unknown> | undefined' is not assignable to parameter of type 'HttpParams | Record<string, string | number | boolean | readonly (string | number | boolean)[]> | undefined'.
+  Type 'Record<string, unknown>' is not assignable to type 'HttpParams | Record<string, string | number | boolean | readonly (string | number | boolean)[]> | undefined'.
+    Type 'Record<string, unknown>' is missing the following properties from type 'HttpParams': map, encoder, updates, cloneFrom, and 10 more.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/reports/services/report.service.ts:48:91:
+[37m      48 │ ...iResponse<unknown>>(API_ENDPOINTS.REPORTS.STOCK_MOVEMENT, [32mparams[37m);
+         ╵                                                              [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2322: Type 'Observable<ApiResponseModel<ApiResponse<unknown>>>' is not assignable to type 'Observable<ApiResponse<unknown>>'.
+  Type 'ApiResponseModel<ApiResponse<unknown>>' is not assignable to type 'ApiResponse<unknown>'.
+    Types of property 'message' are incompatible.
+      Type 'string | undefined' is not assignable to type 'string'.
+        Type 'undefined' is not assignable to type 'string'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/reports/services/report.service.ts:52:4:
+[37m      52 │     [32mreturn[37m this.apiService.get<ApiResponse<unknown>>(API_ENDPOINTS...
+         ╵     [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2345: Argument of type 'Record<string, unknown> | undefined' is not assignable to parameter of type 'HttpParams | Record<string, string | number | boolean | readonly (string | number | boolean)[]> | undefined'.
+  Type 'Record<string, unknown>' is not assignable to type 'HttpParams | Record<string, string | number | boolean | readonly (string | number | boolean)[]> | undefined'.
+    Type 'Record<string, unknown>' is missing the following properties from type 'HttpParams': map, encoder, updates, cloneFrom, and 10 more.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/reports/services/report.service.ts:52:96:
+[37m      52 │ ...onse<unknown>>(API_ENDPOINTS.REPORTS.REQUISITION_HISTORY, [32mparams[37m);
+         ╵                                                              [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG2008: Could not find template file './approved-requests.component.html'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/requests/approved-requests/approved-requests.component.ts:32:15:
+[37m      32 │   templateUrl: [32m'./approved-requests.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'formGroup' since it isn't a known property of 'form'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/requests/create-request/create-request.component.html:17:16:
+[37m      17 │           <form [32m[formGroup]="requestForm"[37m (ngSubmit)="onSubmit()">
+         ╵                 [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component CreateRequestComponent.
+
+    src/app/features/requests/create-request/create-request.component.ts:11:15:
+[37m      11 │   templateUrl: [32m'./create-request.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG2008: Could not find stylesheet file './create-request.component.scss'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/requests/create-request/create-request.component.ts:12:14:
+[37m      12 │   styleUrls: [[32m'./create-request.component.scss'[37m],
+         ╵               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'getShelves' does not exist on type 'ShelvesService'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/requests/create-request/create-request.component.ts:68:24:
+[37m      68 │     this.shelvesService.[32mgetShelves[37m().subscribe({
+         ╵                         [32m~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS7006: Parameter 'response' implicitly has an 'any' type.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/requests/create-request/create-request.component.ts:69:13:
+[37m      69 │       next: ([32mresponse[37m) => {
+         ╵              [32m~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2305: Module '"../../../../../core/services/item-master.service"' has no exported member 'ItemMasterListDto'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/requisition/service-requests/pages/item-management/item-management.component.ts:5:28:
+[37m      5 │ ...rt { ItemMasterService, [32mItemMasterListDto[37m } from '../../../../.....
+        ╵                            [32m~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2322: Type 'Observable<ApiResponseModel<ApiResponse<PaginatedResult<StoreIssueVoucher>>>>' is not assignable to type 'Observable<ApiResponse<PaginatedResult<StoreIssueVoucher>>>'.
+  Type 'ApiResponseModel<ApiResponse<PaginatedResult<StoreIssueVoucher>>>' is not assignable to type 'ApiResponse<PaginatedResult<StoreIssueVoucher>>'.
+    Types of property 'message' are incompatible.
+      Type 'string | undefined' is not assignable to type 'string'.
+        Type 'undefined' is not assignable to type 'string'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/requisition/store-issue-vouchers/services/siv.service.ts:19:4:
+[37m      19 │     [32mreturn[37m this.apiService.get<ApiResponse<PaginatedResult<StoreIs...
+         ╵     [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2322: Type 'Observable<ApiResponseModel<ApiResponse<StoreIssueVoucherDetail>>>' is not assignable to type 'Observable<ApiResponse<StoreIssueVoucherDetail>>'.
+  Type 'ApiResponseModel<ApiResponse<StoreIssueVoucherDetail>>' is not assignable to type 'ApiResponse<StoreIssueVoucherDetail>'.
+    Types of property 'message' are incompatible.
+      Type 'string | undefined' is not assignable to type 'string'.
+        Type 'undefined' is not assignable to type 'string'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/requisition/store-issue-vouchers/services/siv.service.ts:23:4:
+[37m      23 │     [32mreturn[37m this.apiService.get<ApiResponse<StoreIssueVoucherDetail...
+         ╵     [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2322: Type 'Observable<ApiResponseModel<ApiResponse<string>>>' is not assignable to type 'Observable<ApiResponse<string>>'.
+  Type 'ApiResponseModel<ApiResponse<string>>' is not assignable to type 'ApiResponse<string>'.
+    Types of property 'message' are incompatible.
+      Type 'string | undefined' is not assignable to type 'string'.
+        Type 'undefined' is not assignable to type 'string'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/requisition/store-issue-vouchers/services/siv.service.ts:27:4:
+[37m      27 │     [32mreturn[37m this.apiService.post<ApiResponse<string>>(API_ENDPOINTS...
+         ╵     [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2322: Type 'Observable<ApiResponseModel<ApiResponse<object>>>' is not assignable to type 'Observable<ApiResponse<object>>'.
+  Type 'ApiResponseModel<ApiResponse<object>>' is not assignable to type 'ApiResponse<object>'.
+    Types of property 'message' are incompatible.
+      Type 'string | undefined' is not assignable to type 'string'.
+        Type 'undefined' is not assignable to type 'string'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/requisition/store-issue-vouchers/services/siv.service.ts:31:4:
+[37m      31 │     [32mreturn[37m this.apiService.put<ApiResponse<object>>(`${API_ENDPOIN...
+         ╵     [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2322: Type 'Observable<ApiResponseModel<ApiResponse<object>>>' is not assignable to type 'Observable<ApiResponse<object>>'.
+  Type 'ApiResponseModel<ApiResponse<object>>' is not assignable to type 'ApiResponse<object>'.
+    Types of property 'message' are incompatible.
+      Type 'string | undefined' is not assignable to type 'string'.
+        Type 'undefined' is not assignable to type 'string'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/requisition/store-issue-vouchers/services/siv.service.ts:35:4:
+[37m      35 │     [32mreturn[37m this.apiService.post<ApiResponse<object>>(`${API_ENDPOI...
+         ╵     [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2322: Type 'Observable<ApiResponseModel<ApiResponse<object>>>' is not assignable to type 'Observable<ApiResponse<object>>'.
+  Type 'ApiResponseModel<ApiResponse<object>>' is not assignable to type 'ApiResponse<object>'.
+    Types of property 'message' are incompatible.
+      Type 'string | undefined' is not assignable to type 'string'.
+        Type 'undefined' is not assignable to type 'string'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/requisition/store-issue-vouchers/services/siv.service.ts:39:4:
+[37m      39 │     [32mreturn[37m this.apiService.delete<ApiResponse<object>>(API_ENDPOIN...
+         ╵     [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2322: Type 'Observable<ApiResponseModel<ApiResponse<any>>>' is not assignable to type 'Observable<ApiResponse<any>>'.
+  Type 'ApiResponseModel<ApiResponse<any>>' is not assignable to type 'ApiResponse<any>'.
+    Types of property 'message' are incompatible.
+      Type 'string | undefined' is not assignable to type 'string'.
+        Type 'undefined' is not assignable to type 'string'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/requisition/store-issue-vouchers/services/siv.service.ts:47:4:
+[37m      47 │     [32mreturn[37m this.apiService.get<ApiResponse<any>>(`${API_ENDPOINTS....
+         ╵     [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2353: Object literal may only specify known properties, and 'parentCategoryId' does not exist in type 'Partial<Category>'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/store-inventory/categories/pages/categories.component.ts:126:6:
+[37m      126 │       [32mparentCategoryId[37m: formValue.parentCategoryId || null
+          ╵       [32m~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2352: Conversion of type '{ id: number; sku: string; name: string; category: string; uom: string; minStock: number; currentStock: number; status: any; price: number; }' to type 'Item' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Types of property 'id' are incompatible.
+    Type 'number' is not comparable to type 'string'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/store-inventory/item-catalog/pages/item-catalog.component.ts:119:38:
+[37m      119 │           const mapped = dt.map(i => ([32m{[37m
+          ╵                                       [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2322: Type 'Observable<PasResponse<any[]> | ApiResponseModel<any[]>>' is not assignable to type 'Observable<PasResponse<any[]>>'.
+  Type 'PasResponse<any[]> | ApiResponseModel<any[]>' is not assignable to type 'PasResponse<any[]>'.
+    Type 'ApiResponseModel<any[]>' is not assignable to type 'PasResponse<any[]>'.
+      Type 'ApiResponseModel<any[]>' is not assignable to type 'PasSuccessResponse<any[]>'.
+        Types of property 'success' are incompatible.
+          Type 'boolean' is not assignable to type 'true'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/store-inventory/stock-transfer/services/stock-transfer.service.ts:102:4:
+[37m      102 │     [32mreturn[37m this.apiService.get<any[]>('Warehouses', { isActive: t...
+          ╵     [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2322: Type 'Observable<PasResponse<StockTransferResponse> | ApiResponseModel<StockTransferResponse>>' is not assignable to type 'Observable<PasResponse<StockTransferResponse>>'.
+  Type 'PasResponse<StockTransferResponse> | ApiResponseModel<StockTransferResponse>' is not assignable to type 'PasResponse<StockTransferResponse>'.
+    Type 'ApiResponseModel<StockTransferResponse>' is not assignable to type 'PasResponse<StockTransferResponse>'.
+      Type 'ApiResponseModel<StockTransferResponse>' is not assignable to type 'PasSuccessResponse<StockTransferResponse>'.
+        Types of property 'success' are incompatible.
+          Type 'boolean' is not assignable to type 'true'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/store-inventory/stock-transfer/services/stock-transfer.service.ts:155:4:
+[37m      155 │     [32mreturn[37m this.apiService.post<StockTransferResponse>('StockTran...
+          ╵     [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2322: Type 'Observable<ApiResponseModel<any>>' is not assignable to type 'Observable<PasResponse<any>>'.
+  Type 'ApiResponseModel<any>' is not assignable to type 'PasResponse<any>'.
+    Type 'ApiResponseModel<any>' is not assignable to type 'PasSuccessResponse<any>'.
+      Types of property 'success' are incompatible.
+        Type 'boolean' is not assignable to type 'true'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/store-inventory/stock-transfer/services/stock-transfer.service.ts:205:4:
+[37m      205 │     [32mreturn[37m this.apiService.get<any>(`StockTransfers/${id}`);
+          ╵     [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2322: Type 'Observable<ApiResponseModel<any>>' is not assignable to type 'Observable<PasResponse<any>>'.
+  Type 'ApiResponseModel<any>' is not assignable to type 'PasResponse<any>'.
+    Type 'ApiResponseModel<any>' is not assignable to type 'PasSuccessResponse<any>'.
+      Types of property 'success' are incompatible.
+        Type 'boolean' is not assignable to type 'true'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/store-inventory/stock-transfer/services/stock-transfer.service.ts:210:4:
+[37m      210 │     [32mreturn[37m this.apiService.put<any>(`StockTransfers/${id}`, { sta...
+          ╵     [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS7006: Parameter 'role' implicitly has an 'any' type.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/user-management/pages/add-employee/add-employee.component.ts:75:43:
+[37m      75 │           this.roles.set(response.data.map([32mrole[37m => ({
+         ╵                                            [32m~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS7006: Parameter 'role' implicitly has an 'any' type.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/user-management/pages/add-user/add-user.component.ts:85:43:
+[37m      85 │           this.roles.set(response.data.map([32mrole[37m => ({
+         ╵                                            [32m~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2440: Import declaration conflicts with local declaration of 'Employee'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/user-management/pages/employee-directory/employee-directory.component.ts:4:27:
+[37m      4 │ import { EmployeesService, [32mEmployee[37m } from '../../../../core/servic...
+        ╵                            [32m~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'fullName' does not exist on type 'Employee'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/user-management/pages/employee-directory/employee-directory.component.ts:91:34:
+[37m      91 │ ...      id: emp.id, name: emp.[32mfullName[37m || '', employeeCode: emp.e...
+         ╵                                [32m~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'fullName' does not exist on type 'Employee'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/user-management/pages/employee-directory/employee-directory.component.ts:94:41:
+[37m      94 │             avatar: this.getInitials(emp.[32mfullName[37m || '?')
+         ╵                                          [32m~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS7006: Parameter 'r' implicitly has an 'any' type.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/user-management/pages/roles-permissions/roles-permissions.component.ts:147:26:
+[37m      147 │             res.data.map(([32mr[37m, i) => ({
+          ╵                           [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS7006: Parameter 'i' implicitly has an 'any' type.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/user-management/pages/roles-permissions/roles-permissions.component.ts:147:29:
+[37m      147 │             res.data.map((r, [32mi[37m) => ({
+          ╵                              [32m^[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'employeeName' does not exist on type 'User'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/user-management/pages/user-list/user-list.component.ts:159:61:
+[37m      159 │ ...sername: user.username, name: user.[32memployeeName[37m || user.username,
+          ╵                                       [32m~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'employeeCode' does not exist on type 'User'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/user-management/pages/user-list/user-list.component.ts:160:31:
+[37m      160 │ ...      employeeCode: user.[32memployeeCode[37m || 'N/A', email: user.em...
+          ╵                             [32m~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2551: Property 'roleId' does not exist on type 'User'. Did you mean 'role'?[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/user-management/pages/user-list/user-list.component.ts:161:25:
+[37m      161 │             roleId: user.[32mroleId[37m, role: user.roleName,
+          ╵                          [32m~~~~~~[0m
+
+  'role' is declared here.
+
+    src/app/core/services/users.service.ts:13:2:
+[37m      13 │   [32mrole[37m: string;
+         ╵   [32m~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'roleName' does not exist on type 'User'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/user-management/pages/user-list/user-list.component.ts:161:44:
+[37m      161 │             roleId: user.roleId, role: user.[32mroleName[37m,
+          ╵                                             [32m~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2339: Property 'employeeName' does not exist on type 'User'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/user-management/pages/user-list/user-list.component.ts:163:42:
+[37m      163 │ ...     avatar: this.getInitials(user.[32memployeeName[37m || user.username)
+          ╵                                       [32m~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2322: Type 'Observable<{ succeeded: boolean; message: string; data: ApiResponseModel<WorkflowResponse> | undefined; }>' is not assignable to type 'Observable<{ succeeded: boolean; message: string; data?: WorkflowResponse | undefined; }>'.
+  Type '{ succeeded: boolean; message: string; data: ApiResponseModel<WorkflowResponse> | undefined; }' is not assignable to type '{ succeeded: boolean; message: string; data?: WorkflowResponse | undefined; }'.
+    Types of property 'data' are incompatible.
+      Type 'ApiResponseModel<WorkflowResponse> | undefined' is not assignable to type 'WorkflowResponse | undefined'.
+        Type 'ApiResponseModel<WorkflowResponse>' is missing the following properties from type 'WorkflowResponse': id, workflowName, description, createdAt, createdBy[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/workflow/approval-workflows/services/approval-workflow.service.ts:70:4:
+[37m      70 │     [32mreturn[37m this.apiService.post<ApiResponseModel<WorkflowResponse>...
+         ╵     [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2322: Type 'Observable<{ succeeded: boolean; data: never[] | ApiResponseModel<WorkflowResponse[]>; }>' is not assignable to type 'Observable<{ succeeded: boolean; data: WorkflowResponse[]; }>'.
+  Type '{ succeeded: boolean; data: never[] | ApiResponseModel<WorkflowResponse[]>; }' is not assignable to type '{ succeeded: boolean; data: WorkflowResponse[]; }'.
+    Types of property 'data' are incompatible.
+      Type 'never[] | ApiResponseModel<WorkflowResponse[]>' is not assignable to type 'WorkflowResponse[]'.
+        Type 'ApiResponseModel<WorkflowResponse[]>' is missing the following properties from type 'WorkflowResponse[]': length, pop, push, concat, and 29 more.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/workflow/approval-workflows/services/approval-workflow.service.ts:81:4:
+[37m      81 │     [32mreturn[37m this.apiService.get<ApiResponseModel<WorkflowResponse[]...
+         ╵     [32m~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2322: Type 'Observable<{ succeeded: boolean; data: ApiResponseModel<WorkflowResponse> | undefined; }>' is not assignable to type 'Observable<{ succeeded: boolean; data?: WorkflowResponse | undefined; }>'.
+  Type '{ succeeded: boolean; data: ApiResponseModel<WorkflowResponse> | undefined; }' is not assignable to type '{ succeeded: boolean; data?: WorkflowResponse | undefined; }'.
+    Types of property 'data' are incompatible.
+      Type 'ApiResponseModel<WorkflowResponse> | undefined' is not assignable to type 'WorkflowResponse | undefined'.
+        Type 'ApiResponseModel<WorkflowResponse>' is missing the following properties from type 'WorkflowResponse': id, workflowName, description, createdAt, createdBy[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/workflow/approval-workflows/services/approval-workflow.service.ts:91:4:
+[37m      91 │     [32mreturn[37m this.apiService.get<ApiResponseModel<WorkflowResponse>>...
+         ╵     [32m~~~~~~[0m
+
+[39m[22m

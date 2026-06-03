@@ -10,6 +10,8 @@ import { request as httpRequest } from 'node:http';
 import { request as httpsRequest } from 'node:https';
 import type { IncomingHttpHeaders } from 'node:http';
 import type { Request, Response, NextFunction } from 'express';
+import { promises as fs } from 'node:fs';
+import { randomUUID } from 'node:crypto';
 
 const browserDistFolder = join(import.meta.dirname, '../browser');
 const workspaceAssetsFolder = join(process.cwd(), 'src', 'assets');
@@ -17,6 +19,54 @@ const publicAssetsFolder = join(process.cwd(), 'public');
 
 const app = express();
 const angularApp = new AngularNodeAppEngine();
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+const dashboardStatisticsResponse = {
+  success: true,
+  message: 'Dashboard statistics loaded successfully.',
+  statusCode: 200,
+  data: {
+    platform: {
+      badge: 'Operations Platform 2026',
+      title: "AFRICOM'S TECHNOLOGIES",
+      since: 'SINCE 2004',
+      subtitle:
+        'Coordinate assets, inventory, and requisitions from one command layer with policy-driven workflows and real-time visibility for every department.',
+    },
+    liveAttendees: {
+      total: 14666,
+      trendPercent: 12.5,
+      trendDirection: 'up',
+      comparisonLabel: 'vs last month',
+      countdown: {
+        days: 20,
+        hours: 14,
+        minutes: 6,
+        seconds: 37,
+        untilLabel: 'Until May 14th, 2026',
+      },
+    },
+    highlights: [
+      {
+        value: '500+',
+        label: 'Active Sites',
+        note: 'Across all regions',
+      },
+      {
+        value: '99.9%',
+        label: 'Data Accuracy',
+        note: 'Trusted and verified',
+      },
+      {
+        value: '24/7',
+        label: 'Operations Visibility',
+        note: 'Real-time monitoring',
+      },
+    ],
+  },
+};
 
 /**
  * Forward `/api/*` to the real PAS backend (same role as `proxy.conf.json` during `ng serve`).
@@ -94,6 +144,45 @@ function pasApiProxy(req: Request, res: Response, next: NextFunction): void {
 }
 
 app.use(pasApiProxy);
+
+app.post('/api/landing/contact', async (req, res) => {
+  const name = String(req.body?.name ?? '').trim();
+  const email = String(req.body?.email ?? '').trim();
+  const message = String(req.body?.message ?? '').trim();
+
+  if (!email || message.length < 10) {
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid request.',
+      data: null,
+    });
+  }
+
+  const id = randomUUID();
+  const entry = {
+    id,
+    name,
+    email,
+    message,
+    createdAt: new Date().toISOString(),
+  };
+
+  try {
+    const outDir = join(process.cwd(), '.tmp');
+    const outFile = join(outDir, 'contact-submissions.jsonl');
+    await fs.mkdir(outDir, { recursive: true });
+    await fs.appendFile(outFile, JSON.stringify(entry) + '\n', 'utf8');
+  } catch (err) {
+    // Non-fatal: still return success, but log server-side.
+    console.error('Failed to persist contact submission', err);
+  }
+
+  return res.status(200).json({
+    success: true,
+    message: 'Thanks — we received your message.',
+    data: { id },
+  });
+});
 
 /**
  * Serve static files from /browser

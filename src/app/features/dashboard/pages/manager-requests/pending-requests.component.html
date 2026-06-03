@@ -8,19 +8,39 @@
     @for (req of requests(); track req.id) {
       <div class="request-card">
         <div class="request-header">
-          <div class="request-number">{{ req.requestNumber }}</div>
-          <div class="priority-badge" [class.urgent]="req.priority === 'Urgent'" [class.high]="req.priority === 'High'" [class.medium]="req.priority === 'Medium'">
+          <div class="request-number">{{ req.srNumber }}</div>
+          <div
+            class="priority-badge"
+            [class.urgent]="req.priority === 'Urgent'"
+            [class.high]="req.priority === 'High'"
+            [class.medium]="req.priority === 'Medium'"
+          >
             {{ req.priority }}
           </div>
         </div>
         <div class="request-body">
-          <p class="description">{{ req.description }}</p>
+          <p class="description">{{ req.justification }}</p>
           <div class="request-details">
-            <div class="detail-row"><span class="label">Requester:</span><span class="value">{{ req.requesterName }} ({{ req.department }})</span></div>
-            <div class="detail-row"><span class="label">Items:</span><span class="value">{{ req.itemCount }}</span></div>
-            <div class="detail-row"><span class="label">Value:</span><span class="value">${{ req.estimatedValue.toLocaleString() }}</span></div>
-            <div class="detail-row"><span class="label">Required Date:</span><span class="value">{{ req.requiredDate }}</span></div>
+            <div class="detail-row">
+              <span class="label">Requester:</span
+              ><span class="value">{{ req.employeeName }} ({{ req.department }})</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Items:</span><span class="value">{{ req.items.length }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Value:</span
+              ><span class="value">${{ (req.estimatedCost ?? 0).toLocaleString() }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Required Date:</span
+              ><span class="value">{{ req.requiredDate }}</span>
+            </div>
           </div>
+        </div>
+        <div class="request-actions">
+          <button class="btn-approve" (click)="approveRequest(req.id)">Approve</button>
+          <button class="btn-reject" (click)="rejectRequest(req.id)">Reject</button>
         </div>
       </div>
     }

@@ -1,4 +1,4 @@
-  import { Routes } from '@angular/router';
+import { Routes } from '@angular/router';
 import { MainLayoutComponent } from './layouts/main-layout/main-layout.component';
 import { AuthGuard } from './core/guards/auth.guard';
 
@@ -240,7 +240,8 @@ export const routes: Routes = [
       },
       {
         path: 'reports/receiving',
-        loadComponent: () => import('./features/store-inventory/receiving-report/pages/receiving-report.component').then(m => m.ReceivingReportComponent),
+        redirectTo: '/admin/reports',
+        pathMatch: 'full',
       },
       {
         path: 'settings',
@@ -340,37 +341,13 @@ export const routes: Routes = [
       },
       // Goods Receiving
       {
-        path: 'receiving/create',
-        loadComponent: () => import('./features/store-inventory/create-grn/pages/create-grn.component').then(m => m.CreateGRNComponent),
-      },
-      {
-        path: 'receiving/pending',
-        loadComponent: () => import('./features/store-inventory/pending-grns/pages/pending-grns.component').then(m => m.PendingGRNsComponent),
-      },
-      {
-        path: 'receiving/inspection',
-        loadComponent: () => import('./features/store-inventory/inspection-queue/pages/inspection-queue.component').then(m => m.InspectionQueueComponent),
-      },
-      {
-        path: 'receiving/history',
-        loadComponent: () => import('./features/store-inventory/receiving-history/pages/receiving-history.component').then(m => m.ReceivingHistoryComponent),
+        path: 'receiving',
+        loadComponent: () => import('./features/store-inventory/receiving/pages/receiving.component').then(m => m.ReceivingComponent),
       },
       // Issuing
       {
-        path: 'issuing/pending',
-        loadComponent: () => import('./features/store-inventory/pending-issues/pages/pending-issues.component').then(m => m.PendingIssuesComponent),
-      },
-      {
-        path: 'issuing/create',
-        loadComponent: () => import('./features/store-inventory/create-siv/pages/create-siv.component').then(m => m.CreateSIVComponent),
-      },
-      {
-        path: 'issuing/history',
-        loadComponent: () => import('./features/store-inventory/issue-history/pages/issue-history.component').then(m => m.IssueHistoryComponent),
-      },
-      {
-        path: 'issuing/print',
-        loadComponent: () => import('./features/store-inventory/print-siv/pages/print-siv.component').then(m => m.PrintSIVComponent),
+        path: 'issuing',
+        loadComponent: () => import('./features/store-inventory/issuance/pages/issuance.component').then(m => m.IssuanceComponent),
       },
       // Item Catalog
       {
@@ -378,25 +355,13 @@ export const routes: Routes = [
         loadComponent: () => import('./features/store-inventory/item-catalog/pages/item-catalog.component').then(m => m.ItemCatalogComponent),
       },
       {
-        path: 'catalog/add',
-        loadComponent: () => import('./features/store-inventory/add-item/pages/add-item.component').then(m => m.AddItemComponent),
-      },
-      {
         path: 'catalog/categories',
         loadComponent: () => import('./features/store-inventory/categories/pages/categories.component').then(m => m.CategoriesComponent),
       },
-      // Reports
+      // Reports (unified page with tabs)
       {
-        path: 'reports/stock',
-        loadComponent: () => import('./features/store-inventory/stock-report/pages/stock-report.component').then(m => m.StockReportComponent),
-      },
-      {
-        path: 'reports/issuance',
-        loadComponent: () => import('./features/store-inventory/issuance-report/pages/issuance-report.component').then(m => m.IssuanceReportComponent),
-      },
-      {
-        path: 'reports/receiving',
-        loadComponent: () => import('./features/store-inventory/receiving-report/pages/receiving-report.component').then(m => m.ReceivingReportComponent),
+        path: 'reports',
+        loadComponent: () => import('./features/store-inventory/reports-page/reports-page.component').then(m => m.ReportsPageComponent),
       },
       {
         path: 'notifications',
@@ -441,7 +406,7 @@ export const routes: Routes = [
             (m) => m.EmployeeDashboardComponent,
           ),
       },
-            {
+      {
         path: 'dashboard/my-requests',
         loadComponent: () =>
           import('./features/dashboard/pages/employee-dashboard/employee-dashboard.component').then(
@@ -655,6 +620,43 @@ export const routes: Routes = [
           import('./features/dashboard/pages/manager-sivs/issued-sivs.component').then(
             (m) => m.IssuedSIVsComponent,
           ),
+      },
+      {
+        path: 'inventory',
+        loadComponent: () =>
+          import('./features/store-inventory/stock-overview/pages/stock-overview.component').then(
+            (m) => m.StockOverviewComponent,
+          ),
+        canActivate: [AuthGuard],
+      },
+      {
+        path: 'inventory/low-stock',
+        loadComponent: () =>
+          import('./features/store-inventory/low-stock/pages/low-stock.component').then(
+            (m) => m.LowStockComponent,
+          ),
+        canActivate: [AuthGuard],
+      },
+      {
+        path: 'inventory/movements',
+        loadComponent: () =>
+          import('./features/store-inventory/stock-movements/pages/stock-movements.component').then(
+            (m) => m.StockMovementsComponent,
+          ),
+        canActivate: [AuthGuard],
+      },
+      {
+        path: 'inventory/ledger',
+        loadComponent: () =>
+          import('./features/store-inventory/stock-ledger/pages/stock-ledger.component').then(
+            (m) => m.StockLedgerComponent,
+          ),
+        canActivate: [AuthGuard],
+      },
+      {
+        path: 'reports',
+        loadComponent: () => import('./features/store-inventory/reports-page/reports-page.component').then(m => m.ReportsPageComponent),
+        canActivate: [AuthGuard],
       },
       {
         path: 'workflows/all',
@@ -969,6 +971,6 @@ export const routes: Routes = [
   },
   {
     path: '**',
-    redirectTo: 'employee/dashboard',
+    redirectTo: 'landing',
   },
 ];

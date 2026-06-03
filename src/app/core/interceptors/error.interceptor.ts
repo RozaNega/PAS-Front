@@ -1,51 +1,44 @@
 import { Injectable } from '@angular/core';
-import { HttpInterceptor, HttpRequest, HttpHandler, HttpEvent, HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse, HttpEvent, HttpHandler, HttpInterceptor, HttpRequest } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { Router } from '@angular/router';
-import { NotificationService } from '../services/notification.service';
-import { AuthService } from '../services/auth.service';
-import { environment } from '../../../environments/environment';
 
 @Injectable()
 export class ErrorInterceptor implements HttpInterceptor {
-  constructor(
-    private router: Router,
-    private notificationService: NotificationService,
-    private authService: AuthService
-  ) {}
+  constructor(private router: Router) {}
 
-  intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
-    return next.handle(req).pipe(
+  intercept(request: HttpRequest<unknown>, next: HttpHandler): Observable<HttpEvent<unknown>> {
+    return next.handle(request).pipe(
       catchError((error: HttpErrorResponse) => {
-        if (!environment.production && error.status > 0) {
-          console.warn('[PAS API]', error.status, req.method, req.urlWithParams || req.url, error.message, error.error);
-        }
-        // During development, allow 401/0 errors to pass through without redirecting
-        if (!environment.production && (error.status === 401 || error.status === 0)) {
-          console.warn(`API error (${error.status}) - development mode allows this:`, req.url);
+        // Skip error handling for specific endpoints
+        if (request.url.includes('/auth/')) {
           return throwError(() => error);
         }
 
-        if (error.status === 401 && !this.router.url.includes('/auth/login')) {
-          console.warn('Unauthorized request (401) to:', req.url, 'from page:', this.router.url);
-          this.authService.logout();
-          this.router.navigate(['/auth/login']);
-          this.notificationService.error('Session expired. Please login again.');
+        // In development mode, pass through all API errors without logging
+        const isDevMode = !!(typeof window !== 'undefined' && window.location && window.location.hostname === 'localhost');
+        if (isDevMode) {
+          return throwError(() => error);
+        }
+
+        // Suppress error toast for specific endpoints
+        if (error.headers?.get('X-Suppress-Error-Toast')) {
+          return throwError(() => error);
+        }
+
+        if (error.status === 401) {
+          // Redirect to login page on 401 Unauthorized
+          this.router.navigate(['/login']);
         } else if (error.status === 403) {
-          this.notificationService.error('You do not have permission to perform this action.');
-        } else if (error.status === 404) {
-          this.notificationService.error('Resource not found.');
-        } else if (error.status >= 500) {
-          this.notificationService.error('Server error. Please try again later.');
-        } else if (error.error?.message) {
-          this.notificationService.error(error.error.message);
+          // Redirect to forbidden page on 403 Forbidden
+          this.router.navigate(['/forbidden']);
+        } else if (error.status === 500) {
+          console.error('Server Error:', error.message);
         }
 
         return throwError(() => error);
-      }),
+      })
     );
   }
 }
-
-

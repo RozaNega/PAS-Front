@@ -32,6 +32,22 @@ export class SignalRService {
     this.notificationService.info(notification.message, 'New Notification');
   }
 
+  markNotificationAsRead(id: string): void {
+    if (!id) return;
+    this.notificationsSubject.next(
+      this.notificationsSubject.value.map((n) => (n.id === id ? { ...n, isRead: true } : n)),
+    );
+  }
+
+  markAllNotificationsAsRead(): void {
+    this.notificationsSubject.next(this.notificationsSubject.value.map((n) => ({ ...n, isRead: true })));
+  }
+
+  dismissNotification(id: string): void {
+    if (!id) return;
+    this.notificationsSubject.next(this.notificationsSubject.value.filter((n) => n.id !== id));
+  }
+
   stopConnection(): void {
     // No active connection in placeholder implementation.
   }

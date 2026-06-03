@@ -1,54 +1,29 @@
 import { Injectable } from '@angular/core';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { ApiService } from './api.service';
-import { ApiResponseModel } from '../models/api-response.model';
 
-export interface UserDto {
-  id: string;
+export interface User {
+  id: number;
+  userId: string;
   username: string;
-  email: string;
-  isActive: boolean;
-  roleId: string;
-  roleName: string;
-  employeeId?: string;
-  employeeCode?: string;
-  employeeName?: string;
-}
-
-export interface UserDetailDto {
-  id: string;
-  username: string;
-  email: string;
-  isActive: boolean;
-  roleId: string;
-  roleName: string;
-  employeeId: string;
-  employeeCode: string;
-  employeeName: string;
-}
-
-/** POST /api/Users — RegisterUserCommand */
-export interface RegisterUserCommand {
-  username: string;
-  password: string;
   email: string;
   fullName: string;
-  department: string;
-  employeeCode?: string | null;
-  phoneNumber?: string | null;
-  roleName?: string | null;
-}
-
-export interface UpdateUserCommand {
-  id: string;
-  username: string;
-  email: string;
-  roleId: string;
+  firstName: string;
+  lastName: string;
+  role: string;
+  roles: string[];
   isActive: boolean;
+  phoneNumber?: string;
+  profilePhotoUrl?: string;
+  lastLogin?: string;
+  employeeName?: string;
+  employeeCode?: string;
+  roleName?: string;
+  roleId?: string;
 }
 
-export interface PaginatedResponse<T> {
-  items: T[];
+export interface UserPaginatedResponse {
+  items: User[];
   pageNumber: number;
   totalPages: number;
   totalCount: number;
@@ -56,45 +31,63 @@ export interface PaginatedResponse<T> {
   hasNextPage: boolean;
 }
 
-@Injectable({ providedIn: 'root' })
+export interface UserApiResponse {
+  success: boolean;
+  message: string;
+  data: UserPaginatedResponse | User | null;
+  statusCode: number;
+}
+
+@Injectable({
+  providedIn: 'root'
+})
 export class UsersService {
-  constructor(private apiService: ApiService) {}
+  private baseUrl = '/api/users';
 
-  getAll(params?: {
-    pageNumber?: number;
-    pageSize?: number;
-    searchTerm?: string;
-    roleId?: string;
-    isActive?: boolean;
-  }): Observable<ApiResponseModel<PaginatedResponse<UserDto>>> {
-    return this.apiService.get<ApiResponseModel<PaginatedResponse<UserDto>>>('Users', params);
+  constructor(private http: HttpClient) {}
+
+  getAll(params?: { searchTerm?: string }): Observable<UserApiResponse> {
+    return this.getUsers(1, 1000);
   }
 
-  getById(id: string): Observable<ApiResponseModel<UserDetailDto>> {
-    return this.apiService.get<ApiResponseModel<UserDetailDto>>(`Users/${id}`);
+  getById(id: string | number): Observable<UserApiResponse> {
+    return this.getUser(typeof id === 'number' ? id : parseInt(id, 10) || 0);
   }
 
-  register(data: RegisterUserCommand): Observable<ApiResponseModel<string>> {
-    return this.apiService.post<ApiResponseModel<string>>('Users', data);
+  activate(id: number): Observable<UserApiResponse> {
+    return this.toggleUserStatus(id);
   }
 
-  forgotPassword(email: string): Observable<ApiResponseModel<unknown>> {
-    return this.apiService.post<ApiResponseModel<unknown>>('Auth/forgot-password', { email });
+  getUsers(pageNumber: number = 1, pageSize: number = 10): Observable<UserApiResponse> {
+    let params = new HttpParams()
+      .set('pageNumber', pageNumber.toString())
+      .set('pageSize', pageSize.toString());
+    return this.http.get<UserApiResponse>(this.baseUrl, { params });
   }
 
-  update(data: UpdateUserCommand): Observable<ApiResponseModel<any>> {
-    return this.apiService.put<ApiResponseModel<any>>(`Users/${data.id}`, data);
+  getUser(id: number): Observable<UserApiResponse> {
+    return this.http.get<UserApiResponse>(`${this.baseUrl}/${id}`);
   }
 
-  delete(id: string): Observable<ApiResponseModel<any>> {
-    return this.apiService.delete<ApiResponseModel<any>>(`Users/${id}`);
+  createUser(user: Partial<User>): Observable<UserApiResponse> {
+    return this.http.post<UserApiResponse>(this.baseUrl, user);
   }
 
-  changePassword(userId: string, currentPassword: string, newPassword: string): Observable<ApiResponseModel<any>> {
-    return this.apiService.post<ApiResponseModel<any>>('Auth/change-password', {
-      currentPassword,
-      newPassword
-    });
+  updateUser(id: number, user: Partial<User>): Observable<UserApiResponse> {
+    return this.http.put<UserApiResponse>(`${this.baseUrl}/${id}`, user);
   }
 
+  deleteUser(id: number): Observable<UserApiResponse> {
+    return this.http.delete<UserApiResponse>(`${this.baseUrl}/${id}`);
+  }
+
+  toggleUserStatus(id: number): Observable<UserApiResponse> {
+    return this.http.patch<UserApiResponse>(`${this.baseUrl}/${id}/toggle-status`, {});
+  }
+
+  uploadProfilePhoto(userId: string, file: File): Observable<UserApiResponse> {
+    const formData = new FormData();
+    formData.append('file', file, file.name);
+    return this.http.post<UserApiResponse>(`${this.baseUrl}/${userId}/photo`, formData);
+  }
 }

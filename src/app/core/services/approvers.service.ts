@@ -6,15 +6,17 @@ import { ApiResponseModel } from '../models/api-response.model';
 export interface ApproverDto {
   id: string;
   workflowId: string;
+  workflowName?: string;
   userId: string;
   userName?: string;
-  sequence: number;
+  approvalLevel: number;
+  createdAt: string;
 }
 
 export interface AssignApproverCommand {
   workflowId: string;
   userId: string;
-  sequence: number;
+  approvalLevel: number;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -22,14 +24,14 @@ export class ApproversService {
   constructor(private apiService: ApiService) {}
 
   getByWorkflow(workflowId: string): Observable<ApiResponseModel<ApproverDto[]>> {
-    return this.apiService.get<ApiResponseModel<ApproverDto[]>>(`Approvers/by-workflow/${workflowId}`);
+    return this.apiService.get<ApproverDto[]>(`Approvers/by-workflow/${workflowId}`);
   }
 
   assign(data: AssignApproverCommand): Observable<ApiResponseModel<string>> {
-    return this.apiService.post<ApiResponseModel<string>>('Approvers/assign', data);
+    return this.apiService.post<string>('Approvers/assign', data);
   }
 
-  delete(id: string): Observable<ApiResponseModel<any>> {
-    return this.apiService.delete<ApiResponseModel<any>>(`Approvers/${id}`);
+  remove(id: string): Observable<ApiResponseModel<any>> {
+    return this.apiService.delete<any>(`Approvers/${id}`);
   }
 }

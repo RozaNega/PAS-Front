@@ -1,10 +1,10 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import {
-  ServiceRequestService,
-  ServiceRequestDto,
-} from '../../../../features/requisition/service-requests/services/service-request.service';
+import { Subscription, take } from 'rxjs';
+import { ServiceRequestService } from '../../../../features/requisition/service-requests/services/service-request.service';
+import { WorkflowService } from '../../../../core/services/workflow.service';
+import { CurrentUserService } from '../../../../core/services/current-user.service';
 import {
   ServiceRequestTimeline,
   ServiceRequestActivity,
@@ -47,17 +47,23 @@ interface ActivityLogEntry {
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './approved-requests.component.html',
-  styleUrls: ['./approved-requests.component.scss']
+  styleUrls: ['./approved-requests.component.scss'],
 })
-export class ApprovedRequestsComponent implements OnInit {
+export class ApprovedRequestsComponent implements OnInit, OnDestroy {
   private serviceRequestService = inject(ServiceRequestService);
-  
+  private readonly workflowService = inject(WorkflowService);
+  private readonly currentUserService = inject(CurrentUserService);
+  private readonly subs: Subscription[] = [];
+  private currentUserId = '';
+
   protected readonly requests = signal<Request[]>([]);
   protected readonly isLoading = signal(false);
   protected readonly error = signal<string | null>(null);
-  
+
   // Track request data
-  protected readonly trackingData = signal<{[key: string]: { timeline?: ServiceRequestTimeline, activity?: ServiceRequestActivity[] }}>({});
+  protected readonly trackingData = signal<{
+    [key: string]: { timeline?: ServiceRequestTimeline; activity?: ServiceRequestActivity[] };
+  }>({});
   protected readonly isLoadingTracking = signal<string | null>(null);
   protected readonly trackingError = signal<string | null>(null);
 
@@ -91,14 +97,14 @@ export class ApprovedRequestsComponent implements OnInit {
       id: requestId,
       reason: this.cancelReason() || undefined,
       notifyApprover: this.notifyApprover(),
-      sendEmailConfirmation: this.sendEmailConfirmation()
+      sendEmailConfirmation: this.sendEmailConfirmation(),
     };
 
     this.serviceRequestService.cancel(request).subscribe({
       next: () => {
         // Remove the request from the list
         const requests = this.requests();
-        const index = requests.findIndex(r => r.id === requestId);
+        const index = requests.findIndex((r) => r.id === requestId);
         if (index !== -1) {
           const updatedRequests = [...requests];
           updatedRequests.splice(index, 1);
@@ -110,7 +116,7 @@ export class ApprovedRequestsComponent implements OnInit {
       error: (err: unknown) => {
         console.error('Error cancelling request:', err);
         alert('Failed to cancel request. Please try again.');
-      }
+      },
     });
   }
 
@@ -137,53 +143,105 @@ export class ApprovedRequestsComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.currentUserId = this.currentUserService.getUserId() || '';
+    this.syncFromApi();
+    this.subs.push(
+      this.currentUserService.currentUser$.subscribe((user) => {
+        this.currentUserId = user?.id || '';
+        this.loadRequests();
+      }),
+    );
+    this.subs.push(
+      this.workflowService.getRequestUpdates().subscribe(() => this.loadRequests()),
+      this.workflowService.getNotificationUpdates().subscribe(() => this.loadRequests()),
+    );
     this.loadRequests();
+  }
+
+  ngOnDestroy(): void {
+    this.subs.forEach((s) => s.unsubscribe());
+  }
+
+  private syncFromApi(): void {
+    this.serviceRequestService
+      .getServiceRequests()
+      .pipe(take(1))
+      .subscribe({
+        next: (res) => {
+          const items = this.workflowService.extractApiServiceRequestRows(res);
+          const user = this.currentUserService.getCurrentUserValue();
+          this.workflowService.mergeApiServiceRequests(items, {
+            managerQueueId: this.workflowService.getAssignedManagerQueueId(),
+            employeeIdFilter: this.currentUserId || user?.id || null,
+            employeeIdentity: {
+              email: user?.email,
+              fullName: user?.fullName,
+              username: user?.username,
+              employeeCode: user?.employeeCode,
+            },
+          });
+          this.loadRequests();
+        },
+        error: () => {
+          this.loadRequests();
+        },
+      });
   }
 
   private loadRequests(): void {
     this.isLoading.set(true);
     this.error.set(null);
-    
-    this.serviceRequestService.getAll({ status: 'Approved' }).subscribe({
-      next: (response: ApiResponse<ServiceRequestDto[]>) => {
-        if (response.success === false || !Array.isArray(response.data)) {
-          this.error.set(response.message || 'Failed to load requests');
-          this.isLoading.set(false);
-          return;
-        }
-        const mappedRequests: Request[] = response.data.map((sr) => ({
-          id: sr.id,
-          srNumber: sr.srNumber,
-          title: sr.purpose,
-          description: sr.notes,
-          priority: sr.urgency,
+
+    const currentUser = this.currentUserService.getCurrentUserValue();
+    const employeeId = this.currentUserId || currentUser?.id || '';
+    const identity = {
+      email: currentUser?.email,
+      fullName: currentUser?.fullName,
+      username: currentUser?.username,
+      employeeCode: currentUser?.employeeCode,
+    };
+
+    const approvedRequests = this.workflowService.getApprovedRequestsForEmployee(employeeId, identity);
+
+    this.requests.set(
+      approvedRequests.map((sr) => ({
+        id: sr.id,
+        srNumber: sr.srNumber,
+        title: sr.items[0]?.name || 'Approved Request',
+        description: sr.justification || sr.items[0]?.description || 'Approved request from workflow',
+        priority: sr.priority,
+        status: sr.status,
+        canCancel: sr.status === 'Draft' || sr.status === 'Submitted' || sr.status === 'Under Review',
+        currentStep: this.getCurrentStepFromStatus(sr.status),
+        totalSteps: 5,
+        approvedDate: sr.managerReviewDate?.toLocaleDateString() || sr.adminReviewDate?.toLocaleDateString(),
+        items: sr.items.map((item) => ({
+          name: item.name,
+          quantity: item.quantity,
           status: sr.status,
-          approvedDate: sr.requestDate,
-          canCancel: sr.status === 'Draft' || sr.status === 'Pending',
-          currentStep: this.getCurrentStepFromStatus(sr.status),
-          totalSteps: 5,
-          items: [],
-          activityLog: [],
-        }));
-        this.requests.set(mappedRequests);
-        this.isLoading.set(false);
-      },
-      error: (err: unknown) => {
-        this.error.set('Failed to load requests');
-        this.isLoading.set(false);
-        console.error('Error loading requests:', err);
-      },
-    });
+          expectedDate: sr.requiredDate.toLocaleDateString(),
+        })),
+        activityLog: (sr.workflowHistory || []).map((h) => ({
+          timestamp: new Date(h.timestamp).toLocaleString(),
+          action: h.action,
+          performedBy: h.performedBy,
+        })),
+      })),
+    );
+    this.isLoading.set(false);
   }
 
   private getCurrentStepFromStatus(status: string): number {
     const statusMap: { [key: string]: number } = {
-      'Draft': 1,
-      'Pending': 2,
-      'Approved': 3,
-      'Issued': 4,
-      'Completed': 5,
-      'Rejected': 2
+      Draft: 1,
+      Submitted: 2,
+      'Under Review': 2,
+      'Manager Approved': 3,
+      'Admin Approved': 4,
+      'Compliance Review': 4,
+      Completed: 5,
+      'Manager Rejected': 2,
+      'Admin Rejected': 2,
     };
     return statusMap[status] || 1;
   }
@@ -200,17 +258,14 @@ export class ApprovedRequestsComponent implements OnInit {
   private loadTrackingData(requestId: string): void {
     this.isLoadingTracking.set(requestId);
     this.trackingError.set(null);
-    
+
     // Load timeline and activity in parallel
     this.serviceRequestService.getTimeline(requestId).subscribe({
       next: (response: ApiResponse<unknown>) => {
         const current = this.trackingData();
         this.trackingData.set({
           ...current,
-          [requestId]: {
-            ...current[requestId],
-            timeline: response.data as ServiceRequestTimeline | undefined,
-          },
+          [requestId]: { ...current[requestId], timeline: response.data as ServiceRequestTimeline | undefined },
         });
         this.isLoadingTracking.set(null);
       },
@@ -226,10 +281,7 @@ export class ApprovedRequestsComponent implements OnInit {
         const current = this.trackingData();
         this.trackingData.set({
           ...current,
-          [requestId]: {
-            ...current[requestId],
-            activity: (response.data ?? []) as ServiceRequestActivity[],
-          },
+          [requestId]: { ...current[requestId], activity: (response.data ?? []) as ServiceRequestActivity[] },
         });
       },
       error: (err: unknown) => {

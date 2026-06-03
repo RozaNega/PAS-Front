@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Observable, map, catchError, of } from 'rxjs';
 import { ApiService } from '../../../../core/services/api.service';
-import { ApiResponse } from '../../../../types/api-response.type';
+import { ApiResponseModel } from '../../../../core/models/api-response.model';
 
 export interface TransferItem {
   sku: string;
@@ -99,22 +99,22 @@ export class StockTransferService {
   }
 
   // Get warehouses
-  getWarehouses(): Observable<ApiResponse<any[]>> {
-    return this.apiService.get<ApiResponse<any[]>>('Warehouses', { isActive: true }).pipe(
+  getWarehouses(): Observable<ApiResponseModel<any[]>> {
+    return this.apiService.get<any[]>('Warehouses', { isActive: true }).pipe(
       catchError(() => {
         return of({
           success: true,
           message: 'Using mock warehouse data',
           data: this.createMockWarehouses(),
           statusCode: 200
-        } as ApiResponse<any[]>);
+        } as ApiResponseModel<any[]>);
       })
     );
   }
 
   // Get items in warehouse
-  getItemsInWarehouse(warehouseId: string): Observable<ApiResponse<TransferItem[]>> {
-    return this.apiService.get('InventoryStock', {
+  getItemsInWarehouse(warehouseId: string): Observable<ApiResponseModel<TransferItem[]>> {
+    return this.apiService.get<unknown>('InventoryStock', {
       warehouseId,
       pageSize: 100
     }).pipe(
@@ -128,9 +128,9 @@ export class StockTransferService {
             toTransfer: 0,
             price: item.unitPrice || 0
           }));
-          return { ...res, data: items } as ApiResponse<TransferItem[]>;
+          return { ...res, data: items } as ApiResponseModel<TransferItem[]>;
         }
-        return { ...res, data: [] } as ApiResponse<TransferItem[]>;
+        return { ...res, data: [] } as ApiResponseModel<TransferItem[]>;
       }),
       catchError(() => {
         const mockItems = this.createMockItems().map(item => ({
@@ -146,14 +146,14 @@ export class StockTransferService {
           message: 'Using mock inventory data',
           data: mockItems,
           statusCode: 200
-        } as ApiResponse<TransferItem[]>);
+        } as ApiResponseModel<TransferItem[]>);
       })
     );
   }
 
   // Create stock transfer
-  createTransfer(request: StockTransferRequest): Observable<ApiResponse<StockTransferResponse>> {
-    return this.apiService.post<ApiResponse<StockTransferResponse>>('StockTransfers', request).pipe(
+  createTransfer(request: StockTransferRequest): Observable<ApiResponseModel<StockTransferResponse>> {
+    return this.apiService.post<StockTransferResponse>('StockTransfers', request).pipe(
       catchError((error: any) => {
         console.error('Transfer creation failed:', error);
         return of({
@@ -161,7 +161,7 @@ export class StockTransferService {
           message: error?.error?.message || 'Failed to create transfer',
           data: {} as StockTransferResponse,
           statusCode: error?.status || 500
-        } as ApiResponse<StockTransferResponse>);
+        } as ApiResponseModel<StockTransferResponse>);
       })
     );
   }
@@ -173,8 +173,8 @@ export class StockTransferService {
     status?: string;
     dateFrom?: string;
     dateTo?: string;
-  }): Observable<ApiResponse<TransferHistory[]>> {
-    return this.apiService.get('StockTransfers', filters).pipe(
+  }): Observable<ApiResponseModel<TransferHistory[]>> {
+    return this.apiService.get<unknown>('StockTransfers', filters).pipe(
       map((res: any) => {
         if (res.success !== false && Array.isArray(res.data)) {
           const history = (res.data as any[]).map(transfer => ({
@@ -186,9 +186,9 @@ export class StockTransferService {
             status: transfer.status || 'pending',
             transferNumber: transfer.transferNumber || ''
           }));
-          return { ...res, data: history } as ApiResponse<TransferHistory[]>;
+          return { ...res, data: history } as ApiResponseModel<TransferHistory[]>;
         }
-        return { ...res, data: [] } as ApiResponse<TransferHistory[]>;
+        return { ...res, data: [] } as ApiResponseModel<TransferHistory[]>;
       }),
       catchError(() => {
         return of({
@@ -196,18 +196,18 @@ export class StockTransferService {
           message: 'Using mock transfer history',
           data: this.createMockTransferHistory(),
           statusCode: 200
-        } as ApiResponse<TransferHistory[]>);
+        } as ApiResponseModel<TransferHistory[]>);
       })
     );
   }
 
   // Get transfer by ID
-  getTransferById(id: string): Observable<ApiResponse<any>> {
-    return this.apiService.get(`StockTransfers/${id}`);
+  getTransferById(id: string): Observable<ApiResponseModel<any>> {
+    return this.apiService.get<any>(`StockTransfers/${id}`);
   }
 
   // Cancel transfer
-  cancelTransfer(id: string): Observable<ApiResponse<any>> {
-    return this.apiService.put(`StockTransfers/${id}`, { status: 'cancelled' });
+  cancelTransfer(id: string): Observable<ApiResponseModel<any>> {
+    return this.apiService.put<any>(`StockTransfers/${id}`, { status: 'cancelled' });
   }
 }

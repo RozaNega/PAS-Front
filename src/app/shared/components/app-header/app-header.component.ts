@@ -166,94 +166,9 @@ export class AppHeaderComponent {
   showUserMenu = signal(false);
   notifications = signal<NotificationItem[]>([]);
 
-  private adminNotifications: NotificationItem[] = [
-    {
-      id: '1',
-      title: 'New Property Added',
-      message: 'Property "Sunset Villas" has been successfully added to the system.',
-      type: 'success',
-      timestamp: new Date(Date.now() - 1000 * 60 * 5),
-      read: false,
-    },
-    {
-      id: '2',
-      title: 'User Approval Request',
-      message: '3 new users awaiting approval for admin access.',
-      type: 'warning',
-      timestamp: new Date(Date.now() - 1000 * 60 * 30),
-      read: false,
-    },
-    {
-      id: '3',
-      title: 'System Backup Completed',
-      message: 'Daily backup completed successfully. Database size: 2.4GB',
-      type: 'success',
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2),
-      read: true,
-    },
-    {
-      id: '4',
-      title: 'Request Approved - SR-2024-121',
-      message: 'Your request SR-2024-121 has been approved and forwarded to store for issue.',
-      type: 'approved',
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 4),
-      read: false,
-      requestId: 'SR-2024-121',
-    },
-    {
-      id: '5',
-      title: 'Request Completed - SR-2024-120',
-      message: 'Your request SR-2024-120 has been completed. SIV-045 issued.',
-      type: 'completed',
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 8),
-      read: false,
-      requestId: 'SR-2024-120',
-      sivId: 'SIV-045',
-    },
-  ];
+  private adminNotifications: NotificationItem[] = [];
 
-  private storekeeperNotifications: NotificationItem[] = [
-    {
-      id: '1',
-      title: 'Urgent: Stock Issuance Pending',
-      message: '3 urgent stock issuance requests need immediate attention.',
-      type: 'warning',
-      timestamp: new Date(Date.now() - 1000 * 60 * 5),
-      read: false,
-    },
-    {
-      id: '2',
-      title: 'New GRN Received',
-      message: 'GRN-2024-0456 received from Tech Supplies Ltd. Ready for inspection.',
-      type: 'success',
-      timestamp: new Date(Date.now() - 1000 * 60 * 15),
-      read: false,
-    },
-    {
-      id: '3',
-      title: 'Low Stock Alert',
-      message: 'Laptop stock is critically low (5 units). Minimum threshold: 20 units.',
-      type: 'error',
-      timestamp: new Date(Date.now() - 1000 * 60 * 45),
-      read: false,
-    },
-    {
-      id: '4',
-      title: 'Warehouse Transfer Completed',
-      message: 'Transfer of 50 monitors from Warehouse A to Warehouse B completed.',
-      type: 'success',
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2),
-      read: true,
-    },
-    {
-      id: '5',
-      title: 'Shelf Maintenance Due',
-      message: 'Shelf A-12-B in Warehouse A requires maintenance inspection.',
-      type: 'info',
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 6),
-      read: true,
-    },
-  ];
+  private storekeeperNotifications: NotificationItem[] = [];
 
   constructor() {
     const savedTheme = localStorage.getItem('theme');

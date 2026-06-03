@@ -1,162 +1,170 @@
-﻿<section class="storekeeper-dashboard" aria-label="Storekeeper dashboard">
-  <header class="dashboard-header">
+﻿<section class="dashboard">
+  <header class="page-header">
     <div class="header-content">
       <h1>Storekeeper Dashboard</h1>
-      <p>Warehouse Control Center</p>
+      <p>Warehouse Control Center — real-time overview</p>
     </div>
-    <div class="header-info">
-      <span class="date">Dec 15, 2024</span>
-      <div class="status-indicators">
-        <span class="status-dot active"></span>
-        <span class="status-dot"></span>
-        <span class="status-dot"></span>
+    <div class="header-actions">
+      <div class="live-indicator">
+        <span class="live-dot"></span>
+        <span>Live</span>
       </div>
+      <button type="button" class="action-btn secondary" (click)="refreshData()" [disabled]="isLoading()">
+        <i class="bi bi-arrow-clockwise"></i> {{ isLoading() ? 'Loading...' : 'Refresh' }}
+      </button>
     </div>
   </header>
 
-  <!-- KPI Cards and Calendar -->
-  <section class="kpi-cards" aria-label="Key performance indicators">
+  <section class="kpi-grid">
     @for (card of kpiCards(); track card.title) {
-      <article class="kpi-card {{ card.color }}" (click)="router.navigate([card.route])">
-        <div class="card-icon">
+      <article class="kpi-card" [class]="card.color" (click)="router.navigate([card.route])">
+        <div class="kpi-icon-wrap" [class]="'icon-' + card.color">
           <i [class]="card.icon"></i>
         </div>
-        <div class="card-content">
-          <p class="card-title">{{ card.title }}</p>
-          <p class="card-value">{{ card.value }}</p>
-          <p class="card-secondary">{{ card.secondary }}</p>
-          <span class="card-trend">{{ card.trend }}</span>
+        <div class="kpi-content">
+          <span class="kpi-label">{{ card.title }}</span>
+          <span class="kpi-value">{{ card.value }}</span>
+          <div class="kpi-footer">
+            <span class="kpi-secondary">{{ card.secondary }}</span>
+            <span class="kpi-trend">{{ card.trend }}</span>
+          </div>
         </div>
       </article>
     }
-    <app-calendar-widget></app-calendar-widget>
   </section>
 
-  <!-- Charts Section -->
-  <section class="charts-section">
-    <!-- Stock Level Trends -->
-    <div class="chart-panel">
-      <div class="panel-header">
-        <h3>📈 Stock Level Trends</h3>
-        <button type="button" class="panel-action">
-          <i class="bi bi-three-dots"></i>
-        </button>
+  <section class="charts-grid">
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <div class="chart-card-header-left">
+          <i class="bi bi-graph-up"></i>
+          <h3>Stock Level Trends</h3>
+        </div>
+        <span class="chart-badge">12 Weeks</span>
       </div>
-      <div class="panel-body">
-        <div class="line-chart">
-          <svg viewBox="0 0 400 200" width="100%" height="100%">
-            <!-- Grid lines -->
-            <line x1="50" y1="20" x2="380" y2="20" stroke="#e5e7eb" stroke-width="1" />
-            <line x1="50" y1="60" x2="380" y2="60" stroke="#e5e7eb" stroke-width="1" />
-            <line x1="50" y1="100" x2="380" y2="100" stroke="#e5e7eb" stroke-width="1" />
-            <line x1="50" y1="140" x2="380" y2="140" stroke="#e5e7eb" stroke-width="1" />
-            <line x1="50" y1="180" x2="380" y2="180" stroke="#e5e7eb" stroke-width="1" />
-            <!-- Total Stock Line (Blue) -->
-            <polyline points="50,100 140,80 230,90 320,70 380,60" fill="none" stroke="#3B82F6" stroke-width="3" />
-            <!-- Electronics Line (Green) -->
-            <polyline points="50,120 140,100 230,110 320,90 380,80" fill="none" stroke="#10B981" stroke-width="2" />
-            <!-- Furniture Line (Orange) -->
-            <polyline points="50,140 140,130 230,120 320,110 380,100" fill="none" stroke="#F59E0B" stroke-width="2" />
-          </svg>
-          <div class="chart-labels">
-            <span>Week 1</span>
-            <span>Week 2</span>
-            <span>Week 3</span>
-            <span>Week 4</span>
-          </div>
-        </div>
-        <div class="chart-legend">
-          <span class="legend-item"><span class="legend-color" style="background: #3B82F6"></span>Total Stock</span>
-          <span class="legend-item"><span class="legend-color" style="background: #10B981"></span>Electronics</span>
-          <span class="legend-item"><span class="legend-color" style="background: #F59E0B"></span>Furniture</span>
-        </div>
+      <div class="chart-body">
+        <div echarts [options]="trendChartOpts" class="echart-container"></div>
       </div>
     </div>
-
-    <!-- Stock by Category -->
-    <div class="chart-panel">
-      <div class="panel-header">
-        <h3>📊 Stock by Category</h3>
-        <button type="button" class="panel-action">
-          <i class="bi bi-three-dots"></i>
-        </button>
-      </div>
-      <div class="panel-body">
-        <div class="donut-chart">
-          <svg viewBox="0 0 200 200" width="200" height="200">
-            <circle cx="100" cy="100" r="80" fill="transparent" stroke="#3B82F6" stroke-width="30" stroke-dasharray="175 325" stroke-dashoffset="0" transform="rotate(-90 100 100)" />
-            <circle cx="100" cy="100" r="80" fill="transparent" stroke="#10B981" stroke-width="30" stroke-dasharray="125 375" stroke-dashoffset="-175" transform="rotate(-90 100 100)" />
-            <circle cx="100" cy="100" r="80" fill="transparent" stroke="#F59E0B" stroke-width="30" stroke-dasharray="75 425" stroke-dashoffset="-300" transform="rotate(-90 100 100)" />
-            <circle cx="100" cy="100" r="80" fill="transparent" stroke="#8B5CF6" stroke-width="30" stroke-dasharray="50 450" stroke-dashoffset="-375" transform="rotate(-90 100 100)" />
-            <circle cx="100" cy="100" r="80" fill="transparent" stroke="#EC4899" stroke-width="30" stroke-dasharray="40 460" stroke-dashoffset="-425" transform="rotate(-90 100 100)" />
-            <circle cx="100" cy="100" r="80" fill="transparent" stroke="#6B7280" stroke-width="30" stroke-dasharray="35 465" stroke-dashoffset="-465" transform="rotate(-90 100 100)" />
-          </svg>
-          <div class="donut-center">
-            <span class="total">12,345</span>
-            <span class="label">Units in Stock</span>
-          </div>
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <div class="chart-card-header-left">
+          <i class="bi bi-pie-chart"></i>
+          <h3>Stock by Category</h3>
         </div>
-        <div class="category-legend">
-          @for (category of stockCategories; track category.name) {
-            <div class="category-item">
-              <span class="category-color" [style.background-color]="category.color"></span>
-              <span class="category-name">{{ category.name }}</span>
-              <span class="category-value">{{ category.percentage }}%</span>
-            </div>
+        <span class="chart-badge">Distribution</span>
+      </div>
+      <div class="chart-body">
+        <div echarts [options]="categoryChartOpts" class="echart-container"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-header">
+      <div class="panel-header-left">
+        <i class="bi bi-table"></i>
+        <h3>Recent Goods Received Notes</h3>
+      </div>
+      <button type="button" class="action-btn link" (click)="viewAllGRNs()">
+        View All <i class="bi bi-chevron-right"></i>
+      </button>
+    </div>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>GRN No</th>
+            <th>Supplier</th>
+            <th>Items</th>
+            <th>Date</th>
+            <th>Status</th>
+            <th class="text-right">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (grn of recentGRNs; track grn.id) {
+            <tr>
+              <td><span class="mono">{{ grn.grnNo }}</span></td>
+              <td>{{ grn.supplier }}</td>
+              <td>{{ grn.items }}</td>
+              <td>{{ grn.date }}</td>
+              <td><span class="status-badge {{ getStatusClass(grn.status) }}">{{ grn.status }}</span></td>
+              <td class="text-right">
+                <button type="button" class="icon-btn" (click)="receiveGRN(grn.id)" title="Receive"><i class="bi bi-check-lg"></i></button>
+                <button type="button" class="icon-btn" (click)="viewGRN(grn)" title="View"><i class="bi bi-eye"></i></button>
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="6" class="empty-state">No GRNs found</td></tr>
           }
-        </div>
-      </div>
+        </tbody>
+      </table>
     </div>
   </section>
 
-  <!-- Pending Queues -->
-  <section class="queues-section">
-    <!-- Pending Issues -->
+  <section class="queues-grid">
     <div class="queue-panel">
       <div class="panel-header">
-        <h3>⏳ Pending Issues Queue ({{ pendingIssues.length }})</h3>
-        <button type="button" class="action-btn secondary small" routerLink="/storekeeper/issuing/pending">
-          View All
+        <div class="panel-header-left">
+          <i class="bi bi-hourglass-split" style="color: #ef4444;"></i>
+          <h3>Pending Issues</h3>
+          <span class="count-badge red">{{ pendingIssues.length }}</span>
+        </div>
+        <button type="button" class="action-btn link" (click)="router.navigate(['/storekeeper/issuing'])">
+          View All <i class="bi bi-chevron-right"></i>
         </button>
       </div>
       <div class="panel-body">
         @for (issue of pendingIssues; track issue.id) {
           <div class="queue-item {{ getPriorityClass(issue.priority) }}">
-            <div class="priority-indicator">{{ getPriorityIcon(issue.priority) }}</div>
-            <div class="queue-details">
-              <h4>{{ issue.id }}</h4>
-              <p>{{ issue.item }} (Qty: {{ issue.quantity }})</p>
-              <span class="wait-time">Waiting: {{ issue.waitTime }}</span>
+            <div class="queue-priority-bar" [style.background]="getPriorityColor(issue.priority)"></div>
+            <div class="queue-content">
+              <div class="queue-top">
+                <span class="queue-id">{{ issue.id }}</span>
+                <span class="priority-tag" [style.background]="getPriorityColor(issue.priority) + '18'" [style.color]="getPriorityColor(issue.priority)">{{ issue.priority }}</span>
+              </div>
+              <div class="queue-desc">{{ issue.item }} <span class="mono">x{{ issue.quantity }}</span></div>
+              <div class="queue-meta">
+                <i class="bi bi-clock"></i> Waiting: {{ issue.waitTime }}
+              </div>
             </div>
             <button type="button" class="action-btn primary small" (click)="processIssue(issue.id)">
-              Process Now
+              Process
             </button>
           </div>
         }
       </div>
     </div>
-
-    <!-- Pending Receivings -->
     <div class="queue-panel">
       <div class="panel-header">
-        <h3>📥 Pending Receivings ({{ pendingReceivings.length }})</h3>
-        <button type="button" class="action-btn secondary small" routerLink="/storekeeper/receiving/pending">
-          View All
+        <div class="panel-header-left">
+          <i class="bi bi-box-seam" style="color: #3b82f6;"></i>
+          <h3>Pending Receivings</h3>
+          <span class="count-badge blue">{{ pendingReceivings.length }}</span>
+        </div>
+        <button type="button" class="action-btn link" (click)="router.navigate(['/storekeeper/receiving'])">
+          View All <i class="bi bi-chevron-right"></i>
         </button>
       </div>
       <div class="panel-body">
         @for (receiving of pendingReceivings; track receiving.id) {
           <div class="queue-item">
-            <div class="queue-icon">
-              <i class="bi bi-box-seam"></i>
+            <div class="queue-icon-box">
+              <i class="bi bi-arrow-down-circle"></i>
             </div>
-            <div class="queue-details">
-              <h4>{{ receiving.grnNo }}</h4>
-              <p>{{ receiving.supplier }}</p>
-              <span class="received-time">Received: {{ receiving.receivedTime }}</span>
+            <div class="queue-content">
+              <div class="queue-top">
+                <span class="queue-id">{{ receiving.grnNo }}</span>
+                <span class="queue-supplier">{{ receiving.supplier }}</span>
+              </div>
+              <div class="queue-desc">{{ receiving.items }}</div>
+              <div class="queue-meta">
+                <i class="bi bi-clock"></i> Received: {{ receiving.receivedTime }}
+              </div>
             </div>
             <button type="button" class="action-btn primary small" (click)="startInspection(receiving.id)">
-              Start Inspection
+              Inspect
             </button>
           </div>
         }
@@ -164,107 +172,117 @@
     </div>
   </section>
 
-  <!-- Quick Scan & Action Bar -->
-  <section class="quick-scan-section">
-    <div class="scan-panel">
+  <section class="activity-grid">
+    <div class="activity-panel">
       <div class="panel-header">
-        <h3>🔍 Quick Scan & Action Bar</h3>
+        <div class="panel-header-left">
+          <i class="bi bi-arrow-up-circle" style="color: #059669;"></i>
+          <h3>Recent Issues</h3>
+        </div>
       </div>
       <div class="panel-body">
-        <div class="scan-container">
-          <div class="scanner-box">
-            <div class="scanner-icon">
-              <i class="bi bi-qr-code-scan"></i>
+        @for (issue of recentIssues; track issue.sivNo) {
+          <div class="activity-row">
+            <div class="activity-icon-box green">
+              <i class="bi bi-arrow-up-circle"></i>
             </div>
-            <span class="scanner-status">{{ isScanning ? 'Scanning...' : 'Ready' }}</span>
-            <button type="button" class="action-btn primary" (click)="toggleScanner()">
-              {{ isScanning ? 'Stop Scan' : 'Start Scan' }}
-            </button>
+            <div class="activity-info">
+              <span class="activity-title">{{ issue.sivNo }} — {{ issue.item }}</span>
+              <span class="activity-sub">{{ issue.department }} | {{ issue.time }}</span>
+            </div>
+            <span class="qty-badge">{{ issue.quantity }}</span>
           </div>
-          <div class="scan-result">
-            <h4>Scan Result:</h4>
-            <div class="result-details">
-              <div class="result-item">
-                <span class="label">Item:</span>
-                <span class="value">{{ scannedItem.name }}</span>
-              </div>
-              <div class="result-item">
-                <span class="label">SKU:</span>
-                <span class="value">{{ scannedItem.sku }}</span>
-              </div>
-              <div class="result-item">
-                <span class="label">Location:</span>
-                <span class="value">{{ scannedItem.location }}</span>
-              </div>
-              <div class="result-item">
-                <span class="label">Current Stock:</span>
-                <span class="value">{{ scannedItem.stock }} units</span>
-              </div>
+        }
+      </div>
+    </div>
+    <div class="activity-panel">
+      <div class="panel-header">
+        <div class="panel-header-left">
+          <i class="bi bi-arrow-down-circle" style="color: #2563eb;"></i>
+          <h3>Recent Receivings</h3>
+        </div>
+      </div>
+      <div class="panel-body">
+        @for (receiving of recentReceivings; track receiving.grnNo) {
+          <div class="activity-row">
+            <div class="activity-icon-box blue">
+              <i class="bi bi-arrow-down-circle"></i>
             </div>
-            <div class="scan-actions">
-              <button type="button" class="action-btn secondary small" (click)="viewItemDetails()">
-                View Details
-              </button>
-              <button type="button" class="action-btn primary small" (click)="issueItem()">
-                Issue Item
-              </button>
-              <button type="button" class="action-btn secondary small" (click)="transferStock()">
-                Transfer Stock
-              </button>
-              <button type="button" class="action-btn secondary small" (click)="adjustStock()">
-                Adjust Stock
-              </button>
+            <div class="activity-info">
+              <span class="activity-title">{{ receiving.grnNo }} — {{ receiving.item }}</span>
+              <span class="activity-sub">{{ receiving.supplier }} | {{ receiving.time }}</span>
             </div>
+            <span class="qty-badge">{{ receiving.quantity }}</span>
           </div>
+        }
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-header">
+      <div class="panel-header-left">
+        <i class="bi bi-qr-code-scan"></i>
+        <h3>Quick Scan & Action Bar</h3>
+      </div>
+      <button type="button" class="action-btn" [class.primary]="!isScanning" [class.danger]="isScanning" (click)="toggleScanner()">
+        <i class="bi" [class.bi-qr-code-scan]="!isScanning" [class.bi-stop-circle]="isScanning"></i>
+        {{ isScanning ? 'Stop Scan' : 'Start Scan' }}
+      </button>
+    </div>
+    <div class="scan-body">
+      <div class="scan-left">
+        <div class="scan-visual">
+          <div class="scan-icon-wrap" [class.scanning]="isScanning">
+            <i class="bi bi-qr-code"></i>
+          </div>
+          <span class="scan-status">{{ isScanning ? 'Scanning...' : 'Scanner Ready' }}</span>
+        </div>
+        <div class="scan-actions-list">
+          <button type="button" class="scan-action-btn" (click)="issueItem()">
+            <i class="bi bi-arrow-up-circle"></i> Issue Item
+          </button>
+          <button type="button" class="scan-action-btn" (click)="transferStock()">
+            <i class="bi bi-arrow-left-right"></i> Transfer
+          </button>
+          <button type="button" class="scan-action-btn" (click)="adjustStock()">
+            <i class="bi bi-sliders"></i> Adjust
+          </button>
+        </div>
+      </div>
+      <div class="scan-result-panel">
+        <div class="result-header">
+          <i class="bi bi-info-circle"></i>
+          <span>Last Scan Result</span>
+        </div>
+        <div class="result-grid">
+          <div class="result-field">
+            <span class="result-label">Item</span>
+            <span class="result-value">{{ scannedItem.name }}</span>
+          </div>
+          <div class="result-field">
+            <span class="result-label">SKU</span>
+            <span class="result-value mono">{{ scannedItem.sku }}</span>
+          </div>
+          <div class="result-field">
+            <span class="result-label">Location</span>
+            <span class="result-value">{{ scannedItem.location }}</span>
+          </div>
+          <div class="result-field">
+            <span class="result-label">Stock</span>
+            <span class="result-value">{{ scannedItem.stock }} units</span>
+          </div>
+        </div>
+        <div class="result-actions">
+          <button type="button" class="action-btn secondary small" (click)="viewItemDetails()"><i class="bi bi-eye"></i> Details</button>
+          <button type="button" class="action-btn primary small" (click)="issueItem()"><i class="bi bi-arrow-up-circle"></i> Issue</button>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Recent Activity -->
-  <section class="activity-section">
-    <!-- Recent Issues -->
-    <div class="activity-panel">
-      <div class="panel-header">
-        <h3>📦 Recent Issues (Today)</h3>
-      </div>
-      <div class="panel-body">
-        @for (issue of recentIssues; track issue.sivNo) {
-          <div class="activity-item">
-            <div class="activity-icon">
-              <i class="bi bi-arrow-up-circle"></i>
-            </div>
-            <div class="activity-details">
-              <h4>{{ issue.sivNo }} - {{ issue.item }}</h4>
-              <p>Issue to: {{ issue.department }}</p>
-              <span class="activity-time">{{ issue.time }}</span>
-            </div>
-            <button type="button" class="action-btn secondary small">Reprint</button>
-          </div>
-        }
-      </div>
-    </div>
-
-    <!-- Recent Receivings -->
-    <div class="activity-panel">
-      <div class="panel-header">
-        <h3>📥 Recent Receivings (Today)</h3>
-      </div>
-      <div class="panel-body">
-        @for (receiving of recentReceivings; track receiving.grnNo) {
-          <div class="activity-item">
-            <div class="activity-icon">
-              <i class="bi bi-arrow-down-circle"></i>
-            </div>
-            <div class="activity-details">
-              <h4>{{ receiving.grnNo }} - {{ receiving.quantity }} units</h4>
-              <p>Supplier: {{ receiving.supplier }}</p>
-              <span class="activity-time">{{ receiving.time }}</span>
-            </div>
-            <button type="button" class="action-btn secondary small">View Details</button>
-          </div>
-        }
-      </div>
-    </div>
-  </section>
+  <footer class="dashboard-footer">
+    <span><i class="bi bi-database"></i> Data refreshes automatically every 5 minutes</span>
+    <span><i class="bi bi-clock"></i> {{ today }}</span>
+  </footer>
 </section>

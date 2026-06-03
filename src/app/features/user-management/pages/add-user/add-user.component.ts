@@ -2,7 +2,7 @@ import { Component, signal, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { UsersService, RegisterUserCommand } from '../../../../core/services/users.service';
+import { UsersService } from '../../../../core/services/users.service';
 import { RolesService } from '../../../../core/services/roles.service';
 
 @Component({
@@ -79,17 +79,17 @@ export class AddUserComponent implements OnInit {
   }
 
   loadRoles(): void {
-    this.rolesService.getAll().subscribe({
-      next: (response) => {
+    this.rolesService.getRoles().subscribe({
+      next: (response: any) => {
         if (response.success && response.data) {
-          this.roles.set(response.data.map(role => ({
+          this.roles.set((response.data as any[]).map((role: any) => ({
             value: (role.roleName || '').toLowerCase().replace(/\s+/g, '-'),
             label: role.roleName || 'Role',
             permissions: role.permissions || []
           })));
         }
       },
-      error: (err) => {
+      error: (err: any) => {
         console.error('Error loading roles:', err);
       }
     });
@@ -185,7 +185,7 @@ export class AddUserComponent implements OnInit {
     const password = this.formData.autoGeneratePassword ? this.generatePassword() : this.formData.password;
 
     // Ensure all required fields are properly formatted
-    const userData: RegisterUserCommand = {
+    const userData: any = {
       username: this.formData.username.trim(),
       password,
       email: this.formData.email.trim(),
@@ -206,8 +206,8 @@ export class AddUserComponent implements OnInit {
     console.log('- Role name:', userData.roleName || '(EMPTY!)');
     console.log('===============================');
 
-    this.usersService.register(userData).subscribe({
-      next: (response) => {
+    this.usersService.createUser(userData).subscribe({
+      next: (response: any) => {
         console.log('=== REGISTRATION SUCCESS ===');
         console.log('Response:', JSON.stringify(response, null, 2));
         console.log('============================');
@@ -221,7 +221,7 @@ export class AddUserComponent implements OnInit {
         }
         this.loading.set(false);
       },
-      error: (err) => {
+      error: (err: any) => {
         console.error('=== REGISTRATION ERROR ===');
         console.error('Full error object:', err);
         console.error('Error status:', err.status);

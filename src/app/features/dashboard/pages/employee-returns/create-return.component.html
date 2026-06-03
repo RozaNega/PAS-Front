@@ -1,69 +1,193 @@
 <div class="create-return-container">
   <div class="page-header">
-    <h1>Create Return Request</h1>
-    <p class="subtitle">Submit a return material request</p>
+    <h1>Create Return Material Request</h1>
+    <p class="subtitle">
+      Submit a return request for materials that need to be returned to suppliers
+    </p>
   </div>
 
   <div class="form-card">
+    <!-- Status Info -->
+    <div
+      class="status-info"
+      style="
+        background: #f3f4f6;
+        padding: 1rem;
+        border-radius: 6px;
+        margin-bottom: 1rem;
+        font-size: 0.875rem;
+      "
+    >
+      <strong>Data Status:</strong>
+      Items: {{ items().length }} | Shelves: {{ shelves().length }}
+      @if (items().length > 0 && shelves().length > 0) {
+        <span style="color: #10b981"> - Ready to create return requests!</span>
+      }
+      @if (items().length === 0 || shelves().length === 0) {
+        <span style="color: #ef4444"> - Some data is missing. Using sample data.</span>
+      }
+    </div>
+
     <form [formGroup]="returnForm" (ngSubmit)="submit()">
-      <div class="form-row">
-        <div class="form-field">
-          <label for="itemId">Item GUID *</label>
-          <input id="itemId" type="text" formControlName="itemId" placeholder="Item ID" />
+      <div class="form-section">
+        <div class="section-header">
+          <h3>Return Details</h3>
+          <div class="header-actions">
+            <button
+              type="button"
+              class="btn-sample"
+              (click)="addSampleData()"
+              style="background: #6366f1; color: white"
+            >
+              <i class="bi bi-shuffle"></i> Fill Sample Data
+            </button>
+          </div>
         </div>
-        <div class="form-field">
-          <label for="quantity">Quantity *</label>
-          <input id="quantity" type="number" formControlName="quantity" min="1" />
+
+        <div class="form-grid">
+          <div class="form-field">
+            <label for="itemId">Item to Return *</label>
+            <select id="itemId" formControlName="itemId">
+              <option value="">Select an item to return</option>
+              @for (item of items(); track item.id) {
+                <option [value]="item.id">{{ item.name }} ({{ item.sku }})</option>
+              }
+            </select>
+            @if (submitted() && returnForm.get('itemId')?.errors?.['required']) {
+              <div class="error-message">Item selection is required</div>
+            }
+          </div>
+
+          <div class="form-field">
+            <label for="quantity">Quantity to Return *</label>
+            <input
+              id="quantity"
+              type="number"
+              formControlName="quantity"
+              min="1"
+              max="9999"
+              placeholder="Enter quantity"
+            />
+            @if (submitted() && returnForm.get('quantity')?.errors?.['required']) {
+              <div class="error-message">Quantity is required</div>
+            }
+            @if (submitted() && returnForm.get('quantity')?.errors?.['min']) {
+              <div class="error-message">Quantity must be at least 1</div>
+            }
+          </div>
+
+          <div class="form-field">
+            <label for="returnType">Return Type *</label>
+            <select id="returnType" formControlName="returnType">
+              <option value="CustomerReturn">Customer Return</option>
+              <option value="StoreReturn">Store Return</option>
+              <option value="DamagedReturn">Damaged Return</option>
+              <option value="DefectiveReturn">Defective Return</option>
+              <option value="WarrantyReturn">Warranty Return</option>
+            </select>
+            @if (submitted() && returnForm.get('returnType')?.errors?.['required']) {
+              <div class="error-message">Return type is required</div>
+            }
+          </div>
         </div>
       </div>
 
-      <div class="form-row">
-        <div class="form-field">
-          <label for="sourceLocationId">Location GUID *</label>
-          <input id="sourceLocationId" type="text" formControlName="sourceLocationId" placeholder="Location ID" />
-        </div>
-        <div class="form-field">
-          <label for="sourceShelfId">Shelf GUID *</label>
-          <input id="sourceShelfId" type="text" formControlName="sourceShelfId" placeholder="Shelf ID" />
-        </div>
-      </div>
-
-      <div class="form-row">
-        <div class="form-field">
-          <label for="supplierId">Supplier GUID *</label>
-          <input id="supplierId" type="text" formControlName="supplierId" placeholder="Supplier ID" />
-        </div>
-        <div class="form-field">
-          <label for="returnType">Return Type *</label>
-          <select id="returnType" formControlName="returnType">
-            <option value="CustomerReturn">Customer Return</option>
-            <option value="StoreReturn">Store Return</option>
-            <option value="DamagedReturn">Damaged Return</option>
-          </select>
+      <div class="form-section">
+        <h3>Location Information</h3>
+        <div class="form-grid">
+          <div class="form-field">
+            <label for="sourceShelfId">Source Shelf *</label>
+            <select id="sourceShelfId" formControlName="sourceShelfId">
+              <option value="">Select shelf</option>
+              @for (shelf of shelves(); track shelf.id) {
+                <option [value]="shelf.id">
+                  {{ shelf.position }} - {{ shelf.aisle }}/{{ shelf.section }}/{{ shelf.level }}
+                </option>
+              }
+            </select>
+            @if (submitted() && returnForm.get('sourceShelfId')?.errors?.['required']) {
+              <div class="error-message">Source shelf is required</div>
+            }
+          </div>
         </div>
       </div>
 
-      <div class="form-row">
-        <div class="form-field">
-          <label for="reason">Reason *</label>
-          <input id="reason" type="text" formControlName="reason" placeholder="Reason" />
-        </div>
-        <div class="form-field">
-          <label for="batchNumber">Batch Number</label>
-          <input id="batchNumber" type="text" formControlName="batchNumber" />
-        </div>
-      </div>
+      <div class="form-section">
+        <h3>Additional Information</h3>
+        <div class="form-grid">
+          <div class="form-field">
+            <label for="batchNumber">Batch Number</label>
+            <input
+              id="batchNumber"
+              type="text"
+              formControlName="batchNumber"
+              placeholder="Enter batch number (optional)"
+              maxlength="100"
+            />
+          </div>
 
-      <div class="form-field">
-        <label for="remarks">Remarks</label>
-        <textarea id="remarks" formControlName="remarks" rows="2" placeholder="Additional remarks..."></textarea>
+          <div class="form-field">
+            <label for="expiryDate">Expiry Date</label>
+            <input id="expiryDate" type="date" formControlName="expiryDate" />
+          </div>
+
+          <div class="form-field">
+            <label for="reference">Reference</label>
+            <input
+              id="reference"
+              type="text"
+              formControlName="reference"
+              placeholder="Enter reference number (optional)"
+              maxlength="100"
+            />
+          </div>
+        </div>
+
+        <div class="form-field">
+          <label for="reason">Reason for Return *</label>
+          <input
+            id="reason"
+            type="text"
+            formControlName="reason"
+            placeholder="Enter the reason for returning this item"
+            maxlength="500"
+          />
+          @if (submitted() && returnForm.get('reason')?.errors?.['required']) {
+            <div class="error-message">Reason is required</div>
+          }
+          @if (submitted() && returnForm.get('reason')?.errors?.['minlength']) {
+            <div class="error-message">Reason must be at least 5 characters</div>
+          }
+        </div>
+
+        <div class="form-field">
+          <label for="remarks">Additional Remarks</label>
+          <textarea
+            id="remarks"
+            formControlName="remarks"
+            rows="3"
+            placeholder="Enter any additional remarks or notes about this return"
+            maxlength="1000"
+          ></textarea>
+          @if (submitted() && returnForm.get('remarks')?.errors?.['maxlength']) {
+            <div class="error-message">Remarks cannot exceed 1000 characters</div>
+          }
+          <div class="character-count">
+            {{ returnForm.get('remarks')?.value?.length || 0 }}/1000 characters
+          </div>
+        </div>
       </div>
 
       <div class="form-actions">
-        <button type="button" class="btn btn-secondary" (click)="cancel()" [disabled]="loading()">Cancel</button>
+        <button type="button" class="btn btn-secondary" (click)="cancel()" [disabled]="loading()">
+          Cancel
+        </button>
         <button type="submit" class="btn btn-primary" [disabled]="loading()">
-          <span *ngIf="loading()">Submitting...</span>
-          <span *ngIf="!loading()">Submit Return</span>
+          @if (loading()) {
+            <span> <i class="bi bi-arrow-repeat spin"></i> Submitting... </span>
+          } @else {
+            <span>Submit Return Request</span>
+          }
         </button>
       </div>
     </form>

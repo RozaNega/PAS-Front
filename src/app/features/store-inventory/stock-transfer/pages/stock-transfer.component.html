@@ -1,231 +1,342 @@
-<section class="stock-transfer" aria-label="Stock Transfer">
-  <!-- Header -->
-  <header class="page-header">
-    <div class="header-content">
-      <h1>Stock Transfer</h1>
-      <p>Move stock between warehouses and locations</p>
+<div class="stock-transfer">
+  <!-- Toast -->
+  @if (toast().visible) {
+    <div class="toast-overlay">
+      <div class="toast" [class]="'toast--' + toast().type">
+        <i class="bi" [class.bi-check-circle-fill]="toast().type === 'success'" [class.bi-exclamation-circle-fill]="toast().type === 'error'" [class.bi-info-circle-fill]="toast().type === 'info'"></i>
+        <span>{{ toast().message }}</span>
+      </div>
     </div>
-    <button type="button" class="action-btn secondary" (click)="openHistoryModal()">
-      <i class="bi bi-clock-history"></i>
-      History
-    </button>
-  </header>
+  }
 
-  <!-- Error Message -->
-  @if (error()) {
-    <div class="alert alert-error">
-      <i class="bi bi-exclamation-triangle-fill"></i>
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="header-left">
+      <div class="header-icon">
+        <i class="bi bi-arrow-left-right"></i>
+      </div>
       <div>
-        <strong>Error</strong>
-        <p>{{ error() }}</p>
+        <h1 class="page-title">Stock Transfer</h1>
+        <p class="page-subtitle">Transfer inventory between warehouses efficiently</p>
       </div>
     </div>
-  }
-
-  <!-- Success Message -->
-  @if (success()) {
-    <div class="alert alert-success">
-      <i class="bi bi-check-circle-fill"></i>
-      <div>
-        <strong>Success</strong>
-        <p>{{ success() }}</p>
-      </div>
+    <div class="header-actions">
+      <button class="btn btn-outline" (click)="openHistoryModal()">
+        <i class="bi bi-clock-history"></i>
+        Transfer History
+      </button>
     </div>
-  }
+  </div>
 
-  <!-- Loading State -->
-  @if (loading() || submitting()) {
-    <div class="loading-overlay">
-      <div class="spinner"></div>
-      <p>{{ submitting() ? 'Creating transfer order...' : 'Loading warehouses...' }}</p>
+  <!-- Loading Skeleton -->
+  @if (loading()) {
+    <div class="loading-skeleton">
+      <div class="skeleton-card"></div>
+      <div class="skeleton-card"></div>
+      <div class="skeleton-card"></div>
+      <div class="skeleton-card"></div>
     </div>
-  }
-
-  <!-- Transfer Form -->
-  <div class="transfer-form">
-    <!-- Step 1: Select Source & Destination -->
-    <section class="form-section">
-      <div class="section-header">
-        <h3>STEP 1: SELECT SOURCE & DESTINATION</h3>
-      </div>
-      <div class="warehouse-selection">
-        <div class="warehouse-group">
-          <label>From Warehouse *</label>
-          <select [ngModel]="fromWarehouse()" (ngModelChange)="fromWarehouse.set($event); onFromWarehouseChange()" class="form-select">
-            @for (wh of warehouses(); track wh.id) {
-              <option [value]="wh.id">{{ wh.name }}</option>
-            }
-          </select>
+  } @else {
+    <!-- KPI Cards -->
+    <div class="kpi-grid">
+      <div class="kpi-card kpi-card--amber">
+        <div class="kpi-icon"><i class="bi bi-arrow-left-right"></i></div>
+        <div class="kpi-content">
+          <span class="kpi-value">{{ totalTransfers() }}</span>
+          <span class="kpi-label">Total Transfers</span>
         </div>
-        <div class="warehouse-group">
-          <label>To Warehouse *</label>
-          <select [ngModel]="toWarehouse()" (ngModelChange)="toWarehouse.set($event)" class="form-select">
-            @for (wh of warehouses(); track wh.id) {
-              <option [value]="wh.id">{{ wh.name }}</option>
-            }
-          </select>
+        <div class="kpi-trend kpi-trend--up"><i class="bi bi-graph-up-arrow"></i> +{{ completedTransfers() }} completed</div>
+      </div>
+      <div class="kpi-card kpi-card--green">
+        <div class="kpi-icon"><i class="bi bi-check-circle"></i></div>
+        <div class="kpi-content">
+          <span class="kpi-value">{{ completedTransfers() }}</span>
+          <span class="kpi-label">Completed</span>
+        </div>
+        <div class="kpi-trend kpi-trend--up">
+          <i class="bi bi-percent"></i> {{ totalTransfers() > 0 ? (completedTransfers() / totalTransfers() * 100).toFixed(0) : 0 }}% success
         </div>
       </div>
-    </section>
+      <div class="kpi-card kpi-card--blue">
+        <div class="kpi-icon"><i class="bi bi-hourglass-split"></i></div>
+        <div class="kpi-content">
+          <span class="kpi-value">{{ inProgressTransfers() }}</span>
+          <span class="kpi-label">In Progress</span>
+        </div>
+        <div class="kpi-trend kpi-trend--up"><i class="bi bi-box-seam"></i> {{ totalItemsTransferred() }} items moved</div>
+      </div>
+      <div class="kpi-card kpi-card--purple">
+        <div class="kpi-icon"><i class="bi bi-clock"></i></div>
+        <div class="kpi-content">
+          <span class="kpi-value">{{ pendingTransfers() }}</span>
+          <span class="kpi-label">Pending</span>
+        </div>
+        <div class="kpi-trend"><i class="bi bi-currency-dollar"></i> {{ formatValue(totalTransferValue()) }} total value</div>
+      </div>
+    </div>
 
-    <!-- Step 2: Select Items to Transfer -->
-    <section class="form-section">
-      <div class="section-header">
-        <h3>STEP 2: SELECT ITEMS TO TRANSFER</h3>
+    <!-- Charts Row -->
+    <div class="charts-grid">
+      <div class="chart-card">
+        <div class="chart-card-header">
+          <div class="chart-card-header-left">
+            <h3>Transfer Trend</h3>
+            <span class="chart-badge">Monthly</span>
+          </div>
+          <i class="bi bi-graph-up chart-card-icon"></i>
+        </div>
+        <div class="chart-wrapper">
+          <div echarts [options]="trendChartOpts" class="echart-container"></div>
+        </div>
       </div>
-      <div class="search-box">
-        <i class="bi bi-search"></i>
-        <input type="text" placeholder="Search items in {{ fromWarehouse() }}...">
+      <div class="chart-card">
+        <div class="chart-card-header">
+          <div class="chart-card-header-left">
+            <h3>Status Distribution</h3>
+            <span class="chart-badge">Overview</span>
+          </div>
+          <i class="bi bi-pie-chart chart-card-icon"></i>
+        </div>
+        <div class="chart-wrapper">
+          <div echarts [options]="statusChartOpts" class="echart-container"></div>
+        </div>
       </div>
-      <div class="items-list">
-        @if (transferItems().length === 0) {
-          <p class="empty-message">No items available in selected warehouse</p>
-        } @else {
-          @for (item of transferItems(); track item.sku) {
-            <div class="item-row">
-              <div class="item-info">
-                <span class="item-sku">SKU: {{ item.sku }}</span>
-                <span class="item-name">{{ item.name }}</span>
-                <span class="item-available">Available: {{ item.available }}</span>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tab-bar">
+      <button class="tab-btn" [class.active]="activeTab() === 'create'" (click)="activeTab.set('create')">
+        <i class="bi bi-plus-circle"></i> Create Transfer
+      </button>
+      <button class="tab-btn" [class.active]="activeTab() === 'history'" (click)="activeTab.set('history'); openHistoryModal()">
+        <i class="bi bi-clock-history"></i> Transfer History
+      </button>
+    </div>
+
+    <!-- Create Transfer Section -->
+    @if (activeTab() === 'create') {
+      <div class="transfer-form">
+        <!-- Error Message -->
+        @if (error()) {
+          <div class="alert alert--error">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            <span>{{ error() }}</span>
+            <button class="alert-close" (click)="error.set(null)">&times;</button>
+          </div>
+        }
+        @if (success()) {
+          <div class="alert alert--success">
+            <i class="bi bi-check-circle-fill"></i>
+            <span>{{ success() }}</span>
+            <button class="alert-close" (click)="success.set(null)">&times;</button>
+          </div>
+        }
+
+        <div class="form-grid">
+          <!-- Warehouses -->
+          <div class="form-section">
+            <div class="form-section-header">
+              <i class="bi bi-house-door"></i>
+              <h3>Select Warehouses</h3>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>
+                  <i class="bi bi-box-arrow-up"></i> From Warehouse <span class="required">*</span>
+                </label>
+                <div class="select-wrapper">
+                  <select [(ngModel)]="fromWarehouse" (change)="onFromWarehouseChange()" [disabled]="warehouses().length === 0">
+                    @for (wh of warehouses(); track wh.id) {
+                      <option [value]="wh.id">{{ wh.name }}</option>
+                    }
+                  </select>
+                  <i class="bi bi-chevron-down select-icon"></i>
+                </div>
               </div>
-              <div class="item-quantity">
-                <label>Qty to Transfer:</label>
-                <input
-                  type="number"
-                  [value]="item.toTransfer"
-                  (input)="updateTransferQuantity(item.sku, $any($event.target).value)"
-                  [min]="0"
-                  [max]="item.available"
-                  class="form-input"
-                >
+              <div class="form-group transfer-arrow">
+                <div class="arrow-icon"><i class="bi bi-arrow-right"></i></div>
+              </div>
+              <div class="form-group">
+                <label>
+                  <i class="bi bi-box-arrow-in-down"></i> To Warehouse <span class="required">*</span>
+                </label>
+                <div class="select-wrapper">
+                  <select [(ngModel)]="toWarehouse" [disabled]="warehouses().length === 0">
+                    @for (wh of warehouses(); track wh.id) {
+                      <option [value]="wh.id" [disabled]="wh.id === fromWarehouse()">{{ wh.name }}</option>
+                    }
+                  </select>
+                  <i class="bi bi-chevron-down select-icon"></i>
+                </div>
               </div>
             </div>
-          }
-        }
-      </div>
-    </section>
+            @if (fromWarehouse() && fromWarehouse() === toWarehouse()) {
+              <small class="field-error"><i class="bi bi-exclamation-circle"></i> Source and destination must be different</small>
+            }
+          </div>
 
-    <!-- Step 3: Transfer Details -->
-    <section class="form-section">
-      <div class="section-header">
-        <h3>STEP 3: TRANSFER DETAILS</h3>
-      </div>
-      <div class="form-group">
-        <label>Transfer Reason *</label>
-        <input type="text" [ngModel]="transferReason()" (ngModelChange)="transferReason.set($event)" class="form-input" placeholder="Re-balancing inventory - Warehouse B has higher demand">
-      </div>
-      <div class="form-group">
-        <label>Required By Date *</label>
-        <input type="date" [ngModel]="requiredByDate()" (ngModelChange)="requiredByDate.set($event)" class="form-input">
-      </div>
-      <div class="form-group">
-        <label>Notes</label>
-        <textarea [ngModel]="notes()" (ngModelChange)="notes.set($event)" class="form-textarea" rows="2" placeholder="Transfer to support increased demand in Warehouse B"></textarea>
-      </div>
-    </section>
+          <!-- Items Section -->
+          <div class="form-section">
+            <div class="form-section-header">
+              <i class="bi bi-box"></i>
+              <h3>Select Items</h3>
+            </div>
+            @if (loadingItems()) {
+              <div class="loading-inline"><span class="spinner"></span> Loading items...</div>
+            } @else {
+              <div class="search-bar">
+                <i class="bi bi-search"></i>
+                <input type="text" placeholder="Search items by name or SKU..." [(ngModel)]="itemSearch" />
+              </div>
+              <div class="items-grid">
+                @for (item of filteredTransferItems(); track item.sku) {
+                  <div class="item-card" [class.selected]="item.toTransfer > 0">
+                    <div class="item-info">
+                      <span class="item-name">{{ item.name }}</span>
+                      <span class="item-detail">
+                        <i class="bi bi-upc-scan"></i> {{ item.sku }} &nbsp;|&nbsp;
+                        <i class="bi bi-box"></i> Available: <strong>{{ item.available }}</strong>
+                        @if (item.price) { &nbsp;|&nbsp; <i class="bi bi-currency-dollar"></i> {{ item.price.toFixed(2) }}
+                        }
+                      </span>
+                    </div>
+                    <div class="item-qty">
+                      <div class="qty-control">
+                        <button class="qty-btn" (click)="updateTransferQuantity(item.sku, Math.max(0, item.toTransfer - 1))"><i class="bi bi-dash-lg"></i></button>
+                        <input type="number" [value]="item.toTransfer" (input)="updateTransferQuantity(item.sku, $any($event.target).value)" min="0" [max]="item.available" placeholder="0" />
+                        <button class="qty-btn" (click)="updateTransferQuantity(item.sku, Math.min(item.available, item.toTransfer + 1))"><i class="bi bi-plus-lg"></i></button>
+                      </div>
+                      <small>Max: {{ item.available }}</small>
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          </div>
 
-    <!-- Transfer Summary -->
-    <section class="summary-section">
-      <h3>TRANSFER SUMMARY</h3>
-      <div class="summary-card">
-        <div class="summary-item">
-          <span class="summary-label">Items to transfer:</span>
-          <span class="summary-value">{{ selectedItems().length }}</span>
-        </div>
-        <div class="summary-item">
-          <span class="summary-label">Total quantity:</span>
-          <span class="summary-value">{{ totalQuantity() }} units</span>
-        </div>
-        <div class="summary-item">
-          <span class="summary-label">Total value:</span>
-          <span class="summary-value">{{ formatValue(totalValue()) }}</span>
-        </div>
-      </div>
-    </section>
-  </div>
-
-  <!-- Form Actions -->
-  <div class="form-actions">
-    <button type="button" class="action-btn secondary" (click)="cancelForm()" [disabled]="submitting()">Cancel</button>
-    <button
-      type="button"
-      class="action-btn primary"
-      (click)="createTransferOrder()"
-      [disabled]="submitting() || !isFormValid()"
-    >
-      @if (submitting()) {
-        <i class="bi bi-hourglass-split"></i> Processing...
-      } @else {
-        Create Transfer Order
-      }
-    </button>
-  </div>
-
-  <!-- Transfer History Modal -->
-  @if (showHistoryModal()) {
-    <div class="modal-overlay" (click)="closeHistoryModal()">
-      <div class="modal-content" (click)="$event.stopPropagation()">
-        <div class="modal-header">
-          <h2>Transfer History</h2>
-          <button type="button" class="close-btn" (click)="closeHistoryModal()">
-            <i class="bi bi-x-lg"></i>
-          </button>
-        </div>
-
-        <div class="modal-body">
-          <!-- Transfer History Table -->
-          <div class="history-controls">
-            <div class="search-box">
-              <i class="bi bi-search"></i>
-              <input type="text" placeholder="Search transfer number or warehouse...">
+          <!-- Details Section -->
+          <div class="form-section">
+            <div class="form-section-header">
+              <i class="bi bi-pencil-square"></i>
+              <h3>Transfer Details</h3>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label><i class="bi bi-chat-dots"></i> Reason for Transfer <span class="required">*</span></label>
+                <select [(ngModel)]="transferReason">
+                  <option value="" disabled>Select reason...</option>
+                  <option value="restock">Restock Inventory</option>
+                  <option value="rebalance">Stock Rebalancing</option>
+                  <option value="consolidation">Warehouse Consolidation</option>
+                  <option value="emergency">Emergency Transfer</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label><i class="bi bi-calendar-event"></i> Required By Date <span class="required">*</span></label>
+                <input type="date" [(ngModel)]="requiredByDate" />
+              </div>
+            </div>
+            <div class="form-group">
+              <label><i class="bi bi-sticky"></i> Additional Notes</label>
+              <textarea [(ngModel)]="notes" rows="3" placeholder="Optional notes about this transfer..."></textarea>
             </div>
           </div>
 
-          @if (transferHistory().length === 0) {
+          <!-- Summary & Submit -->
+          <div class="form-section form-section--summary">
+            <div class="form-section-header">
+              <i class="bi bi-file-text"></i>
+              <h3>Order Summary</h3>
+            </div>
+            <div class="summary-grid">
+              <div class="summary-item">
+                <span class="summary-label">Items Selected</span>
+                <span class="summary-value">{{ selectedItems().length }}</span>
+              </div>
+              <div class="summary-item">
+                <span class="summary-label">Total Quantity</span>
+                <span class="summary-value">{{ totalQuantity() }}</span>
+              </div>
+              <div class="summary-item">
+                <span class="summary-label">Total Value</span>
+                <span class="summary-value summary-value--price">${{ totalValue().toFixed(2) }}</span>
+              </div>
+              <div class="summary-item">
+                <span class="summary-label">Destination</span>
+                <span class="summary-value summary-value--wh">{{ getWarehouseName(toWarehouse()) || 'Not selected' }}</span>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button class="btn btn-outline" (click)="cancelForm()">
+                <i class="bi bi-x-lg"></i> Cancel
+              </button>
+              <button class="btn btn-amber" (click)="createTransferOrder()" [disabled]="!isFormValid() || submitting()">
+                @if (submitting()) {
+                  <span class="spinner-sm"></span> Processing...
+                } @else {
+                  <i class="bi bi-send"></i> Create Transfer Order
+                }
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+  }
+
+  <!-- History Modal -->
+  @if (showHistoryModal()) {
+    <div class="modal-overlay" (click)="closeHistoryModal()">
+      <div class="modal" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div class="modal-header-left">
+            <div class="modal-icon"><i class="bi bi-clock-history"></i></div>
+            <h2>Transfer History</h2>
+          </div>
+          <button class="modal-close" (click)="closeHistoryModal()"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <div class="modal-body">
+          @if (filteredHistory().length === 0) {
             <div class="empty-state">
               <i class="bi bi-inbox"></i>
-              <p>No transfer history available</p>
+              <p>No transfer history found.</p>
             </div>
           } @else {
-            <div class="table-container">
-              <table class="transfer-log-table">
+            <div class="history-table-wrapper">
+              <table class="table">
                 <thead>
                   <tr>
                     <th>Transfer #</th>
                     <th>Date</th>
-                    <th>From → To</th>
-                    <th>Items</th>
-                    <th>Qty</th>
-                    <th>Status</th>
+                    <th>Route</th>
+                    <th class="text-center">Items</th>
+                    <th class="text-center">Qty</th>
+                    <th class="text-center">Status</th>
                   </tr>
                 </thead>
                 <tbody>
-                  @for (log of transferHistory(); track log.id) {
+                  @for (transfer of filteredHistory(); track transfer.id) {
                     <tr>
-                      <td><strong>{{ log.transferNumber || log.id }}</strong></td>
-                      <td>{{ log.date }}</td>
-                      <td>{{ log.fromTo }}</td>
-                      <td>{{ log.items }}</td>
-                      <td>{{ log.qty }}</td>
-                      <td>
-                        <span class="status-badge" [ngClass]="'status-' + log.status.toLowerCase()">
-                          <i [ngClass]="getStatusIcon(log.status.toLowerCase())"></i>
-                          {{ log.status }}
+                      <td><span class="transfer-number">{{ transfer.transferNumber || '—' }}</span></td>
+                      <td>{{ transfer.date }}</td>
+                      <td class="route-cell">{{ transfer.fromTo }}</td>
+                      <td class="text-center">{{ transfer.items }}</td>
+                      <td class="text-center">{{ transfer.qty }}</td>
+                      <td class="text-center">
+                        <span class="status-badge" [style]="'--status-color: ' + getStatusColor(transfer.status)">
+                          <i [class]="'bi ' + getStatusIcon(transfer.status)"></i>
+                          {{ transfer.status }}
                         </span>
                       </td>
                     </tr>
                   }
                 </tbody>
               </table>
-              <p class="table-footer">Showing {{ transferHistory().length }} transfer(s)</p>
             </div>
           }
-        </div>
-
-        <div class="modal-footer">
-          <button type="button" class="action-btn secondary" (click)="closeHistoryModal()">Close</button>
         </div>
       </div>
     </div>
   }
-</section>
+</div>

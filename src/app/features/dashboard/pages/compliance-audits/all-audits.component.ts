@@ -1,5 +1,7 @@
-import { Component, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ComplianceDataService } from '../../../../core/services/compliance-data.service';
+import { ServiceRequestDto } from '../../../../core/services/requisitions.service';
 
 interface Audit {
   id: string;
@@ -18,9 +20,44 @@ interface Audit {
   templateUrl: './all-audits.component.html',
   styleUrls: ['./all-audits.component.scss']
 })
-export class AllAuditsComponent {
-  protected readonly audits = signal<Audit[]>([
-    { id: '1', auditId: 'AUD-2024-001', type: 'Request Review', status: 'Completed', auditedBy: 'Officer A', auditDate: '2024-01-20', findings: 2 },
-    { id: '2', auditId: 'AUD-2024-002', type: 'SIV Verification', status: 'In Progress', auditedBy: 'Officer B', auditDate: '2024-01-21', findings: 0 }
-  ]);
+export class AllAuditsComponent implements OnInit {
+  private readonly complianceData = inject(ComplianceDataService);
+  protected readonly audits = signal<Audit[]>([]);
+
+  ngOnInit(): void {
+    this.complianceData.getServiceRequests().subscribe((requests) => {
+      this.audits.set(requests.map((request) => this.toAudit(request)));
+    });
+  }
+
+  private toAudit(request: ServiceRequestDto): Audit {
+    return {
+      id: `aud_${request.id}`,
+      auditId: `AUD-${this.requestNumber(request).replace(/^SR-/, '')}`,
+      type: 'Service Request Review',
+      status: this.auditStatus(request.status),
+      auditedBy: request.approvedBy || request.requesterName || 'Unassigned',
+      auditDate: this.toDateOnly(request.approvedDate || request.requestDate),
+      findings: request.quantity ?? 0,
+    };
+  }
+
+  private auditStatus(status: string): Audit['status'] {
+    const normalized = status?.toLowerCase() ?? '';
+    if (normalized.includes('complete') || normalized.includes('approved') || normalized.includes('issued')) {
+      return 'Completed';
+    }
+    if (normalized.includes('pending') || normalized.includes('submitted') || normalized.includes('review')) {
+      return 'Pending';
+    }
+    return 'In Progress';
+  }
+
+  private requestNumber(request: ServiceRequestDto): string {
+    return request.requestNumber || request.id;
+  }
+
+  private toDateOnly(value?: string): string {
+    return value ? new Date(value).toISOString().split('T')[0] : '';
+  }
 }

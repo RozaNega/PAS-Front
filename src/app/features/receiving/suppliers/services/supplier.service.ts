@@ -103,7 +103,7 @@ function mapSupplierRow(row: SupplierModel): SupplierModel {
 export class SupplierService {
   constructor(private apiService: ApiService) {}
 
-  getAll(params?: Record<string, unknown>): Observable<ApiResponse<SupplierModel[]>> {
+  getAll(params?: Record<string, string | number | boolean | readonly (string | number | boolean)[]>): Observable<ApiResponse<SupplierModel[]>> {
     return this.apiService.get<unknown>(API_ENDPOINTS.SUPPLIERS.GET_ALL, params).pipe(
       map((raw) => {
         const n = normalizePasListResponse<SupplierModel>(raw);

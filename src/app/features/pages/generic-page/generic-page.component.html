@@ -1,4 +1,4 @@
-<section class="generic-page" aria-label="{{ pageTitle }}">
+﻿<section class="generic-page" aria-label="{{ pageTitle }}">
   <header class="page-header">
     <div class="header-content">
       <div class="header-icon">
@@ -19,15 +19,15 @@
         </button>
       }
       @if (pageType === 'table') {
-        <button type="button" class="action-btn secondary">
-          <i class="bi bi-download"></i>
-          Export
+          <button type="button" class="action-btn secondary" (click)="exportData()">
+            <i class="bi bi-download"></i>
+            Export
+          </button>
+        }
+        <button type="button" class="action-btn secondary" (click)="router.navigate(['../'], { relativeTo: route })">
+          <i class="bi bi-arrow-left"></i>
+          Back
         </button>
-      }
-      <button type="button" class="action-btn secondary" (click)="router.navigate(['../'], { relativeTo: route })">
-        <i class="bi bi-arrow-left"></i>
-        Back
-      </button>
     </div>
   </header>
 
@@ -645,11 +645,11 @@
           </select>
         </div>
         <div class="filter-actions">
-          <button type="button" class="action-btn secondary">
+          <button type="button" class="action-btn secondary" (click)="applyFilters()">
             <i class="bi bi-funnel"></i>
             Filters
           </button>
-          <button type="button" class="action-btn secondary">
+          <button type="button" class="action-btn secondary" (click)="refreshData()">
             <i class="bi bi-arrow-repeat"></i>
             Refresh
           </button>
@@ -688,13 +688,13 @@
                 </td>
                 <td>
                   <div class="action-buttons">
-                    <button type="button" class="icon-btn" title="View">
+                    <button type="button" class="icon-btn" title="View" (click)="viewItem(item)">
                       <i class="bi bi-eye"></i>
                     </button>
-                    <button type="button" class="icon-btn" title="Edit">
+                    <button type="button" class="icon-btn" title="Edit" (click)="editItem(item)">
                       <i class="bi bi-pencil"></i>
                     </button>
-                    <button type="button" class="icon-btn" title="Delete">
+                    <button type="button" class="icon-btn" title="Delete" (click)="deleteItem(item)">
                       <i class="bi bi-trash"></i>
                     </button>
                   </div>
@@ -713,12 +713,12 @@
           <button type="button" class="pagination-btn" disabled>
             <i class="bi bi-chevron-left"></i>
           </button>
-          <button type="button" class="pagination-btn active">1</button>
-          <button type="button" class="pagination-btn">2</button>
-          <button type="button" class="pagination-btn">3</button>
-          <button type="button" class="pagination-btn">4</button>
-          <button type="button" class="pagination-btn">5</button>
-          <button type="button" class="pagination-btn">
+          <button type="button" class="pagination-btn" [class.active]="true" (click)="goToPage(1)">1</button>
+          <button type="button" class="pagination-btn" (click)="goToPage(2)">2</button>
+          <button type="button" class="pagination-btn" (click)="goToPage(3)">3</button>
+          <button type="button" class="pagination-btn" (click)="goToPage(4)">4</button>
+          <button type="button" class="pagination-btn" (click)="goToPage(5)">5</button>
+          <button type="button" class="pagination-btn" (click)="goToPage(2)">
             <i class="bi bi-chevron-right"></i>
           </button>
         </div>
@@ -797,15 +797,15 @@
         </div>
 
         <div class="form-actions">
-          <button type="button" class="action-btn secondary">
+          <button type="button" class="action-btn secondary" (click)="cancelForm()">
             <i class="bi bi-x-lg"></i>
             Cancel
           </button>
-          <button type="button" class="action-btn secondary">
+          <button type="button" class="action-btn secondary" (click)="saveDraft()">
             <i class="bi bi-save"></i>
             Save as Draft
           </button>
-          <button type="submit" class="action-btn primary">
+          <button type="button" class="action-btn primary" (click)="submitForm()">
             <i class="bi bi-check-lg"></i>
             Submit
           </button>
@@ -843,11 +843,11 @@
               <p><strong>Date:</strong> {{ item.date }}</p>
             </div>
             <div class="item-actions">
-              <button type="button" class="action-btn primary">
+              <button type="button" class="action-btn primary" (click)="viewDetails(item)">
                 <i class="bi bi-eye"></i>
                 View Details
               </button>
-              <button type="button" class="action-btn secondary">
+              <button type="button" class="action-btn secondary" (click)="editListItem(item)">
                 <i class="bi bi-pencil"></i>
                 Edit
               </button>
@@ -861,99 +861,285 @@
   <!-- QR Scanner Content Type -->
   @if (pageType === 'scanner') {
     <main class="page-content scanner-content">
-      <div class="scanner-container">
-        <div class="scanner-view">
-          <div class="camera-placeholder">
-            <div class="camera-icon-wrapper">
-              <i class="bi bi-camera-video"></i>
-            </div>
-            <p class="camera-text">Camera Feed</p>
-            <p class="camera-subtext">Point camera at QR code to scan</p>
+      @if (toast(); as t) {
+        <div class="qr-toast" [class.success]="t.type === 'success'" [class.error]="t.type === 'error'" [class.info]="t.type === 'info'">
+          <i class="bi" [class.bi-check-circle-fill]="t.type === 'success'" [class.bi-exclamation-circle-fill]="t.type === 'error'" [class.bi-info-circle-fill]="t.type === 'info'"></i>
+          <span>{{ t.message }}</span>
+        </div>
+      }
+
+      <!-- Metrics Dashboard Bar -->
+      <div class="qr-metrics">
+        <div class="qr-metric">
+          <div class="qm-icon qm-blue"><i class="bi bi-qr-code-scan"></i></div>
+          <div class="qm-body">
+            <span class="qm-value">{{ scanCount() }}</span>
+            <span class="qm-label">Today's Scans</span>
           </div>
-          <div class="scan-overlay">
-            <div class="scan-corner top-left"></div>
-            <div class="scan-corner top-right"></div>
-            <div class="scan-corner bottom-left"></div>
-            <div class="scan-corner bottom-right"></div>
-            <div class="scan-line"></div>
+          <div class="qm-trend up"><i class="bi bi-arrow-up-short"></i>+2</div>
+        </div>
+        <div class="qr-metric">
+          <div class="qm-icon qm-green"><i class="bi bi-check2-circle"></i></div>
+          <div class="qm-body">
+            <span class="qm-value">{{ scanSuccessRate() }}%</span>
+            <span class="qm-label">Success Rate</span>
           </div>
-          <div class="scan-status" [class.scanning]="isScanning">
-            <i class="bi bi-circle-fill"></i>
-            <span>{{ isScanning ? 'Scanning...' : 'Ready' }}</span>
+          <div class="qm-trend up"><i class="bi bi-check-lg"></i></div>
+        </div>
+        <div class="qr-metric">
+          <div class="qm-icon qm-gold"><i class="bi bi-stopwatch"></i></div>
+          <div class="qm-body">
+            <span class="qm-value">{{ avgScanTime }}</span>
+            <span class="qm-label">Avg Response</span>
           </div>
         </div>
-
-        <div class="scanner-controls">
-          <div class="manual-input">
-            <label for="qr-input">
-              <i class="bi bi-keyboard"></i>
-              Manual Entry
-            </label>
-            <input type="text" id="qr-input" class="form-input" placeholder="Enter QR code or SKU" [(ngModel)]="manualQrCode" />
-            <button type="button" class="action-btn primary" (click)="lookupQR()">
-              <i class="bi bi-search"></i>
-              Look Up
-            </button>
-          </div>
-
-          <div class="scan-actions">
-            <button type="button" class="action-btn primary" (click)="toggleCamera()">
-              <i class="bi bi-camera"></i>
-              {{ isScanning ? 'Stop Camera' : 'Start Camera' }}
-            </button>
-            <button type="button" class="action-btn secondary" (click)="clearScanner()">
-              <i class="bi bi-x-circle"></i>
-              Clear
-            </button>
-          </div>
-
-          <div class="scan-tips">
-            <h4><i class="bi bi-lightbulb"></i> Quick Tips</h4>
-            <ul>
-              <li>Hold camera 6-12 inches from QR code</li>
-              <li>Ensure good lighting for better scan</li>
-              <li>Use manual entry if camera not available</li>
-              <li>Recent scans are saved for quick access</li>
-            </ul>
+        <div class="qr-metric">
+          <div class="qm-icon qm-purple"><i class="bi bi-box-seam"></i></div>
+          <div class="qm-body">
+            <span class="qm-value">{{ totalScans() }}</span>
+            <span class="qm-label">Items Located</span>
           </div>
         </div>
       </div>
 
-      <div class="scan-results">
-        <div class="results-header">
-          <h3><i class="bi bi-clock-history"></i> Recent Scans</h3>
-          <button type="button" class="action-btn secondary small">
-            <i class="bi bi-arrow-repeat"></i>
-            Refresh
-          </button>
-        </div>
-        <div class="scan-list">
-          @for (scan of recentScans; track scan.id) {
-            <div class="scan-item" [class.active]="scan.id === selectedScanId" (click)="selectScan(scan.id)">
-              <div class="scan-icon">
-                <i class="bi bi-box-seam"></i>
+      <!-- Scanner Workspace -->
+      <div class="qr-workspace">
+        <!-- Camera Module -->
+        <div class="qr-camera-module">
+          <div class="qr-camera" [class.active]="isScanning" [class.hit]="scanAnimation() === 'success'" [class.streaming]="isStreaming">
+            <video #cameraVideo class="cam-video" autoplay muted playsinline (loadedmetadata)="onVideoReady()"></video>
+
+            @if (!isStreaming) {
+              <div class="cam-bg">
+                <div class="cam-grid"></div>
+                <div class="cam-haze"></div>
               </div>
-              <div class="scan-details">
-                <h4>{{ scan.itemName }}</h4>
-                <div class="scan-meta">
-                  <span class="scan-sku">SKU: {{ scan.sku }}</span>
-                  <span class="scan-location">
-                    <i class="bi bi-geo-alt"></i>
-                    {{ scan.location }}
-                  </span>
+
+              <div class="cam-center">
+                <div class="cam-lens">
+                  <i class="bi bi-camera-fill"></i>
                 </div>
-                <span class="scan-time">{{ scan.time }}</span>
+                <div class="cam-info">
+                  <strong>Camera Feed</strong>
+                  <span>Point camera at QR code</span>
+                </div>
               </div>
-              <div class="scan-actions">
-                <button type="button" class="icon-btn" title="View Details" (click)="viewScanDetails(scan.id)">
-                  <i class="bi bi-eye"></i>
+            }
+
+            <div class="cam-reticle">
+              <div class="ret-corner nw"></div>
+              <div class="ret-corner ne"></div>
+              <div class="ret-corner sw"></div>
+              <div class="ret-corner se"></div>
+              <div class="ret-beam"></div>
+            </div>
+
+            <div class="cam-flash"></div>
+
+            <div class="cam-status" [class.active]="isScanning" [class.done]="scanAnimation() === 'success'">
+              <span class="cam-led"></span>
+              <span>{{ statusText }}</span>
+            </div>
+          </div>
+
+          <div class="cam-actions">
+            <button type="button" class="ca-btn ca-primary" (click)="toggleCamera()">
+              <i class="bi" [class.bi-camera-video-off]="isScanning" [class.bi-camera-video]="!isScanning"></i>
+              {{ isScanning ? 'Stop' : 'Start' }} Camera
+            </button>
+            <button type="button" class="ca-btn ca-ghost" (click)="clearScanner()">
+              <i class="bi bi-arrow-repeat"></i> Reset
+            </button>
+          </div>
+        </div>
+
+        <!-- Control Panel -->
+        <div class="qr-controls">
+          <!-- Manual Entry -->
+          <div class="qr-card">
+            <div class="qr-card-head">
+              <i class="bi bi-upc-scan"></i>
+              <span>Manual Lookup</span>
+            </div>
+            <div class="qr-card-body">
+              <div class="qr-input-group">
+                <div class="qr-input-wrap">
+                  <i class="bi bi-search"></i>
+                  <input
+                    type="text"
+                    class="qr-input"
+                    placeholder="Type QR code or SKU..."
+                    [(ngModel)]="manualQrCode"
+                    (keyup.enter)="lookupQR()"
+                    #manualInput
+                  />
+                  @if (manualQrCode) {
+                    <button type="button" class="qr-input-clear" (click)="manualQrCode = ''; manualInput.focus()">
+                      <i class="bi bi-x-circle"></i>
+                    </button>
+                  }
+                </div>
+                <button type="button" class="qr-submit" (click)="lookupQR()" [disabled]="!manualQrCode.trim()">
+                  <i class="bi bi-search"></i> Find Item
                 </button>
-                <button type="button" class="icon-btn success" title="Issue Item" (click)="issueItem(scan.id)">
-                  <i class="bi bi-arrow-down-circle"></i>
+              </div>
+              <div class="qr-suggest">
+                <span class="qr-suggest-label">Try codes</span>
+                <div class="qr-chips">
+                  @for (code of quickScanSuggestions; track code) {
+                    <button type="button" class="qr-chip" (click)="fillManualCode(code)">{{ code }}</button>
+                  }
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Scan Result -->
+          @if (scanResult(); as sr) {
+            <div class="qr-card qr-result-card">
+              <div class="qr-card-head qr-result-head">
+                <div class="qr-result-info">
+                  <div class="qr-result-icon"><i class="bi bi-patch-check-fill"></i></div>
+                  <div class="qr-result-title">
+                    <strong>{{ sr.itemName }}</strong>
+                    <span>{{ sr.sku }}</span>
+                  </div>
+                </div>
+                <button type="button" class="qr-result-close" (click)="clearScanResult()"><i class="bi bi-x-lg"></i></button>
+              </div>
+              <div class="qr-result-body">
+                <div class="qr-rf">
+                  <span class="qr-rf-label">Location</span>
+                  <span class="qr-rf-value"><i class="bi bi-geo-alt"></i>{{ sr.location }}</span>
+                </div>
+                <div class="qr-rf">
+                  <span class="qr-rf-label">Status</span>
+                  <span class="qr-rf-badge">{{ sr.status }}</span>
+                </div>
+                <div class="qr-rf">
+                  <span class="qr-rf-label">Quantity</span>
+                  <span class="qr-rf-value">{{ sr.quantity }}</span>
+                </div>
+                <div class="qr-rf">
+                  <span class="qr-rf-label">Time</span>
+                  <span class="qr-rf-value">{{ sr.time }}</span>
+                </div>
+              </div>
+              <div class="qr-result-foot">
+                <button type="button" class="qr-btn qr-btn-primary" (click)="viewScanDetails(sr.id)">
+                  <i class="bi bi-eye"></i> Details
                 </button>
-                <button type="button" class="icon-btn primary" title="Receive Item" (click)="receiveItem(scan.id)">
-                  <i class="bi bi-arrow-up-circle"></i>
+                <button type="button" class="qr-btn qr-btn-outline" (click)="issueItem(sr.id)">
+                  <i class="bi bi-arrow-down-circle"></i> Issue
                 </button>
+                <button type="button" class="qr-btn qr-btn-outline" (click)="receiveItem(sr.id)">
+                  <i class="bi bi-arrow-up-circle"></i> Receive
+                </button>
+              </div>
+            </div>
+          }
+
+          <!-- Tips -->
+          <div class="qr-card qr-tips-card">
+            <div class="qr-card-head">
+              <i class="bi bi-info-circle"></i>
+              <span>Scanning Tips</span>
+            </div>
+            <div class="qr-card-body qr-tips-body">
+              <div class="qr-tip">
+                <span class="qr-tip-badge"><i class="bi bi-phone"></i></span>
+                <span>Hold 6–12 inches from code</span>
+              </div>
+              <div class="qr-tip">
+                <span class="qr-tip-badge"><i class="bi bi-brightness-high"></i></span>
+                <span>Ensure proper lighting</span>
+              </div>
+              <div class="qr-tip">
+                <span class="qr-tip-badge"><i class="bi bi-keyboard"></i></span>
+                <span>Use manual if no camera</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- History Section -->
+      <div class="qr-history">
+        <!-- Recent Scans List -->
+        <div class="qr-panel">
+          <div class="qr-panel-head">
+            <div class="qr-panel-title">
+              <i class="bi bi-clock-history"></i>
+              <h3>Scan History</h3>
+            </div>
+            @if (scanCount() > 0) {
+              <span class="qr-panel-badge">{{ scanCount() }} scans</span>
+            }
+          </div>
+          @if (scanCount() === 0) {
+            <div class="qr-empty">
+              <div class="qr-empty-icon"><i class="bi bi-qr-code"></i></div>
+              <h4>No Scans Recorded</h4>
+              <p>Use the camera or manual lookup above to start scanning inventory items.</p>
+            </div>
+          } @else {
+            <div class="qr-scan-list">
+              @for (scan of recentScans; track scan.id) {
+                <div class="qr-scan-row" [class.selected]="scan.id === selectedScanId" (click)="selectScan(scan.id)">
+                  <div class="qr-scan-indicator"></div>
+                  <div class="qr-scan-icon"><i class="bi bi-upc-scan"></i></div>
+                  <div class="qr-scan-detail">
+                    <div class="qr-scan-name">{{ scan.itemName }}</div>
+                    <div class="qr-scan-meta">
+                      <span>{{ scan.sku }}</span>
+                      <span><i class="bi bi-geo-alt"></i>{{ scan.location }}</span>
+                    </div>
+                  </div>
+                  <span class="qr-scan-time">{{ scan.time }}</span>
+                  <button type="button" class="qr-scan-view" (click)="viewScanDetails(scan.id); $event.stopPropagation()">
+                    <i class="bi bi-chevron-right"></i>
+                  </button>
+                </div>
+              }
+            </div>
+          }
+        </div>
+
+        <!-- Activity Chart + Timeline -->
+        <div class="qr-panel-stack">
+          <div class="qr-panel qr-chart-panel">
+            <div class="qr-panel-head">
+              <div class="qr-panel-title">
+                <i class="bi bi-graph-up-arrow"></i>
+                <h3>Weekly Activity</h3>
+              </div>
+            </div>
+            <div class="qr-chart-container">
+              <div echarts [options]="scanChartOption()" class="qr-chart"></div>
+            </div>
+          </div>
+
+          @if (scanTimeline().length > 0) {
+            <div class="qr-panel qr-log-panel">
+              <div class="qr-panel-head">
+                <div class="qr-panel-title">
+                  <i class="bi bi-list-ul"></i>
+                  <h3>Activity Log</h3>
+                </div>
+              </div>
+              <div class="qr-log">
+                @for (entry of scanTimeline(); track $index) {
+                  <div class="qr-log-item" style="animation-delay: {{ $index * 0.08 }}s">
+                    <div class="qr-log-line"></div>
+                    <div class="qr-log-dot" [class.success]="entry.type === 'success'" [class.fail]="entry.type === 'error'">
+                      <i class="bi" [class.bi-check]="entry.type === 'success'" [class.bi-x]="entry.type === 'error'"></i>
+                    </div>
+                    <div class="qr-log-text">
+                      <span>{{ entry.itemName }}</span>
+                      <small>{{ entry.time }}</small>
+                    </div>
+                  </div>
+                }
               </div>
             </div>
           }
@@ -962,7 +1148,6 @@
     </main>
   }
 
-  <!-- Default Placeholder -->
   @if (pageType === 'placeholder') {
     <main class="page-content">
       <div class="placeholder-content">
@@ -1029,7 +1214,7 @@
                 <span class="schedule-time">1st of month 4:00 AM</span>
               </div>
             </div>
-            <button type="button" class="action-btn secondary">
+            <button type="button" class="action-btn secondary" (click)="configureSchedule()">
               <i class="bi bi-gear"></i>
               Configure Schedule
             </button>
@@ -1049,16 +1234,16 @@
                 </div>
                 <div class="backup-details">
                   <h4>{{ backup.name }}</h4>
-                  <p>{{ backup.date }} • {{ backup.size }}</p>
+                  <p>{{ backup.date }} â€¢ {{ backup.size }}</p>
                 </div>
                 <div class="backup-actions">
-                  <button type="button" class="icon-btn" title="Download">
+                  <button type="button" class="icon-btn" title="Download" (click)="downloadBackup(backup)">
                     <i class="bi bi-download"></i>
                   </button>
                   <button type="button" class="icon-btn" title="Restore" (click)="restoreBackup(backup.id)">
                     <i class="bi bi-arrow-counterclockwise"></i>
                   </button>
-                  <button type="button" class="icon-btn danger" title="Delete">
+                  <button type="button" class="icon-btn danger" title="Delete" (click)="deleteBackup(backup)">
                     <i class="bi bi-trash"></i>
                   </button>
                 </div>
@@ -1098,7 +1283,7 @@
                 <option>Disabled</option>
               </select>
             </div>
-            <button type="button" class="action-btn primary">
+            <button type="button" class="action-btn primary" (click)="saveSettings()">
               <i class="bi bi-check"></i>
               Save Settings
             </button>

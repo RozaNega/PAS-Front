@@ -1,0 +1,140 @@
+<div class="container-fluid p-4">
+  <!-- Header -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <h2 class="mb-1 fw-bold" style="color: #1a237e;">Stock Movements</h2>
+          <p class="text-muted mb-0">Track all inventory movements including adjustments, transfers, and receipts</p>
+        </div>
+        <div class="d-flex gap-2">
+          <button class="btn btn-outline-primary btn-sm" (click)="refreshMovements()">
+            <i class="bi bi-arrow-clockwise me-1"></i> Refresh
+          </button>
+          <button class="btn btn-outline-success btn-sm" (click)="recordMovement()">
+            <i class="bi bi-plus-circle me-1"></i> Record Movement
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="row g-3 mb-4">
+    <div class="col-xl-3 col-md-6" *ngFor="let card of summaryCards">
+      <div class="card border-0 shadow-sm h-100" style="border-radius: 12px;">
+        <div class="card-body d-flex align-items-center">
+          <div class="me-3 d-flex align-items-center justify-content-center"
+               [style.background-color]="card.bgColor"
+               style="width: 48px; height: 48px; border-radius: 10px;">
+            <i class="bi" [ngClass]="card.icon" style="font-size: 1.3rem;"></i>
+          </div>
+          <div>
+            <span class="text-muted small">{{ card.label }}</span>
+            <h4 class="mb-0 fw-bold">{{ card.value }}</h4>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px;">
+    <div class="card-body">
+      <div class="row g-2 align-items-end">
+        <div class="col-md-3">
+          <label class="form-label small">Date From</label>
+          <input type="date" class="form-control form-control-sm" (change)="onDateFilterChange('from', $event)" />
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small">Date To</label>
+          <input type="date" class="form-control form-control-sm" (change)="onDateFilterChange('to', $event)" />
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small">Movement Type</label>
+          <select class="form-select form-select-sm" (change)="onFilterChange('type', $event)">
+            <option value="">All Types</option>
+            <option value="increase">Increase</option>
+            <option value="decrease">Decrease</option>
+            <option value="transfer">Transfer</option>
+            <option value="adjustment">Adjustment</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small">Item</label>
+          <input type="text" class="form-control form-control-sm" placeholder="Search item..." (input)="onSearch($event)" />
+        </div>
+        <div class="col-md-1 d-flex align-items-end">
+          <button class="btn btn-sm btn-outline-secondary w-100" (click)="clearFilters()">
+            <i class="bi bi-x-circle"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Movements Table -->
+  <div class="card border-0 shadow-sm" style="border-radius: 12px;">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th class="ps-3">Date</th>
+              <th>Item</th>
+              <th>SKU</th>
+              <th>Type</th>
+              <th class="text-end">Quantity</th>
+              <th class="text-end">Previous Stock</th>
+              <th class="text-end">New Stock</th>
+              <th>Reference</th>
+              <th>Performed By</th>
+              <th class="text-center pe-3">Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let mov of paginatedItems">
+              <td class="ps-3">{{ mov.movementDate || mov.date | date:'medium' }}</td>
+              <td class="fw-medium">{{ mov.itemName || mov.item }}</td>
+              <td><code>{{ mov.sku || mov.itemCode }}</code></td>
+              <td>
+                <span class="badge" [ngClass]="getMovementTypeClass(mov)">
+                  {{ mov.movementType || mov.type }}
+                </span>
+              </td>
+              <td class="text-end">{{ mov.quantity | number }}</td>
+              <td class="text-end">{{ mov.previousStock || '-' | number }}</td>
+              <td class="text-end fw-bold">{{ mov.newStock | number }}</td>
+              <td>{{ mov.referenceNumber || mov.reference || '-' }}</td>
+              <td>{{ mov.performedBy || mov.createdBy }}</td>
+              <td class="text-center pe-3">
+                <button class="btn btn-sm btn-outline-info" (click)="viewMovementNotes(mov)" title="View Notes">
+                  <i class="bi bi-chat-dots"></i>
+                </button>
+              </td>
+            </tr>
+            <tr *ngIf="paginatedItems.length === 0">
+              <td colspan="10" class="text-center py-5 text-muted">No stock movements found</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card-footer bg-transparent d-flex justify-content-between align-items-center" *ngIf="totalPages > 0">
+      <small class="text-muted">Showing {{ (currentPage - 1) * pageSize + 1 }} to {{ Math.min(currentPage * pageSize, totalCount) }} of {{ totalCount }} movements</small>
+      <nav>
+        <ul class="pagination pagination-sm mb-0">
+          <li class="page-item" [class.disabled]="currentPage === 1">
+            <a class="page-link" (click)="changePage(currentPage - 1)">Previous</a>
+          </li>
+          <li class="page-item" *ngFor="let page of getPageNumbers()" [class.active]="page === currentPage">
+            <a class="page-link" (click)="changePage(page)">{{ page }}</a>
+          </li>
+          <li class="page-item" [class.disabled]="currentPage === totalPages">
+            <a class="page-link" (click)="changePage(currentPage + 1)">Next</a>
+          </li>
+        </ul>
+      </nav>
+    </div>
+  </div>
+</div>

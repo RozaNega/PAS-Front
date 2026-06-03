@@ -8,13 +8,14 @@ import {
   Validators,
 } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { NgOptimizedImage } from '@angular/common';
 import { finalize } from 'rxjs';
 
 import { AuthService } from '../../../../core/services/auth.service';
 
 @Component({
   selector: 'app-reset-password',
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink, NgOptimizedImage],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './reset-password.html',
   styleUrl: './reset-password.css',

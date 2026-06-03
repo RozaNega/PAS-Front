@@ -1,0 +1,22 @@
+
+> pas-frontend@0.0.0 build
+> ng build
+
+[33m❯[39m Building...
+[31m✖[39m Building... [31m[FAILED: The service was stopped: write ENOMEM][39m
+[1m[31mAn unhandled exception occurred: The service was stopped: write ENOMEM
+See "C:\Users\kidist\AppData\Local\Temp\ng-Kv25Ak\angular-errors.log" for further details.[39m[22m
+C:\Users\kidist\pas-frontend\node_modules\rxjs\dist\cjs\internal\util\reportUnhandledError.js:13
+            throw err;
+            ^
+
+Error: The service was stopped: write ENOMEM
+    at C:\Users\kidist\pas-frontend\node_modules\esbuild\lib\main.js:949:34
+    at responseCallbacks.<computed> (C:\Users\kidist\pas-frontend\node_modules\esbuild\lib\main.js:603:9)
+    at afterClose (C:\Users\kidist\pas-frontend\node_modules\esbuild\lib\main.js:594:28)
+    at Object.callback (C:\Users\kidist\pas-frontend\node_modules\esbuild\lib\main.js:1986:18)
+    at callback (node:internal/streams/writable:766:21)
+    at onwriteError (node:internal/streams/writable:605:3)
+    at process.processTicksAndRejections (node:internal/process/task_queues:92:21)
+
+Node.js v22.17.1

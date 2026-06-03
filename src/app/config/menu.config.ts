@@ -1,316 +1,354 @@
-import { ROUTES } from './route.config';
+import { MenuItem } from '../core/interfaces/menu-item.interface';
+export type { MenuItem };
 
-export interface MenuItem {
-  label: string;
-  route?: string;
-  icon: string;
-  permission?: string;
-  role?: string;
-  badge?: number;
-  children?: MenuItem[];
-}
-
-export const managerMenuConfig: MenuItem[] = [
-  { label: 'Dashboard', route: '/manager/dashboard', icon: 'bi bi-house-fill' },
-  { label: 'Notifications', route: '/manager/notifications', icon: 'bi bi-bell-fill' },
-  { label: 'Profile', route: '/manager/profile', icon: 'bi bi-person-circle' },
+export const menuConfig: MenuItem[] = [
   {
-    label: 'Approval Queue',
-    icon: 'bi bi-inboxes-fill',
-    badge: 0,
-    children: [
-      { label: 'Pending Approvals', route: '/manager/approvals/pending', icon: 'bi bi-clock', badge: 0 },
-      { label: 'My Decisions', route: '/manager/approvals/decisions', icon: 'bi bi-check-square' },
-      { label: 'Approval History', route: '/manager/approvals/history', icon: 'bi bi-clock-history' },
-    ],
-  },
-  {
-    label: 'Service Requests',
-    icon: 'bi bi-list-check',
-    children: [
-      { label: 'All Requests', route: '/manager/requests/all', icon: 'bi bi-list' },
-      { label: 'Pending', route: '/manager/requests/pending', icon: 'bi bi-clock' },
-      { label: 'Approved', route: '/manager/requests/approved', icon: 'bi bi-check-circle' },
-      { label: 'Rejected', route: '/manager/requests/rejected', icon: 'bi bi-x-circle' },
-      { label: 'Issued', route: '/manager/requests/issued', icon: 'bi bi-box-arrow-right' },
-    ],
-  },
-  {
-    label: 'SIV Management',
-    icon: 'bi bi-file-text',
-    children: [
-      { label: 'All SIVs', route: '/manager/sivs/all', icon: 'bi bi-file-earmark-text' },
-      { label: 'Pending Issue', route: '/manager/sivs/pending', icon: 'bi bi-clock' },
-      { label: 'Issued', route: '/manager/sivs/issued', icon: 'bi bi-check-circle' },
-    ],
-  },
-  {
-    label: 'Approval Workflows',
-    icon: 'bi bi-diagram-3-fill',
-    children: [
-      { label: 'All Workflows', route: '/manager/workflows/all', icon: 'bi bi-diagram-3' },
-      { label: 'Create Workflow', route: '/manager/workflows/create', icon: 'bi bi-plus-circle' },
-      { label: 'Approvers', route: '/manager/workflows/approvers', icon: 'bi bi-people' },
-    ],
-  },
-  {
-    label: 'Inventory',
-    icon: 'bi bi-boxes',
-    children: [
-      { label: 'Stock Overview', route: '/manager/inventory', icon: 'bi bi-box-seam' },
-      { label: 'Low Stock Items', route: '/manager/inventory/low-stock', icon: 'bi bi-exclamation-triangle' },
-      { label: 'Stock Movements', route: '/manager/inventory/movements', icon: 'bi bi-arrow-left-right' },
-      { label: 'Stock Ledger', route: '/manager/inventory/ledger', icon: 'bi bi-journal-text' },
-    ],
-  },
-  {
-    label: 'Reports',
-    icon: 'bi bi-bar-chart-fill',
-    children: [
-      { label: 'Approval Reports', route: '/manager/reports/approval', icon: 'bi bi-file-earmark-bar-graph' },
-      { label: 'Request Reports', route: '/manager/reports/requests', icon: 'bi bi-file-text' },
-      { label: 'SIV Reports', route: '/manager/reports/sivs', icon: 'bi bi-file-text' },
-      { label: 'Inventory Reports', route: '/manager/reports/inventory', icon: 'bi bi-boxes' },
-      { label: 'Stock Movement Reports', route: '/manager/reports/stock-movements', icon: 'bi bi-arrow-left-right' },
-    ],
-  },
-  { label: 'Audit Trail', route: '/manager/audit-trail', icon: 'bi bi-clock-history' },
-];
-
-export const complianceOfficerMenuConfig: MenuItem[] = [
-  { label: 'Dashboard', route: '/compliance-officer/dashboard', icon: 'bi bi-house-fill' },
-  { label: 'Risk Alerts', route: '/compliance-officer/risk-alerts', icon: 'bi bi-bell-fill', badge: 0 },
-  { label: 'Profile', route: '/compliance-officer/profile', icon: 'bi bi-person-circle' },
-  {
-    label: 'Audit Trail',
-    icon: 'bi bi-clock-history',
-    children: [
-      { label: 'All Audits', route: '/compliance-officer/audits/all', icon: 'bi bi-list' },
-      { label: 'Pending Reviews', route: '/compliance-officer/audits/pending', icon: 'bi bi-clock' },
-      { label: 'Completed', route: '/compliance-officer/audits/completed', icon: 'bi bi-check-circle' },
-    ],
-  },
-  {
-    label: 'Compliance Reports',
-    icon: 'bi bi-bar-chart-fill',
-    children: [
-      { label: 'Risk Reports', route: '/compliance-officer/reports/risk', icon: 'bi bi-exclamation-triangle' },
-      { label: 'Audit Reports', route: '/compliance-officer/reports/audit', icon: 'bi bi-file-earmark-spreadsheet' },
-      { label: 'Compliance Status', route: '/compliance-officer/reports/status', icon: 'bi bi-shield-check' },
-      { label: 'Disposal Reports', route: '/compliance-officer/reports/disposal', icon: 'bi bi-trash' },
-      { label: 'Inspection Reports', route: '/compliance-officer/reports/inspection', icon: 'bi bi-search' },
-    ],
-  },
-  {
-    label: 'Decision Monitoring',
-    icon: 'bi bi-graph-up',
-    children: [
-      { label: 'Approval Decisions', route: '/compliance-officer/decisions/approvals', icon: 'bi bi-check-square' },
-      { label: 'Rejection Analysis', route: '/compliance-officer/decisions/rejections', icon: 'bi bi-x-circle' },
-      { label: 'Response Times', route: '/compliance-officer/decisions/response-times', icon: 'bi bi-clock-history' },
-    ],
-  },
-  {
-    label: 'Records Management',
-    icon: 'bi bi-folder-fill',
-    children: [
-      { label: 'Disposal Records', route: '/compliance-officer/disposal', icon: 'bi bi-trash' },
-      { label: 'Inspections', route: '/compliance-officer/inspections', icon: 'bi bi-search' },
-      { label: 'Documents', route: '/compliance-officer/documents', icon: 'bi bi-file-earmark' },
-    ],
+    label: 'Dashboard',
+    icon: 'bi bi-speedometer2',
+    route: '/dashboard',
+    permissions: ['view_dashboard'],
   },
 ];
 
 export const adminMenuConfig: MenuItem[] = [
-  { label: 'Dashboard', route: '/admin/dashboard', icon: 'bi bi-grid-fill' },
-  { label: 'Notifications', route: '/admin/notifications', icon: 'bi bi-bell-fill' },
+  {
+    label: 'Dashboard',
+    icon: 'bi bi-speedometer2',
+    route: '/admin/dashboard',
+    permissions: ['admin_dashboard'],
+  },
+  {
+    label: 'Stores',
+    icon: 'bi bi-shop',
+    children: [
+      { label: 'Stock Overview', route: '/admin/inventory' },
+      { label: 'Current Stock', route: '/admin/inventory/current-stock' },
+      { label: 'Stock Movements', route: '/admin/inventory/movements' },
+      { label: 'Low Stock', route: '/admin/inventory/low-stock' },
+      { label: 'Stock Adjustment', route: '/admin/inventory/adjustment' },
+      { label: 'Stock Transfer', route: '/admin/inventory/transfer' },
+      { label: 'Warehouses', route: '/admin/warehouses' },
+      { label: 'Shelf Locations', route: '/admin/shelf-locations' },
+    ],
+  },
   {
     label: 'Property Management',
     icon: 'bi bi-building',
     children: [
-      { label: 'All Properties', route: '/admin/properties', icon: 'bi bi-buildings' },
-      { label: 'Add Property', route: '/admin/properties/add', icon: 'bi bi-plus-circle' },
-      { label: 'Property Types', route: '/admin/properties/types', icon: 'bi bi-list-check' },
-      { label: 'Categories', route: '/admin/properties/categories', icon: 'bi bi-tags' },
-      { label: 'Valuations', route: '/admin/properties/valuations', icon: 'bi bi-currency-dollar' },
-      { label: 'Pending Transfers', route: '/admin/properties/transfers', icon: 'bi bi-arrow-left-right' },
-    ],
-  },
-  {
-    label: 'Locations & Safety Boxes',
-    icon: 'bi bi-geo-alt',
-    children: [
-      { label: 'All Locations', route: '/admin/locations', icon: 'bi bi-geo' },
-      { label: 'Safety Boxes', route: '/admin/safety-boxes', icon: 'bi bi-box-seam' },
-      { label: 'Shelf Management', route: '/admin/shelves', icon: 'bi bi-grid-3x3' },
-    ],
-  },
-  {
-    label: 'Store & Inventory',
-    icon: 'bi bi-box-seam',
-    badge: 3,
-    children: [
-      { label: 'Stock Overview', icon: 'bi bi-boxes', route: '/admin/inventory' },
-      { label: 'Stock Movements', icon: 'bi bi-arrow-left-right', route: '/admin/inventory/movements' },
-      { label: 'Low Stock', icon: 'bi bi-exclamation-triangle', route: '/admin/inventory/low-stock', badge: 3 },
-      { label: 'Warehouses', icon: 'bi bi-building', route: '/admin/warehouses' },
-      { label: 'Shelves', icon: 'bi bi-grid-3x3', route: '/admin/shelf-locations' },
-      { label: 'Stock Adjustment', icon: 'bi bi-sliders', route: '/admin/inventory/adjustment' },
-    ],
-  },
-  {
-    label: 'Requisitions',
-    icon: 'bi bi-list-check',
-    route: '/admin/requisitions',
-  },
-  {
-    label: 'Receiving',
-    icon: 'bi bi-arrow-down-circle',
-    badge: 2,
-    children: [
-      { label: 'Goods Receipt Notes', icon: 'bi bi-file-earmark-text', route: '/admin/receiving/grn' },
-      { label: 'Pending Inspection', icon: 'bi bi-search', route: '/admin/receiving/inspection', badge: 2 },
-      { label: 'Inspection Logs', icon: 'bi bi-journal-text', route: '/admin/receiving/logs' },
-      { label: 'Suppliers', icon: 'bi bi-people', route: '/admin/receiving/suppliers' },
+      { label: 'Properties', route: '/admin/properties' },
+      { label: 'Property Categories', route: '/admin/properties/categories' },
+      { label: 'Property Types', route: '/admin/properties/types' },
+      { label: 'Valuations', route: '/admin/properties/valuations' },
+      { label: 'Transfers', route: '/admin/properties/transfers' },
     ],
   },
   {
     label: 'User Management',
-    icon: 'bi bi-people-fill',
+    icon: 'bi bi-people',
     children: [
-      { label: 'All Users', route: '/admin/users', icon: 'bi bi-people' },
-      { label: 'Add User', route: '/admin/users/add', icon: 'bi bi-person-plus' },
-      { label: 'Roles & Permissions', route: '/admin/users/roles', icon: 'bi bi-shield-lock' },
-      { label: 'Employees', route: '/admin/users/employees', icon: 'bi bi-person-badge' },
-      { label: 'Activity Logs', route: '/admin/users/activity', icon: 'bi bi-clock-history' },
+      { label: 'Users', route: '/admin/users', permissions: ['view_users'] },
+      { label: 'Employees', route: '/admin/users/employees', permissions: ['view_employees'] },
+      { label: 'Roles & Permissions', route: '/admin/users/roles', permissions: ['view_roles'] },
+      { label: 'Activity Logs', route: '/admin/users/activity', permissions: ['view_audit_log'] },
     ],
   },
   {
-    label: 'Reports',
-    icon: 'bi bi-bar-chart-fill',
+    label: 'Requisitions',
+    icon: 'bi bi-file-earmark-text',
     children: [
-      { label: 'All Reports', route: '/admin/reports', icon: 'bi bi-bar-chart-fill' },
-      { label: 'System Settings', route: '/admin/settings', icon: 'bi bi-gear' },
-      { label: 'Backup', route: '/admin/settings/backup', icon: 'bi bi-database' },
-    ],
-  },
-];
-
-export const storekeeperMenuConfig: MenuItem[] = [
-  { label: 'Dashboard', route: '/storekeeper/dashboard', icon: 'bi bi-grid-fill' },
-  {
-    label: 'Inventory Management',
-    icon: 'bi bi-boxes',
-    children: [
-      { label: 'Current Stock', route: '/storekeeper/inventory', icon: 'bi bi-box-seam' },
-      { label: 'Stock Movements', route: '/storekeeper/inventory/movements', icon: 'bi bi-arrow-left-right' },
-      { label: 'Low Stock Alerts', route: '/storekeeper/inventory/low-stock', icon: 'bi bi-exclamation-triangle', badge: 4 },
-      { label: 'Stock Adjustment', route: '/storekeeper/inventory/adjustment', icon: 'bi bi-sliders' },
-      { label: 'Stock Transfer', route: '/storekeeper/inventory/transfer', icon: 'bi bi-arrow-repeat' },
+      { label: 'Dashboard', route: '/admin/requisitions' },
+      { label: 'Create Requisition', route: '/admin/requisitions/create' },
     ],
   },
   {
-    label: 'Warehouse',
-    icon: 'bi bi-building',
-    children: [
-      { label: 'Warehouse View', route: '/storekeeper/warehouse', icon: 'bi bi-building' },
-      { label: 'Warehouses', route: '/storekeeper/warehouse/warehouses', icon: 'bi bi-building-add' },
-      { label: 'Shelf Management', route: '/storekeeper/warehouse/shelves', icon: 'bi bi-grid-3x3' },
-      { label: 'QR Code Scanner', route: '/storekeeper/warehouse/scanner', icon: 'bi bi-qr-code-scan' },
-    ],
-  },
-  {
-    label: 'Goods Receiving',
+    label: 'Receiving',
     icon: 'bi bi-truck',
-    badge: 3,
     children: [
-      { label: 'Create Receiving Note', route: '/storekeeper/receiving/create', icon: 'bi bi-plus-circle' },
-      { label: 'Pending GRNs', route: '/storekeeper/receiving/pending', icon: 'bi bi-clock', badge: 3 },
-      { label: 'Inspection Queue', route: '/storekeeper/receiving/inspection', icon: 'bi bi-search', badge: 2 },
-      { label: 'Receiving History', route: '/storekeeper/receiving/history', icon: 'bi bi-clock-history' },
+      { label: 'GRN', route: '/admin/receiving/grn' },
+      { label: 'Inspection', route: '/admin/receiving/inspection' },
+      { label: 'Inspection Logs', route: '/admin/receiving/logs' },
+      { label: 'Suppliers', route: '/admin/receiving/suppliers' },
     ],
   },
   {
-    label: 'Issuing',
-    icon: 'bi bi-box-arrow-right',
-    badge: 4,
+    label: 'Locations & Assets',
+    icon: 'bi bi-geo-alt',
     children: [
-      { label: 'Pending Issues', route: '/storekeeper/issuing/pending', icon: 'bi bi-clock', badge: 4 },
-      { label: 'Create SIV', route: '/storekeeper/issuing/create', icon: 'bi bi-plus-circle' },
-      { label: 'Issue History', route: '/storekeeper/issuing/history', icon: 'bi bi-clock-history' },
-      { label: 'Print SIV', route: '/storekeeper/issuing/print', icon: 'bi bi-printer' },
-    ],
-  },
-  {
-    label: 'Item Catalog',
-    icon: 'bi bi-list-check',
-    children: [
-      { label: 'All Items', route: '/storekeeper/catalog', icon: 'bi bi-boxes' },
-      { label: 'Categories', route: '/storekeeper/catalog/categories', icon: 'bi bi-tags' },
+      { label: 'Locations', route: '/admin/locations' },
+      { label: 'Safety Boxes', route: '/admin/safety-boxes' },
+      { label: 'Shelves', route: '/admin/shelves' },
     ],
   },
   {
     label: 'Reports',
     icon: 'bi bi-file-earmark-bar-graph',
     children: [
-      { label: 'Stock Report', route: '/storekeeper/reports/stock', icon: 'bi bi-boxes' },
-      { label: 'Issuance Report', route: '/storekeeper/reports/issuance', icon: 'bi bi-file-text' },
-      { label: 'Receiving Report', route: '/storekeeper/reports/receiving', icon: 'bi bi-truck' },
+      { label: 'Reports Dashboard', route: '/admin/reports' },
     ],
+  },
+  {
+    label: 'Notifications',
+    icon: 'bi bi-bell',
+    route: '/admin/notifications',
+    permissions: ['view_notifications'],
+  },
+  {
+    label: 'System Settings',
+    icon: 'bi bi-gear',
+    children: [
+      { label: 'Settings', route: '/admin/settings' },
+      { label: 'Backup', route: '/admin/settings/backup' },
+    ],
+  },
+];
+
+export const storekeeperMenuConfig: MenuItem[] = [
+  {
+    label: 'Dashboard',
+    icon: 'bi bi-speedometer2',
+    route: '/storekeeper/dashboard',
+    permissions: ['storekeeper_dashboard'],
+  },
+  {
+    label: 'Inventory',
+    icon: 'bi bi-box-seam',
+    children: [
+      { label: 'Current Stock', route: '/storekeeper/inventory' },
+      { label: 'Stock Movements', route: '/storekeeper/inventory/movements' },
+      { label: 'Low Stock', route: '/storekeeper/inventory/low-stock' },
+      { label: 'Stock Adjustment', route: '/storekeeper/inventory/adjustment' },
+      { label: 'Stock Transfer', route: '/storekeeper/inventory/transfer' },
+    ],
+  },
+  {
+    label: 'Warehouse',
+    icon: 'bi bi-building',
+    children: [
+      { label: 'Warehouse View', route: '/storekeeper/warehouse' },
+      { label: 'Warehouses', route: '/storekeeper/warehouse/warehouses' },
+      { label: 'Shelf Management', route: '/storekeeper/warehouse/shelves' },
+      { label: 'QR Scanner', route: '/storekeeper/warehouse/scanner' },
+    ],
+  },
+  {
+    label: 'Item Catalog',
+    icon: 'bi bi-collection',
+    children: [
+      { label: 'All Items', route: '/storekeeper/catalog' },
+      { label: 'Categories', route: '/storekeeper/catalog/categories' },
+    ],
+  },
+  {
+    label: 'Goods Receiving',
+    icon: 'bi bi-truck',
+    route: '/storekeeper/receiving',
+  },
+  {
+    label: 'Issuance',
+    icon: 'bi bi-box-arrow-right',
+    route: '/storekeeper/issuing',
+  },
+  {
+    label: 'Reports',
+    icon: 'bi bi-file-earmark-bar-graph',
+    route: '/storekeeper/reports',
+  },
+  {
+    label: 'Notifications',
+    icon: 'bi bi-bell',
+    route: '/storekeeper/notifications',
+    permissions: ['view_notifications'],
+  },
+];
+
+export const complianceMenuConfig: MenuItem[] = [
+  {
+    label: 'Dashboard',
+    icon: 'bi bi-speedometer2',
+    route: '/compliance-officer/dashboard',
+    permissions: ['compliance_dashboard'],
+  },
+  {
+    label: 'Compliance',
+    icon: 'bi bi-shield-check',
+    children: [
+      { label: 'Risk Alerts', route: '/compliance-officer/risk-alerts' },
+      { label: 'Audit Trail', route: '/compliance-officer/audit-trail' },
+      { label: 'Disposal Records', route: '/compliance-officer/disposal' },
+      { label: 'Inspections', route: '/compliance-officer/inspections' },
+      { label: 'Documents', route: '/compliance-officer/documents' },
+    ],
+  },
+  {
+    label: 'Audits',
+    icon: 'bi bi-search',
+    children: [
+      { label: 'All Audits', route: '/compliance-officer/audits/all' },
+      { label: 'Pending Audits', route: '/compliance-officer/audits/pending' },
+      { label: 'Completed Audits', route: '/compliance-officer/audits/completed' },
+    ],
+  },
+  {
+    label: 'Reports',
+    icon: 'bi bi-file-earmark-bar-graph',
+    children: [
+      { label: 'Risk Reports', route: '/compliance-officer/reports/risk' },
+      { label: 'Audit Reports', route: '/compliance-officer/reports/audit' },
+      { label: 'Status Reports', route: '/compliance-officer/reports/status' },
+      { label: 'Disposal Reports', route: '/compliance-officer/reports/disposal' },
+      { label: 'Inspection Reports', route: '/compliance-officer/reports/inspection' },
+    ],
+  },
+  {
+    label: 'Decisions',
+    icon: 'bi bi-check2-square',
+    children: [
+      { label: 'Approvals', route: '/compliance-officer/decisions/approvals' },
+      { label: 'Rejections', route: '/compliance-officer/decisions/rejections' },
+      { label: 'Response Times', route: '/compliance-officer/decisions/response-times' },
+    ],
+  },
+  {
+    label: 'Profile',
+    icon: 'bi bi-person',
+    route: '/compliance-officer/profile',
   },
 ];
 
 export const employeeMenuConfig: MenuItem[] = [
-  { label: 'Dashboard', route: '/employee/dashboard', icon: 'bi bi-house-fill' },
-  { label: 'User Profile', route: '/employee/dashboard/profile', icon: 'bi bi-person-circle' },
-  { label: 'Notifications', route: '/employee/dashboard/notifications', icon: 'bi bi-bell-fill' },
   {
-    label: 'My Requests Summary',
-    route: '/employee/dashboard/my-requests-summary',
-    icon: 'bi bi-clipboard-data-fill',
+    label: 'Dashboard',
+    icon: 'bi bi-speedometer2',
+    route: '/employee/dashboard',
+    permissions: ['employee_dashboard'],
   },
-  { label: 'My Activity', route: '/employee/dashboard/my-activity', icon: 'bi bi-activity' },
   {
     label: 'My Requests',
-    icon: 'bi bi-card-list',
-    badge: 0,
+    icon: 'bi bi-file-earmark-text',
     children: [
-      { label: 'Create New Request', route: '/employee/requests/create', icon: 'bi bi-plus-circle' },
-      { label: 'Pending Approval', route: '/employee/requests/pending', icon: 'bi bi-clock', badge: 0 },
-      { label: 'Approved Requests', route: '/employee/requests/approved', icon: 'bi bi-check-circle' },
-      { label: 'Rejected Requests', route: '/employee/requests/rejected', icon: 'bi bi-x-circle' },
-      { label: 'Completed Requests', route: '/employee/requests/completed', icon: 'bi bi-check2-all' },
-      { label: 'My SIVs', route: '/employee/requests/sivs', icon: 'bi bi-file-text' },
+      { label: 'Create Request', route: '/employee/requests/create' },
+      { label: 'Pending', route: '/employee/requests/pending' },
+      { label: 'Approved', route: '/employee/requests/approved' },
+      { label: 'Rejected', route: '/employee/requests/rejected' },
+      { label: 'Completed', route: '/employee/requests/completed' },
+      { label: 'My SIVs', route: '/employee/requests/sivs' },
     ],
   },
   {
     label: 'Returns',
-    icon: 'bi bi-arrow-counterclockwise',
+    icon: 'bi bi-arrow-return-left',
     children: [
-      { label: 'My Returns', route: '/employee/returns', icon: 'bi bi-list' },
-      { label: 'Create Return Request', route: '/employee/returns/create', icon: 'bi bi-plus-circle' },
+      { label: 'My Returns', route: '/employee/returns' },
+      { label: 'Create Return', route: '/employee/returns/create' },
+    ],
+  },
+  {
+    label: 'Dashboard Info',
+    icon: 'bi bi-layout-sidebar',
+    children: [
+      { label: 'Summary', route: '/employee/dashboard/my-requests-summary' },
+      { label: 'Activity', route: '/employee/dashboard/my-activity' },
+      { label: 'Notifications', route: '/employee/dashboard/notifications' },
     ],
   },
 ];
 
-export function getMenuConfigForRole(role: string): MenuItem[] {
-  if (role === 'manager') {
-    return managerMenuConfig;
-  }
+export const managerMenuConfig: MenuItem[] = [
+  {
+    label: 'Dashboard',
+    icon: 'bi bi-speedometer2',
+    route: '/manager/dashboard',
+    permissions: ['manager_dashboard'],
+  },
+  {
+    label: 'Approvals',
+    icon: 'bi bi-check-circle',
+    children: [
+      { label: 'Pending Approvals', route: '/manager/approvals/pending', permissions: ['approve_requests'] },
+      { label: 'My Decisions', route: '/manager/approvals/decisions' },
+      { label: 'Approval History', route: '/manager/approvals/history' },
+    ],
+  },
+  {
+    label: 'Requests',
+    icon: 'bi bi-file-earmark-text',
+    children: [
+      { label: 'All Requests', route: '/manager/requests/all' },
+      { label: 'Pending', route: '/manager/requests/pending' },
+      { label: 'Approved', route: '/manager/requests/approved' },
+      { label: 'Rejected', route: '/manager/requests/rejected' },
+      { label: 'Issued', route: '/manager/requests/issued' },
+    ],
+  },
+  {
+    label: 'SIVs',
+    icon: 'bi bi-receipt',
+    children: [
+      { label: 'All SIVs', route: '/manager/sivs/all' },
+      { label: 'Pending SIVs', route: '/manager/sivs/pending' },
+      { label: 'Issued SIVs', route: '/manager/sivs/issued' },
+    ],
+  },
+  {
+    label: 'Inventory',
+    icon: 'bi bi-box-seam',
+    children: [
+      { label: 'Stock Overview', route: '/manager/inventory' },
+      { label: 'Low Stock', route: '/manager/inventory/low-stock' },
+      { label: 'Stock Movements', route: '/manager/inventory/movements' },
+      { label: 'Stock Ledger', route: '/manager/inventory/ledger' },
+    ],
+  },
+  {
+    label: 'Workflows',
+    icon: 'bi bi-diagram-3',
+    children: [
+      { label: 'All Workflows', route: '/manager/workflows/all' },
+      { label: 'Create Workflow', route: '/manager/workflows/create' },
+      { label: 'Approver Matrix', route: '/manager/workflows/approvers' },
+    ],
+  },
+  {
+    label: 'Reports',
+    icon: 'bi bi-file-earmark-bar-graph',
+    children: [
+      { label: 'Inventory Report', route: '/manager/reports/inventory' },
+      { label: 'Approval Reports', route: '/manager/reports/approval' },
+      { label: 'Request Reports', route: '/manager/reports/requests' },
+      { label: 'SIV Reports', route: '/manager/reports/sivs' },
+    ],
+  },
+  {
+    label: 'Tools',
+    icon: 'bi bi-tools',
+    children: [
+      { label: 'Audit Trail', route: '/manager/audit-trail' },
+      { label: 'Approval Queue', route: '/manager/approval-queue' },
+      { label: 'Approval Workflow', route: '/manager/approval-workflow' },
+      { label: 'Approver Matrix', route: '/manager/approver-matrix' },
+      { label: 'Decision Reports', route: '/manager/decision-reports' },
+    ],
+  },
+  {
+    label: 'Notifications',
+    icon: 'bi bi-bell',
+    route: '/manager/notifications',
+    permissions: ['view_notifications'],
+  },
+];
 
-  if (role === 'compliance-officer') {
-    return complianceOfficerMenuConfig;
+export function getMenuConfigByRole(role: string): MenuItem[] {
+  switch (role) {
+    case 'admin':
+      return adminMenuConfig;
+    case 'storekeeper':
+      return storekeeperMenuConfig;
+    case 'compliance-officer':
+      return complianceMenuConfig;
+    case 'manager':
+      return managerMenuConfig;
+    case 'employee':
+    default:
+      return employeeMenuConfig;
   }
-
-  if (role === 'admin' || role === 'super-admin' || role === 'property-officer') {
-    return adminMenuConfig;
-  }
-
-  if (role === 'storekeeper' || role === 'store-officer' || role === 'store-assistant') {
-    return storekeeperMenuConfig;
-  }
-
-  return employeeMenuConfig;
 }
-
-export const menuConfig: MenuItem[] = employeeMenuConfig;

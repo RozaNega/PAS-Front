@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Create Sample Data for PAS System</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .info { background-color: #d1ecf1; border-color: #bee5eb; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; }
+        .progress { margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Create Sample Data for PAS System</h1>
+        
+        <div class="section info">
+            <h3>Instructions</h3>
+            <p>This tool will create sample items and shelves in your database so that the Create Request form works properly.</p>
+            <p><strong>Make sure you are logged in to the main application first!</strong></p>
+        </div>
+
+        <div class="section">
+            <h3>Authentication Status</h3>
+            <div id="authStatus">Checking...</div>
+            <button onclick="checkAuth()">Check Authentication</button>
+        </div>
+
+        <div class="section">
+            <h3>Create Sample Items</h3>
+            <button onclick="createSampleItems()">Create Sample Items</button>
+            <div id="itemsResult"></div>
+        </div>
+
+        <div class="section">
+            <h3>Create Sample Shelves</h3>
+            <button onclick="createSampleShelves()">Create Sample Shelves</button>
+            <div id="shelvesResult"></div>
+        </div>
+
+        <div class="section">
+            <h3>Create All Sample Data</h3>
+            <button onclick="createAllSampleData()" style="background: #28a745; color: white; font-weight: bold;">Create All Sample Data</button>
+            <div id="allResult"></div>
+        </div>
+
+        <div class="section">
+            <h3>Verify Data</h3>
+            <button onclick="verifyData()">Check Existing Data</button>
+            <div id="verifyResult"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/api';
+        
+        function getToken() {
+            return localStorage.getItem('pas_token');
+        }
+        
+        function checkAuth() {
+            const token = getToken();
+            const authDiv = document.getElementById('authStatus');
+            
+            if (!token) {
+                authDiv.innerHTML = '<div class="error">❌ No authentication token found. Please login first.</div>';
+                return false;
+            }
+            
+            try {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                const exp = new Date(payload.exp * 1000);
+                const now = new Date();
+                
+                if (exp < now) {
+                    authDiv.innerHTML = '<div class="error">❌ Token expired. Please login again.</div>';
+                    return false;
+                } else {
+                    authDiv.innerHTML = `<div class="success">✅ Token valid until: ${exp.toLocaleString()}<br>User: ${payload.unique_name || payload.sub}</div>`;
+                    return true;
+                }
+            } catch (e) {
+                authDiv.innerHTML = '<div class="error">❌ Invalid token format.</div>';
+                return false;
+            }
+        }
+        
+        async function makeRequest(url, options = {}) {
+            const token = getToken();
+            const headers = {
+                'Content-Type': 'application/json',
+                ...(token && { 'Authorization': `Bearer ${token}` }),
+                ...options.headers
+            };
+            
+            try {
+                const response = await fetch(url, {
+                    ...options,
+                    headers
+                });
+                
+                const text = await response.text();
+                let data;
+                try {
+                    data = JSON.parse(text);
+                } catch {
+                    data = text;
+                }
+                
+                return { status: response.status, data, ok: response.ok };
+            } catch (error) {
+                return { status: 0, data: error.message, ok: false };
+            }
+        }
+        
+        async function createSampleItems() {
+            if (!checkAuth()) return;
+            
+            const resultDiv = document.getElementById('itemsResult');
+            resultDiv.innerHTML = '<div class="info">Creating sample items...</div>';
+            
+            const sampleItems = [
+                { name: 'Laptop Dell XPS 13', sku: 'LAP-001', description: 'High-performance laptop for office work', category: 'Electronics' },
+                { name: 'Office Chair Ergonomic', sku: 'CHR-002', description: 'Comfortable ergonomic office chair', category: 'Furniture' },
+                { name: 'HP Printer LaserJet', sku: 'PRT-003', description: 'Reliable laser printer for office use', category: 'Electronics' },
+                { name: 'Desk Lamp LED', sku: 'LMP-004', description: 'Energy-efficient LED desk lamp', category: 'Office Supplies' },
+                { name: 'Monitor 24 inch', sku: 'MON-005', description: '24-inch HD monitor for workstation', category: 'Electronics' },
+                { name: 'Keyboard Wireless', sku: 'KEY-006', description: 'Wireless keyboard for clean desk setup', category: 'Electronics' },
+                { name: 'Mouse Optical', sku: 'MOU-007', description: 'Ergonomic optical mouse', category: 'Electronics' },
+                { name: 'Filing Cabinet', sku: 'CAB-008', description: '4-drawer filing cabinet', category: 'Furniture' },
+                { name: 'Whiteboard Marker', sku: 'MRK-009', description: 'Dry erase markers set', category: 'Office Supplies' },
+                { name: 'Paper A4 Ream', sku: 'PAP-010', description: 'A4 copy paper 500 sheets', category: 'Office Supplies' }
+            ];
+            
+            let created = 0;
+            let failed = 0;
+            let results = [];
+            
+            for (const item of sampleItems) {
+                const itemData = {
+                    name: item.name,
+                    sku: item.sku,
+                    description: item.description,
+                    category: item.category,
+                    isActive: true
+                };
+                
+                const result = await makeRequest(`${API_BASE}/Items`, {
+                    method: 'POST',
+                    body: JSON.stringify(itemData)
+                });
+                
+                if (result.ok) {
+                    created++;
+                    results.push(`✅ ${item.name}`);
+                } else {
+                    failed++;
+                    results.push(`❌ ${item.name}: ${result.data.message || 'Failed'}`);
+                }
+            }
+            
+            resultDiv.innerHTML = `
+                <div class="${created > 0 ? 'success' : 'error'}">
+                    <strong>Items Creation Result:</strong><br>
+                    Created: ${created}, Failed: ${failed}<br><br>
+                    <details>
+                        <summary>Details</summary>
+                        <pre>${results.join('\n')}</pre>
+                    </details>
+                </div>
+            `;
+        }
+        
+        async function createSampleShelves() {
+            if (!checkAuth()) return;
+            
+            const resultDiv = document.getElementById('shelvesResult');
+            resultDiv.innerHTML = '<div class="info">Creating sample shelves...</div>';
+            
+            // First, try to get or create a warehouse
+            let warehouseId = await getOrCreateWarehouse();
+            
+            const sampleShelves = [
+                { zone: 'A', aisle: 'A1', rack: 'R1', shelfNumber: '001', binType: 'Standard' },
+                { zone: 'A', aisle: 'A1', rack: 'R1', shelfNumber: '002', binType: 'Standard' },
+                { zone: 'A', aisle: 'A2', rack: 'R1', shelfNumber: '001', binType: 'Standard' },
+                { zone: 'B', aisle: 'B1', rack: 'R1', shelfNumber: '001', binType: 'Electronics' },
+                { zone: 'B', aisle: 'B1', rack: 'R2', shelfNumber: '001', binType: 'Electronics' },
+                { zone: 'C', aisle: 'C1', rack: 'R1', shelfNumber: '001', binType: 'Furniture' }
+            ];
+            
+            let created = 0;
+            let failed = 0;
+            let results = [];
+            
+            for (const shelf of sampleShelves) {
+                const shelfData = {
+                    zone: shelf.zone,
+                    aisle: shelf.aisle,
+                    rack: shelf.rack,
+                    shelfNumber: shelf.shelfNumber,
+                    binType: shelf.binType,
+                    warehouseId: warehouseId,
+                    length: 100,
+                    width: 50,
+                    height: 30,
+                    maxWeight: 100,
+                    capacity: 50
+                };
+                
+                const result = await makeRequest(`${API_BASE}/ShelfLocations`, {
+                    method: 'POST',
+                    body: JSON.stringify(shelfData)
+                });
+                
+                if (result.ok) {
+                    created++;
+                    results.push(`✅ ${shelf.zone}-${shelf.aisle}-${shelf.rack}-${shelf.shelfNumber}`);
+                } else {
+                    failed++;
+                    results.push(`❌ ${shelf.zone}-${shelf.aisle}: ${result.data.message || 'Failed'}`);
+                }
+            }
+            
+            resultDiv.innerHTML = `
+                <div class="${created > 0 ? 'success' : 'error'}">
+                    <strong>Shelves Creation Result:</strong><br>
+                    Created: ${created}, Failed: ${failed}<br><br>
+                    <details>
+                        <summary>Details</summary>
+                        <pre>${results.join('\n')}</pre>
+                    </details>
+                </div>
+            `;
+        }
+        
+        async function getOrCreateWarehouse() {
+            // Try to get existing warehouses first
+            const warehousesResult = await makeRequest(`${API_BASE}/Warehouses`);
+            
+            if (warehousesResult.ok && warehousesResult.data.data && warehousesResult.data.data.length > 0) {
+                return warehousesResult.data.data[0].id;
+            }
+            
+            // Create a default warehouse
+            const warehouseData = {
+                name: 'Main Warehouse',
+                location: 'Building A',
+                isActive: true
+            };
+            
+            const createResult = await makeRequest(`${API_BASE}/Warehouses`, {
+                method: 'POST',
+                body: JSON.stringify(warehouseData)
+            });
+            
+            if (createResult.ok) {
+                return createResult.data.data || createResult.data.id;
+            }
+            
+            // Return a default GUID if warehouse creation fails
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                const r = Math.random() * 16 | 0;
+                const v = c === 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+        
+        async function createAllSampleData() {
+            if (!checkAuth()) return;
+            
+            const resultDiv = document.getElementById('allResult');
+            resultDiv.innerHTML = '<div class="info">Creating all sample data...</div>';
+            
+            // Create items first
+            await createSampleItems();
+            
+            // Wait a bit
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // Create shelves
+            await createSampleShelves();
+            
+            resultDiv.innerHTML = '<div class="success">✅ All sample data creation completed! Check the results above.</div>';
+        }
+        
+        async function verifyData() {
+            if (!checkAuth()) return;
+            
+            const resultDiv = document.getElementById('verifyResult');
+            resultDiv.innerHTML = '<div class="info">Checking existing data...</div>';
+            
+            // Check items
+            const itemsResult = await makeRequest(`${API_BASE}/Items?pageSize=100`);
+            
+            // Check shelves
+            const shelvesResult = await makeRequest(`${API_BASE}/ShelfLocations`);
+            
+            let itemsCount = 0;
+            let shelvesCount = 0;
+            
+            if (itemsResult.ok && itemsResult.data.data && itemsResult.data.data.items) {
+                itemsCount = itemsResult.data.data.items.length;
+            }
+            
+            if (shelvesResult.ok && shelvesResult.data.data) {
+                shelvesCount = shelvesResult.data.data.length;
+            }
+            
+            resultDiv.innerHTML = `
+                <div class="${itemsCount > 0 && shelvesCount > 0 ? 'success' : 'error'}">
+                    <strong>Current Data Status:</strong><br>
+                    Items in database: ${itemsCount}<br>
+                    Shelves in database: ${shelvesCount}<br><br>
+                    ${itemsCount > 0 && shelvesCount > 0 ? 
+                        '✅ You have sufficient data to create service requests!' : 
+                        '⚠️ You need to create sample data first.'}
+                </div>
+            `;
+        }
+        
+        // Initialize
+        checkAuth();
+        verifyData();
+    </script>
+</body>
+</html>

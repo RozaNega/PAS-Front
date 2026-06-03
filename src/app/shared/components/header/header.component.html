@@ -1,4 +1,4 @@
-﻿<header class="app-header">
+<header class="app-header">
   <div class="header-left">
     <button
       type="button"
@@ -9,7 +9,7 @@
       <i class="bi bi-list"></i>
     </button>
 
-    @if (canGoBack()) {
+    @if (isBackVisible()) {
       <button type="button" class="back-btn" (click)="goBack()" aria-label="Go back">
         <i class="bi bi-arrow-left"></i>
         <span>Back</span>
@@ -34,7 +34,12 @@
     </button>
 
     <div class="header-user">
-      <i class="bi bi-person-circle"></i>
+      <img 
+        [src]="profileImageUrl() || 'assets/images/default-avatar.svg'" 
+        alt="Profile" 
+        class="header-avatar" 
+        onerror="this.src='assets/images/default-avatar.svg'"
+      />
       <span>{{ displayName }}</span>
     </div>
 

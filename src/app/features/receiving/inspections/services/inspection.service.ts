@@ -21,7 +21,7 @@ export interface InspectionDto {
 export class InspectionService {
   constructor(private apiService: ApiService) {}
 
-  getAll(params?: Record<string, unknown>): Observable<ApiResponseModel<InspectionDto[]>> {
+  getAll(params?: Record<string, string | number | boolean | readonly (string | number | boolean)[]>): Observable<ApiResponseModel<InspectionDto[]>> {
     return this.apiService.get<unknown>('Inspections', params).pipe(
       map((raw) => {
         const n = normalizePasListResponse<InspectionDto>(raw);

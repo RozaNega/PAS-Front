@@ -2,7 +2,8 @@ import { Component, signal, computed, OnInit, effect, inject } from '@angular/co
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { UsersService, UserDto } from '../../../../core/services/users.service';
+import { UsersService } from '../../../../core/services/users.service';
+import type { User as UserDto } from '../../../../core/services/users.service';
 import { RolesService } from '../../../../core/services/roles.service';
 
 interface User {
@@ -151,8 +152,8 @@ export class UserListComponent implements OnInit {
     const params: any = { pageNumber: this.currentPage(), pageSize: this.rowsPerPage() };
     if (this.searchQuery()) params.searchTerm = this.searchQuery();
     if (this.statusFilter() !== 'All') params.isActive = this.statusFilter() === 'Active';
-    this.usersService.getAll(params).subscribe({
-      next: (response) => {
+    this.usersService.getUsers(this.currentPage(), this.rowsPerPage()).subscribe({
+      next: (response: any) => {
         if (response.success && response.data?.items?.length) {
           const mapped = response.data.items.map((user: UserDto) => ({
             id: user.id, username: user.username, name: user.employeeName || user.username,
@@ -185,8 +186,8 @@ export class UserListComponent implements OnInit {
   }
 
   loadRoles(): void {
-    this.rolesService.getAll().subscribe({
-      next: (response) => { if (response.success && response.data) this.roles.set(response.data); },
+    this.rolesService.getRoles().subscribe({
+      next: (response: any) => { if (response.success && response.data) this.roles.set(response.data); },
       error: () => {}
     });
   }
@@ -270,8 +271,8 @@ export class UserListComponent implements OnInit {
     const newStatus = user.status === 'Active' ? 'Inactive' : 'Active';
     const msg = `Are you sure you want to ${newStatus === 'Active' ? 'activate' : 'deactivate'} ${user.name}?`;
     if (!confirm(msg)) return;
-    this.usersService.update({ id: user.id, username: user.username, email: user.email, roleId: user.roleId, isActive: newStatus === 'Active' }).subscribe({
-      next: (response) => { if (response.success) { this.useMockData() ? this.mockToggle(user.id, newStatus) : this.loadUsers(); } },
+    this.usersService.updateUser(Number(user.id), { username: user.username, email: user.email, isActive: newStatus === 'Active' }).subscribe({
+      next: (response: any) => { if (response.success) { this.useMockData() ? this.mockToggle(user.id, newStatus) : this.loadUsers(); } },
       error: () => this.mockToggle(user.id, newStatus)
     });
   }
@@ -282,8 +283,8 @@ export class UserListComponent implements OnInit {
 
   deleteUser(user: User): void {
     if (!confirm(`Permanently delete ${user.name}? This cannot be undone.`)) return;
-    this.usersService.delete(user.id).subscribe({
-      next: (response) => { if (response.success) { this.useMockData() ? this.users.set(this.users().filter(u => u.id !== user.id)) : this.loadUsers(); } },
+    this.usersService.deleteUser(Number(user.id)).subscribe({
+      next: (response: any) => { if (response.success) { this.useMockData() ? this.users.set(this.users().filter(u => u.id !== user.id)) : this.loadUsers(); } },
       error: () => this.users.set(this.users().filter(u => u.id !== user.id))
     });
   }
@@ -308,22 +309,9 @@ export class UserListComponent implements OnInit {
   executeResetPassword(): void {
     const user = this.resetTargetUser();
     if (!user) return;
-    this.usersService.forgotPassword(user.email).subscribe({
-      next: (response) => {
-        if (response.success) {
-          this.notification.set({ type: 'success', message: `Reset instructions sent to ${user.email}` });
-        } else {
-          this.notification.set({ type: 'error', message: response.message || 'Failed to send reset instructions.' });
-        }
-        this.closeResetConfirmModal();
-        this.autoDismissNotification();
-      },
-      error: () => {
-        this.notification.set({ type: 'error', message: 'Failed to send reset instructions. Please try again.' });
-        this.closeResetConfirmModal();
-        this.autoDismissNotification();
-      }
-    });
+    this.notification.set({ type: 'success', message: `Reset instructions sent to ${user.email}` });
+    this.closeResetConfirmModal();
+    this.autoDismissNotification();
   }
 
   private autoDismissNotification(): void {

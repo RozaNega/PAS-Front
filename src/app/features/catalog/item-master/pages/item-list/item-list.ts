@@ -33,7 +33,7 @@ export class ItemList {
     if (this.selectedIds().size === this.items().length) {
       this.selectedIds.set(new Set());
     } else {
-      this.selectedIds.set(new Set(this.items().map(i => i.id)));
+      this.selectedIds.set(new Set(this.items().map(i => String(i.id))));
     }
   }
 
@@ -43,7 +43,7 @@ export class ItemList {
 
   protected removeItem(item: ItemMasterListDto): void {
     if (confirm(`Are you sure you want to delete ${item.itemName}?`)) {
-      this.itemApi.remove(item.id);
+      this.itemApi.remove(String(item.id));
     }
   }
 

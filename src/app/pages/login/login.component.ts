@@ -12,5 +12,6 @@ export class LoginComponent implements OnInit {
 
   ngOnInit(): void {
     // Removed forced redirect to /auth/login so /auth/login/:role works
+    console.log('⚠️ Old LoginComponent loaded - this should not happen with standalone bootstrap');
   }
 }

@@ -41,36 +41,86 @@
 
 .bg-text-watermark {
   position: absolute;
-  top: 50%;
-  left: 5%;
-  transform: translateY(-50%) rotate(-90deg);
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
+  top: 25%;
+  left: 0;
+  right: 0;
+  height: 150px;
+  overflow: hidden;
   pointer-events: none;
   z-index: 0;
-  opacity: 0.08;
-  animation: watermark-float 20s ease-in-out infinite alternate;
+  opacity: 0.25;
 }
 
-.watermark-word {
-  font-size: 12vw;
+.bg-text-watermark--bottom {
+  top: auto;
+  bottom: 25%;
+}
+
+.watermark-scroll {
+  display: flex;
+  white-space: nowrap;
+  animation: scroll-left 20s linear infinite;
+  gap: 4rem;
+}
+
+.watermark-scroll--reverse {
+  animation: scroll-right 25s linear infinite;
+}
+
+.watermark-text {
+  font-size: 8vw;
   font-weight: 900;
-  color: transparent;
-  -webkit-text-stroke: 2px #1b4ea5;
+  color: #1b4ea5;
+  -webkit-text-stroke: 1px #0f3d7a;
+  text-shadow: 0 0 10px rgba(27, 78, 165, 0.4);
   white-space: nowrap;
   letter-spacing: 0.5rem;
   font-family: 'Outfit', sans-serif;
+  flex-shrink: 0;
+  opacity: 1;
+}
+
+@keyframes scroll-left {
+  0% {
+    transform: translateX(100%);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+@keyframes scroll-right {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Remove old watermark styles */
+.watermark-word {
+  display: none;
 }
 
 @keyframes watermark-float {
-  0% {
-    transform: translateY(-52%) rotate(-90deg) translateX(0);
-  }
+  /* Keep for backward compatibility but not used */
+}
 
-  100% {
-    transform: translateY(-48%) rotate(-90deg) translateX(2rem);
-  }
+@keyframes watermark-pulse {
+  /* Keep for backward compatibility but not used */
+}
+
+.bg-text-watermark--right {
+  display: none;
+}
+
+@keyframes watermark-float-right {
+  /* Keep for backward compatibility but not used */
+}
+
+@keyframes watermark-pulse-right {
+  /* Keep for backward compatibility but not used */
 }
 
 .auth-card {
@@ -83,8 +133,8 @@
     0 8px 32px 0 rgba(31, 38, 135, 0.1),
     0 1px 1px 0 rgba(255, 255, 255, 0.5) inset;
   margin: 0 auto;
-  max-width: 38rem;
-  padding: 3rem 2.5rem;
+  max-width: 200rem;
+  padding: 2rem 2.5rem;
   position: relative;
   width: 100%;
   z-index: 1;
@@ -100,6 +150,8 @@
   margin: 0 auto 1.5rem;
   max-width: 100%;
   width: 100%;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+  min-height: 80px;
 }
 
 .auth-card h1 {
@@ -144,7 +196,9 @@
 .input-shell:focus-within {
   background: #ffffff;
   border-color: var(--auth-primary);
-  box-shadow: 0 0 0 4px rgba(27, 78, 165, 0.1), inset 0 2px 4px rgba(0, 0, 0, 0.02);
+  box-shadow:
+    0 0 0 4px rgba(27, 78, 165, 0.1),
+    inset 0 2px 4px rgba(0, 0, 0, 0.02);
 }
 
 .input-icon {
@@ -191,10 +245,7 @@
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(120deg,
-      transparent,
-      rgba(255, 255, 255, 0.2),
-      transparent);
+  background: linear-gradient(120deg, transparent, rgba(255, 255, 255, 0.2), transparent);
   transition: 0.5s;
 }
 
@@ -254,7 +305,7 @@
 .icon-btn {
   align-items: center;
   background: rgba(255, 255, 255, 0.4);
-  backdrop-filter: blur(5px);
+
   border: 1px solid rgba(255, 255, 255, 0.5);
   border-radius: 50%;
   color: #1e293b;
@@ -312,7 +363,7 @@
   border-radius: 50%;
   box-shadow: 0 0 0 1px #e2e8f0;
   cursor: pointer;
-  height: 1.5rem;
+  height: 2.5rem;
   padding: 0;
   width: 1.5rem;
 }
@@ -364,4 +415,118 @@
   .watermark-word {
     font-size: 16vw;
   }
+
+  .watermark-text {
+    font-size: 12vw;
+  }
+
+  .bg-text-watermark {
+    height: 80px;
+  }
+}
+
+/* Employee code field styling */
+#register-employee-code {
+  font-family: 'Courier New', monospace;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+#register-employee-code:focus {
+  border-color: var(--auth-primary);
+  box-shadow: 0 0 0 3px rgba(27, 78, 165, 0.1);
+}
+/* Password visibility toggle button styling */
+.input-shell--with-action {
+  position: relative;
+}
+
+.input-shell--with-action .input-action {
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  color: #64748b;
+  border: none;
+  padding: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  border-radius: 4px;
+}
+
+.input-shell--with-action .input-action:hover {
+  background: rgba(100, 116, 139, 0.1);
+  color: var(--auth-primary);
+}
+
+.input-shell--with-action input {
+  padding-right: 3rem;
+}
+
+/* Select field styling */
+.input-shell--select {
+  padding: 0;
+}
+
+.select-field {
+  padding: 0 1rem;
+  min-height: 3.2rem;
+  border-radius: 12px;
+  background: var(--input-bg);
+  border: 1px solid rgba(203, 213, 225, 0.5);
+  cursor: pointer;
+}
+
+.select-field:focus {
+  background: #ffffff;
+  border-color: var(--auth-primary);
+  box-shadow: 0 0 0 4px rgba(27, 78, 165, 0.1);
+}
+
+/* Checkbox styling */
+.remember-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.5rem 0;
+  cursor: pointer;
+}
+
+.remember-row input[type="checkbox"] {
+  width: 1.2rem;
+  height: 1.2rem;
+  accent-color: var(--auth-primary);
+  cursor: pointer;
+}
+
+.remember-row span {
+  color: #475569;
+  font-size: 0.9rem;
+  user-select: none;
+}
+
+/* Status message styling */
+.status-text {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.status-text--error {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.status-text--success {
+  background: #f0fdf4;
+  color: #16a34a;
+  border: 1px solid #bbf7d0;
 }

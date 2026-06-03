@@ -15,13 +15,21 @@
 html,
 body {
   height: 100%;
+  /* Prevent overscroll bounce and white background */
+  overscroll-behavior: none !important;
+  -webkit-overscroll-behavior: none !important;
+  /* Set background to match landing page */
+  background: #f8fafc !important;
 }
 
 body {
   margin: 0;
   font-family: 'Manrope', 'Inter', 'Segoe UI', Arial, sans-serif;
-  background: var(--app-surface-ground);
+  background: #f8fafc !important;
   color: var(--app-text);
+  /* Additional overscroll prevention */
+  overscroll-behavior-y: none !important;
+  -webkit-overscroll-behavior-y: none !important;
 }
 
 * {

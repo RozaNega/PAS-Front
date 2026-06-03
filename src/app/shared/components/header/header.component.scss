@@ -1,4 +1,4 @@
-﻿.app-header {
+.app-header {
   height: 58px;
   display: flex;
   align-items: center;
@@ -136,7 +136,7 @@
 .header-user {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 8px;
   color: #334155;
   font-size: 0.92rem;
   font-weight: 500;
@@ -144,9 +144,13 @@
   border-right: 1px solid #d8e1ef;
 }
 
-.header-user i {
-  font-size: 14px;
-  color: #64748b;
+.header-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid var(--app-border);
+  background: var(--app-surface-muted);
 }
 
 .header-user span {

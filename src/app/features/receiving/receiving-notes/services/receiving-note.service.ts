@@ -68,7 +68,7 @@ function receivingNoteIdEquals(row: ReceivingNoteDto, idRaw: string): boolean {
 export class ReceivingNoteService {
   constructor(private apiService: ApiService) {}
 
-  getAll(params?: Record<string, unknown>): Observable<ApiResponseModel<ReceivingNoteDto[]>> {
+  getAll(params?: Record<string, string | number | boolean | readonly (string | number | boolean)[]>): Observable<ApiResponseModel<ReceivingNoteDto[]>> {
     return this.apiService.get<unknown>('ReceivingNotes', params).pipe(
       map((raw) => {
         const n = normalizePasListResponse<ReceivingNoteDto>(raw);

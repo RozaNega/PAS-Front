@@ -1,0 +1,146 @@
+<div class="container-fluid p-4">
+  <!-- Header -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <h2 class="mb-1 fw-bold" style="color: #1a237e;">Stock Overview</h2>
+          <p class="text-muted mb-0">Comprehensive view of all inventory across warehouses and categories</p>
+        </div>
+        <div class="d-flex gap-2">
+          <button class="btn btn-outline-primary btn-sm" (click)="refreshOverview()">
+            <i class="bi bi-arrow-clockwise me-1"></i> Refresh
+          </button>
+          <button class="btn btn-outline-success btn-sm" (click)="exportOverview()">
+            <i class="bi bi-download me-1"></i> Export
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPI Cards -->
+  <div class="row g-3 mb-4">
+    <div class="col-xl-3 col-md-6" *ngFor="let card of kpiCards">
+      <div class="card border-0 shadow-sm h-100" style="border-radius: 12px;">
+        <div class="card-body d-flex align-items-center">
+          <div class="me-3 d-flex align-items-center justify-content-center"
+               [style.background-color]="card.bgColor"
+               style="width: 52px; height: 52px; border-radius: 12px;">
+            <i class="bi" [ngClass]="card.icon" style="font-size: 1.5rem; color: #1a237e;"></i>
+          </div>
+          <div>
+            <span class="text-muted small">{{ card.label }}</span>
+            <h3 class="mb-0 fw-bold mt-1">{{ card.value }}</h3>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts Row -->
+  <div class="row g-3 mb-4">
+    <div class="col-lg-6">
+      <div class="card border-0 shadow-sm h-100" style="border-radius: 12px;">
+        <div class="card-header bg-transparent border-bottom-0 pt-3 pb-0">
+          <h5 class="fw-bold mb-0" style="color: #1a237e;">
+            <i class="bi bi-pie-chart me-2"></i>Stock by Category
+          </h5>
+        </div>
+        <div class="card-body">
+          <canvas id="stockByCategoryChart"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="card border-0 shadow-sm h-100" style="border-radius: 12px;">
+        <div class="card-header bg-transparent border-bottom-0 pt-3 pb-0">
+          <h5 class="fw-bold mb-0" style="color: #1a237e;">
+            <i class="bi bi-building me-2"></i>Stock by Warehouse
+          </h5>
+        </div>
+        <div class="card-body">
+          <canvas id="stockByWarehouseChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stock Status Summary -->
+  <div class="card border-0 shadow-sm mb-4" style="border-radius: 12px;">
+    <div class="card-header bg-transparent border-bottom-0 pt-3 pb-0">
+      <h5 class="fw-bold mb-0" style="color: #1a237e;">
+        <i class="bi bi-bar-chart me-2"></i>Stock Status Summary
+      </h5>
+    </div>
+    <div class="card-body">
+      <div class="row text-center">
+        <div class="col-md-4 mb-3 mb-md-0">
+          <div class="p-3 bg-success bg-opacity-10 rounded-3">
+            <h2 class="text-success fw-bold mb-0">{{ stockStatusSummary.inStock }}</h2>
+            <small class="text-muted">In Stock Items</small>
+          </div>
+        </div>
+        <div class="col-md-4 mb-3 mb-md-0">
+          <div class="p-3 bg-warning bg-opacity-10 rounded-3">
+            <h2 class="text-warning fw-bold mb-0">{{ stockStatusSummary.lowStock }}</h2>
+            <small class="text-muted">Low Stock Items</small>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="p-3 bg-danger bg-opacity-10 rounded-3">
+            <h2 class="text-danger fw-bold mb-0">{{ stockStatusSummary.outOfStock }}</h2>
+            <small class="text-muted">Out of Stock Items</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Warehouse Summary Table -->
+  <div class="card border-0 shadow-sm" style="border-radius: 12px;">
+    <div class="card-header bg-transparent border-bottom-0 pt-3 pb-0 d-flex justify-content-between align-items-center">
+      <h5 class="fw-bold mb-0" style="color: #1a237e;">
+        <i class="bi bi-table me-2"></i>Warehouse Summary
+      </h5>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th class="ps-3">Warehouse</th>
+              <th class="text-end">Total Items</th>
+              <th class="text-end">Total Stock</th>
+              <th class="text-end">Reserved</th>
+              <th class="text-end">Available</th>
+              <th class="text-end">Low Stock</th>
+              <th class="text-center">Utilization</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let wh of warehouseSummaries">
+              <td class="ps-3 fw-medium">{{ wh.name }}</td>
+              <td class="text-end">{{ wh.totalItems }}</td>
+              <td class="text-end">{{ wh.totalStock | number }}</td>
+              <td class="text-end">{{ wh.reservedStock | number }}</td>
+              <td class="text-end">{{ wh.availableStock | number }}</td>
+              <td class="text-end">
+                <span class="badge bg-warning text-dark" *ngIf="wh.lowStockItems > 0">{{ wh.lowStockItems }}</span>
+                <span class="text-muted" *ngIf="wh.lowStockItems === 0">0</span>
+              </td>
+              <td class="text-center">
+                <div class="d-flex align-items-center gap-2">
+                  <div class="progress flex-grow-1" style="height: 6px;">
+                    <div class="progress-bar" [style.width.%]="wh.utilization" [style.background-color]="getUtilizationColor(wh.utilization)"></div>
+                  </div>
+                  <small>{{ wh.utilization }}%</small>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

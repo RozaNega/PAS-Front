@@ -1,16 +1,14 @@
 import { Injectable } from '@angular/core';
-import { Observable, map } from 'rxjs';
-import { ApiService } from './api.service';
-import { ApiResponse } from '../../types/api-response.type';
-import { normalizePasListResponse, normalizeApiResponseModel } from '../utils/pas-api-json.util';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 
-export interface ItemMasterListDto {
-  id: string;
+export interface ItemMaster {
+  id: number;
   itemName: string;
   sku: string;
-  description?: string;
-  categoryId?: string;
-  categoryName?: string;
+  description: string;
+  categoryName: string;
   unitOfMeasure: string;
   currentStock: number;
   reservedStock: number;
@@ -19,33 +17,12 @@ export interface ItemMasterListDto {
   requiresInspection: boolean;
   isLowStock: boolean;
   stockQuantity: number;
-  minimumThreshold?: number;
-  maximumThreshold?: number;
   isActive: boolean;
+  [key: string]: unknown;
 }
 
-export interface ItemMasterWriteRequest {
-  sku: string;
-  itemName: string;
-  categoryId: string;
-  unitOfMeasure: string;
-  requiresInspection: boolean;
-  minStockLevel: number;
-  categoryName?: string;
-  stockQuantity?: number;
-  isActive?: boolean;
-}
-
-export interface ItemMasterBulkUpdateRequest {
-  categoryId?: string;
-  unitOfMeasure?: string;
-  requiresInspection?: boolean;
-  minStockLevel?: number;
-  categoryName?: string;
-}
-
-export interface PaginatedItemResponse {
-  items: ItemMasterListDto[];
+export interface ItemMasterPaginatedResponse {
+  items: ItemMaster[];
   pageNumber: number;
   totalPages: number;
   totalCount: number;
@@ -53,50 +30,55 @@ export interface PaginatedItemResponse {
   hasNextPage: boolean;
 }
 
-@Injectable({ providedIn: 'root' })
+export type ItemMasterListDto = ItemMaster;
+
+export interface ItemMasterApiResponse {
+  success: boolean;
+  message: string;
+  data: ItemMasterPaginatedResponse | ItemMaster | string | null;
+  statusCode: number;
+}
+
+@Injectable({
+  providedIn: 'root'
+})
 export class ItemMasterService {
-  constructor(private apiService: ApiService) {}
+  private baseUrl = '/api/ItemMasters';
 
-  getItemMasters(params?: any): Observable<ApiResponse<PaginatedItemResponse>> {
-    return this.apiService.get<unknown>('ItemMasters', params).pipe(
-      map(res => normalizeApiResponseModel<PaginatedItemResponse>(res) as ApiResponse<PaginatedItemResponse>)
-    );
+  constructor(private http: HttpClient) {}
+
+  getItemMasters(pageNumber: number = 1, pageSize: number = 50): Observable<ItemMasterApiResponse> {
+    let params = new HttpParams()
+      .set('pageNumber', pageNumber.toString())
+      .set('pageSize', pageSize.toString());
+    return this.http.get<ItemMasterApiResponse>(this.baseUrl, { params });
   }
 
-  getItemMasterById(id: string): Observable<ApiResponse<ItemMasterListDto>> {
-    return this.apiService.get<unknown>(`ItemMasters/${id}`).pipe(
-      map(res => normalizeApiResponseModel<ItemMasterListDto>(res) as ApiResponse<ItemMasterListDto>)
-    );
+  getItemMaster(id: number): Observable<ItemMasterApiResponse> {
+    return this.http.get<ItemMasterApiResponse>(`${this.baseUrl}/${id}`);
   }
 
-  createItemMaster(item: Partial<ItemMasterWriteRequest> & Record<string, unknown>): Observable<ApiResponse<string>> {
-    return this.apiService.post<unknown>('ItemMasters', item).pipe(
-      map(res => normalizeApiResponseModel<string>(res) as ApiResponse<string>)
-    );
+  createItemMaster(item: Partial<ItemMaster>): Observable<ItemMasterApiResponse> {
+    return this.http.post<ItemMasterApiResponse>(this.baseUrl, item);
   }
 
-  updateItemMaster(id: string, item: Partial<ItemMasterWriteRequest> & Record<string, unknown>): Observable<ApiResponse<object>> {
-    return this.apiService.put<unknown>(`ItemMasters/${id}`, item).pipe(
-      map(res => normalizeApiResponseModel<object>(res) as ApiResponse<object>)
-    );
+  updateItemMaster(id: number, item: Partial<ItemMaster>): Observable<ItemMasterApiResponse> {
+    return this.http.put<ItemMasterApiResponse>(`${this.baseUrl}/${id}`, item);
   }
 
-  deleteItemMaster(id: string): Observable<ApiResponse<object>> {
-    return this.apiService.delete<unknown>(`ItemMasters/${id}`).pipe(
-      map(res => normalizeApiResponseModel<object>(res) as ApiResponse<object>)
-    );
+  deleteItemMaster(id: number): Observable<ItemMasterApiResponse> {
+    return this.http.delete<ItemMasterApiResponse>(`${this.baseUrl}/${id}`);
   }
 
-  getItemsByCategory(categoryId: string): Observable<ApiResponse<ItemMasterListDto[]>> {
-    return this.apiService.get<unknown>(`ItemMasters/by-category/${categoryId}`).pipe(
-      map(res => normalizePasListResponse<ItemMasterListDto>(res) as ApiResponse<ItemMasterListDto[]>)
-    );
-  }
-
-  getLowStockItems(): Observable<ApiResponse<ItemMasterListDto[]>> {
-    return this.apiService.get<unknown>('ItemMasters/low-stock').pipe(
-      map(res => normalizePasListResponse<ItemMasterListDto>(res) as ApiResponse<ItemMasterListDto[]>)
+  searchItemMasters(searchTerm: string): Observable<ItemMaster[]> {
+    let params = new HttpParams().set('searchTerm', searchTerm);
+    return this.http.get<ItemMasterApiResponse>(this.baseUrl, { params }).pipe(
+      map(response => {
+        if (response.success && response.data && typeof response.data === 'object' && 'items' in response.data) {
+          return (response.data as ItemMasterPaginatedResponse).items;
+        }
+        return [];
+      })
     );
   }
 }
-

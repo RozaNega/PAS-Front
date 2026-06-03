@@ -2,7 +2,7 @@ import { Component, signal, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { EmployeesService, CreateEmployeeRequest } from '../../../../core/services/employees.service';
+import { EmployeesService } from '../../../../core/services/employees.service';
 import { RolesService } from '../../../../core/services/roles.service';
 
 @Component({
@@ -69,10 +69,10 @@ export class AddEmployeeComponent implements OnInit {
   }
 
   loadRoles(): void {
-    this.rolesService.getAll().subscribe({
-      next: (response) => {
+    this.rolesService.getRoles().subscribe({
+      next: (response: any) => {
         if (response.success && response.data) {
-          this.roles.set(response.data.map(role => ({
+          this.roles.set((response.data as any[]).map((role: any) => ({
             value: (role.roleName || '').toLowerCase().replace(/\s+/g, '-'),
             label: role.roleName || 'Role'
           })));
@@ -116,7 +116,7 @@ export class AddEmployeeComponent implements OnInit {
     this.loading.set(true);
     const employeeCode = this.formData.employeeCode || this.generateEmployeeCode();
 
-    const employeeData: CreateEmployeeRequest = {
+    const employeeData: any = {
       employeeCode: employeeCode,
       fullName: this.formData.fullName,
       department: this.formData.department,
@@ -126,8 +126,8 @@ export class AddEmployeeComponent implements OnInit {
       hireDate: this.formData.joinDate ? new Date(this.formData.joinDate).toISOString() : null,
     };
 
-    this.employeesService.create(employeeData).subscribe({
-      next: (response) => {
+    this.employeesService.createEmployee(employeeData).subscribe({
+      next: (response: any) => {
         if (response.success) {
           alert('Employee created!');
           this.router.navigate(['/admin/users/employees']);

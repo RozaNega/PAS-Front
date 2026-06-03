@@ -4,33 +4,57 @@
     <p class="subtitle">Requests waiting for approval</p>
   </div>
 
+  <div class="search-section">
+    <input 
+      type="text" 
+      [(ngModel)]="searchTerm" 
+      placeholder="🔍 Search by SR Number, Requester, or Department..."
+      class="search-input"
+    />
+  </div>
+
   <div class="requests-list">
-    @for (request of requests(); track request.id) {
-      <div class="request-card">
-        <div class="request-header">
-          <div class="request-id">{{ request.id }}</div>
-          <div class="request-badge pending">Pending</div>
-        </div>
-        
-        <h3 class="request-title">{{ request.title }}</h3>
-        <p class="request-description">{{ request.description }}</p>
-        
-        <div class="request-meta">
-          <div class="meta-item">
-            <i class="bi bi-flag"></i>
-            <span>Priority: {{ request.priority }}</span>
-          </div>
-          <div class="meta-item">
-            <i class="bi bi-calendar"></i>
-            <span>Submitted: {{ request.submittedDate }}</span>
-          </div>
-        </div>
+    @if (loading()) {
+      <div class="loading-state">
+        <p>Loading requests...</p>
       </div>
-    } @empty {
+    } @else if (error()) {
+      <div class="error-state">
+        <p>{{ error() }}</p>
+      </div>
+    } @else if (filteredRequests.length === 0) {
       <div class="empty-state">
         <i class="bi bi-inbox"></i>
         <p>No pending requests</p>
       </div>
+    } @else {
+      @for (request of filteredRequests; track request.id) {
+        <div class="request-card">
+          <div class="request-header">
+            <div class="request-info">
+              <div class="request-id">{{ request.srNumber }}</div>
+              <div class="request-badge pending">Pending</div>
+            </div>
+            <div class="request-meta-info">
+              <span class="requester">{{ request.requester }}</span>
+              <span class="department">{{ request.department }}</span>
+            </div>
+          </div>
+          
+          <div class="request-details">
+            <div class="detail-item">
+              <i class="bi bi-calendar"></i>
+              <span>Submitted: {{ request.submittedDate }}</span>
+            </div>
+          </div>
+
+          <div class="request-actions">
+            <button class="btn btn-cancel" (click)="cancelRequest(request.id)">
+              <i class="bi bi-trash"></i> Cancel
+            </button>
+          </div>
+        </div>
+      }
     }
   </div>
 </div>

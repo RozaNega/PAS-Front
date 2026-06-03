@@ -29,9 +29,41 @@
   </header>
 
   @if (isLoading()) {
-    <div class="loading-state">
-      <div class="spinner"></div>
-      <p>Loading warehouse data...</p>
+    <section class="skeleton-grid">
+      @for (_ of [1,2,3,4,5,6]; track $index) {
+        <div class="skeleton-card">
+          <div class="skeleton-icon pulse"></div>
+          <div class="skeleton-lines">
+            <div class="skeleton-line w-40 pulse"></div>
+            <div class="skeleton-line w-70 pulse"></div>
+            <div class="skeleton-line w-50 pulse"></div>
+          </div>
+        </div>
+      }
+    </section>
+    <div class="panel skeleton-panel">
+      <div class="skeleton-table-header">
+        <div class="skeleton-line w-100 pulse"></div>
+      </div>
+      @for (_ of [1,2,3,4,5]; track $index) {
+        <div class="skeleton-row">
+          <div class="skeleton-cell">
+            <div class="skeleton-line w-60 pulse"></div>
+          </div>
+          <div class="skeleton-cell">
+            <div class="skeleton-line w-30 pulse"></div>
+          </div>
+          <div class="skeleton-cell hide-mobile">
+            <div class="skeleton-line w-50 pulse"></div>
+          </div>
+          <div class="skeleton-cell hide-mobile">
+            <div class="skeleton-line w-25 pulse"></div>
+          </div>
+          <div class="skeleton-cell">
+            <div class="skeleton-line w-35 pulse"></div>
+          </div>
+        </div>
+      }
     </div>
   }
 
@@ -105,56 +137,16 @@
         <div class="panel-header">
           <h3><i class="bi bi-bar-chart-fill"></i> Occupancy Comparison</h3>
         </div>
-        <div class="chart-body occupancy-chart">
-          @for (wh of warehouses(); track wh.id) {
-            <div class="bar-row">
-              <div class="bar-label" title="{{ wh.name }}">
-                <span class="bar-name">{{ wh.name }}</span>
-                <span class="bar-pct">{{ wh.occupancy }}%</span>
-              </div>
-              <div class="bar-track">
-                <div class="bar-fill" [style.width.%]="wh.occupancy" [style.background]="getOccupancyColor(wh.occupancy)"></div>
-              </div>
-            </div>
-          }
+        <div class="chart-body echarts-container">
+          <div echarts [options]="occupancyChartOptions()" class="echarts-instance"></div>
         </div>
       </div>
       <div class="panel chart-panel">
         <div class="panel-header">
           <h3><i class="bi bi-pie-chart-fill"></i> Status Distribution</h3>
         </div>
-        <div class="chart-body status-chart">
-          <div class="donut-container">
-            <svg viewBox="0 0 42 42" class="donut-svg">
-              <circle cx="21" cy="21" r="15.9" fill="none" stroke="var(--surface-border)" stroke-width="3.5"/>
-              <circle cx="21" cy="21" r="15.9" fill="none" stroke="#10b981" stroke-width="3.5"
-                [attr.stroke-dasharray]="statusPercent('active') + ' ' + (100 - statusPercent('active'))"
-                [attr.stroke-dashoffset]="25" transform="rotate(-90 21 21)"/>
-              <circle cx="21" cy="21" r="15.9" fill="none" stroke="#f59e0b" stroke-width="3.5"
-                [attr.stroke-dasharray]="statusPercent('limited') + ' ' + (100 - statusPercent('limited'))"
-                [attr.stroke-dashoffset]="25 - statusPercent('active')" transform="rotate(-90 21 21)"/>
-              <circle cx="21" cy="21" r="15.9" fill="none" stroke="#ef4444" stroke-width="3.5"
-                [attr.stroke-dasharray]="statusPercent('inactive') + ' ' + (100 - statusPercent('inactive'))"
-                [attr.stroke-dashoffset]="25 - statusPercent('active') - statusPercent('limited')" transform="rotate(-90 21 21)"/>
-            </svg>
-          </div>
-          <div class="legend-list">
-            <div class="legend-item">
-              <span class="legend-dot active-dot"></span>
-              <span class="legend-label">Active</span>
-              <span class="legend-value">{{ statusDistribution().active }}</span>
-            </div>
-            <div class="legend-item">
-              <span class="legend-dot limited-dot"></span>
-              <span class="legend-label">Limited</span>
-              <span class="legend-value">{{ statusDistribution().limited }}</span>
-            </div>
-            <div class="legend-item">
-              <span class="legend-dot inactive-dot"></span>
-              <span class="legend-label">Inactive</span>
-              <span class="legend-value">{{ statusDistribution().inactive }}</span>
-            </div>
-          </div>
+        <div class="chart-body echarts-container">
+          <div echarts [options]="statusChartOptions()" class="echarts-instance"></div>
         </div>
       </div>
     </section>
@@ -185,25 +177,45 @@
       }
     </section>
 
-    <div class="panel">
+    <div class="panel table-panel">
+      @if (showBulkActions()) {
+        <div class="bulk-bar">
+          <span class="bulk-count">{{ bulkSelection().size }} selected</span>
+          <button class="action-btn danger sm" (click)="deleteSelected()">
+            <i class="bi bi-trash"></i> Delete Selected
+          </button>
+        </div>
+      }
       <div class="data-table">
         <table>
           <thead>
             <tr>
+              <th class="th-check">
+                <label class="check-wrap">
+                  <input type="checkbox" [checked]="selectAllChecked()" (change)="toggleSelectAll()">
+                  <span class="check-visual"></span>
+                </label>
+              </th>
               <th>Warehouse Name</th>
               <th>Code</th>
               <th>Location</th>
-              <th>Items</th>
-              <th>Stock Value</th>
+              <th class="hide-mobile">Items</th>
+              <th class="hide-mobile">Stock Value</th>
               <th>Occupancy</th>
               <th>Status</th>
-              <th>Contact</th>
+              <th class="hide-mobile">Contact</th>
               <th class="text-right">Actions</th>
             </tr>
           </thead>
           <tbody>
             @for (wh of pagedWarehouses(); track wh.id) {
-              <tr>
+              <tr [class.selected]="bulkSelection().has(wh.id)">
+                <td>
+                  <label class="check-wrap">
+                    <input type="checkbox" [checked]="bulkSelection().has(wh.id)" (change)="toggleSelect(wh.id)">
+                    <span class="check-visual"></span>
+                  </label>
+                </td>
                 <td>
                   <div class="cell-name" (click)="openDetailModal(wh)" style="cursor:pointer">
                     <div class="cell-icon"><i class="bi bi-building"></i></div>
@@ -215,8 +227,8 @@
                 </td>
                 <td><code>{{ wh.code }}</code></td>
                 <td>{{ wh.location }}</td>
-                <td>{{ formatNumber(wh.items) }}</td>
-                <td><strong>{{ formatValue(wh.value) }}</strong></td>
+                <td class="hide-mobile">{{ formatNumber(wh.items) }}</td>
+                <td class="hide-mobile"><strong>{{ formatValue(wh.value) }}</strong></td>
                 <td>
                   <div class="occ-bar-mini">
                     <div class="occ-track">
@@ -231,7 +243,7 @@
                     {{ wh.status }}
                   </span>
                 </td>
-                <td>
+                <td class="hide-mobile">
                   @if (wh.contactNumber) {
                     <span class="contact-info">{{ wh.contactNumber }}</span>
                   } @else {
@@ -247,11 +259,16 @@
               </tr>
             } @empty {
               <tr>
-                <td colspan="9" class="empty-state">
-                  <i class="bi bi-inbox"></i>
-                  <p>No warehouses found</p>
+                <td colspan="10" class="empty-state">
+                  <div class="empty-illustration">
+                    <i class="bi bi-building-slash"></i>
+                  </div>
+                  <p class="empty-title">No warehouses found</p>
+                  <p class="empty-desc">{{ searchTerm() || statusFilter() !== 'All' ? 'Try adjusting your search or filters' : 'Get started by adding your first warehouse' }}</p>
                   @if (searchTerm() || statusFilter() !== 'All') {
                     <button class="action-btn secondary" (click)="clearFilters()">Clear Filters</button>
+                  } @else {
+                    <button class="action-btn primary" (click)="openAddModal()"><i class="bi bi-plus-lg"></i> Add Warehouse</button>
                   }
                 </td>
               </tr>
@@ -296,7 +313,7 @@
 
 @if (showModal()) {
   <div class="modal-overlay" (click)="closeModal()">
-    <div class="modal-card" (click)="$event.stopPropagation()">
+    <div class="modal-card glass" (click)="$event.stopPropagation()">
 
       @if (modalMode() === 'add-edit') {
         <div class="modal-header">

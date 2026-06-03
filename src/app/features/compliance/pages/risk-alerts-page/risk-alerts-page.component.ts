@@ -1,18 +1,9 @@
-import { Component } from '@angular/core';
+import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-
-export interface Violation {
-  id: string;
-  severity: string;
-  type: string;
-  entity: string;
-  detectedDate: string;
-  status: string;
-  assignedTo: string;
-  dueDate?: string;
-  closedDate?: string;
-}
+import { Router } from '@angular/router';
+import { WorkflowService, NotificationMessage, UserRole } from '../../../../core/services/workflow.service';
+import { CurrentUserService } from '../../../../core/services/current-user.service';
 
 @Component({
   selector: 'app-risk-alerts-page',
@@ -21,213 +12,94 @@ export interface Violation {
   templateUrl: './risk-alerts-page.component.html',
   styleUrl: './risk-alerts-page.component.scss',
 })
-export class RiskAlertsPageComponent {
+export class RiskAlertsPageComponent implements OnInit {
+  private readonly workflowService = inject(WorkflowService);
+  private readonly currentUserService = inject(CurrentUserService);
+  private readonly router = inject(Router);
+
   searchQuery = '';
-  filterSeverity = 'All';
-  filterStatus = 'All';
+  filterType = signal<'All' | 'unread' | 'info' | 'warning' | 'error' | 'success'>('All');
 
-  criticalViolations: Violation[] = [
-    {
-      id: 'V-001',
-      severity: 'Critical',
-      type: 'Missing Documentation',
-      entity: 'Property TAG-001',
-      detectedDate: 'Dec 14, 2024',
-      status: 'Open',
-      assignedTo: 'John Doe',
-      dueDate: 'Dec 21, 2024',
-    },
-    {
-      id: 'V-002',
-      severity: 'Critical',
-      type: 'Approval Chain Violation',
-      entity: 'Requisition SR-2024-122',
-      detectedDate: 'Dec 13, 2024',
-      status: 'Open',
-      assignedTo: 'Sarah Smith',
-      dueDate: 'Dec 20, 2024',
-    },
-    {
-      id: 'V-003',
-      severity: 'Critical',
-      type: 'Unauthorized Access Attempt',
-      entity: 'System Login',
-      detectedDate: 'Dec 12, 2024',
-      status: 'Resolved',
-      assignedTo: 'IT Team',
-      closedDate: 'Dec 14, 2024',
-    },
-  ];
+  // Load all notifications
+  protected readonly allNotifications = computed<NotificationMessage[]>(() => {
+    return this.workflowService.getAllNotifications();
+  });
 
-  highRiskItems: Violation[] = [
-    {
-      id: 'V-004',
-      severity: 'High',
-      type: 'Incomplete Audit Trail',
-      entity: 'GRN-2024-045',
-      detectedDate: 'Dec 11, 2024',
-      status: 'Open',
-      assignedTo: 'Store Team',
-      dueDate: 'Dec 18, 2024',
-    },
-    {
-      id: 'V-005',
-      severity: 'High',
-      type: 'Policy Violation',
-      entity: 'User Role Mismatch',
-      detectedDate: 'Dec 10, 2024',
-      status: 'In Progress',
-      assignedTo: 'HR',
-      dueDate: 'Dec 17, 2024',
-    },
-  ];
+  // Filtered notifications list
+  protected readonly filteredNotifications = computed<NotificationMessage[]>(() => {
+    let list = this.allNotifications();
+    const query = this.searchQuery.trim().toLowerCase();
 
-  mediumRiskItems: Violation[] = [
-    {
-      id: 'V-006',
-      severity: 'Medium',
-      type: 'Data Inconsistency',
-      entity: 'Stock Level Mismatch',
-      detectedDate: 'Dec 09, 2024',
-      status: 'Open',
-      assignedTo: 'Warehouse',
-      dueDate: 'Dec 16, 2024',
-    },
-  ];
+    if (query) {
+      list = list.filter(n => 
+        n.title.toLowerCase().includes(query) || 
+        n.message.toLowerCase().includes(query)
+      );
+    }
 
-  lowRiskItems: Violation[] = [
-    {
-      id: 'V-007',
-      severity: 'Low',
-      type: 'Outdated Documentation',
-      entity: 'Property Valuation Report',
-      detectedDate: 'Dec 08, 2024',
-      status: 'In Progress',
-      assignedTo: 'Compliance Team',
-      dueDate: 'Dec 22, 2024',
-    },
-  ];
+    const type = this.filterType();
+    if (type !== 'All') {
+      if (type === 'unread') {
+        list = list.filter(n => !n.isRead);
+      } else {
+        list = list.filter(n => n.type === type);
+      }
+    }
 
-  pendingInvestigations: Violation[] = [
-    {
-      id: 'V-001',
-      severity: 'Critical',
-      type: 'Missing Documentation',
-      entity: 'TAG-001',
-      detectedDate: 'Dec 14, 2024',
-      status: 'Open',
-      assignedTo: 'John Doe',
-      dueDate: 'Dec 21, 2024',
-    },
-    {
-      id: 'V-002',
-      severity: 'Critical',
-      type: 'Approval Chain Violation',
-      entity: 'SR-2024-122',
-      detectedDate: 'Dec 13, 2024',
-      status: 'Open',
-      assignedTo: 'Sarah Smith',
-      dueDate: 'Dec 20, 2024',
-    },
-    {
-      id: 'V-004',
-      severity: 'High',
-      type: 'Incomplete Audit Trail',
-      entity: 'GRN-2024-045',
-      detectedDate: 'Dec 11, 2024',
-      status: 'Open',
-      assignedTo: 'Store Team',
-      dueDate: 'Dec 18, 2024',
-    },
-  ];
+    // Sort newest first
+    return [...list].sort((a, b) => new Date(b.createdDate).getTime() - new Date(a.createdDate).getTime());
+  });
 
-  resolvedIssues: Violation[] = [
-    {
-      id: 'V-003',
-      severity: 'Critical',
-      type: 'Unauthorized Access Attempt',
-      entity: 'System Login',
-      detectedDate: 'Dec 12, 2024',
-      status: 'Resolved',
-      assignedTo: 'IT Team',
-      closedDate: 'Dec 14, 2024',
-    },
-    {
-      id: 'V-008',
-      severity: 'High',
-      type: 'Data Export Anomaly',
-      entity: 'Stock Report',
-      detectedDate: 'Dec 13, 2024',
-      status: 'Resolved',
-      assignedTo: 'IT Team',
-      closedDate: 'Dec 13, 2024',
-    },
-    {
-      id: 'V-009',
-      severity: 'Medium',
-      type: 'Policy Violation',
-      entity: 'User Access',
-      detectedDate: 'Dec 12, 2024',
-      status: 'Resolved',
-      assignedTo: 'HR',
-      closedDate: 'Dec 12, 2024',
-    },
-    {
-      id: 'V-010',
-      severity: 'High',
-      type: 'Data Export Anomaly',
-      entity: 'Stock Report',
-      detectedDate: 'Dec 13, 2024',
-      status: 'Resolved',
-      assignedTo: 'IT Team',
-      closedDate: 'Dec 13, 2024',
-    },
-  ];
+  // Unread badge count
+  protected readonly unreadCount = computed(() => {
+    return this.allNotifications().filter(n => !n.isRead).length;
+  });
 
-  getSeverityIcon(severity: string): string {
-    switch (severity) {
-      case 'Critical':
-        return '🔴';
-      case 'High':
-        return '🟠';
-      case 'Medium':
-        return '🟡';
-      case 'Low':
-        return '🟢';
+  ngOnInit(): void {
+    // Ensure notifications are loaded
+    this.workflowService.escalateStalePendingRequests();
+  }
+
+  getTypeIcon(type: 'info' | 'success' | 'warning' | 'error'): string {
+    switch (type) {
+      case 'error':
+        return 'bi-exclamation-octagon-fill';
+      case 'warning':
+        return 'bi-exclamation-triangle-fill';
+      case 'success':
+        return 'bi-check-circle-fill';
+      case 'info':
       default:
-        return '⚪';
+        return 'bi-info-circle-fill';
+    }
+  }
+
+  markAsRead(id: string): void {
+    this.workflowService.markNotificationAsRead(id);
+  }
+
+  markAllAsRead(): void {
+    const user = this.currentUserService.getCurrentUserValue();
+    const userId = user?.id || '';
+    this.workflowService.markAllNotificationsAsRead(userId, 'Compliance');
+    alert('All compliance notifications marked as read.');
+  }
+
+  dismissNotification(id: string): void {
+    this.workflowService.dismissNotification(id);
+  }
+
+  takeAction(notif: NotificationMessage): void {
+    this.markAsRead(notif.id);
+    if (notif.actionUrl) {
+      void this.router.navigate([notif.actionUrl]);
+    } else {
+      void this.router.navigate(['/compliance-officer/dashboard']);
     }
   }
 
   refreshAlerts(): void {
-    console.log('Refreshing alerts');
-    alert('Alerts refreshed successfully!');
-  }
-
-  investigateViolation(violationId: string): void {
-    console.log('Investigating violation:', violationId);
-    alert(`Opening investigation for violation ${violationId}`);
-  }
-
-  assignViolation(violationId: string): void {
-    console.log('Assigning violation:', violationId);
-    alert(`Opening assignment dialog for violation ${violationId}`);
-  }
-
-  resolveViolation(violationId: string): void {
-    if (confirm(`Are you sure you want to resolve violation ${violationId}?`)) {
-      console.log('Resolving violation:', violationId);
-      alert(`Violation ${violationId} has been resolved.`);
-    }
-  }
-
-  viewViolationDetails(violationId: string): void {
-    console.log('Viewing details for violation:', violationId);
-    alert(`Opening detailed view for violation ${violationId}`);
-  }
-
-  applyFilters(): void {
-    console.log('Applying filters');
-    alert('Filters applied');
+    this.workflowService.escalateStalePendingRequests();
+    alert('Notifications synchronized successfully!');
   }
 }

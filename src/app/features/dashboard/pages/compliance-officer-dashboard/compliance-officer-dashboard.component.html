@@ -1,117 +1,459 @@
 <section class="compliance-dashboard" aria-label="Compliance officer dashboard">
-  <header class="welcome-banner">
-    <div>
-      <h1>Compliance Officer Dashboard</h1>
-      <p>Welcome, {{ officerName() }}</p>
+  <header class="hero-banner">
+    <div class="hero-copy">
+      @if (currentView() === 'home') {
+        <p class="hero-eyebrow">Compliance Officer Dashboard</p>
+        <div class="hero-header-content">
+          <div class="hero-avatar">
+            @if (profilePhoto()) {
+              <img [src]="profilePhoto()" alt="Profile photo" class="avatar-img shadow-lg" />
+            } @else {
+              <div class="avatar-placeholder shadow-lg">
+                <i class="bi bi-person-fill"></i>
+              </div>
+            }
+          </div>
+          <div class="hero-text">
+            <h1>👋 {{ greeting }}, {{ officerName() }}!</h1>
+            <p>Welcome</p>
+          </div>
+        </div>
+      } @else {
+        <div class="profile-header-nav">
+          <button class="back-btn" (click)="currentView.set('home')">
+            <i class="bi bi-arrow-left"></i> Back to Dashboard
+          </button>
+          <h1>Officer Profile</h1>
+        </div>
+      }
     </div>
-    <div class="dashboard-info-widget">
-      <div class="info-item">
-        <i class="bi bi-calendar3 info-icon text-primary"></i>
-        <span class="info-text">{{ currentDate }}</span>
-      </div>
-      <div class="info-item">
-        <i class="bi bi-clock info-icon text-secondary"></i>
-        <span class="info-text">{{ currentTime() }}</span>
-      </div>
-      <div class="info-item">
-        <i class="bi bi-geo-alt-fill info-icon text-danger"></i>
-        <span class="info-text">{{ currentLocation() }}</span>
+    <div class="hero-banner-aside">
+      @if (currentView() === 'home') {
+        <button type="button" class="profile-nav-btn" (click)="currentView.set('profile')">
+          <i class="bi bi-person-circle"></i> My Profile
+        </button>
+      }
+      <div class="dashboard-info-widget">
+        <div class="info-item">
+          <i class="bi bi-calendar3 info-icon text-primary"></i>
+          <span class="info-text">{{ currentDate }}</span>
+        </div>
+        <div class="info-item">
+          <i class="bi bi-clock info-icon text-secondary"></i>
+          <span class="info-text">{{ currentTime() }}</span>
+        </div>
+        <div class="info-item">
+          <i class="bi bi-geo-alt-fill info-icon text-danger"></i>
+          <span class="info-text">{{ currentLocation() }}</span>
+        </div>
       </div>
     </div>
   </header>
 
-  <section class="summary" aria-labelledby="summary-heading">
-    <h2 id="summary-heading">Audit Summary</h2>
-    <div class="card-grid">
-      @for (card of summaryCards(); track card.title) {
-        <article class="summary-card">
-          <p class="card-title">{{ card.title }}</p>
-          <p class="card-value">{{ card.value }}</p>
-        </article>
-      }
-    </div>
-  </section>
-
-  <section class="filters" aria-labelledby="filters-heading">
-    <h2 id="filters-heading">Audit Filters</h2>
-    <div class="actions-row">
-      @for (filter of filters; track filter) {
-        <button
-          type="button"
-          class="filter-chip"
-          [class.filter-chip--active]="selectedFilter() === filter"
-          (click)="setFilter(filter)"
-        >
-          {{ filter }}
-        </button>
-      }
-    </div>
-  </section>
-
-  <section class="content-grid">
-    <section class="logs-panel" aria-labelledby="logs-heading">
-      <h2 id="logs-heading">Audit Trail Activity Logs</h2>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th scope="col">User Name</th>
-              <th scope="col">Action</th>
-              <th scope="col">Domain</th>
-              <th scope="col">Date &amp; Time</th>
-              <th scope="col">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (entry of filteredLogs(); track entry.id) {
-              <tr>
-                <td>{{ entry.userName }}</td>
-                <td>{{ entry.action }}</td>
-                <td>{{ entry.module }}</td>
-                <td>{{ entry.dateTime }}</td>
-                <td>
-                  <span
-                    class="status-pill"
-                    [class.status-pill--flagged]="entry.status === 'Flagged'"
-                    [class.status-pill--normal]="entry.status === 'Normal'"
-                  >
-                    {{ entry.status }}
-                  </span>
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
-      </div>
-    </section>
-
-    <aside class="alerts-panel" aria-labelledby="alerts-heading">
-      <h2 id="alerts-heading">Alerts / Violations Panel</h2>
-      <div class="alerts-list">
-        @for (alert of alerts(); track alert.title) {
-          <article class="alert-card">
-            <div class="alert-card__header">
-              <strong>{{ alert.title }}</strong>
-              <span class="severity severity--{{ alert.severity.toLowerCase() }}">
-                {{ alert.severity }}
-              </span>
-            </div>
-            <p>{{ alert.description }}</p>
+  @if (currentView() === 'home') {
+    <section class="summary" aria-labelledby="summary-heading">
+      <h2 id="summary-heading">Audit Summary</h2>
+      <div class="card-grid">
+        @for (card of summaryCards(); track card.title) {
+          <article class="summary-card">
+            <p class="card-title">{{ card.title }}</p>
+            <p class="card-value">{{ card.value }}</p>
           </article>
         }
       </div>
-    </aside>
-  </section>
+    </section>
 
-  <section class="overview-panel" aria-labelledby="overview-heading">
-    <h2 id="overview-heading">Risk Trends</h2>
-    <div class="trend-list">
-      @for (item of dailyActivityOverview(); track item.label) {
-        <article class="trend-item">
-          <span>{{ item.label }}</span>
-          <strong>{{ item.value }}</strong>
-        </article>
-      }
-    </div>
-  </section>
+    <section class="filters" aria-labelledby="filters-heading">
+      <h2 id="filters-heading">Audit Filters</h2>
+      <div class="actions-row">
+        @for (filter of filters; track filter) {
+          <button
+            type="button"
+            class="filter-chip"
+            [class.filter-chip--active]="selectedFilter() === filter"
+            (click)="setFilter(filter)"
+          >
+            {{ filter }}
+          </button>
+        }
+      </div>
+    </section>
+
+    <section class="content-grid">
+      <section class="logs-panel" aria-labelledby="logs-heading">
+        <h2 id="logs-heading">Audit Trail Activity Logs</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">User Name</th>
+                <th scope="col">Action</th>
+                <th scope="col">Domain</th>
+                <th scope="col">Date &amp; Time</th>
+                <th scope="col">Status</th>
+                <th scope="col">Details</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (entry of filteredLogs(); track entry.id) {
+                <tr [class.row--flagged]="entry.status === 'Flagged'">
+                  <td>
+                    <div class="user-cell">
+                      <span class="user-avatar-sm">{{ entry.userName.charAt(0) }}</span>
+                      {{ entry.userName }}
+                    </div>
+                  </td>
+                  <td>
+                    <span class="action-badge action-badge--{{ entry.action.toLowerCase() }}">
+                      {{ entry.action }}
+                    </span>
+                  </td>
+                  <td>{{ entry.module }}</td>
+                  <td class="datetime-cell">{{ entry.dateTime }}</td>
+                  <td>
+                    <span
+                      class="status-pill"
+                      [class.status-pill--flagged]="entry.status === 'Flagged'"
+                      [class.status-pill--normal]="entry.status === 'Normal'"
+                    >
+                      {{ entry.status }}
+                    </span>
+                  </td>
+                  <td>
+                    <button class="btn-view" (click)="viewLog(entry)" [id]="'log-view-' + entry.id">
+                      <i class="bi bi-eye"></i> View
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </section>
+
+    <section class="overview-panel" aria-labelledby="overview-heading">
+      <h2 id="overview-heading">Risk Trends</h2>
+      <div class="trend-list">
+        @for (item of dailyActivityOverview(); track item.label) {
+          <article class="trend-item">
+            <span>{{ item.label }}</span>
+            <strong>{{ item.value }}</strong>
+          </article>
+        }
+      </div>
+    </section>
+
+    <!-- ===== DETAIL DRAWER ===== -->
+    @if (detailDrawerOpen()) {
+      <div class="detail-backdrop" (click)="closeDetail()" aria-hidden="true"></div>
+      <aside class="detail-drawer" role="complementary" aria-label="Detail panel">
+        <div class="drawer-header">
+          @if (detailDrawerOpen() === 'log') {
+            <h3><i class="bi bi-file-text"></i> Audit Log Detail</h3>
+          } @else {
+            <h3><i class="bi bi-exclamation-triangle"></i> Alert Detail</h3>
+          }
+          <button class="drawer-close" (click)="closeDetail()" aria-label="Close detail panel">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+
+        @if (detailDrawerOpen() === 'log' && selectedLog()) {
+          <div class="drawer-body">
+            <div class="drawer-section">
+              <h4>Activity Information</h4>
+              <div class="drawer-grid">
+                <div class="drawer-item">
+                  <label>User</label>
+                  <span>{{ selectedLog()!.userName }}</span>
+                </div>
+                <div class="drawer-item">
+                  <label>Action</label>
+                  <span
+                    class="action-badge action-badge--{{ selectedLog()!.action.toLowerCase() }}"
+                    >{{ selectedLog()!.action }}</span
+                  >
+                </div>
+                <div class="drawer-item">
+                  <label>Module</label>
+                  <span>{{ selectedLog()!.module }}</span>
+                </div>
+                <div class="drawer-item">
+                  <label>Status</label>
+                  <span
+                    class="status-pill"
+                    [class.status-pill--flagged]="selectedLog()!.status === 'Flagged'"
+                    [class.status-pill--normal]="selectedLog()!.status === 'Normal'"
+                    >{{ selectedLog()!.status }}</span
+                  >
+                </div>
+                <div class="drawer-item drawer-item--full">
+                  <label>Date &amp; Time</label>
+                  <span>{{ selectedLog()!.dateTime }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="drawer-section">
+              <h4>Session &amp; Device</h4>
+              <div class="drawer-grid">
+                <div class="drawer-item">
+                  <label>IP Address</label>
+                  <span class="mono">{{ selectedLog()!.ipAddress || '—' }}</span>
+                </div>
+                <div class="drawer-item">
+                  <label>Location</label>
+                  <span>{{ selectedLog()!.location || '—' }}</span>
+                </div>
+                <div class="drawer-item drawer-item--full">
+                  <label>Device</label>
+                  <span>{{ selectedLog()!.device || '—' }}</span>
+                </div>
+                <div class="drawer-item">
+                  <label>Session ID</label>
+                  <span class="mono">{{ selectedLog()!.sessionId || '—' }}</span>
+                </div>
+                <div class="drawer-item">
+                  <label>Risk Level</label>
+                  <span
+                    class="risk-pill risk-pill--{{
+                      (selectedLog()!.riskLevel || 'low').toLowerCase()
+                    }}"
+                  >
+                    {{ selectedLog()!.riskLevel || '—' }}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            @if (selectedLog()!.notes) {
+              <div class="drawer-section">
+                <h4>Analyst Notes</h4>
+                <p class="drawer-notes">{{ selectedLog()!.notes }}</p>
+              </div>
+            }
+          </div>
+        }
+
+        @if (detailDrawerOpen() === 'alert' && selectedAlert()) {
+          <div class="drawer-body">
+            <div class="drawer-section">
+              <div class="alert-drawer-title">
+                <strong>{{ selectedAlert()!.title }}</strong>
+                <span class="severity severity--{{ selectedAlert()!.severity.toLowerCase() }}">{{
+                  selectedAlert()!.severity
+                }}</span>
+              </div>
+              <p class="alert-drawer-desc">{{ selectedAlert()!.description }}</p>
+            </div>
+
+            <div class="drawer-section">
+              <h4>Incident Details</h4>
+              <div class="drawer-grid">
+                <div class="drawer-item">
+                  <label>Detected At</label>
+                  <span>{{ selectedAlert()!.detectedAt || '—' }}</span>
+                </div>
+                <div class="drawer-item">
+                  <label>Status</label>
+                  @if (selectedAlert()!.status) {
+                    <span
+                      class="alert-status alert-status--{{
+                        selectedAlert()!.status!.toLowerCase().replace(' ', '-')
+                      }}"
+                      >{{ selectedAlert()!.status }}</span
+                    >
+                  }
+                </div>
+                <div class="drawer-item">
+                  <label>Affected User</label>
+                  <span>{{ selectedAlert()!.affectedUser || '—' }}</span>
+                </div>
+                <div class="drawer-item">
+                  <label>Affected Module</label>
+                  <span>{{ selectedAlert()!.affectedModule || '—' }}</span>
+                </div>
+                <div class="drawer-item drawer-item--full">
+                  <label>Assigned To</label>
+                  <span>{{ selectedAlert()!.assignedTo || '—' }}</span>
+                </div>
+              </div>
+            </div>
+
+            @if (selectedAlert()!.resolutionSteps && selectedAlert()!.resolutionSteps!.length) {
+              <div class="drawer-section">
+                <h4>Resolution Steps</h4>
+                <ol class="resolution-steps">
+                  @for (step of selectedAlert()!.resolutionSteps!; track step) {
+                    <li>{{ step }}</li>
+                  }
+                </ol>
+              </div>
+            }
+          </div>
+        }
+      </aside>
+    }
+  } @else {
+    <section class="profile-view">
+      <section class="profile-info panel">
+        <div class="panel-header">
+          <h2 class="section-title"><i class="bi bi-person-fill"></i> MY PROFILE</h2>
+          <button class="edit-btn" (click)="editProfile()">Edit</button>
+        </div>
+        <div class="profile-layout">
+          <div class="profile-photo-col">
+            <div class="photo-col-inner">
+              <div class="photo-scan-container" [class.scanning]="isValidatingPhoto()">
+                @if (profilePhoto()) {
+                  <img [src]="profilePhoto()!" alt="Profile photo" class="profile-img" />
+                } @else {
+                  <div class="photo-placeholder">
+                    <i class="bi bi-person"></i>
+                  </div>
+                }
+
+                @if (isValidatingPhoto()) {
+                  <div class="scan-overlay">
+                    <div class="scan-line"></div>
+                    <span class="scan-label">Scanning Face...</span>
+                  </div>
+                }
+              </div>
+
+              @if (!isSelectingPhoto()) {
+                <button class="change-photo-btn" (click)="changePhoto()">Change Photo</button>
+              } @else {
+                <div class="upload-controls">
+                  @if (!isCameraActive()) {
+                    <div class="upload-methods">
+                      <button class="method-btn" (click)="fileInput.click()">
+                        <i class="bi bi-upload"></i> Upload
+                      </button>
+                      <button class="method-btn" (click)="startCamera()">
+                        <i class="bi bi-camera"></i> Camera
+                      </button>
+                      <input
+                        type="file"
+                        #fileInput
+                        class="hidden"
+                        (change)="onFileSelected($event)"
+                        accept="image/*"
+                      />
+                    </div>
+                  } @else {
+                    <div class="camera-preview">
+                      <video #videoElement autoplay muted></video>
+                      <canvas #canvasElement class="hidden"></canvas>
+                      <button class="capture-btn" (click)="capturePhoto()">Capture</button>
+                    </div>
+                  }
+                  <button class="cancel-upload-btn" (click)="cancelUpload()">Cancel</button>
+                </div>
+              }
+            </div>
+          </div>
+          <div class="profile-details-col">
+            <div class="details-grid">
+              <div class="detail-item">
+                <label>Name:</label>
+                <span>{{ userProfile().fullName }}</span>
+              </div>
+              <div class="detail-item">
+                <label>Employee Code:</label>
+                <span>{{ userProfile().employeeCode }}</span>
+              </div>
+              <div class="detail-item">
+                <label>Department:</label>
+                <span>{{ userProfile().department }}</span>
+              </div>
+              <div class="detail-item">
+                <label>Email:</label>
+                <span>{{ userProfile().email }}</span>
+              </div>
+              <div class="detail-item">
+                <label>Phone:</label>
+                <span>{{ userProfile().phone }}</span>
+              </div>
+              <div class="detail-item">
+                <label>Status:</label>
+                <span class="status-active"><i class="bi bi-circle-fill"></i> Active</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="security-settings">
+        <div class="settings-grid">
+          <section class="security-panel panel">
+            <h2 class="section-title"><i class="bi bi-shield-lock"></i> ACCOUNT SECURITY</h2>
+            <div class="security-content">
+              <p>Maintain your account security by changing your password regularly.</p>
+              <button class="security-btn" (click)="changePassword()">Change Password</button>
+            </div>
+          </section>
+
+          <section class="twofa-panel panel">
+            <h2 class="section-title">
+              <i class="bi bi-shield-check"></i> TWO-FACTOR AUTHENTICATION
+            </h2>
+            <div class="twofa-content">
+              <div class="status-toggle">
+                <span
+                  >Status: <strong>{{ twoFactorEnabled() ? 'Enabled' : 'Disabled' }}</strong></span
+                >
+                @if (!twoFactorEnabled()) {
+                  <button class="enable-btn" (click)="enable2FA()">Enable 2FA</button>
+                } @else {
+                  <button class="disable-btn" (click)="disable2FA()">Disable 2FA</button>
+                }
+              </div>
+
+              @if (twoFactorEnabled()) {
+                <div class="twofa-setup">
+                  <div class="form-group">
+                    <label>Method</label>
+                    <select [value]="twoFactorMethod()" (change)="updateTwoFactorMethod($event)">
+                      <option value="sms">SMS</option>
+                      <option value="email">Email</option>
+                      <option value="app">App</option>
+                    </select>
+                  </div>
+                  @if (twoFactorMethod() === 'sms') {
+                    <div class="form-group">
+                      <label>Phone Number</label>
+                      <div class="input-with-action">
+                        <input
+                          type="tel"
+                          [value]="twoFactorPhone()"
+                          (input)="updateTwoFactorPhone($event)"
+                          placeholder="+251..."
+                        />
+                        <button (click)="saveTwoFactorPhone()">Send Code</button>
+                      </div>
+                    </div>
+                  }
+                  @if (twoFactorVerificationSent() && !twoFactorSetupComplete()) {
+                    <div class="form-group">
+                      <label>Verification Code</label>
+                      <div class="input-with-action">
+                        <input
+                          type="text"
+                          (input)="updateTwoFactorVerificationCode($event)"
+                          placeholder="123456"
+                        />
+                        <button (click)="verifyTwoFactorCode()">Verify</button>
+                      </div>
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          </section>
+        </div>
+      </section>
+    </section>
+  }
 </section>

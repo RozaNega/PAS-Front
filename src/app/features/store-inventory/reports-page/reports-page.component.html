@@ -1,0 +1,536 @@
+<div class="reports-page">
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-info">
+      <h1>Reports</h1>
+      <p class="subtitle">Comprehensive stock, issuance, and receiving analytics</p>
+    </div>
+    <div class="header-actions">
+      @if (lastRunTime()) {
+        <span class="last-run-time">Last run: {{ lastRunTime() | date:'short' }}</span>
+      }
+      <button class="btn btn-primary" (click)="generateReport()" [disabled]="isLoading()">
+        @if (isLoading()) {
+          <i class="bi bi-arrow-repeat spinning"></i> Generating...
+        } @else {
+          <i class="bi bi-play-circle"></i> Generate
+        }
+      </button>
+    </div>
+  </div>
+
+  @if (loadError()) {
+    <div class="alert alert-warning">
+      <i class="bi bi-exclamation-triangle"></i> {{ loadError() }}
+    </div>
+  }
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab" [class.active]="activeTab === 'stock'" (click)="setActiveTab('stock')">
+      <i class="bi bi-box-seam"></i> Stock Report
+    </button>
+    <button class="tab" [class.active]="activeTab === 'issuance'" (click)="setActiveTab('issuance')">
+      <i class="bi bi-box-arrow-right"></i> Issuance Report
+    </button>
+    <button class="tab" [class.active]="activeTab === 'receiving'" (click)="setActiveTab('receiving')">
+      <i class="bi bi-truck"></i> Receiving Report
+    </button>
+  </div>
+
+  <!-- Filters -->
+  <div class="filter-bar">
+    <div class="filter-group">
+      <label><i class="bi bi-calendar3"></i> Date Range:</label>
+      <input type="date" [ngModel]="startDate()" (ngModelChange)="startDate.set($event)" />
+      <span>to</span>
+      <input type="date" [ngModel]="endDate()" (ngModelChange)="endDate.set($event)" />
+    </div>
+    @if (activeTab === 'stock') {
+      <div class="filter-group">
+        <label><i class="bi bi-geo-alt"></i> Warehouse:</label>
+        <select [ngModel]="warehouseFilter()" (ngModelChange)="warehouseFilter.set($event)">
+          @for (wh of warehouseOptions(); track wh) {
+            <option [value]="wh">{{ wh }}</option>
+          }
+        </select>
+      </div>
+      <div class="filter-group">
+        <label><i class="bi bi-tag"></i> Category:</label>
+        <select [ngModel]="categoryFilter()" (ngModelChange)="categoryFilter.set($event)">
+          @for (cat of categoryOptions(); track cat) {
+            <option [value]="cat">{{ cat }}</option>
+          }
+        </select>
+      </div>
+      <div class="filter-group">
+        <label><i class="bi bi-flag"></i> Status:</label>
+        <select [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event)">
+          <option value="All Status">All Status</option>
+          @for (st of statuses; track st) {
+            <option [value]="st">{{ st }}</option>
+          }
+        </select>
+      </div>
+    }
+    @if (activeTab === 'issuance') {
+      <div class="filter-group">
+        <label><i class="bi bi-people"></i> Department:</label>
+        <select [ngModel]="departmentFilter()" (ngModelChange)="departmentFilter.set($event)">
+          @for (dept of departments; track dept) {
+            <option [value]="dept">{{ dept }}</option>
+          }
+        </select>
+      </div>
+      <div class="filter-group">
+        <label><i class="bi bi-person"></i> Requester:</label>
+        <select [ngModel]="requesterFilter()" (ngModelChange)="requesterFilter.set($event)">
+          @for (req of requesters; track req) {
+            <option [value]="req">{{ req }}</option>
+          }
+        </select>
+      </div>
+    }
+    @if (activeTab === 'receiving') {
+      <div class="filter-group">
+        <label><i class="bi bi-building"></i> Supplier:</label>
+        <select [ngModel]="supplierFilter()" (ngModelChange)="supplierFilter.set($event)">
+          @for (sup of suppliers; track sup) {
+            <option [value]="sup">{{ sup }}</option>
+          }
+        </select>
+      </div>
+      <div class="filter-group">
+        <label><i class="bi bi-flag"></i> Status:</label>
+        <select [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event)">
+          <option value="All Status">All Status</option>
+          <option value="Pending">Pending</option>
+          <option value="Passed">Passed</option>
+          <option value="Failed">Failed</option>
+        </select>
+      </div>
+    }
+  </div>
+
+  <!-- Stock Report Content -->
+  @if (activeTab === 'stock') {
+    <!-- Summary Cards -->
+    <div class="summary-section">
+      <div class="section-title">
+        <i class="bi bi-bar-chart-fill"></i> Stock Summary
+      </div>
+      <div class="summary-grid">
+        <div class="summary-card">
+          <div class="icon-box blue"><i class="bi bi-box"></i></div>
+          <div class="card-body">
+            <div class="card-label">Total Items</div>
+            <div class="card-value">{{ totalItems() }}</div>
+            <div class="card-trend">Live valuation rows</div>
+          </div>
+        </div>
+        <div class="summary-card">
+          <div class="icon-box green"><i class="bi bi-currency-dollar"></i></div>
+          <div class="card-body">
+            <div class="card-label">Total Value</div>
+            <div class="card-value">{{ formatValue(totalValue()) }}</div>
+            <div class="card-trend">Current valuation</div>
+          </div>
+        </div>
+        <div class="summary-card">
+          <div class="icon-box purple"><i class="bi bi-cube"></i></div>
+          <div class="card-body">
+            <div class="card-label">Total Units</div>
+            <div class="card-value">{{ totalUnits() }}</div>
+            <div class="card-trend">Quantity on hand</div>
+          </div>
+        </div>
+        <div class="summary-card">
+          <div class="icon-box orange"><i class="bi bi-arrow-repeat"></i></div>
+          <div class="card-body">
+            <div class="card-label">Turnover Rate</div>
+            <div class="card-value">{{ turnoverRate() }}</div>
+            <div class="card-trend">Movement vs stock</div>
+          </div>
+        </div>
+        <div class="summary-card">
+          <div class="icon-box teal"><i class="bi bi-bar-chart-line"></i></div>
+          <div class="card-body">
+            <div class="card-label">Avg Stock Level</div>
+            <div class="card-value">{{ avgStockLevel() }}</div>
+            <div class="card-trend">Per item average</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="charts-row">
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3><i class="bi bi-bar-chart"></i> Stock Value by Category</h3>
+        </div>
+        <div class="chart-body">
+          <div echarts [options]="stockChartOpts" class="chart-container"></div>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3><i class="bi bi-pie-chart"></i> Stock Status Distribution</h3>
+        </div>
+        <div class="chart-body">
+          <div echarts [options]="stockPieOpts" class="chart-container"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Activity Trend -->
+    <div class="chart-card full-width">
+      <div class="chart-header">
+        <h3><i class="bi bi-activity"></i> Movement Activity Trend</h3>
+      </div>
+      <div class="chart-body">
+        @if (trendBars().length > 0) {
+          <div class="trend-bars">
+            @for (bar of trendBars(); track bar.label) {
+              <div class="trend-bar-group">
+                <div class="trend-bar" [style.height.px]="bar.height"></div>
+                <div class="trend-bar-label">{{ bar.label }}</div>
+              </div>
+            }
+          </div>
+        } @else {
+          <div class="empty-state">No activity trend data for the selected range.</div>
+        }
+      </div>
+    </div>
+
+    <!-- Detailed Table -->
+    <div class="table-section">
+      <div class="section-title">
+        <i class="bi bi-table"></i> Detailed Stock Report
+      </div>
+      <div class="table-responsive">
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th>SKU</th><th>Name</th><th>Category</th><th>Warehouse</th><th>Qty</th><th>Unit Price</th><th>Total</th><th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of filteredItems(); track item.id) {
+              <tr>
+                <td>{{ item.sku }}</td>
+                <td>{{ item.name }}</td>
+                <td>{{ item.category }}</td>
+                <td>{{ item.warehouse }}</td>
+                <td>{{ item.quantity }}</td>
+                <td>{{ formatValue(item.unitPrice) }}</td>
+                <td>{{ formatValue(item.total) }}</td>
+                <td><span class="status-badge" [class.in-stock]="item.status === 'In Stock'" [class.low-stock]="item.status === 'Low Stock'" [class.out-of-stock]="item.status === 'Out of Stock'">{{ item.status }}</span></td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <div class="table-footer">{{ filteredItems().length }} items</div>
+    </div>
+
+    <!-- Category Breakdown -->
+    <div class="insight-section">
+      <div class="section-title"><i class="bi bi-pie-chart"></i> Stock by Category</div>
+      <div class="insight-list">
+        @for (cat of categoryBreakdown(); track cat.name) {
+          <div class="insight-item">
+            <div class="insight-info">
+              <span class="insight-name">{{ cat.name }}</span>
+              <span class="insight-stats">{{ cat.units }} units &middot; {{ formatValue(cat.value) }}</span>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill" [style.width.%]="cat.percentage"></div>
+              <span class="progress-value">{{ cat.percentage }}%</span>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Top Items -->
+    <div class="insight-section">
+      <div class="section-title"><i class="bi bi-trophy"></i> Top Items by Value</div>
+      <div class="insight-list">
+        @for (item of topItemsByValue(); track item.name) {
+          <div class="insight-item">
+            <div class="insight-info">
+              <span class="insight-name">{{ item.name }}</span>
+              <span class="insight-stats">{{ formatValue(item.value) }}</span>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill" [style.width.%]="item.percentage"></div>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- Issuance Report Content -->
+  @if (activeTab === 'issuance') {
+    <div class="summary-section">
+      <div class="section-title"><i class="bi bi-bar-chart-fill"></i> Issuance Summary</div>
+      <div class="summary-grid">
+        <div class="summary-card">
+          <div class="icon-box orange"><i class="bi bi-receipt"></i></div>
+          <div class="card-body">
+            <div class="card-label">Total SIVs</div>
+            <div class="card-value">{{ totalSIVs() }}</div>
+            <div class="card-trend">Issuance vouchers</div>
+          </div>
+        </div>
+        <div class="summary-card">
+          <div class="icon-box blue"><i class="bi bi-cube"></i></div>
+          <div class="card-body">
+            <div class="card-label">Items Issued</div>
+            <div class="card-value">{{ totalIssuedQty() }} units</div>
+            <div class="card-trend">Total quantity</div>
+          </div>
+        </div>
+        <div class="summary-card">
+          <div class="icon-box green"><i class="bi bi-currency-dollar"></i></div>
+          <div class="card-body">
+            <div class="card-label">Total Value</div>
+            <div class="card-value">{{ formatValue(totalIssuedValue()) }}</div>
+            <div class="card-trend">Issued value</div>
+          </div>
+        </div>
+        <div class="summary-card">
+          <div class="icon-box purple"><i class="bi bi-people"></i></div>
+          <div class="card-body">
+            <div class="card-label">Departments</div>
+            <div class="card-value">{{ issuanceByDept().length }}</div>
+            <div class="card-trend">Active departments</div>
+          </div>
+        </div>
+        <div class="summary-card">
+          <div class="icon-box teal"><i class="bi bi-building"></i></div>
+          <div class="card-body">
+            <div class="card-label">Avg per Dept</div>
+            <div class="card-value">{{ avgPerDeptValue() }}</div>
+            <div class="card-trend">Average value</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="charts-row">
+      <div class="chart-card">
+        <div class="chart-header"><h3><i class="bi bi-bar-chart"></i> Issuance by Department</h3></div>
+        <div class="chart-body">
+          <div echarts [options]="issuanceChartOpts" class="chart-container"></div>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-header"><h3><i class="bi bi-line-chart"></i> Issuance Value Trend</h3></div>
+        <div class="chart-body">
+          <div echarts [options]="issuanceLineOpts" class="chart-container"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="table-section">
+      <div class="section-title"><i class="bi bi-table"></i> Detailed Issuance Records</div>
+      <div class="table-responsive">
+        <table class="report-table">
+          <thead>
+            <tr><th>Date</th><th>SIV #</th><th>Requester</th><th>Department</th><th>Item</th><th>Qty</th><th>Value</th></tr>
+          </thead>
+          <tbody>
+            @for (iss of issuanceFiltered(); track iss.sivNumber) {
+              <tr>
+                <td>{{ iss.date }}</td>
+                <td>{{ iss.sivNumber }}</td>
+                <td>{{ iss.requester }}</td>
+                <td>{{ iss.department }}</td>
+                <td>{{ iss.item }}</td>
+                <td>{{ iss.quantity }}</td>
+                <td>{{ formatValue(iss.value) }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <div class="table-footer">{{ totalSIVs() }} SIVs</div>
+    </div>
+
+    <div class="insight-section">
+      <div class="section-title"><i class="bi bi-people-fill"></i> Issuance by Department</div>
+      <div class="insight-list">
+        @for (dept of issuanceByDept(); track dept.name) {
+          <div class="insight-item">
+            <div class="insight-info">
+              <span class="insight-name">{{ dept.name }}</span>
+              <span class="insight-stats">{{ dept.units }} units &middot; {{ formatValue(dept.value) }}</span>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill" [style.width.%]="dept.percentage"></div>
+              <span class="progress-value">{{ dept.percentage }}%</span>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- Receiving Report Content -->
+  @if (activeTab === 'receiving') {
+    <div class="summary-section">
+      <div class="section-title"><i class="bi bi-bar-chart-fill"></i> Receiving Summary</div>
+      <div class="summary-grid">
+        <div class="summary-card">
+          <div class="icon-box green"><i class="bi bi-receipt"></i></div>
+          <div class="card-body">
+            <div class="card-label">Total GRNs</div>
+            <div class="card-value">{{ totalGRNs() }}</div>
+            <div class="card-trend">Goods received notes</div>
+          </div>
+        </div>
+        <div class="summary-card">
+          <div class="icon-box blue"><i class="bi bi-cube"></i></div>
+          <div class="card-body">
+            <div class="card-label">Items Received</div>
+            <div class="card-value">{{ totalReceivedQty() }} units</div>
+            <div class="card-trend">Total quantity</div>
+          </div>
+        </div>
+        <div class="summary-card">
+          <div class="icon-box purple"><i class="bi bi-currency-dollar"></i></div>
+          <div class="card-body">
+            <div class="card-label">Total Value</div>
+            <div class="card-value">{{ formatValue(totalReceivedValue()) }}</div>
+            <div class="card-trend">Received value</div>
+          </div>
+        </div>
+        <div class="summary-card">
+          <div class="icon-box orange"><i class="bi bi-building"></i></div>
+          <div class="card-body">
+            <div class="card-label">Suppliers</div>
+            <div class="card-value">{{ receivingBySupplier().length }}</div>
+            <div class="card-trend">Active suppliers</div>
+          </div>
+        </div>
+        <div class="summary-card">
+          <div class="icon-box teal"><i class="bi bi-box"></i></div>
+          <div class="card-body">
+            <div class="card-label">Avg per GRN</div>
+            <div class="card-value">{{ avgPerGRNValue() }}</div>
+            <div class="card-trend">Average value</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="charts-row">
+      <div class="chart-card">
+        <div class="chart-header"><h3><i class="bi bi-bar-chart"></i> Receiving by Supplier</h3></div>
+        <div class="chart-body">
+          <div echarts [options]="receivingChartOpts" class="chart-container"></div>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-header"><h3><i class="bi bi-pie-chart"></i> Quality Status</h3></div>
+        <div class="chart-body">
+          <div echarts [options]="receivingPieOpts" class="chart-container"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="table-section">
+      <div class="section-title"><i class="bi bi-table"></i> Detailed Receiving Records</div>
+      <div class="table-responsive">
+        <table class="report-table">
+          <thead>
+            <tr><th>Date</th><th>GRN #</th><th>Supplier</th><th>Items</th><th>Qty</th><th>Value</th><th>Status</th></tr>
+          </thead>
+          <tbody>
+            @for (rec of receivingFiltered(); track rec.grnNumber) {
+              <tr>
+                <td>{{ rec.date }}</td>
+                <td>{{ rec.grnNumber }}</td>
+                <td>{{ rec.supplier }}</td>
+                <td>{{ rec.items }}</td>
+                <td>{{ rec.quantity }}</td>
+                <td>{{ formatValue(rec.value) }}</td>
+                <td><span class="status-badge" [class.passed]="rec.status === 'Passed'" [class.pending]="rec.status === 'Pending'" [class.failed]="rec.status === 'Failed'">{{ rec.status }}</span></td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <div class="table-footer">{{ totalGRNs() }} GRNs</div>
+    </div>
+
+    <div class="insight-section">
+      <div class="section-title"><i class="bi bi-building"></i> Receiving by Supplier</div>
+      <div class="insight-list">
+        @for (sup of receivingBySupplier(); track sup.name) {
+          <div class="insight-item">
+            <div class="insight-info">
+              <span class="insight-name">{{ sup.name }}</span>
+              <span class="insight-stats">{{ sup.grns }} GRNs &middot; {{ formatValue(sup.value) }}</span>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill" [style.width.%]="sup.percentage"></div>
+              <span class="progress-value">{{ sup.percentage }}%</span>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- Export Options -->
+  <div class="export-section">
+    <div class="section-title"><i class="bi bi-download"></i> Export Options</div>
+    <div class="export-buttons">
+      <button class="btn btn-outline" (click)="exportToExcel()"><i class="bi bi-file-earmark-excel"></i> Excel</button>
+      <button class="btn btn-outline" (click)="exportToPDF()"><i class="bi bi-file-earmark-pdf"></i> PDF</button>
+      <button class="btn btn-outline" (click)="emailReport()"><i class="bi bi-envelope"></i> Email</button>
+      <button class="btn btn-outline" (click)="printReport()"><i class="bi bi-printer"></i> Print</button>
+      <button class="btn btn-outline" (click)="scheduleReport()"><i class="bi bi-calendar-check"></i> Schedule</button>
+    </div>
+  </div>
+</div>
+
+<!-- Schedule Modal -->
+@if (showScheduleModal()) {
+  <div class="modal-overlay" (click)="closeScheduleModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Schedule Report</h3>
+        <button class="modal-close" (click)="closeScheduleModal()"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Frequency</label>
+          <select [ngModel]="scheduleFrequency()" (ngModelChange)="scheduleFrequency.set($event)">
+            <option value="daily">Daily</option>
+            <option value="weekly">Weekly</option>
+            <option value="monthly">Monthly</option>
+            <option value="quarterly">Quarterly</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" [ngModel]="scheduleEmail()" (ngModelChange)="scheduleEmail.set($event)" placeholder="email@example.com" />
+        </div>
+        <div class="form-group">
+          <label>Start Date</label>
+          <input type="date" [ngModel]="scheduleDate()" (ngModelChange)="scheduleDate.set($event)" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeScheduleModal()">Cancel</button>
+        <button class="btn btn-primary" (click)="saveSchedule()">Save</button>
+      </div>
+    </div>
+  </div>
+}

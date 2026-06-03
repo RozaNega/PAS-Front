@@ -1,17 +1,118 @@
 <div class="inspection-reports-container">
-  <div class="page-header"><h1>Inspection Reports</h1><p class="subtitle">Goods inspection reports</p></div>
+  <div class="page-header">
+    <h1>Inspection Reports</h1>
+    <p class="subtitle">Compliance QA inspections &amp; goods receiving logs</p>
+  </div>
+
   <div class="reports-list">
     @for (report of reports(); track report.id) {
       <div class="report-card">
-        <div class="report-header"><div class="report-name">{{ report.reportName }}</div></div>
+        <div class="report-header">
+          <div class="report-name">
+            <i class="bi bi-search file-icon"></i>
+            {{ report.reportName }}
+          </div>
+        </div>
         <div class="report-details">
           <div class="detail-row"><span class="label">Generated:</span><span class="value">{{ report.generatedDate }}</span></div>
           <div class="detail-row"><span class="label">Total Inspections:</span><span class="value">{{ report.totalInspections }}</span></div>
-          <div class="detail-row"><span class="label">Passed:</span><span class="value">{{ report.passedInspections }}</span></div>
-          <div class="detail-row"><span class="label">Failed:</span><span class="value">{{ report.failedInspections }}</span></div>
+          <div class="detail-row"><span class="label">Passed:</span><span class="value text-success">{{ report.passedInspections }}</span></div>
+          <div class="detail-row"><span class="label">Failed:</span><span class="value text-danger">{{ report.failedInspections }}</span></div>
         </div>
-        <div class="report-actions"><button class="btn btn-secondary">View</button><button class="btn btn-primary">Download</button></div>
+        <div class="report-actions">
+          <button type="button" class="btn btn-secondary" (click)="downloadReport(report)" [disabled]="downloadingReportId() !== null">
+            @if (downloadingReportId() === report.id) {
+              <span class="spinner"></span> Downloading {{ downloadProgress() }}%
+            } @else {
+              <i class="bi bi-file-pdf"></i> Download PDF
+            }
+          </button>
+          <button type="button" class="btn btn-primary" (click)="viewReport(report)">
+            <i class="bi bi-eye"></i> View
+          </button>
+        </div>
       </div>
     }
   </div>
+
+  <!-- Merged View Modal -->
+  @if (activeViewReport(); as rep) {
+    <div class="modal-backdrop" (click)="closeModal()">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h2>
+            <i class="bi bi-search text-primary"></i> 
+            Inspection Report Details
+          </h2>
+          <button class="btn-close-modal" (click)="closeModal()" aria-label="Close modal">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="section-title">General Information</div>
+          <div class="metadata-grid">
+            <div class="grid-item">
+              <label>Report Name</label>
+              <span>{{ rep.reportName }}</span>
+            </div>
+            <div class="grid-item">
+              <label>Generated Date</label>
+              <span>{{ rep.generatedDate }}</span>
+            </div>
+            <div class="grid-item">
+              <label>Inspected By</label>
+              <span>{{ rep.inspectedBy }}</span>
+            </div>
+            <div class="grid-item">
+              <label>Standards Applied</label>
+              <span>{{ rep.standardsUsed }}</span>
+            </div>
+          </div>
+
+          <div class="section-title">Inspection Quality Metrics</div>
+          <div class="metadata-grid">
+            <div class="grid-item">
+              <label>Total Shipments Inspected</label>
+              <span>{{ rep.totalInspections }} consignments</span>
+            </div>
+            <div class="grid-item">
+              <label>Passed Consignments</label>
+              <span class="text-success" style="font-weight: 700;">{{ rep.passedInspections }} shipments</span>
+            </div>
+            <div class="grid-item">
+              <label>Failed (Quarantined)</label>
+              <span class="text-danger" style="font-weight: 700;">{{ rep.failedInspections }} shipments</span>
+            </div>
+            <div class="grid-item">
+              <label>Calculated Defect Rate</label>
+              <span class="text-warning" style="font-weight: 700;">{{ rep.defectRate }}</span>
+            </div>
+          </div>
+
+          <div class="section-title">Inspection Summary &amp; Scope</div>
+          <div style="background: var(--surface-section); border-left: 4px solid var(--primary-color); padding: 1rem; border-radius: 0 8px 8px 0; margin-bottom: 1.25rem;">
+            <p style="margin: 0; font-size: 0.9rem; line-height: 1.5; color: var(--text-color);">
+              All inspection checklists have been submitted electronically. The 3 failed consignments did not meet 
+              the standard environmental shelf constraints and have been labeled for immediate supplier dispute.
+            </p>
+            <div style="margin-top: 0.5rem;">
+              <strong>Active Depot Areas Covered: </strong>
+              <span class="badge" style="background: #e0f2fe; color: #0369a1;">{{ rep.warehouseSectors }}</span>
+            </div>
+          </div>
+
+          <div class="info-note">
+            <i class="bi bi-shield-fill-check text-success"></i>
+            <span>This quality assurance report complies with national distribution directives.</span>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" (click)="closeModal()">Close</button>
+          <button class="btn btn-primary" (click)="downloadReport(rep)">
+            <i class="bi bi-file-pdf"></i> Download PDF
+          </button>
+        </div>
+      </div>
+    </div>
+  }
 </div>

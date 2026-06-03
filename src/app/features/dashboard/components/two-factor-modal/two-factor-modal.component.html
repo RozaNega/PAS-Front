@@ -37,45 +37,63 @@
         </label>
       </div>
 
-      @if (method() === 'sms') {
-        <div class="contact-input">
-          <label>Phone Number</label>
-          <input type="tel" [(ngModel)]="contactInfo" placeholder="+251-XXX-XXXXXX" />
-        </div>
-      } @else if (method() === 'email') {
-        <div class="contact-input">
-          <label>Email Address</label>
-          <input type="email" [(ngModel)]="contactInfo" placeholder="your.email@example.com" />
-        </div>
-      } @else {
-        <div class="qr-placeholder">
-          <i class="bi bi-qr-code"></i>
-          <p>Scan this QR code with your authenticator app</p>
-        </div>
-      }
+      <div class="contact-section">
+        @if (method() === 'sms') {
+          <div class="contact-input">
+            <label for="2fa-phone">Phone Number</label>
+            <input id="2fa-phone" type="tel" [(ngModel)]="contactInfo" placeholder="+251-XXX-XXXXXX" />
+          </div>
+        } @else if (method() === 'email') {
+          <div class="contact-input">
+            <label for="2fa-email">Email Address</label>
+            <input id="2fa-email" type="email" [(ngModel)]="contactInfo" placeholder="your.email@example.com" />
+          </div>
+        } @else {
+          <div class="qr-placeholder">
+            <div class="qr-frame">
+              <i class="bi bi-qr-code"></i>
+            </div>
+            <p>Scan this QR code with your authenticator app</p>
+            <code class="secret-code">JBSW Y3DP EBLA K35X</code>
+          </div>
+        }
+      </div>
     </div>
   } @else {
     <div class="verification-step">
-      <div class="verify-icon"><i class="bi bi-patch-check"></i></div>
+      <div class="verify-icon" [class.pulse]="loading()"><i class="bi bi-shield-check"></i></div>
       <h3>Verify Identity</h3>
-      <p>Please enter the 6-digit code sent to your {{ method() === 'app' ? 'authenticator app' : method() }}</p>
+      <p>Please enter the 6-digit code sent to your {{ method() === 'app' ? 'authenticator app' : (method() === 'sms' ? 'phone' : 'email') }}</p>
       
-      <div class="code-input">
-        <input type="text" maxlength="6" [(ngModel)]="verificationCode" placeholder="000000" />
+      <div class="code-input-wrapper">
+        <input 
+          type="text" 
+          maxlength="6" 
+          [(ngModel)]="verificationCode" 
+          placeholder="000000" 
+          class="modern-code-input"
+          [disabled]="loading()"
+          (keyup.enter)="submit()"
+        />
       </div>
       
-      <p class="resend-text">Didn't receive a code? <a href="javascript:void(0)">Resend</a></p>
+      <p class="resend-text">
+        Didn't receive a code? 
+        <button class="btn-link" (click)="resendCode()" [disabled]="loading()">Resend</button>
+      </p>
     </div>
   }
 </div>
 
 <div class="modal-footer">
   @if (step() === 1) {
-    <button class="btn-cancel" (click)="cancel()">Cancel</button>
-    <button class="btn-primary" (click)="nextStep()">Continue</button>
+    <button class="btn-secondary" (click)="cancel()">Cancel</button>
+    <button class="btn-primary" (click)="nextStep()" [disabled]="loading()">
+      {{ loading() ? 'Sending...' : 'Continue' }}
+    </button>
   } @else {
-    <button class="btn-cancel" (click)="step.set(1)">Back</button>
-    <button class="btn-primary" (click)="submit()" [disabled]="loading()">
+    <button class="btn-secondary" (click)="step.set(1)" [disabled]="loading()">Back</button>
+    <button class="btn-primary" (click)="submit()" [disabled]="loading() || verificationCode().length !== 6">
       {{ loading() ? 'Verifying...' : 'Enable 2FA' }}
     </button>
   }

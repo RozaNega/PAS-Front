@@ -1,10 +1,25 @@
+import {
+  ChangeDetectionStrategy,
+  Component,
+  OnInit,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { InventoryService, InventoryStockDto } from '../../../../core/services/inventory.service';
 import { WarehousesService } from '../../../../core/services/warehouses.service';
+
+import { NgxEchartsDirective, provideEchartsCore } from 'ngx-echarts';
+import * as echarts from 'echarts/core';
+import { BarChart, PieChart } from 'echarts/charts';
+import { GridComponent, LegendComponent, TooltipComponent } from 'echarts/components';
+import { CanvasRenderer } from 'echarts/renderers';
+
+echarts.use([BarChart, PieChart, TooltipComponent, GridComponent, LegendComponent, CanvasRenderer]);
 
 interface StockItem {
   id: string;
@@ -32,16 +47,17 @@ interface StockMovement {
   type: string;
   quantity: number;
   reference: string;
-  user: string;
-  balance: number;
+  location: string;
 }
 
 @Component({
   selector: 'app-current-stock',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, NgxEchartsDirective],
+  providers: [provideEchartsCore({ echarts })],
   templateUrl: './current-stock.component.html',
   styleUrls: ['./current-stock.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CurrentStockComponent implements OnInit {
   private readonly inventory = inject(InventoryService);
@@ -102,6 +118,62 @@ export class CurrentStockComponent implements OnInit {
     return filtered;
   });
 
+  statusDistribution = computed(() => {
+    const items = this.stockItems();
+    return [
+      { name: 'Good', value: items.filter(i => i.status === 'good').length },
+      { name: 'Low', value: items.filter(i => i.status === 'low').length },
+      { name: 'Critical', value: items.filter(i => i.status === 'critical').length },
+    ];
+  });
+
+  categoryDistribution = computed(() => {
+    const map = new Map<string, number>();
+    for (const item of this.stockItems()) {
+      map.set(item.category, (map.get(item.category) || 0) + item.quantity);
+    }
+    return Array.from(map.entries()).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
+  });
+
+  get statusChartOpts(): Record<string, unknown> {
+    return {
+      tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+      graphic: [{
+        type: 'text', left: 'center', top: 'center',
+        style: { text: `${this.stockItems().length}`, fill: '#1e293b', fontSize: 26, fontWeight: 800, fontFamily: 'Inter, sans-serif' }
+      }],
+      series: [{
+        type: 'pie', radius: ['55%', '78%'], center: ['50%', '50%'],
+        avoidLabelOverlap: false,
+        label: { show: true, position: 'outside', formatter: '{b}\n{d}%', color: '#94a3b8', fontSize: 11, lineHeight: 16, fontWeight: 600 },
+        emphasis: { itemStyle: { shadowBlur: 15, shadowOffsetX: 0, shadowColor: 'rgba(0,0,0,0.2)' } },
+        animationDuration: 1000, animationEasing: 'cubicOut',
+        data: [
+          { name: 'Good', value: this.statusDistribution()[0].value, itemStyle: { color: new echarts.graphic.LinearGradient(0, 0, 1, 1, [{ offset: 0, color: '#10b981' }, { offset: 1, color: '#059669' }]) as any } },
+          { name: 'Low', value: this.statusDistribution()[1].value, itemStyle: { color: new echarts.graphic.LinearGradient(0, 0, 1, 1, [{ offset: 0, color: '#f59e0b' }, { offset: 1, color: '#d97706' }]) as any } },
+          { name: 'Critical', value: this.statusDistribution()[2].value, itemStyle: { color: new echarts.graphic.LinearGradient(0, 0, 1, 1, [{ offset: 0, color: '#ef4444' }, { offset: 1, color: '#dc2626' }]) as any } },
+        ]
+      }]
+    };
+  }
+
+  get categoryChartOpts(): Record<string, unknown> {
+    const data = this.categoryDistribution().slice(0, 8);
+    return {
+      tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+      grid: { left: '3%', right: '5%', bottom: '12%', top: '8%', containLabel: true },
+      xAxis: { type: 'value', axisLabel: { color: '#94a3b8' }, splitLine: { lineStyle: { color: 'rgba(148,163,184,0.12)' } } },
+      yAxis: { type: 'category', data: data.map(d => d.name).reverse(), axisLabel: { color: '#64748b', fontWeight: 600 }, axisLine: { show: false }, axisTick: { show: false } },
+      series: [{
+        type: 'bar', data: data.map(d => ({
+          value: d.value,
+          itemStyle: { color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [{ offset: 0, color: '#3b82f6' }, { offset: 1, color: '#8b5cf6' }]) as any, borderRadius: [0, 6, 6, 0] }
+        })).reverse(),
+        barWidth: '60%', animationDuration: 800, animationEasing: 'elasticOut'
+      }]
+    };
+  }
+
   ngOnInit(): void {
     this.warehousesService.getAll({ isActive: true }).subscribe({
       next: (res) => {
@@ -146,7 +218,7 @@ export class CurrentStockComponent implements OnInit {
 
   bulkExport(): void {
     const rows = this.selected().size ? this.stockItems().filter((item) => this.selected().has(item.id)) : this.filteredStock();
-    if (!rows.length) return alert('No items selected');
+    if (!rows.length) return;
     const headers = ['SKU', 'Item Name', 'Category', 'Warehouse', 'Shelf', 'Quantity', 'Status'];
     const csv = [
       headers.join(','),
@@ -163,13 +235,18 @@ export class CurrentStockComponent implements OnInit {
 
   bulkGenerateQRCodes(): void {
     const rows = this.selected().size ? this.stockItems().filter((item) => this.selected().has(item.id)) : this.filteredStock();
-    if (!rows.length) return alert('No items selected for QR generation');
-    const payload = rows.map((row) => ({ id: row.id, itemId: row.id, itemName: row.name, sku: row.sku, warehouseId: row.warehouse, shelfId: row.shelf }));
-    this.router.navigate(['/admin/inventory/qr-codes'], { state: { items: payload } });
+    if (!rows.length) return;
+    const url = this.router.url;
+    if (url.startsWith('/admin')) {
+      const payload = rows.map((row) => ({ id: row.id, itemId: row.id, itemName: row.name, sku: row.sku, warehouseId: row.warehouse, shelfId: row.shelf }));
+      this.router.navigate(['/admin/inventory/qr-codes'], { state: { items: payload } });
+    } else {
+      this.router.navigate(['/storekeeper/warehouse/scanner']);
+    }
   }
 
   openBulkAdjustModal(): void {
-    if (this.selected().size === 0) return alert('No items selected');
+    if (this.selected().size === 0) return;
     this.bulkAdjustQty.set(1);
     this.bulkAdjustType.set('decrease');
     this.bulkAdjustReason.set('Bulk adjustment');
@@ -182,9 +259,9 @@ export class CurrentStockComponent implements OnInit {
 
   async performBulkAdjust(): Promise<void> {
     const ids = Array.from(this.selected());
-    if (!ids.length) return alert('No items selected');
+    if (!ids.length) return;
     const qty = Number(this.bulkAdjustQty());
-    if (Number.isNaN(qty)) return alert('Invalid quantity');
+    if (Number.isNaN(qty)) return;
     for (const id of ids) {
       try {
         await firstValueFrom(
@@ -222,7 +299,7 @@ export class CurrentStockComponent implements OnInit {
     const item = this.activeItemForAdjust();
     if (!item) return;
     const qty = Number(this.bulkAdjustQty());
-    if (Number.isNaN(qty)) return alert('Invalid quantity');
+    if (Number.isNaN(qty)) return;
     try {
       await firstValueFrom(
         this.inventory.adjustStock({
@@ -310,11 +387,11 @@ export class CurrentStockComponent implements OnInit {
 
     return {
       id: row.id,
-      sku: row.sku || '—',
-      name: row.itemName || '—',
+      sku: row.sku || '\u2014',
+      name: row.itemName || '\u2014',
       category: 'General',
-      warehouse: row.warehouseName || '—',
-      shelf: row.shelfLocation || '—',
+      warehouse: row.warehouseName || '\u2014',
+      shelf: row.shelfLocation || '\u2014',
       quantity: qty,
       reserved: Number(row.reservedStock) || 0,
       available: row.availableStock != null ? Number(row.availableStock) : qty,
@@ -330,10 +407,10 @@ export class CurrentStockComponent implements OnInit {
   }
 
   getStatusEmoji(status: string): string {
-    if (status === 'good') return '🟢';
-    if (status === 'low') return '🟡';
-    if (status === 'critical') return '🔴';
-    return '⚪';
+    if (status === 'good') return '\uD83D\uDFE2';
+    if (status === 'low') return '\uD83D\uDFE1';
+    if (status === 'critical') return '\uD83D\uDD34';
+    return '\u26AA';
   }
 
   formatNumber(value: number): string {
@@ -341,6 +418,12 @@ export class CurrentStockComponent implements OnInit {
   }
 
   formatValue(value: number): string {
+    if (value >= 1000000) {
+      return '$' + (value / 1000000).toFixed(1) + 'M';
+    }
+    if (value >= 1000) {
+      return '$' + (value / 1000).toFixed(0) + 'K';
+    }
     return '$' + value.toLocaleString();
   }
 
@@ -381,5 +464,14 @@ export class CurrentStockComponent implements OnInit {
     this.categoryFilter.set('All Categories');
     this.statusFilter.set('All Status');
     this.loadStock();
+  }
+
+  statusLabel(status: string): string {
+    switch (status) {
+      case 'good': return 'Good';
+      case 'low': return 'Low';
+      case 'critical': return 'Critical';
+      default: return 'Unknown';
+    }
   }
 }

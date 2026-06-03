@@ -70,6 +70,36 @@ export class NotificationListComponent {
     return list;
   });
 
+  readonly groupedNotifications = computed(() => {
+    const list = this.filteredNotifications();
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const yesterday = new Date(today.getTime() - 86400000);
+    const weekAgo = new Date(today.getTime() - 6 * 86400000);
+
+    const groups: { label: string; items: Notification[] }[] = [];
+
+    const todayItems: Notification[] = [];
+    const yesterdayItems: Notification[] = [];
+    const weekItems: Notification[] = [];
+    const olderItems: Notification[] = [];
+
+    for (const n of list) {
+      const d = typeof n.sentDate === 'string' ? new Date(n.sentDate) : n.sentDate;
+      if (d >= today) todayItems.push(n);
+      else if (d >= yesterday) yesterdayItems.push(n);
+      else if (d >= weekAgo) weekItems.push(n);
+      else olderItems.push(n);
+    }
+
+    if (todayItems.length) groups.push({ label: 'Today', items: todayItems });
+    if (yesterdayItems.length) groups.push({ label: 'Yesterday', items: yesterdayItems });
+    if (weekItems.length) groups.push({ label: 'This Week', items: weekItems });
+    if (olderItems.length) groups.push({ label: 'Earlier', items: olderItems });
+
+    return groups;
+  });
+
   constructor() {
     this.loadNotifications();
   }

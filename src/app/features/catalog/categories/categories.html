@@ -157,10 +157,10 @@
                     <tr>
                       <td>
                         <div class="category-info">
-                          <div class="category-icon">{{ category.name.charAt(0) }}</div>
+                          <div class="category-icon">{{ (category.name || '?').charAt(0) }}</div>
                           <div class="category-text">
                             <span class="name">{{ category.name }}</span>
-                            <span class="id">UID: {{ category.id.split('-').pop() }}</span>
+                            <span class="id">UID: {{ ('' + category.id).split('-').pop() }}</span>
                           </div>
                         </div>
                       </td>
@@ -174,7 +174,7 @@
                       <td>{{ category.itemsCount || 0 }}</td>
                       <td class="text-right">
                         <div class="row-actions">
-                          <button class="icon-btn" (click)="categoryApi.remove(category.id)"><i class="bi bi-trash"></i></button>
+                          <button class="icon-btn" (click)="removeCategory(category.id)"><i class="bi bi-trash"></i></button>
                           <button class="icon-btn"><i class="bi bi-pencil"></i></button>
                         </div>
                       </td>

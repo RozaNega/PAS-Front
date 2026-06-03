@@ -86,7 +86,7 @@
 
 
         <a class="btn ghost" routerLink="/auth/register" (click)="closeMenu()">Sign Up</a>
-        <a class="btn solid" [routerLink]="dashboardRoute()" (click)="closeMenu()">{{ authService.isAuthenticated() ? 'Dashboard' : 'Login' }}</a>
+        <a class="btn solid" routerLink="/auth/login" (click)="closeMenu()">Login</a>
       </div>
     </div>
   </header>
@@ -109,7 +109,7 @@
           </p>
 
           <div class="hero-actions">
-            <a class="btn solid" [routerLink]="dashboardRoute()">Open Dashboard</a>
+            <a class="btn solid" [routerLink]="dashboardRoute()">Go to dashboard</a>
 
             <a class="btn ghost subtle" href="#features">Explore Platform</a>
           </div>
@@ -123,18 +123,6 @@
             }
           </div>
         </div>
-
-        <aside class="hero-panel" aria-label="Live operational attendance">
-          <p class="panel-kicker">Live attendees</p>
-          <p class="live-total">14,666</p>
-          <ul class="countdown-grid" aria-label="Countdown to deployment week">
-            <li><strong>20</strong><span>Days</span></li>
-            <li><strong>14</strong><span>Hours</span></li>
-            <li><strong>06</strong><span>Minutes</span></li>
-            <li><strong>37</strong><span>Seconds</span></li>
-          </ul>
-          <p class="countdown-note">Until May 14th, 2026</p>
-        </aside>
       </div>
     </section>
 
@@ -154,12 +142,43 @@
         <p class="eyebrow">Core Capabilities</p>
         <h2>Everything Needed For Reliable Asset Operations</h2>
         <div class="feature-grid">
-          @for (feature of features; track feature.title) {
-            <article class="feature-card">
-              <i class="{{ feature.icon }}" aria-hidden="true"></i>
-              <h3>{{ feature.title }}</h3>
-              <p>{{ feature.description }}</p>
-            </article>
+          @for (feature of features; track feature.id) {
+            @if (feature.id === 'live-dashboard') {
+              <a
+                class="feature-card feature-card--dashboard"
+                [routerLink]="dashboardRoute()"
+                aria-label="Open dashboard"
+              >
+                <i class="{{ feature.icon }}" aria-hidden="true"></i>
+                <h3>{{ feature.title }}</h3>
+                <p>{{ feature.description }}</p>
+                <span class="feature-cta">Open dashboard →</span>
+              </a>
+            } @else if (feature.id === 'scan-first-inventory') {
+              <a class="feature-card" [routerLink]="inventoryRoute()" aria-label="Open inventory">
+                <i class="{{ feature.icon }}" aria-hidden="true"></i>
+                <h3>{{ feature.title }}</h3>
+                <p>{{ feature.description }}</p>
+                <span class="feature-cta">Open inventory →</span>
+              </a>
+            } @else if (feature.id === 'audit-ready-controls') {
+              <a
+                class="feature-card"
+                [routerLink]="auditControlsRoute()"
+                aria-label="Open audit controls"
+              >
+                <i class="{{ feature.icon }}" aria-hidden="true"></i>
+                <h3>{{ feature.title }}</h3>
+                <p>{{ feature.description }}</p>
+                <span class="feature-cta">Open audit controls →</span>
+              </a>
+            } @else {
+              <article class="feature-card">
+                <i class="{{ feature.icon }}" aria-hidden="true"></i>
+                <h3>{{ feature.title }}</h3>
+                <p>{{ feature.description }}</p>
+              </article>
+            }
           }
         </div>
       </div>
@@ -222,16 +241,77 @@
     </section>
   </main>
 
-  <footer id="contact" class="footer">
-    <div class="container">
-      <div>
-        <h2>Ready To Launch AFRICOM Across Your Organization?</h2>
-        <p>Secure onboarding, role mapping, and operational setup can start immediately.</p>
+  <footer id="contact" class="footer footer-contact">
+    <div class="container footer-contact-grid">
+      <div class="footer-contact-copy">
+        <p class="eyebrow">Contact</p>
+        <h2>Get In Touch</h2>
+        <p class="section-lead">
+          This platform is used for asset operations, so we only collect what we need to respond:
+          your email and your message. Name is optional.
+        </p>
+
+        <ul class="contact-inline" aria-label="Contact details">
+          <li>
+            <i class="bi bi-envelope-at" aria-hidden="true"></i>
+            <a href="mailto:info@africom.et">info@africom.et</a>
+          </li>
+          <li>
+            <i class="bi bi-telephone" aria-hidden="true"></i>
+            <a href="tel:+251116679207">+251-116-679207</a>
+          </li>
+          <li>
+            <i class="bi bi-geo-alt" aria-hidden="true"></i>
+            <span>Addis Ababa, Ethiopian IT Park, Twins Building</span>
+          </li>
+        </ul>
+
+        <div class="footer-actions">
+          <a class="btn ghost" routerLink="/auth/register">Book Onboarding</a>
+          <a class="btn solid" routerLink="/auth/login">Login</a>
+        </div>
       </div>
-      <div class="footer-actions">
-        <a class="btn ghost" routerLink="/auth/register">Book Onboarding</a>
-        <a class="btn solid" [routerLink]="dashboardRoute()">Sign In</a>
-      </div>
+
+      <form class="contact-form" [formGroup]="contactForm" (ngSubmit)="submitContact()" novalidate>
+        <label>
+          <span>Name (optional)</span>
+          <input type="text" formControlName="name" placeholder="Your name" />
+        </label>
+
+        <label>
+          <span>Email *</span>
+          <input type="email" formControlName="email" placeholder="you@company.com" />
+        </label>
+
+        <label>
+          <span>Message *</span>
+          <textarea
+            rows="5"
+            formControlName="message"
+            placeholder="Tell us what you want to achieve…"
+          ></textarea>
+        </label>
+
+        @if (contactSuccess()) {
+          <div class="form-alert success" role="status">
+            <i class="bi bi-check-circle" aria-hidden="true"></i>
+            <span>{{ contactSuccess() }}</span>
+          </div>
+        }
+        @if (contactError()) {
+          <div class="form-alert error" role="alert">
+            <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
+            <span>{{ contactError() }}</span>
+          </div>
+        }
+
+        <button class="btn solid" type="submit" [disabled]="contactSubmitting()">
+          @if (contactSubmitting()) { Sending… } @else { Send message }
+        </button>
+      </form>
+    </div>
+
+    <div class="container footer-bottom">
       <p class="copyright">© {{ year() }} AFRICOM. All rights reserved.</p>
     </div>
   </footer>

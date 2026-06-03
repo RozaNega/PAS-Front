@@ -1,48 +1,47 @@
 import { Injectable } from '@angular/core';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { ApiService } from './api.service';
-import { ApiResponseModel } from '../models/api-response.model';
 
-export interface RoleDto {
+export interface Role {
   id: string;
-  roleName: string;
+  name: string;
   description?: string;
-  userCount?: number;
   permissions?: string[];
+  isActive?: boolean;
 }
 
-export interface CreateRoleRequest {
-  roleName: string;
-  description?: string;
+export interface RolesApiResponse {
+  success: boolean;
+  message: string;
+  data: Role[] | Role | null;
+  statusCode: number;
 }
 
-export interface UpdateRoleRequest {
-  id: string;
-  roleName?: string;
-  description?: string;
-}
-
-@Injectable({ providedIn: 'root' })
+@Injectable({
+  providedIn: 'root'
+})
 export class RolesService {
-  constructor(private apiService: ApiService) {}
+  private baseUrl = '/api/Roles';
 
-  getAll(params?: any): Observable<ApiResponseModel<RoleDto[]>> {
-    return this.apiService.get<ApiResponseModel<RoleDto[]>>('Roles', params);
+  constructor(private http: HttpClient) {}
+
+  getRoles(): Observable<RolesApiResponse> {
+    return this.http.get<RolesApiResponse>(this.baseUrl);
   }
 
-  getById(id: string): Observable<ApiResponseModel<RoleDto>> {
-    return this.apiService.get<ApiResponseModel<RoleDto>>(`Roles/${id}`);
+  getRole(id: string): Observable<RolesApiResponse> {
+    return this.http.get<RolesApiResponse>(`${this.baseUrl}/${id}`);
   }
 
-  create(data: CreateRoleRequest): Observable<ApiResponseModel<string>> {
-    return this.apiService.post<ApiResponseModel<string>>('Roles', data);
+  createRole(role: Partial<Role>): Observable<RolesApiResponse> {
+    return this.http.post<RolesApiResponse>(this.baseUrl, role);
   }
 
-  update(data: UpdateRoleRequest): Observable<ApiResponseModel<any>> {
-    return this.apiService.put<ApiResponseModel<any>>(`Roles/${data.id}`, data);
+  updateRole(id: string, role: Partial<Role>): Observable<RolesApiResponse> {
+    return this.http.put<RolesApiResponse>(`${this.baseUrl}/${id}`, role);
   }
 
-  delete(id: string): Observable<ApiResponseModel<any>> {
-    return this.apiService.delete<ApiResponseModel<any>>(`Roles/${id}`);
+  deleteRole(id: string): Observable<RolesApiResponse> {
+    return this.http.delete<RolesApiResponse>(`${this.baseUrl}/${id}`);
   }
 }

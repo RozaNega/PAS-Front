@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import { map, Observable } from 'rxjs';
 import { ApiService } from '../../core/services/api.service';
 import { ApiServiceRequest, ApiReturnMaterialRequest } from '../../types/dashboard.types';
@@ -87,18 +88,18 @@ export interface Notification {
 
 @Injectable({ providedIn: 'root' })
 export class PasApiService {
-  constructor(private readonly api: ApiService) {}
+  constructor(private readonly api: ApiService, private readonly http: HttpClient) {}
 
   dashboardStatistics(): Observable<DashboardStatistics> {
     return this.api
       .get<ApiResponse<DashboardStatistics>>('dashboard/statistics')
-      .pipe(map((response) => response.data));
+      .pipe(map((response: any) => response.data));
   }
 
   list(kind: PasModuleKind): Observable<PaginatedResponse<Record<string, unknown>>> {
     return this.api
       .get<ApiResponse<PaginatedResponse<Record<string, unknown>>>>(this.endpointFor(kind))
-      .pipe(map((response) => response.data));
+      .pipe(map((response: any) => response.data));
   }
 
   create(kind: PasModuleKind, payload: Record<string, unknown>): Observable<unknown> {
@@ -130,19 +131,19 @@ export class PasApiService {
   getProperties(): Observable<Property[]> {
     return this.api
       .get<ApiResponse<Property[]>>('properties')
-      .pipe(map((response) => response.data));
+      .pipe(map((response: any) => response.data));
   }
 
   createProperty(property: Omit<Property, 'id'>): Observable<Property> {
     return this.api
       .post<ApiResponse<Property>>('properties', property)
-      .pipe(map((response) => response.data));
+      .pipe(map((response: any) => response.data));
   }
 
   updateProperty(id: string, property: Partial<Property>): Observable<Property> {
     return this.api
       .put<ApiResponse<Property>>(`properties/${id}`, property)
-      .pipe(map((response) => response.data));
+      .pipe(map((response: any) => response.data));
   }
 
   deleteProperty(id: string): Observable<unknown> {
@@ -151,17 +152,17 @@ export class PasApiService {
 
   // Users API methods
   getUsers(): Observable<User[]> {
-    return this.api.get<ApiResponse<User[]>>('users').pipe(map((response) => response.data));
+    return this.api.get<ApiResponse<User[]>>('users').pipe(map((response: any) => response.data));
   }
 
   createUser(user: Omit<User, 'id'>): Observable<User> {
-    return this.api.post<ApiResponse<User>>('users', user).pipe(map((response) => response.data));
+    return this.api.post<ApiResponse<User>>('users', user).pipe(map((response: any) => response.data));
   }
 
   updateUser(id: string, user: Partial<User>): Observable<User> {
     return this.api
       .put<ApiResponse<User>>(`users/${id}`, user)
-      .pipe(map((response) => response.data));
+      .pipe(map((response: any) => response.data));
   }
 
   deleteUser(id: string): Observable<unknown> {
@@ -176,19 +177,19 @@ export class PasApiService {
   getStockItems(): Observable<StockItem[]> {
     return this.api
       .get<ApiResponse<StockItem[]>>('inventory/stock')
-      .pipe(map((response) => response.data));
+      .pipe(map((response: any) => response.data));
   }
 
   createStockItem(item: Omit<StockItem, 'id'>): Observable<StockItem> {
     return this.api
       .post<ApiResponse<StockItem>>('inventory/stock', item)
-      .pipe(map((response) => response.data));
+      .pipe(map((response: any) => response.data));
   }
 
   updateStockItem(id: string, item: Partial<StockItem>): Observable<StockItem> {
     return this.api
       .put<ApiResponse<StockItem>>(`inventory/stock/${id}`, item)
-      .pipe(map((response) => response.data));
+      .pipe(map((response: any) => response.data));
   }
 
   deleteStockItem(id: string): Observable<unknown> {
@@ -207,13 +208,13 @@ export class PasApiService {
   getNotifications(): Observable<Notification[]> {
     return this.api
       .get<ApiResponse<Notification[]>>('notifications')
-      .pipe(map((response) => response.data));
+      .pipe(map((response: any) => response.data));
   }
 
   createNotification(notification: Omit<Notification, 'id'>): Observable<Notification> {
     return this.api
       .post<ApiResponse<Notification>>('notifications', notification)
-      .pipe(map((response) => response.data));
+      .pipe(map((response: any) => response.data));
   }
 
   markNotificationAsRead(id: string): Observable<unknown> {
@@ -224,17 +225,15 @@ export class PasApiService {
     return this.api.delete(`notifications/${id}`);
   }
 
-  // Download SIV PDF as Blob. Backend endpoint expected at `sivs/{sivId}/pdf` or `requisitions/sivs/{sivId}/pdf`.
-  downloadSivPdf(sivId: string) {
-    // Use responseType blob via ApiService options forwarding
-    return this.api.get<any>(`requisitions/sivs/${sivId}/pdf`, undefined, {
-      responseType: 'blob' as 'json',
-    });
+  // Download SIV PDF as Blob. Backend endpoint expected at `sivs/{sivId}/pdf` or `requisitions/sivs/${sivId}/pdf`.
+  downloadSivPdf(sivId: string): Observable<Blob> {
+    // Use HttpClient directly for blob download
+    return this.http.get(`/api/requisitions/sivs/${sivId}/pdf`, { responseType: 'blob' });
   }
 
   // Service Requests API
   createServiceRequest(request: ApiServiceRequest): Observable<unknown> {
-    return this.api.post('service-requests', request);
+    return this.api.post('ServiceRequests', request);
   }
 
   createReturnMaterialRequest(request: ApiReturnMaterialRequest): Observable<unknown> {

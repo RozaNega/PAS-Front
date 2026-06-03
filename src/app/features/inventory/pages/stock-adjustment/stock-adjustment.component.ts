@@ -95,7 +95,7 @@ export class StockAdjustmentComponent implements OnInit {
 
   loadItems(): void {
     this.itemMasterService.getItemMasters().subscribe({
-      next: (response) => {
+      next: (response: any) => {
         if (response.success !== false && Array.isArray(response.data?.items)) {
           this.items.set(response.data.items);
         } else if (Array.isArray(response.data)) {
@@ -107,7 +107,7 @@ export class StockAdjustmentComponent implements OnInit {
         // Load sample items for demo
         this.items.set([
           {
-            id: '1',
+            id: 1,
             itemName: 'Dell XPS Laptop',
             sku: 'DELL-XPS-15',
             description: 'High-performance laptop',
@@ -122,9 +122,9 @@ export class StockAdjustmentComponent implements OnInit {
             categoryId: '1',
             categoryName: 'Electronics',
             isActive: true
-          },
+          } as ItemMasterListDto,
           {
-            id: '2',
+            id: 2,
             itemName: 'HP 27" Monitor',
             sku: 'HP-MON-27',
             description: '27-inch LED monitor',

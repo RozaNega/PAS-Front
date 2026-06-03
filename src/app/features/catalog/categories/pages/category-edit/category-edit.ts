@@ -46,16 +46,16 @@ export class CategoryEdit {
       }
 
       if (!this.selectedCategoryId()) {
-        this.selectedCategoryId.set(categories[0].id);
+        this.selectedCategoryId.set(String(categories[0].id));
       }
 
       const selected = this.selectedCategory();
 
       if (selected) {
         this.editForm.setValue({
-          name: selected.name,
+          name: selected.name ?? '',
           description: selected.description ?? '',
-          parentCategoryId: selected.parentCategoryId ?? '',
+          parentCategoryId: String(selected.parentCategoryId ?? ''),
         });
       }
     });

@@ -1,7 +1,7 @@
 <div class="notifications-page">
   <div class="page-header">
     <h1>Notifications ({{ unreadCount }})</h1>
-    <button class="btn btn-secondary" (click)="markAllAsRead()">Mark All Read</button>
+    <button class="btn btn-primary" (click)="markAllAsRead()" [disabled]="unreadCount === 0">Mark All Read</button>
   </div>
 
   <!-- Search and Filter -->
@@ -21,7 +21,7 @@
         <option value="submitted">Submitted</option>
         <option value="rejected">Rejected</option>
       </select>
-      <button class="btn btn-secondary" (click)="markAllAsRead()">Mark Read</button>
+      <button class="btn btn-secondary" (click)="markAllAsRead()" [disabled]="unreadCount === 0">Mark All as Read</button>
     </div>
   </div>
 
@@ -41,13 +41,22 @@
             <button
               type="button"
               class="btn btn-sm btn-primary"
-              (click)="viewRequest('SR-EXTRACTED'); $event.stopPropagation()"
+              (click)="viewRequest(notification.requestId); $event.stopPropagation()"
             >
               View Details
             </button>
+            @if (!notification.isRead) {
+              <button
+                type="button"
+                class="btn btn-sm btn-success"
+                (click)="markAsRead(notification.id); $event.stopPropagation()"
+              >
+                Mark Read
+              </button>
+            }
             <button
               type="button"
-              class="btn btn-sm btn-outline"
+              class="btn btn-sm btn-outline-danger"
               (click)="dismiss(notification.id); $event.stopPropagation()"
             >
               Dismiss
@@ -74,7 +83,7 @@
   <div class="request-updates-section">
     <h2>
       📋 REQUEST UPDATES ({{ requestUpdates.length }})
-      <button class="btn btn-link">View All</button>
+      <button class="btn btn-link" (click)="viewAllRequestUpdates()">View All</button>
     </h2>
     <div class="request-updates-list">
       @for (update of requestUpdates; track update.srNumber) {
@@ -90,7 +99,7 @@
   <!-- System Alerts -->
   <div class="system-alerts-section">
     <h2>
-      ⚠️ SYSTEM ALERTS ({{ systemAlerts.length }}) <button class="btn btn-link">View All</button>
+      ⚠️ SYSTEM ALERTS ({{ systemAlerts.length }}) <button class="btn btn-link" (click)="viewAllSystemAlerts()">View All</button>
     </h2>
     <div class="system-alerts-list">
       @if (systemAlerts.length === 0) {

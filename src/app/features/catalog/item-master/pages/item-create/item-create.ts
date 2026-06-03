@@ -55,11 +55,11 @@ export class ItemCreate implements OnInit {
   }
 
   protected onCategorySelect(categoryId: string): void {
-    const selected = this.categories().find(c => c.id === categoryId);
+    const selected = this.categories().find(c => String(c.id) === categoryId);
     if (selected) {
       this.itemForm.patchValue({
-        categoryId: selected.id,
-        categoryName: selected.name
+        categoryId: String(selected.id),
+        categoryName: selected.categoryName ?? selected.name ?? ''
       });
     }
   }

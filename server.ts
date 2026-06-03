@@ -1,10 +1,11 @@
 ﻿import { APP_BASE_HREF } from '@angular/common';
-import { CommonEngine } from '@angular/ssr';
+import { CommonEngine } from '@angular/ssr/node';
 import express from 'express';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve } from 'node:path';
+import { promises as fs } from 'node:fs';
+import { randomUUID } from 'node:crypto';
 import AppServerModule from './src/main.server';
-import fs from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 
 const dashboardStatisticsResponse = {
@@ -63,6 +64,9 @@ export function app(): express.Express {
 
   const commonEngine = new CommonEngine();
 
+  server.use(express.json());
+  server.use(express.urlencoded({ extended: true }));
+
   server.set('view engine', 'html');
   server.set('views', browserDistFolder);
 
@@ -90,7 +94,7 @@ export function app(): express.Express {
     }
   }
 
-  async function readInventoryData(): Promise<{ inventory: any[]; ledger: any[] }> {
+  async function readInventoryData(): Promise<{ inventory: any[]; ledger: any[]; itemMasters: any[] }> {
     try {
       await ensureDataFile();
       const raw = await fs.readFile(inventoryFile, 'utf8');
@@ -100,11 +104,11 @@ export function app(): express.Express {
       return parsed;
     } catch (err) {
       console.error('readInventoryData error', err);
-      return { inventory: [], ledger: [] };
+      return { inventory: [], ledger: [], itemMasters: [] };
     }
   }
 
-  async function writeInventoryData(data: { inventory: any[]; ledger: any[] }) {
+  async function writeInventoryData(data: { inventory: any[]; ledger: any[]; itemMasters: any[] }) {
     try {
       await ensureDataFile();
       await fs.writeFile(inventoryFile, JSON.stringify(data, null, 2), 'utf8');
@@ -116,7 +120,7 @@ export function app(): express.Express {
   // Inventory API
   server.get('/api/InventoryStock', async (req, res) => {
     const d = await readInventoryData();
-    res.json({ success: true, message: '', data: d.inventory, statusCode: 200 });
+    res.json({ success: true, message: '', data: d.inventory || [], statusCode: 200 });
   });
 
   server.get('/api/ItemMasters', async (req, res) => {
@@ -130,13 +134,14 @@ export function app(): express.Express {
     d.itemMasters = d.itemMasters || [];
     const payload = req.body || {};
     const id = payload.id || `itm-${Date.now()}`;
-    const item = { id, itemName: payload.itemName || payload.sku || '', sku: payload.sku || '', description: payload.description || '', categoryName: payload.categoryName || '', unitOfMeasure: payload.unitOfMeasure || 'PCS', currentStock: payload.stockQuantity || 0, reservedStock: 0, availableStock: payload.stockQuantity || 0, minStockLevel: payload.minStockLevel || 0, requiresInspection: false, isLowStock: false, stockQuantity: payload.stockQuantity || 0, isActive: payload.isActive ?? true };
-    d.itemMasters.push(item);
+    const stockQty = Number(payload.stockQuantity) || 0;
+    const item = { id, itemName: payload.itemName || payload.sku || 'Unnamed Item', sku: payload.sku || '', description: payload.description || '', categoryName: payload.categoryName || '', unitOfMeasure: payload.unitOfMeasure || 'PCS', currentStock: stockQty, reservedStock: 0, availableStock: stockQty, minStockLevel: payload.minStockLevel || 0, requiresInspection: false, isLowStock: false, isActive: payload.isActive ?? true };
     d.inventory = d.inventory || [];
-    const inv = { id: `inv-${Date.now()}`, itemId: id, itemName: item.itemName, sku: item.sku, shelfId: payload.shelfId || '', shelfLocation: payload.shelfLocation || '', warehouseId: payload.warehouseId || '', warehouseName: payload.warehouseName || '', currentStock: item.currentStock || 0, reservedStock: 0, availableStock: item.currentStock || 0, unitOfMeasure: item.unitOfMeasure || 'Units', lastUpdated: new Date().toISOString(), minimumThreshold: item.minStockLevel || 0, maximumThreshold: 0 };
+    const inv = { id: `inv-${Date.now()}`, itemId: id, itemName: item.itemName, sku: item.sku, shelfId: payload.shelfId || '', shelfLocation: payload.shelfLocation || '', warehouseId: payload.warehouseId || '', warehouseName: payload.warehouseName || '', currentStock: item.currentStock, reservedStock: 0, availableStock: item.currentStock - 0, unitOfMeasure: item.unitOfMeasure, lastUpdated: new Date().toISOString(), minimumThreshold: item.minStockLevel || 0, maximumThreshold: 0 };
     d.inventory.push(inv);
+    d.itemMasters.push(item);
     await writeInventoryData(d);
-    res.json({ success: true, message: 'Created', data: id, statusCode: 201 });
+    res.status(201).json({ success: true, message: 'Created', data: id, statusCode: 201 });
   });
 
   server.put('/api/ItemMasters/:id', express.json(), async (req, res) => {
@@ -145,7 +150,8 @@ export function app(): express.Express {
     d.itemMasters = d.itemMasters || [];
     const idx = d.itemMasters.findIndex((x) => String(x.id) === String(id));
     if (idx === -1) return res.status(404).json({ success: false, message: 'Not found', statusCode: 404 });
-    d.itemMasters[idx] = { ...d.itemMasters[idx], ...req.body };
+    const { id: _ignored, ...safeBody } = req.body || {};
+    d.itemMasters[idx] = { ...d.itemMasters[idx], ...safeBody };
     await writeInventoryData(d);
     res.json({ success: true, message: 'Updated', data: d.itemMasters[idx], statusCode: 200 });
   });
@@ -233,9 +239,11 @@ export function app(): express.Express {
     if (idx === -1) return res.status(404).json({ success: false, message: 'Item not found', statusCode: 404 });
     const item = d.inventory[idx];
     const q = Number(quantity) || 0;
-    if (adjustmentType === 'increase') item.currentStock = (Number(item.currentStock) || 0) + q;
-    else if (adjustmentType === 'decrease') item.currentStock = (Number(item.currentStock) || 0) - q;
+    const prev = Number(item.currentStock) || 0;
+    if (adjustmentType === 'increase') item.currentStock = prev + q;
+    else if (adjustmentType === 'decrease') item.currentStock = Math.max(0, prev - q);
     else if (adjustmentType === 'set') item.currentStock = q;
+    item.availableStock = item.currentStock - (Number(item.reservedStock) || 0);
     item.lastUpdated = new Date().toISOString();
 
     // Add ledger entry
@@ -266,9 +274,11 @@ export function app(): express.Express {
     if (idx === -1) return res.status(404).json({ success: false, message: 'Item not found', statusCode: 404 });
     const item = d.inventory[idx];
     const q = Number(quantity) || 0;
-    if (adjustmentType === 'increase') item.currentStock = (Number(item.currentStock) || 0) + q;
-    else if (adjustmentType === 'decrease') item.currentStock = (Number(item.currentStock) || 0) - q;
+    const prev2 = Number(item.currentStock) || 0;
+    if (adjustmentType === 'increase') item.currentStock = prev2 + q;
+    else if (adjustmentType === 'decrease') item.currentStock = Math.max(0, prev2 - q);
     else if (adjustmentType === 'set') item.currentStock = q;
+    item.availableStock = item.currentStock - (Number(item.reservedStock) || 0);
     item.lastUpdated = new Date().toISOString();
 
     const ledgerEntry = {
@@ -294,6 +304,95 @@ export function app(): express.Express {
   server.get('/api/StockLedger', async (req, res) => {
     const d = await readInventoryData();
     res.json({ success: true, message: '', data: d.ledger, statusCode: 200 });
+  });
+
+  server.post('/api/landing/contact', async (req, res) => {
+    const name = String(req.body?.name ?? '').trim();
+    const email = String(req.body?.email ?? '').trim();
+    const message = String(req.body?.message ?? '').trim();
+
+    if (!email || message.length < 10) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid request.',
+        data: null,
+      });
+    }
+
+    const id = randomUUID();
+    const entry = {
+      id,
+      name,
+      email,
+      message,
+      createdAt: new Date().toISOString(),
+    };
+
+    try {
+      const outDir = resolve(process.cwd(), '.tmp');
+      const outFile = resolve(outDir, 'contact-submissions.jsonl');
+      await fs.mkdir(outDir, { recursive: true });
+      await fs.appendFile(outFile, JSON.stringify(entry) + '\n', 'utf8');
+    } catch (err) {
+      console.error('Failed to persist contact submission', err);
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Thanks — we received your message.',
+      data: { id },
+    });
+  });
+
+  // Mock Auth/login endpoint for development
+  server.post('/api/Auth/login', (req, res) => {
+    const { username, password } = req.body;
+    
+    // Mock authentication - accept any username with minimum 8 character password
+    if (username && password && password.length >= 8) {
+      // Determine role based on username
+      let role = 'employee';
+      if (username.toLowerCase().includes('admin')) {
+        role = 'admin';
+      } else if (username.toLowerCase().includes('store') || username.toLowerCase().includes('keeper')) {
+        role = 'storekeeper';
+      } else if (username.toLowerCase().includes('manager')) {
+        role = 'manager';
+      } else if (username.toLowerCase().includes('compliance') || username.toLowerCase().includes('auditor')) {
+        role = 'compliance-officer';
+      }
+
+      const mockUser = {
+        id: 'user-' + Date.now(),
+        username: username,
+        fullName: username.charAt(0).toUpperCase() + username.slice(1),
+        email: `${username}@afrocom.com`,
+        roles: [role],
+        permissions: [],
+        isActive: true
+      };
+
+      const mockToken = 'mock-jwt-token-' + Date.now();
+      
+      res.status(200).json({
+        success: true,
+        succeeded: true,
+        message: 'Login successful',
+        data: {
+          token: mockToken,
+          refreshToken: 'mock-refresh-token',
+          expiresAt: new Date(Date.now() + 3600000).toISOString(),
+          user: mockUser
+        }
+      });
+    } else {
+      res.status(401).json({
+        success: false,
+        succeeded: false,
+        message: 'Invalid username or password',
+        errors: ['Invalid username or password']
+      });
+    }
   });
 
   server.use(
@@ -334,8 +433,8 @@ export function app(): express.Express {
         publicPath: browserDistFolder,
         providers: [{ provide: APP_BASE_HREF, useValue: baseUrl }],
       })
-      .then((html) => res.send(html))
-      .catch((err) => next(err));
+      .then((html: string) => res.send(html))
+      .catch((err: Error) => next(err));
   });
 
   return server;

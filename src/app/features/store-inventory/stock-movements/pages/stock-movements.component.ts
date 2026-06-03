@@ -1,9 +1,12 @@
-import { Component, OnInit, OnDestroy, inject, signal, computed } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, OnDestroy, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { forkJoin, of } from 'rxjs';
+import { catchError, map } from 'rxjs/operators';
 import { InventoryService, StockMovementDto } from '../../../../core/services/inventory.service';
+import { MovementTrendDto, ReportsService, StockMovementDetailDto } from '../../../../core/services/reports.service';
 
-type MovementType = 'Inflow' | 'Outflow' | 'Transfer' | 'Adjustment';
+type MovementType = 'Inflow' | 'Outflow' | 'Transfer' | 'Adjustment' | 'Other';
 
 interface Movement {
   id: string;
@@ -15,6 +18,40 @@ interface Movement {
   refNumber: string;
   performedBy: string;
   notes: string;
+}
+
+interface MovementRow {
+  id: string;
+  dateTime: string;
+  type: MovementType;
+  item: string;
+  sku: string;
+  quantity: number;
+  refNumber: string;
+  user: string;
+  warehouse: string;
+  location: string;
+}
+
+interface SummaryBucket {
+  units: number;
+  transactions: number;
+}
+
+interface MovementSummaryView {
+  inflow: SummaryBucket;
+  outflow: SummaryBucket;
+  transfer: SummaryBucket;
+  adjustment: SummaryBucket;
+  netUnits: number;
+  uniqueItems: number;
+}
+
+interface TrendBar {
+  label: string;
+  inflowHeight: number;
+  outflowHeight: number;
+  netHeight: number;
 }
 
 interface NotificationState {
@@ -109,6 +146,7 @@ function createMockMovements(): Movement[] {
   imports: [CommonModule, FormsModule],
   templateUrl: './stock-movements.component.html',
   styleUrls: ['./stock-movements.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class StockMovementsComponent implements OnInit, OnDestroy {
   private inventory = inject(InventoryService);

@@ -1,65 +1,78 @@
 import { Injectable } from '@angular/core';
-import { Observable, map } from 'rxjs';
-import { ApiService } from './api.service';
-import { ApiResponse } from '../../types/api-response.type';
-import { normalizeApiResponseModel, normalizePasListResponse } from '../utils/pas-api-json.util';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
 
-export interface CategoryDto {
-  id: string;
-  name: string;
-  description?: string;
-  parentCategoryId?: string;
+export type CategoryDto = Category;
+
+export interface Category {
+  id: number;
+  categoryName: string;
+  description: string;
   isActive: boolean;
-  subCategoriesCount?: number;
-  itemsCount?: number;
+  name?: string;
+  parentCategoryId?: number;
   parentCategoryName?: string;
+  itemsCount?: number;
+  subCategoriesCount?: number;
 }
 
-export interface CategoryHierarchyDto {
-  id: string;
-  name: string;
-  description?: string;
-  children: CategoryHierarchyDto[];
+export interface PaginatedResponse<T> {
+  items: T[];
+  pageNumber: number;
+  totalPages: number;
+  totalCount: number;
+  hasPreviousPage: boolean;
+  hasNextPage: boolean;
 }
 
-@Injectable({ providedIn: 'root' })
+export interface ApiResponse<T> {
+  success: boolean;
+  message: string;
+  data: T;
+  statusCode: number;
+}
+
+@Injectable({
+  providedIn: 'root'
+})
 export class CategoriesService {
-  constructor(private apiService: ApiService) {}
+  private baseUrl = '/api/Categories';
 
-  getAll(params?: { includeInactive?: boolean; parentCategoryId?: string; searchTerm?: string }): Observable<ApiResponse<CategoryDto[]>> {
-    return this.apiService.get<unknown>('Categories', params).pipe(
-      map(res => normalizePasListResponse<CategoryDto>(res) as ApiResponse<CategoryDto[]>)
-    );
+  constructor(private http: HttpClient) {}
+
+  getCategories(pageNumber: number = 1, pageSize: number = 10): Observable<ApiResponse<PaginatedResponse<Category>>> {
+    return this.http.get<ApiResponse<PaginatedResponse<Category>>>(`${this.baseUrl}?pageNumber=${pageNumber}&pageSize=${pageSize}`);
   }
 
-  getById(id: string): Observable<ApiResponse<CategoryDto>> {
-    return this.apiService.get<unknown>(`Categories/${id}`).pipe(
-      map(res => normalizeApiResponseModel<CategoryDto>(res) as ApiResponse<CategoryDto>)
-    );
+  getCategory(id: number): Observable<ApiResponse<Category>> {
+    return this.http.get<ApiResponse<Category>>(`${this.baseUrl}/${id}`);
   }
 
-  getHierarchy(): Observable<ApiResponse<CategoryHierarchyDto[]>> {
-    return this.apiService.get<unknown>('Categories/hierarchy').pipe(
-      map(res => normalizePasListResponse<CategoryHierarchyDto>(res) as ApiResponse<CategoryHierarchyDto[]>)
-    );
+  getAll(pageNumber?: number, pageSize?: number): Observable<ApiResponse<PaginatedResponse<Category>>> {
+    return this.getCategories(pageNumber, pageSize);
   }
 
-  createCategory(data: { name: string; description?: string; parentCategoryId?: string | null }): Observable<ApiResponse<string>> {
-    return this.apiService.post<unknown>('Categories', data).pipe(
-      map(res => normalizeApiResponseModel<string>(res) as ApiResponse<string>)
-    );
+  createCategory(category: Partial<Category>): Observable<ApiResponse<Category>> {
+    return this.http.post<ApiResponse<Category>>(this.baseUrl, category);
   }
 
-  update(id: string, data: any): Observable<ApiResponse<any>> {
-    return this.apiService.put<unknown>(`Categories/${id}`, data).pipe(
-      map(res => normalizeApiResponseModel<any>(res) as ApiResponse<any>)
-    );
+  update(id: number, category: Partial<Category>): Observable<ApiResponse<Category>> {
+    return this.updateCategory(id, category);
   }
 
-  delete(id: string): Observable<ApiResponse<any>> {
-    return this.apiService.delete<unknown>(`Categories/${id}`).pipe(
-      map(res => normalizeApiResponseModel<any>(res) as ApiResponse<any>)
-    );
+  updateCategory(id: number, category: Partial<Category>): Observable<ApiResponse<Category>> {
+    return this.http.put<ApiResponse<Category>>(`${this.baseUrl}/${id}`, category);
+  }
+
+  delete(id: number): Observable<ApiResponse<null>> {
+    return this.deleteCategory(id);
+  }
+
+  deleteCategory(id: number): Observable<ApiResponse<null>> {
+    return this.http.delete<ApiResponse<null>>(`${this.baseUrl}/${id}`);
+  }
+
+  toggleCategoryStatus(id: number, isActive: boolean): Observable<ApiResponse<Category>> {
+    return this.http.patch<ApiResponse<Category>>(`${this.baseUrl}/${id}/toggle-status`, { isActive });
   }
 }
-

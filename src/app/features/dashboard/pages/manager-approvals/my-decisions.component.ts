@@ -1,5 +1,8 @@
-import { Component, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Subscription } from 'rxjs';
+import { ManagerDataService } from '../../../../core/services/manager-data.service';
+import { WorkflowService } from '../../../../core/services/workflow.service';
 
 interface Decision {
   id: string;
@@ -21,30 +24,50 @@ interface Decision {
   templateUrl: './my-decisions.component.html',
   styleUrls: ['./my-decisions.component.scss']
 })
-export class MyDecisionsComponent {
-  protected readonly decisions = signal<Decision[]>([
-    {
-      id: '1',
-      requestNumber: 'SR-2024-118',
-      requesterName: 'John Doe',
-      department: 'IT',
-      decision: 'Approved',
-      itemCount: 2,
-      estimatedValue: 450,
-      decisionDate: '2024-01-20',
-      responseTime: '2.5 hours'
-    },
-    {
-      id: '2',
-      requestNumber: 'SR-2024-117',
-      requesterName: 'Peter Chen',
-      department: 'Operations',
-      decision: 'Rejected',
-      itemCount: 1,
-      estimatedValue: 2499,
-      decisionDate: '2024-01-19',
-      responseTime: '1.2 hours',
-      reason: 'Budget exceeded for this quarter'
-    }
-  ]);
+export class MyDecisionsComponent implements OnInit, OnDestroy {
+  private readonly managerData = inject(ManagerDataService);
+  private readonly workflowService = inject(WorkflowService);
+  private readonly subs: Subscription[] = [];
+
+  protected readonly decisions = signal<Decision[]>([]);
+
+  ngOnInit(): void {
+    this.loadDecisions();
+    this.subs.push(this.workflowService.getRequestUpdates().subscribe(() => this.loadDecisions()));
+  }
+
+  ngOnDestroy(): void {
+    this.subs.forEach((sub) => sub.unsubscribe());
+  }
+
+  private loadDecisions(): void {
+    this.managerData.syncServiceRequests().subscribe(() => {
+      const rows = [
+        ...this.managerData.requestRows('approved').map((row) => ({
+          id: row.id,
+          requestNumber: row.requestNumber,
+          requesterName: row.requesterName,
+          department: row.department,
+          decision: 'Approved' as const,
+          itemCount: row.itemCount,
+          estimatedValue: row.estimatedValue,
+          decisionDate: row.approvedDate || row.requestedDate,
+          responseTime: 'From backend',
+        })),
+        ...this.managerData.requestRows('rejected').map((row) => ({
+          id: row.id,
+          requestNumber: row.requestNumber,
+          requesterName: row.requesterName,
+          department: row.department,
+          decision: 'Rejected' as const,
+          itemCount: row.itemCount,
+          estimatedValue: row.estimatedValue,
+          decisionDate: row.rejectedDate || row.requestedDate,
+          responseTime: 'From backend',
+          reason: row.rejectionReason,
+        })),
+      ];
+      this.decisions.set(rows);
+    });
+  }
 }

@@ -2,11 +2,11 @@
   <div class="page-header">
     <div class="header-info">
       <h1>Stock Report</h1>
-      <p class="subtitle">Comprehensive inventory analysis and valuation</p>
+      <p class="subtitle">Live inventory valuation and movement analysis</p>
     </div>
     <div class="header-actions">
       @if (lastRunTime()) {
-        <span class="last-run-time">Last run: {{ lastRunTime() | date:'short' }}</span>
+        <span class="last-run-time">Last run: {{ lastRunTime() | date: 'short' }}</span>
       }
       <button class="btn btn-primary" (click)="generateReport()" [disabled]="isLoading()">
         @if (isLoading()) {
@@ -18,63 +18,107 @@
     </div>
   </div>
 
+  @if (loadError()) {
+    <div class="summary-section">
+      <div class="summary-grid">
+        <div class="summary-card">
+          <div class="summary-icon">⚠️</div>
+          <div class="summary-content">
+            <div class="summary-label">Backend Status</div>
+            <div class="summary-value">Unavailable</div>
+            <div class="summary-sub">{{ loadError() }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
   <div class="filter-bar">
     <div class="filter-group">
-      <label>📅 Date Range:</label>
-      <input type="date" [value]="dateRange.start">
+      <label for="stock-report-start">📅 Date Range:</label>
+      <input
+        id="stock-report-start"
+        type="date"
+        [ngModel]="startDate()"
+        (ngModelChange)="startDate.set($event)"
+      />
       <span>to</span>
-      <input type="date" [value]="dateRange.end">
+      <input
+        id="stock-report-end"
+        type="date"
+        [ngModel]="endDate()"
+        (ngModelChange)="endDate.set($event)"
+      />
     </div>
     <div class="filter-group">
-      <label>📍 Warehouse:</label>
-      <select [(ngModel)]="warehouseFilter" (ngModelChange)="onWarehouseChange($event)">
-        @for (wh of warehouses; track wh) {
+      <label for="stock-report-warehouse">📍 Warehouse:</label>
+      <select
+        id="stock-report-warehouse"
+        [ngModel]="warehouseFilter()"
+        (ngModelChange)="warehouseFilter.set($event)"
+      >
+        @for (wh of warehouseOptions(); track wh) {
           <option [value]="wh">{{ wh }}</option>
         }
       </select>
     </div>
     <div class="filter-group">
-      <label>🏷️ Category:</label>
-      <select [(ngModel)]="categoryFilter" (ngModelChange)="onCategoryChange($event)">
-        @for (cat of categories; track cat) {
+      <label for="stock-report-category">🏷️ Category:</label>
+      <select
+        id="stock-report-category"
+        [ngModel]="categoryFilter()"
+        (ngModelChange)="categoryFilter.set($event)"
+      >
+        @for (cat of categoryOptions(); track cat) {
           <option [value]="cat">{{ cat }}</option>
         }
       </select>
     </div>
     <div class="filter-group">
-      <label>🔧 Status:</label>
-      <select [(ngModel)]="statusFilter" (ngModelChange)="onStatusChange($event)">
+      <label for="stock-report-status">🔧 Status:</label>
+      <select
+        id="stock-report-status"
+        [ngModel]="statusFilter()"
+        (ngModelChange)="statusFilter.set($event)"
+      >
         @for (st of statuses; track st) {
           <option [value]="st">{{ st }}</option>
         }
       </select>
     </div>
     <div class="filter-group">
-      <label>📊 Report Type:</label>
-      <select [(ngModel)]="reportType">
+      <label for="stock-report-type">📊 Report Type:</label>
+      <select
+        id="stock-report-type"
+        [ngModel]="reportType()"
+        (ngModelChange)="reportType.set($event)"
+      >
         @for (rt of reportTypes; track rt) {
           <option [value]="rt">{{ rt }}</option>
         }
       </select>
     </div>
     <div class="filter-group">
-      <label>📁 Format:</label>
-      <select [(ngModel)]="format">
+      <label for="stock-report-format">📁 Format:</label>
+      <select id="stock-report-format" [ngModel]="format()" (ngModelChange)="format.set($event)">
         @for (fmt of formats; track fmt) {
           <option [value]="fmt">{{ fmt }}</option>
         }
       </select>
     </div>
     <div class="filter-group">
-      <label>🔄 Include Zero Stock:</label>
-      <select [(ngModel)]="includeZeroStock">
+      <label for="stock-report-zero">🔄 Include Zero Stock:</label>
+      <select
+        id="stock-report-zero"
+        [ngModel]="includeZeroStock()"
+        (ngModelChange)="includeZeroStock.set($event)"
+      >
         <option value="Yes">Yes</option>
         <option value="No">No</option>
       </select>
     </div>
   </div>
 
-  <!-- Stock Summary Cards -->
   <div class="summary-section">
     <h2>📊 STOCK SUMMARY CARDS</h2>
     <div class="summary-grid">
@@ -83,7 +127,7 @@
         <div class="summary-content">
           <div class="summary-label">Total Items</div>
           <div class="summary-value">{{ totalItems() }}</div>
-          <div class="summary-sub">▲ +8.3%</div>
+          <div class="summary-sub">Filtered live valuation rows</div>
         </div>
       </div>
       <div class="summary-card">
@@ -91,7 +135,7 @@
         <div class="summary-content">
           <div class="summary-label">Total Value</div>
           <div class="summary-value">{{ formatValue(totalValue()) }}</div>
-          <div class="summary-sub">▲ +12.5%</div>
+          <div class="summary-sub">Current backend valuation</div>
         </div>
       </div>
       <div class="summary-card">
@@ -99,7 +143,7 @@
         <div class="summary-content">
           <div class="summary-label">Total Units</div>
           <div class="summary-value">{{ totalUnits() }}</div>
-          <div class="summary-sub">▼ -2.1%</div>
+          <div class="summary-sub">Current quantity on hand</div>
         </div>
       </div>
       <div class="summary-card">
@@ -107,7 +151,7 @@
         <div class="summary-content">
           <div class="summary-label">Turnover Rate</div>
           <div class="summary-value">{{ turnoverRate() }}</div>
-          <div class="summary-sub">▲ +0.3x</div>
+          <div class="summary-sub">From live movement totals</div>
         </div>
       </div>
       <div class="summary-card">
@@ -115,35 +159,35 @@
         <div class="summary-content">
           <div class="summary-label">Avg Stock Level</div>
           <div class="summary-value">{{ avgStockLevel() }}</div>
-          <div class="summary-sub">▼ -5 days</div>
+          <div class="summary-sub">Average units per item</div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Stock Value Trend Chart -->
   <div class="chart-section">
     <div class="section-header">
-      <h3>📈 STOCK VALUE TREND CHART</h3>
+      <h3>📈 INVENTORY ACTIVITY TREND</h3>
     </div>
     <div class="chart-placeholder">
       <div class="chart-legend">
-        <span class="legend-item"><span class="dot blue"></span> Total Value</span>
-        <span class="legend-item"><span class="dot green"></span> New Acquisitions</span>
-        <span class="legend-item"><span class="dot orange"></span> Depreciated Value</span>
+        <span class="legend-item"><span class="dot blue"></span> Total Movement</span>
       </div>
-      <div class="chart-bars">
-        @for (height of barHeights(); track $index) {
-          <div class="bar-group">
-            <div class="bar main" [style.height.px]="height"></div>
-            <div class="bar-label">{{ getMonthName($index + 1) }}</div>
-          </div>
-        }
-      </div>
+      @if (trendBars().length > 0) {
+        <div class="chart-bars">
+          @for (bar of trendBars(); track bar.label) {
+            <div class="bar-group">
+              <div class="bar main" [style.height.px]="bar.height"></div>
+              <div class="bar-label">{{ bar.label }}</div>
+            </div>
+          }
+        </div>
+      } @else {
+        <p>No activity trend data was returned for the selected range.</p>
+      }
     </div>
   </div>
 
-  <!-- Detailed Stock Report Table -->
   <div class="table-section">
     <div class="section-header">
       <h3>📋 DETAILED STOCK REPORT TABLE</h3>
@@ -163,7 +207,7 @@
           </tr>
         </thead>
         <tbody>
-          @for (item of filteredItems(); track item.sku) {
+          @for (item of filteredItems(); track item.id) {
             <tr>
               <td>{{ item.sku }}</td>
               <td>{{ item.name }}</td>
@@ -181,19 +225,10 @@
       </table>
     </div>
     <div class="pagination-bar">
-      <div class="pagination-info">Showing 1-{{ filteredItems().length }} of 1,234 items</div>
-      <div class="pagination-controls">
-        <button class="page-btn" disabled>Previous</button>
-        <button class="page-btn active">1</button>
-        <button class="page-btn">2</button>
-        <button class="page-btn">3</button>
-        <button class="page-btn">→</button>
-        <button class="page-btn">50</button>
-      </div>
+      <div class="pagination-info">Showing {{ filteredItems().length }} live report items</div>
     </div>
   </div>
 
-  <!-- Stock by Category -->
   <div class="category-section">
     <div class="section-header">
       <h3>📊 STOCK BY CATEGORY</h3>
@@ -215,16 +250,17 @@
     </div>
   </div>
 
-  <!-- Top Items by Stock Value -->
   <div class="top-items-section">
     <div class="section-header">
-      <h3>📈 STOCK MOVEMENT ANALYSIS - Top 10 Items by Stock Value</h3>
+      <h3>📈 TOP ITEMS BY STOCK VALUE</h3>
     </div>
     <div class="top-items-list">
       @for (item of topItemsByValue(); track item.name) {
         <div class="top-item">
           <div class="item-info">
-            <span class="item-rank">{{ topItemsByValue().indexOf(item) + 1 }}. {{ item.name }}</span>
+            <span class="item-rank"
+              >{{ topItemsByValue().indexOf(item) + 1 }}. {{ item.name }}</span
+            >
             <span class="item-value">{{ formatValue(item.value) }}</span>
           </div>
           <div class="progress-bar">
@@ -235,10 +271,9 @@
     </div>
   </div>
 
-  <!-- Stock Turnover by Category -->
   <div class="turnover-section">
     <div class="section-header">
-      <h3>📊 STOCK TURNOVER BY CATEGORY</h3>
+      <h3>📊 MOVEMENT RATE BY CATEGORY</h3>
     </div>
     <div class="turnover-list">
       @for (cat of turnoverByCategory(); track cat.name) {
@@ -255,7 +290,6 @@
     </div>
   </div>
 
-  <!-- Export Options -->
   <div class="export-section">
     <h3>⚡ EXPORT OPTIONS</h3>
     <div class="export-buttons">
@@ -289,8 +323,12 @@
       </div>
       <div class="modal-body">
         <div class="form-field">
-          <label>Frequency</label>
-          <select [(ngModel)]="scheduleFrequency">
+          <label for="schedule-frequency">Frequency</label>
+          <select
+            id="schedule-frequency"
+            [ngModel]="scheduleFrequency()"
+            (ngModelChange)="scheduleFrequency.set($event)"
+          >
             <option value="daily">Daily</option>
             <option value="weekly">Weekly</option>
             <option value="monthly">Monthly</option>
@@ -298,12 +336,23 @@
           </select>
         </div>
         <div class="form-field">
-          <label>Email Recipient</label>
-          <input type="email" [(ngModel)]="scheduleEmail" placeholder="email@example.com">
+          <label for="schedule-email">Email Recipient</label>
+          <input
+            id="schedule-email"
+            type="email"
+            [ngModel]="scheduleEmail()"
+            (ngModelChange)="scheduleEmail.set($event)"
+            placeholder="email@example.com"
+          />
         </div>
         <div class="form-field">
-          <label>Start Date</label>
-          <input type="date" [(ngModel)]="scheduleDate">
+          <label for="schedule-date">Start Date</label>
+          <input
+            id="schedule-date"
+            type="date"
+            [ngModel]="scheduleDate()"
+            (ngModelChange)="scheduleDate.set($event)"
+          />
         </div>
       </div>
       <div class="modal-footer">

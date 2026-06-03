@@ -21,26 +21,26 @@ export class SafetyBoxService {
   constructor(private apiService: ApiService) {}
 
   getAll(params?: any): Observable<ApiResponseModel<SafetyBoxDto[]>> {
-    return this.apiService.get<ApiResponseModel<SafetyBoxDto[]>>('SafetyBoxes', params);
+    return this.apiService.get<SafetyBoxDto[]>('SafetyBoxes', params);
   }
 
   getById(id: string): Observable<ApiResponseModel<SafetyBoxDto>> {
-    return this.apiService.get<ApiResponseModel<SafetyBoxDto>>(`SafetyBoxes/${id}`);
+    return this.apiService.get<SafetyBoxDto>(`SafetyBoxes/${id}`);
   }
 
   getByLocation(locationId: string): Observable<ApiResponseModel<SafetyBoxDto[]>> {
-    return this.apiService.get<ApiResponseModel<SafetyBoxDto[]>>(`SafetyBoxes/by-location/${locationId}`);
+    return this.apiService.get<SafetyBoxDto[]>(`SafetyBoxes/by-location/${locationId}`);
   }
 
   create(data: any): Observable<ApiResponseModel<string>> {
-    return this.apiService.post<ApiResponseModel<string>>('SafetyBoxes', data);
+    return this.apiService.post<string>('SafetyBoxes', data);
   }
 
   update(id: string, data: any): Observable<ApiResponseModel<any>> {
-    return this.apiService.put<ApiResponseModel<any>>(`SafetyBoxes/${id}`, data);
+    return this.apiService.put<any>(`SafetyBoxes/${id}`, data);
   }
 
   delete(id: string): Observable<ApiResponseModel<any>> {
-    return this.apiService.delete<ApiResponseModel<any>>(`SafetyBoxes/${id}`);
+    return this.apiService.delete<any>(`SafetyBoxes/${id}`);
   }
 }

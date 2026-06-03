@@ -42,12 +42,12 @@ export class Categories {
     const filtered = this.categoryApi.categories().filter((category) => {
       const matchesSearch =
         !term ||
-        category.name.toLowerCase().includes(term) ||
+        (category.name ?? '').toLowerCase().includes(term) ||
         (category.description ?? '').toLowerCase().includes(term) ||
         (category.parentCategoryName?.toLowerCase().includes(term) ?? false);
       const matchesParent =
         parentFilter === 'all' ||
-        (parentFilter === 'root' ? category.parentCategoryId === null : category.parentCategoryId === parentFilter);
+        (parentFilter === 'root' ? category.parentCategoryId == null : String(category.parentCategoryId ?? '') === parentFilter);
 
       return matchesSearch && matchesParent;
     });
@@ -61,7 +61,7 @@ export class Categories {
         return (b.subCategoriesCount ?? 0) - (a.subCategoriesCount ?? 0);
       }
 
-      return a.name.localeCompare(b.name);
+      return (a.name ?? '').localeCompare(b.name ?? '');
     });
   });
 
@@ -122,7 +122,7 @@ export class Categories {
     });
   }
 
-  protected removeCategory(id: string): void {
+  protected removeCategory(id: number): void {
     if (confirm('Delete this category?')) {
       this.categoryApi.remove(id);
     }

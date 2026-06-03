@@ -37,18 +37,18 @@ export class ReportService {
   constructor(private readonly apiService: ApiService) {}
 
   getInventoryValuation(params?: Record<string, unknown>): Observable<ApiResponse<InventoryValuationReport>> {
-    return this.apiService.get<ApiResponse<InventoryValuationReport>>(API_ENDPOINTS.REPORTS.INVENTORY_VALUATION, params);
+    return this.apiService.get<InventoryValuationReport>(API_ENDPOINTS.REPORTS.INVENTORY_VALUATION, params);
   }
 
   getDisposalReport(params?: Record<string, unknown>): Observable<ApiResponse<unknown>> {
-    return this.apiService.get<ApiResponse<unknown>>(API_ENDPOINTS.REPORTS.DISPOSAL, params);
+    return this.apiService.get<unknown>(API_ENDPOINTS.REPORTS.DISPOSAL, params);
   }
 
   getStockMovementReport(params?: Record<string, unknown>): Observable<ApiResponse<unknown>> {
-    return this.apiService.get<ApiResponse<unknown>>(API_ENDPOINTS.REPORTS.STOCK_MOVEMENT, params);
+    return this.apiService.get<unknown>(API_ENDPOINTS.REPORTS.STOCK_MOVEMENT, params);
   }
 
   getRequisitionHistoryReport(params?: Record<string, unknown>): Observable<ApiResponse<unknown>> {
-    return this.apiService.get<ApiResponse<unknown>>(API_ENDPOINTS.REPORTS.REQUISITION_HISTORY, params);
+    return this.apiService.get<unknown>(API_ENDPOINTS.REPORTS.REQUISITION_HISTORY, params);
   }
 }

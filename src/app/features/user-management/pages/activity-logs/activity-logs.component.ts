@@ -3,31 +3,35 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivityLogsService, ActivityLogDto } from '../../../../core/services/activity-logs.service';
 
-interface ActivityLog extends ActivityLogDto {
+interface LogEntry extends ActivityLogDto {
   id: string;
-  sessionId?: string;
-  method?: string;
-  endpoint?: string;
-  userAgent?: string;
-  changes?: { field: string; oldValue: string; newValue: string }[];
+  timestamp: string;
+  user: string;
+  action: string;
+  actionType: string;
+  entityType: string;
+  entityId: string;
+  details: string;
+  ipAddress: string;
+  status: string;
 }
 
-const NOW = Date.now();
-function ago(ms: number): string { return new Date(NOW - ms).toISOString(); }
-
-const MOCK_LOGS: ActivityLog[] = [
-  { id: '1', timestamp: ago(1000 * 60 * 2), user: 'John Doe', action: 'Created', actionType: 'Create', entityType: 'Property', entityId: 'PRP-0042', details: 'Added new office property asset to inventory', ipAddress: '192.168.1.100', status: 'Success', sessionId: 'ses_abc123', method: 'POST', endpoint: '/api/properties', userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', changes: [{ field: 'Name', oldValue: '-', newValue: 'MacBook Pro M3' }, { field: 'Serial', oldValue: '-', newValue: 'C02XK2L8Q6PJ' }, { field: 'Value', oldValue: '-', newValue: '$2,499' }] },
-  { id: '2', timestamp: ago(1000 * 60 * 15), user: 'Sarah Smith', action: 'Updated', actionType: 'Update', entityType: 'Requisition', entityId: 'REQ-0088', details: 'Modified quantity from 5 to 10 units', ipAddress: '192.168.1.105', status: 'Success', sessionId: 'ses_def456', method: 'PUT', endpoint: '/api/requisitions/REQ-0088', changes: [{ field: 'Quantity', oldValue: '5', newValue: '10' }] },
-  { id: '3', timestamp: ago(1000 * 60 * 45), user: 'Mike Wilson', action: 'Deleted', actionType: 'Delete', entityType: 'Stock Item', entityId: 'STK-0231', details: 'Removed obsolete inventory item from warehouse', ipAddress: '192.168.1.110', status: 'Success', sessionId: 'ses_ghi789', method: 'DELETE', endpoint: '/api/stock/STK-0231' },
-  { id: '4', timestamp: ago(1000 * 60 * 60 * 2), user: 'Lisa Wong', action: 'Approved', actionType: 'Approve', entityType: 'Requisition', entityId: 'REQ-0085', details: 'Approved stationery request for Finance department', ipAddress: '192.168.1.115', status: 'Success', sessionId: 'ses_jkl012', method: 'POST', endpoint: '/api/requisitions/REQ-0085/approve' },
-  { id: '5', timestamp: ago(1000 * 60 * 60 * 5), user: 'Peter Chen', action: 'Login', actionType: 'Login', entityType: 'User', entityId: 'USR-004', details: 'Successful login from new device', ipAddress: '10.0.0.45', status: 'Success', sessionId: 'ses_mno345', method: 'POST', endpoint: '/api/auth/login' },
-  { id: '6', timestamp: ago(1000 * 60 * 60 * 8), user: 'Robert Brown', action: 'Exported', actionType: 'Export', entityType: 'Report', entityId: 'RPT-0012', details: 'Exported monthly compliance report as PDF', ipAddress: '192.168.1.120', status: 'Success', sessionId: 'ses_pqr678', method: 'GET', endpoint: '/api/reports/RPT-0012/export' },
-  { id: '7', timestamp: ago(1000 * 60 * 60 * 24), user: 'System', action: 'Alert', actionType: 'Alert', entityType: 'System', entityId: 'SYS-001', details: 'Disk usage exceeded 85% threshold on primary server', ipAddress: '127.0.0.1', status: 'Warning', sessionId: 'ses_stu901', method: '-', endpoint: '/system/monitoring' },
-  { id: '8', timestamp: ago(1000 * 60 * 60 * 30), user: 'David Lee', action: 'Login Failed', actionType: 'Error', entityType: 'User', entityId: 'USR-008', details: 'Invalid password attempt (3rd attempt)', ipAddress: '203.0.113.50', status: 'Failure', sessionId: 'ses_vwx234', method: 'POST', endpoint: '/api/auth/login' },
-  { id: '9', timestamp: ago(1000 * 60 * 60 * 48), user: 'Alice Johnson', action: 'Created', actionType: 'Create', entityType: 'Transfer', entityId: 'TRF-0016', details: 'Initiated property transfer between warehouses', ipAddress: '192.168.1.125', status: 'Success', sessionId: 'ses_yza567', method: 'POST', endpoint: '/api/transfers' },
-  { id: '10', timestamp: ago(1000 * 60 * 60 * 72), user: 'Elena Garcia', action: 'Rejected', actionType: 'Reject', entityType: 'Requisition', entityId: 'REQ-0082', details: 'Rejected request due to budget constraints', ipAddress: '192.168.1.130', status: 'Success', sessionId: 'ses_bcd890', method: 'POST', endpoint: '/api/requisitions/REQ-0082/reject' },
-  { id: '11', timestamp: ago(1000 * 60 * 60 * 96), user: 'Kevin Martin', action: 'Updated', actionType: 'Update', entityType: 'User', entityId: 'USR-010', details: 'Updated role permissions for user', ipAddress: '192.168.1.135', status: 'Success', sessionId: 'ses_efg123', method: 'PUT', endpoint: '/api/users/USR-010' },
-  { id: '12', timestamp: ago(1000 * 60 * 60 * 120), user: 'System', action: 'Backup', actionType: 'Create', entityType: 'Backup', entityId: 'BAK-0056', details: 'Automated daily backup completed successfully', ipAddress: '127.0.0.1', status: 'Success', sessionId: 'ses_hij456', method: '-', endpoint: '/system/backup' },
+const MOCK_LOGS: LogEntry[] = [
+  { id: '1', timestamp: new Date(Date.now() - 1000 * 60 * 2).toISOString(), user: 'John Doe', action: 'Created property asset', actionType: 'Create', entityType: 'Property', entityId: 'PRP-2026-042', details: 'Added MacBook Pro M3 to IT inventory', ipAddress: '192.168.1.100', status: 'Success' },
+  { id: '2', timestamp: new Date(Date.now() - 1000 * 60 * 5).toISOString(), user: 'Sarah Smith', action: 'Approved requisition', actionType: 'Approve', entityType: 'Requisition', entityId: 'REQ-2026-891', details: 'Approved stationery request for HR department', ipAddress: '192.168.1.101', status: 'Success' },
+  { id: '3', timestamp: new Date(Date.now() - 1000 * 60 * 8).toISOString(), user: 'Mike Wilson', action: 'Updated stock levels', actionType: 'Update', entityType: 'Stock', entityId: 'STK-045', details: 'Adjusted laptop stock from 24 to 22 units', ipAddress: '192.168.1.102', status: 'Success' },
+  { id: '4', timestamp: new Date(Date.now() - 1000 * 60 * 12).toISOString(), user: 'Lisa Wong', action: 'Exported financial report', actionType: 'Export', entityType: 'Report', entityId: 'RPT-FIN-2026-Q2', details: 'Exported Q2 financial summary report', ipAddress: '192.168.1.103', status: 'Success' },
+  { id: '5', timestamp: new Date(Date.now() - 1000 * 60 * 15).toISOString(), user: 'Robert Brown', action: 'Login attempt failed', actionType: 'Login', entityType: 'User', entityId: 'EMP-006', details: 'Failed login attempt from unrecognized device', ipAddress: '203.0.113.45', status: 'Failure' },
+  { id: '6', timestamp: new Date(Date.now() - 1000 * 60 * 20).toISOString(), user: 'Alice Johnson', action: 'Transferred property', actionType: 'Update', entityType: 'Property', entityId: 'PRP-2025-128', details: 'Transferred office furniture to Warehouse B', ipAddress: '192.168.1.105', status: 'Success' },
+  { id: '7', timestamp: new Date(Date.now() - 1000 * 60 * 25).toISOString(), user: 'Kevin Martin', action: 'Deleted user account', actionType: 'Delete', entityType: 'User', entityId: 'EMP-016', details: 'Permanently deleted terminated employee account', ipAddress: '192.168.1.106', status: 'Success' },
+  { id: '8', timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(), user: 'System', action: 'Automated backup', actionType: 'Create', entityType: 'Backup', entityId: 'BAK-2026-06-01', details: 'Daily system backup completed successfully (2.4 GB)', ipAddress: '127.0.0.1', status: 'Success' },
+  { id: '9', timestamp: new Date(Date.now() - 1000 * 60 * 35).toISOString(), user: 'Elena Garcia', action: 'Created new request', actionType: 'Create', entityType: 'Requisition', entityId: 'REQ-2026-892', details: 'New purchase request for office supplies', ipAddress: '192.168.1.107', status: 'Success' },
+  { id: '10', timestamp: new Date(Date.now() - 1000 * 60 * 40).toISOString(), user: 'David Lee', action: 'Stock adjustment alert', actionType: 'Alert', entityType: 'Stock', entityId: 'STK-101', details: 'Low stock warning: Printer ink cartridges below threshold', ipAddress: '192.168.1.108', status: 'Warning' },
+  { id: '11', timestamp: new Date(Date.now() - 1000 * 60 * 45).toISOString(), user: 'Neha Patel', action: 'Updated system config', actionType: 'Update', entityType: 'Settings', entityId: 'CFG-001', details: 'Modified email notification settings', ipAddress: '192.168.1.109', status: 'Success' },
+  { id: '12', timestamp: new Date(Date.now() - 1000 * 60 * 50).toISOString(), user: 'Tom Clark', action: 'Rejected requisition', actionType: 'Reject', entityType: 'Requisition', entityId: 'REQ-2026-890', details: 'Rejected due to budget constraints', ipAddress: '192.168.1.110', status: 'Success' },
+  { id: '13', timestamp: new Date(Date.now() - 1000 * 60 * 55).toISOString(), user: 'Julia Rodriguez', action: 'Viewed employee records', actionType: 'View', entityType: 'Employee', entityId: 'EMP-012', details: 'Accessed personnel file for annual review', ipAddress: '192.168.1.111', status: 'Success' },
+  { id: '14', timestamp: new Date(Date.now() - 1000 * 60 * 60).toISOString(), user: 'Henry Kim', action: 'System error', actionType: 'Error', entityType: 'System', entityId: 'SYS-ERR-8912', details: 'Database connection timeout on warehouse module', ipAddress: '192.168.1.112', status: 'Failure' },
+  { id: '15', timestamp: new Date(Date.now() - 1000 * 60 * 65).toISOString(), user: 'Megan White', action: 'Imported vendor list', actionType: 'Import', entityType: 'Supplier', entityId: 'BULK-003', details: 'Bulk imported 45 vendor records from CSV', ipAddress: '192.168.1.113', status: 'Success' },
 ];
 
 @Component({
@@ -39,10 +43,10 @@ const MOCK_LOGS: ActivityLog[] = [
 })
 export class ActivityLogsComponent implements OnInit {
   private readonly activityLogsService = inject(ActivityLogsService);
+
   showDetailsModal = signal(false);
-  selectedLog = signal<ActivityLog | null>(null);
+  selectedLog = signal<LogEntry | null>(null);
   showExportDropdown = signal(false);
-  useMockData = signal(false);
 
   searchQuery = signal('');
   userFilter = signal('All');
@@ -50,29 +54,34 @@ export class ActivityLogsComponent implements OnInit {
   entityTypeFilter = signal('All');
   statusFilter = signal('All');
   currentPage = signal(1);
-  rowsPerPage = signal(10);
-  activityLogs = signal<ActivityLog[]>([]);
+  rowsPerPage = signal(15);
+  loading = signal(false);
+  activityLogs = signal<LogEntry[]>([]);
   totalLogs = signal(0);
+  useMockData = signal(false);
 
-  ngOnInit(): void { this.loadLogs(); }
+  ngOnInit(): void {
+    this.loadLogs();
+  }
 
   loadLogs(): void {
+    this.loading.set(true);
     this.activityLogsService.getAll().subscribe({
       next: (logs) => {
-        const validLogs = logs as ActivityLog[];
-        if (validLogs?.length) {
-          this.activityLogs.set(validLogs);
-          this.totalLogs.set(validLogs.length);
+        if (logs.length) {
+          this.activityLogs.set(logs as LogEntry[]);
+          this.totalLogs.set(logs.length);
           this.useMockData.set(false);
         } else {
-          this.fallbackToMock();
+          this.fallback();
         }
+        this.loading.set(false);
       },
-      error: () => this.fallbackToMock()
+      error: () => { this.fallback(); this.loading.set(false); }
     });
   }
 
-  private fallbackToMock(): void {
+  private fallback(): void {
     this.activityLogs.set(MOCK_LOGS);
     this.totalLogs.set(MOCK_LOGS.length);
     this.useMockData.set(true);
@@ -82,10 +91,7 @@ export class ActivityLogsComponent implements OnInit {
     let result = [...this.activityLogs()];
     if (this.searchQuery()) {
       const q = this.searchQuery().toLowerCase();
-      result = result.filter(l =>
-        l.user.toLowerCase().includes(q) || l.entityType.toLowerCase().includes(q) ||
-        l.details.toLowerCase().includes(q) || l.action.toLowerCase().includes(q)
-      );
+      result = result.filter(l => l.user.toLowerCase().includes(q) || l.entityType.toLowerCase().includes(q) || l.details.toLowerCase().includes(q) || l.action.toLowerCase().includes(q));
     }
     if (this.userFilter() !== 'All') result = result.filter(l => l.user === this.userFilter());
     if (this.actionTypeFilter() !== 'All') result = result.filter(l => l.actionType === this.actionTypeFilter());
@@ -100,32 +106,21 @@ export class ActivityLogsComponent implements OnInit {
   });
 
   totalPages = computed(() => Math.max(1, Math.ceil(this.filteredLogs().length / this.rowsPerPage())));
-
   displayRange = computed(() => {
     const total = this.filteredLogs().length;
-    if (total === 0) return { start: 0, end: 0 };
-    const start = (this.currentPage() - 1) * this.rowsPerPage() + 1;
-    return { start, end: Math.min(this.currentPage() * this.rowsPerPage(), total) };
+    if (!total) return { start: 0, end: 0 };
+    return { start: (this.currentPage() - 1) * this.rowsPerPage() + 1, end: Math.min(this.currentPage() * this.rowsPerPage(), total) };
   });
 
   summaryStats = computed(() => {
     const all = this.activityLogs();
-    const total = all.length || 1;
-    const success = all.filter(l => l.status === 'Success').length;
-    const failures = all.filter(l => l.status === 'Failure').length;
-    const warnings = all.filter(l => l.status === 'Warning').length;
     return {
       total: all.length,
-      success,
-      failures,
-      warnings,
-      successPct: Math.round((success / total) * 100),
-      failurePct: Math.round((failures / total) * 100),
-      warningPct: Math.round((warnings / total) * 100),
+      success: all.filter(l => l.status === 'Success').length,
+      failures: all.filter(l => l.status === 'Failure').length,
+      uniqueUsers: new Set(all.map(l => l.user)).size,
     };
   });
-
-  uniqueUsers = computed(() => [...new Set(this.activityLogs().map(l => l.user))]);
 
   onSearch(e: Event): void { this.searchQuery.set((e.target as HTMLInputElement).value); this.currentPage.set(1); }
   onUserFilter(e: Event): void { this.userFilter.set((e.target as HTMLSelectElement).value); this.currentPage.set(1); }
@@ -142,23 +137,34 @@ export class ActivityLogsComponent implements OnInit {
   goToPage(page: number): void { this.currentPage.set(page); }
 
   getActionIcon(actionType: string): string {
-    const icons: Record<string, string> = { 'Create': 'bi-plus-circle', 'Update': 'bi-pencil', 'Delete': 'bi-trash', 'View': 'bi-eye', 'Login': 'bi-key', 'Logout': 'bi-box-arrow-right', 'Export': 'bi-download', 'Import': 'bi-upload', 'Approve': 'bi-check-circle', 'Reject': 'bi-x-circle', 'Alert': 'bi-exclamation-triangle', 'Error': 'bi-x-circle' };
+    const icons: Record<string, string> = {
+      'Create': 'bi-plus-circle', 'Update': 'bi-pencil', 'Delete': 'bi-trash',
+      'View': 'bi-eye', 'Login': 'bi-key', 'Logout': 'bi-box-arrow-right',
+      'Export': 'bi-download', 'Import': 'bi-upload', 'Approve': 'bi-check-circle',
+      'Reject': 'bi-x-circle', 'Alert': 'bi-exclamation-triangle', 'Error': 'bi-x-circle'
+    };
     return icons[actionType] || 'bi-circle';
   }
 
-  getActionColor(actionType: string): string {
-    const colors: Record<string, string> = { 'Create': 'green', 'Update': 'blue', 'Delete': 'red', 'View': 'gray', 'Login': 'green', 'Logout': 'gray', 'Export': 'purple', 'Import': 'purple', 'Approve': 'green', 'Reject': 'red', 'Alert': 'orange', 'Error': 'red' };
-    return colors[actionType] || 'gray';
+  getActionClass(actionType: string): string {
+    const c: Record<string, string> = {
+      'Create': 'green', 'Update': 'blue', 'Delete': 'red', 'View': 'gray',
+      'Login': 'green', 'Logout': 'gray', 'Export': 'purple', 'Import': 'purple',
+      'Approve': 'green', 'Reject': 'red', 'Alert': 'orange', 'Error': 'red'
+    };
+    return c[actionType] || 'gray';
   }
 
-  getStatusColor(status: string): string {
-    const colors: Record<string, string> = { 'Success': 'green', 'Failure': 'red', 'Warning': 'orange' };
-    return colors[status] || 'gray';
+  formatDate(date: any): string {
+    if (!date) return 'N/A';
+    return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   }
 
   formatTimestamp(date: any): string {
     if (!date) return 'N/A';
-    return new Date(date).toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    const d = new Date(date);
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + ', ' +
+      d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   }
 
   formatTimeAgo(date: any): string {
@@ -169,22 +175,27 @@ export class ActivityLogsComponent implements OnInit {
     if (mins < 60) return `${mins}m ago`;
     const hours = Math.floor(diff / 3600000);
     if (hours < 24) return `${hours}h ago`;
-    const days = Math.floor(diff / 86400000);
-    if (days < 7) return `${days}d ago`;
-    return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    return `${Math.floor(diff / 86400000)}d ago`;
   }
 
   exportLogs(format: string): void { this.showExportDropdown.set(false); }
 
-  openDetailsModal(log: ActivityLog): void { this.selectedLog.set(log); this.showDetailsModal.set(true); }
-  closeDetailsModal(): void { this.showDetailsModal.set(false); this.selectedLog.set(null); }
+  openDetailsModal(log: LogEntry): void {
+    this.selectedLog.set(log);
+    this.showDetailsModal.set(true);
+  }
 
-  openLogSettings(): void {}
+  closeDetailsModal(): void { this.showDetailsModal.set(false); this.selectedLog.set(null); }
 
   copyDetails(): void {
     const log = this.selectedLog();
     if (!log) return;
-    const text = `Timestamp: ${this.formatTimestamp(log.timestamp)}\nUser: ${log.user}\nAction: ${log.action}\nEntity: ${log.entityType} (${log.entityId})\nStatus: ${log.status}\nDetails: ${log.details}`;
-    navigator.clipboard.writeText(text);
+    const txt = `Timestamp: ${this.formatTimestamp(log.timestamp)}\nUser: ${log.user}\nAction: ${log.action}\nEntity: ${log.entityType}\nEntity ID: ${log.entityId}\nStatus: ${log.status}\nIP: ${log.ipAddress}\nDetails: ${log.details}`;
+    navigator.clipboard.writeText(txt);
   }
+
+  uniqueUsers = computed(() => [...new Set(this.activityLogs().map(l => l.user))].sort());
+  uniqueEntityTypes = computed(() => [...new Set(this.activityLogs().map(l => l.entityType))].sort());
+
+  Math = Math;
 }

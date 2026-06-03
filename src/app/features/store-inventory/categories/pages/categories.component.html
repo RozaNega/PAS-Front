@@ -9,6 +9,77 @@
     </button>
   </div>
 
+  <!-- KPI Summary Cards -->
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-icon" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8);">
+        <i class="bi bi-folder"></i>
+      </div>
+      <div class="kpi-content">
+        <span class="kpi-label">Total Categories</span>
+        <span class="kpi-value">{{ totalCategories() }}</span>
+        <span class="kpi-trend up">
+          <i class="bi bi-arrow-up"></i> All categories
+        </span>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon" style="background: linear-gradient(135deg, #10b981, #059669);">
+        <i class="bi bi-check-circle"></i>
+      </div>
+      <div class="kpi-content">
+        <span class="kpi-label">Active Categories</span>
+        <span class="kpi-value">{{ activeCategories() }}</span>
+        <span class="kpi-trend up">
+          <i class="bi bi-check2"></i> Active
+        </span>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+        <i class="bi bi-box-seam"></i>
+      </div>
+      <div class="kpi-content">
+        <span class="kpi-label">Total Items</span>
+        <span class="kpi-value">{{ totalItemsAcrossCategories() }}</span>
+        <span class="kpi-trend up">
+          <i class="bi bi-box"></i> Across all categories
+        </span>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon" style="background: linear-gradient(135deg, #8b5cf6, #6d28d9);">
+        <i class="bi bi-diagram-3"></i>
+      </div>
+      <div class="kpi-content">
+        <span class="kpi-label">Subcategories</span>
+        <span class="kpi-value">{{ totalSubcategories() }}</span>
+        <span class="kpi-trend">
+          <i class="bi bi-layers"></i> Nested groups
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts Section -->
+  <div class="charts-panel">
+    <div class="chart-card">
+      <div class="chart-header">
+        <i class="bi bi-bar-chart-fill"></i>
+        <span>Items per Category</span>
+      </div>
+      <div echarts [options]="categoryBarOpts" class="chart-box"></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header">
+        <i class="bi bi-pie-chart-fill"></i>
+        <span>Category Distribution</span>
+      </div>
+      <div echarts [options]="categoryPieOpts" class="chart-box"></div>
+    </div>
+  </div>
+
+  <!-- Filter Bar -->
   <div class="filter-bar">
     <div class="search-box">
       <i class="bi bi-search"></i>
@@ -19,7 +90,7 @@
         <i class="bi bi-diagram-3"></i> Tree View
       </button>
       <button class="view-btn" [class.active]="viewMode() === 'list'" (click)="toggleViewMode('list')">
-        <i class="bi bi-list"></i> List View
+        <i class="bi bi-list-ul"></i> List View
       </button>
     </div>
   </div>
@@ -27,140 +98,49 @@
   <!-- Tree View -->
   @if (viewMode() === 'tree') {
     <div class="tree-view-section">
-      <h3>🌳 CATEGORY TREE VIEW</h3>
-      <div class="category-tree">
-        <div class="tree-node root">
-          <div class="node-content">
-            <i class="bi bi-folder-fill"></i>
-            <span class="node-name">All Categories (45)</span>
+      @for (root of categoryTree(); track root.id) {
+        <div class="tree-root">
+          <div class="tree-node-header" (click)="openCategoryItemsModal(root)">
+            <span class="node-toggle"><i class="bi bi-chevron-down"></i></span>
+            <span class="node-icon folder"><i class="bi bi-folder-fill"></i></span>
+            <span class="node-name">{{ root.name }}</span>
+            <span class="node-badge">{{ root.itemsCount }} items</span>
           </div>
-          <div class="tree-children">
-            <div class="tree-node">
-              <div class="node-content">
-                <i class="bi bi-folder-fill"></i>
-                <span class="node-name">Electronics (234 items)</span>
-              </div>
-              <div class="tree-children">
+          @if (root.children.length > 0) {
+            <div class="tree-children">
+              @for (child of root.children; track child.id) {
                 <div class="tree-node">
-                  <div class="node-content">
-                    <i class="bi bi-folder"></i>
-                    <span class="node-name">Computers (89 items)</span>
+                  <div class="tree-node-header" (click)="openCategoryItemsModal(child)">
+                    <span class="node-toggle"><i class="bi bi-chevron-right"></i></span>
+                    <span class="node-icon subfolder"><i class="bi bi-folder"></i></span>
+                    <span class="node-name">{{ child.name }}</span>
+                    <span class="node-badge">{{ child.itemsCount }} items</span>
                   </div>
-                  <div class="tree-children">
-                    <div class="tree-node">
-                      <div class="node-content">
-                        <i class="bi bi-file-earmark"></i>
-                        <span class="node-name">Desktops (34 items)</span>
-                      </div>
+                  @if (child.children.length > 0) {
+                    <div class="tree-children">
+                      @for (grandchild of child.children; track grandchild.id) {
+                        <div class="tree-node leaf">
+                          <div class="tree-node-header" (click)="openCategoryItemsModal(grandchild)">
+                            <span class="node-icon leaf"><i class="bi bi-file-earmark"></i></span>
+                            <span class="node-name">{{ grandchild.name }}</span>
+                            <span class="node-badge">{{ grandchild.itemsCount }} items</span>
+                          </div>
+                        </div>
+                      }
                     </div>
-                    <div class="tree-node">
-                      <div class="node-content">
-                        <i class="bi bi-file-earmark"></i>
-                        <span class="node-name">Laptops (45 items)</span>
-                      </div>
-                    </div>
-                    <div class="tree-node">
-                      <div class="node-content">
-                        <i class="bi bi-file-earmark"></i>
-                        <span class="node-name">Servers (10 items)</span>
-                      </div>
-                    </div>
-                  </div>
+                  }
                 </div>
-                <div class="tree-node">
-                  <div class="node-content">
-                    <i class="bi bi-folder"></i>
-                    <span class="node-name">Printers (56 items)</span>
-                  </div>
-                  <div class="tree-children">
-                    <div class="tree-node">
-                      <div class="node-content">
-                        <i class="bi bi-file-earmark"></i>
-                        <span class="node-name">Laser Printers (34 items)</span>
-                      </div>
-                    </div>
-                    <div class="tree-node">
-                      <div class="node-content">
-                        <i class="bi bi-file-earmark"></i>
-                        <span class="node-name">Inkjet Printers (22 items)</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div class="tree-node">
-                  <div class="node-content">
-                    <i class="bi bi-folder"></i>
-                    <span class="node-name">Networking (78 items)</span>
-                  </div>
-                </div>
-                <div class="tree-node">
-                  <div class="node-content">
-                    <i class="bi bi-folder"></i>
-                    <span class="node-name">Audio/Visual (11 items)</span>
-                  </div>
-                </div>
-              </div>
+              }
             </div>
-            <div class="tree-node">
-              <div class="node-content">
-                <i class="bi bi-folder-fill"></i>
-                <span class="node-name">Furniture (189 items)</span>
-              </div>
-              <div class="tree-children">
-                <div class="tree-node">
-                  <div class="node-content">
-                    <i class="bi bi-folder"></i>
-                    <span class="node-name">Chairs (89 items)</span>
-                  </div>
-                </div>
-                <div class="tree-node">
-                  <div class="node-content">
-                    <i class="bi bi-folder"></i>
-                    <span class="node-name">Desks (67 items)</span>
-                  </div>
-                </div>
-                <div class="tree-node">
-                  <div class="node-content">
-                    <i class="bi bi-folder"></i>
-                    <span class="node-name">Cabinets (33 items)</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="tree-node">
-              <div class="node-content">
-                <i class="bi bi-folder-fill"></i>
-                <span class="node-name">Stationery (234 items)</span>
-              </div>
-            </div>
-            <div class="tree-node">
-              <div class="node-content">
-                <i class="bi bi-folder-fill"></i>
-                <span class="node-name">Supplies (156 items)</span>
-              </div>
-            </div>
-            <div class="tree-node">
-              <div class="node-content">
-                <i class="bi bi-folder-fill"></i>
-                <span class="node-name">IT Equipment (89 items)</span>
-              </div>
-            </div>
-            <div class="tree-node">
-              <div class="node-content">
-                <i class="bi bi-folder-fill"></i>
-                <span class="node-name">Office Equipment (67 items)</span>
-              </div>
-            </div>
-          </div>
+          }
         </div>
-      </div>
+      }
     </div>
   }
 
   <!-- List View -->
   @if (viewMode() === 'list') {
     <div class="list-view-section">
-      <h3>📋 CATEGORY LIST VIEW</h3>
       <div class="table-container">
         <table class="categories-table">
           <thead>
@@ -176,12 +156,33 @@
           <tbody>
             @for (cat of filteredCategories(); track cat.id) {
               <tr>
-                <td>{{ cat.name }}</td>
-                <td>{{ cat.parentCategory }}</td>
-                <td>{{ cat.itemsCount }}</td>
+                <td>
+                  <div class="cell-with-icon">
+                    <i class="bi bi-folder"></i>
+                    <span>{{ cat.name }}</span>
+                  </div>
+                </td>
+                <td>
+                  @if (cat.parentCategory !== '-') {
+                    <span class="parent-badge">{{ cat.parentCategory }}</span>
+                  } @else {
+                    <span class="parent-badge root">Root</span>
+                  }
+                </td>
+                <td>
+                  <div class="items-cell">
+                    <span class="items-count">{{ cat.itemsCount }}</span>
+                    <div class="progress-bar-mini">
+                      <div class="progress-fill" [style.width.%]="(cat.itemsCount / totalItemsAcrossCategories()) * 100"></div>
+                    </div>
+                  </div>
+                </td>
                 <td>{{ cat.subcategories }}</td>
                 <td>
-                  <span class="status-icon">{{ getStatusIcon(cat.status) }}</span>
+                  <span class="status-badge" [class.active]="cat.status === 'Active'" [class.inactive]="cat.status !== 'Active'">
+                    <span class="status-dot"></span>
+                    {{ cat.status }}
+                  </span>
                 </td>
                 <td>
                   <div class="actions-cell">
@@ -207,14 +208,7 @@
         </table>
       </div>
       <div class="pagination-bar">
-        <div class="pagination-info">Showing 1-{{ filteredCategories().length }} of 45 categories</div>
-        <div class="pagination-controls">
-          <button class="page-btn" disabled>Previous</button>
-          <button class="page-btn active">1</button>
-          <button class="page-btn">2</button>
-          <button class="page-btn">→</button>
-          <button class="page-btn">2</button>
-        </div>
+        <div class="pagination-info">Showing {{ filteredCategories().length }} of {{ totalCategories() }} categories</div>
       </div>
     </div>
   }
@@ -225,7 +219,15 @@
   <div class="modal-overlay" (click)="closeAddModal()">
     <div class="modal-content" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <h3>Add New Category</h3>
+        <div class="modal-header-left">
+          <div class="modal-header-icon">
+            <i class="bi bi-folder-plus"></i>
+          </div>
+          <div>
+            <h3>Add New Category</h3>
+            <p class="modal-subtitle">Create a new category in the hierarchy</p>
+          </div>
+        </div>
         <button class="btn-close" (click)="closeAddModal()">
           <i class="bi bi-x-lg"></i>
         </button>
@@ -233,13 +235,13 @@
       <div class="modal-body">
         <form [formGroup]="categoryForm" (ngSubmit)="saveCategory()">
           <div class="form-section">
-            <h4>CATEGORY INFORMATION</h4>
+            <h4>Category Information</h4>
             <div class="form-grid">
               <div class="form-field full-width">
-                <label>Category Name *</label>
+                <label>Category Name <span class="required">*</span></label>
                 <input type="text" formControlName="name" placeholder="Enter category name">
                 @if (categoryForm.controls.name.invalid && categoryForm.controls.name.touched) {
-                  <p class="field-error">Category name is required.</p>
+                  <p class="field-error">Category name is required (min 2 characters).</p>
                 }
               </div>
               <div class="form-field full-width">
@@ -250,18 +252,25 @@
                     <option [value]="cat.id">{{ cat.name }}</option>
                   }
                 </select>
+                <p class="field-hint">Leave empty to create a top-level category</p>
               </div>
               <div class="form-field full-width">
                 <label>Description</label>
-                <textarea rows="2" formControlName="description" placeholder="Enter description"></textarea>
+                <textarea rows="3" formControlName="description" placeholder="Enter category description"></textarea>
               </div>
             </div>
           </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" (click)="closeAddModal()" [disabled]="loading()">Cancel</button>
+            <button type="submit" class="btn btn-primary" [disabled]="loading()">
+              @if (loading()) {
+                <i class="bi bi-arrow-repeat spinning"></i> Saving...
+              } @else {
+                <i class="bi bi-check-lg"></i> Create Category
+              }
+            </button>
+          </div>
         </form>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" (click)="closeAddModal()" [disabled]="loading()">Cancel</button>
-        <button class="btn btn-primary" type="submit" [disabled]="loading()">{{ loading() ? 'Saving...' : 'Save' }}</button>
       </div>
     </div>
   </div>
@@ -270,43 +279,49 @@
 <!-- Category Items Modal -->
 @if (showCategoryItemsModal() && selectedCategory()) {
   <div class="modal-overlay" (click)="closeCategoryItemsModal()">
-    <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-content wide" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <h3>Category Items: {{ selectedCategory()?.name }}</h3>
+        <div class="modal-header-left">
+          <div class="modal-header-icon" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8);">
+            <i class="bi bi-folder"></i>
+          </div>
+          <div>
+            <h3>{{ selectedCategory()?.name }}</h3>
+            <p class="modal-subtitle">Category details and items</p>
+          </div>
+        </div>
         <button class="btn-close" (click)="closeCategoryItemsModal()">
           <i class="bi bi-x-lg"></i>
         </button>
       </div>
       <div class="modal-body">
-        <div class="info-section">
-          <h4>CATEGORY SUMMARY</h4>
-          <div class="info-grid">
-            <div class="info-item">
-              <label>Category:</label>
-              <span>{{ selectedCategory()?.name }}</span>
-            </div>
-            <div class="info-item">
-              <label>Parent:</label>
-              <span>{{ selectedCategory()?.parentCategory }}</span>
-            </div>
-            <div class="info-item">
-              <label>Total Items:</label>
-              <span>{{ selectedCategory()?.itemsCount }} items</span>
-            </div>
-            <div class="info-item">
-              <label>Subcategories:</label>
-              <span>{{ selectedCategory()?.subcategories }}</span>
-            </div>
-            <div class="info-item">
-              <label>Total Value:</label>
-              <span>$1,245,678</span>
-            </div>
+        <div class="detail-grid">
+          <div class="detail-item">
+            <span class="detail-label">Category Name</span>
+            <span class="detail-value">{{ selectedCategory()?.name }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Parent Category</span>
+            <span class="detail-value">{{ selectedCategory()?.parentCategory === '-' ? 'Root' : selectedCategory()?.parentCategory }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Total Items</span>
+            <span class="detail-value">{{ selectedCategory()?.itemsCount }} items</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Subcategories</span>
+            <span class="detail-value">{{ selectedCategory()?.subcategories }}</span>
           </div>
         </div>
+
+        <!-- Items in this category -->
         <div class="info-section">
-          <h4>📦 ITEMS IN THIS CATEGORY</h4>
+          <h4>
+            <i class="bi bi-box-seam"></i>
+            Items in this Category
+          </h4>
           <div class="table-container">
-            <table class="items-table">
+            <table class="detail-table">
               <thead>
                 <tr>
                   <th>SKU</th>
@@ -321,12 +336,17 @@
               <tbody>
                 @for (item of categoryItems(); track item.sku) {
                   <tr>
-                    <td>{{ item.sku }}</td>
+                    <td><span class="sku-tag">{{ item.sku }}</span></td>
                     <td>{{ item.name }}</td>
                     <td>{{ item.subcategory }}</td>
-                    <td>{{ item.stock }}</td>
+                    <td>
+                      <div class="stock-indicator" [class.low]="item.stock < 20">
+                        <span class="stock-dot"></span>
+                        {{ item.stock }}
+                      </div>
+                    </td>
                     <td>{{ formatValue(item.price) }}</td>
-                    <td>{{ formatValue(item.totalValue) }}</td>
+                    <td><span class="value-tag">{{ formatValue(item.totalValue) }}</span></td>
                     <td>
                       <div class="actions-cell">
                         <button class="action-btn" title="View"><i class="bi bi-eye"></i></button>
@@ -340,10 +360,15 @@
             </table>
           </div>
         </div>
+
+        <!-- Subcategories -->
         <div class="info-section">
-          <h4>📁 SUBCATEGORIES</h4>
+          <h4>
+            <i class="bi bi-diagram-3"></i>
+            Subcategories
+          </h4>
           <div class="table-container">
-            <table class="subcategories-table">
+            <table class="detail-table">
               <thead>
                 <tr>
                   <th>Subcategory Name</th>
@@ -356,11 +381,19 @@
               <tbody>
                 @for (sub of subcategories(); track sub.id) {
                   <tr>
-                    <td>{{ sub.name }}</td>
+                    <td>
+                      <div class="cell-with-icon">
+                        <i class="bi bi-folder2"></i>
+                        <span>{{ sub.name }}</span>
+                      </div>
+                    </td>
                     <td>{{ sub.itemsCount }}</td>
                     <td>{{ formatValue(sub.totalValue) }}</td>
                     <td>
-                      <span class="status-icon">{{ getStatusIcon(sub.status) }}</span>
+                      <span class="status-badge" [class.active]="sub.status === 'Active'" [class.inactive]="sub.status !== 'Active'">
+                        <span class="status-dot"></span>
+                        {{ sub.status }}
+                      </span>
                     </td>
                     <td>
                       <div class="actions-cell">
@@ -377,9 +410,9 @@
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-secondary">Export List</button>
-        <button class="btn btn-secondary">Print</button>
-        <button class="btn btn-primary" (click)="closeCategoryItemsModal()">Close</button>
+        <button class="btn btn-secondary" (click)="closeCategoryItemsModal()">
+          <i class="bi bi-x-lg"></i> Close
+        </button>
       </div>
     </div>
   </div>

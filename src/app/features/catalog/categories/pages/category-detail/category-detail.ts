@@ -28,7 +28,7 @@ export class CategoryDetail {
     effect(() => {
       const categories = this.categories();
       if (categories.length > 0 && !this.selectedId()) {
-        this.selectedId.set(categories[0].id);
+        this.selectedId.set(String(categories[0].id));
       }
     });
   }

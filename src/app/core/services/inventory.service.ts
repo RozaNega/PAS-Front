@@ -264,6 +264,19 @@ export class InventoryService {
     return this.getStockOverview(lowStockParams);
   }
 
+  // Get all shelves
+  getAllShelves(params?: {
+    warehouseId?: string;
+    searchTerm?: string;
+    isActive?: boolean;
+    pageNumber?: number;
+    pageSize?: number;
+  }): Observable<ApiResponse<any[]>> {
+    return this.apiService.get<unknown>('ShelfLocations', params).pipe(
+      map((raw) => normalizePasListResponse<any>(raw)),
+    );
+  }
+
   private normalizeEnvelope<T>(raw: unknown): ApiResponse<T> {
     const env = unwrapPasEnvelope<unknown>(raw);
     const data =

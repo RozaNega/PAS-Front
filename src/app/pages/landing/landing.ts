@@ -6,11 +6,13 @@ import {
   inject,
   signal,
   OnInit,
-  Inject,
-  PLATFORM_ID
+  OnDestroy,
+  PLATFORM_ID,
 } from '@angular/core';
-import { RouterLink, Router } from '@angular/router';
 import { isPlatformBrowser } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
+import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 
 type ModuleId = 'property' | 'storage' | 'workflow';
@@ -26,7 +28,10 @@ interface StatItem {
   readonly label: string;
 }
 
+type FeatureId = 'live-dashboard' | 'scan-first-inventory' | 'audit-ready-controls';
+
 interface FeatureItem {
+  readonly id: FeatureId;
   readonly icon: string;
   readonly title: string;
   readonly description: string;
@@ -39,19 +44,25 @@ interface ModuleItem {
   readonly points: readonly string[];
 }
 
+interface ApiResponse<T> {
+  readonly success: boolean;
+  readonly message?: string;
+  readonly data: T;
+}
+
 @Component({
   selector: 'app-landing',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, ReactiveFormsModule],
   templateUrl: './landing.html',
   styleUrl: './landing.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class Landing implements OnInit {
+export class Landing implements OnInit, OnDestroy {
   private readonly hostElement = inject<ElementRef<HTMLElement>>(ElementRef);
   protected readonly authService = inject(AuthService);
-  private readonly router = inject(Router);
   private readonly platformId = inject(PLATFORM_ID);
+  private readonly http = inject(HttpClient);
 
   protected readonly menuOpen = signal(false);
 
@@ -104,17 +115,20 @@ export class Landing implements OnInit {
 
   protected readonly features: readonly FeatureItem[] = [
     {
+      id: 'live-dashboard',
       icon: 'bi bi-speedometer2',
       title: 'Live Command Dashboard',
       description: 'Monitor inventory, transfers, and approvals in one real-time command center.',
     },
     {
+      id: 'scan-first-inventory',
       icon: 'bi bi-qr-code-scan',
       title: 'Scan-First Inventory',
       description:
         'Use QR workflows for rapid receiving, issue, transfer, and verification cycles.',
     },
     {
+      id: 'audit-ready-controls',
       icon: 'bi bi-shield-check',
       title: 'Audit-Ready Controls',
       description:
@@ -164,16 +178,108 @@ export class Landing implements OnInit {
     return '/auth/login';
   });
 
+  private readonly roleBaseRoute = computed(() => {
+    const parts = this.dashboardRoute()
+      .split('/')
+      .filter(Boolean);
+    return parts.length ? `/${parts[0]}` : '';
+  });
+
+  protected readonly inventoryRoute = computed(() => {
+    // Only some roles expose inventory pages directly.
+    switch (this.roleBaseRoute()) {
+      case '/admin':
+        return '/admin/inventory';
+      case '/storekeeper':
+        return '/storekeeper/inventory';
+      case '/manager':
+        return '/manager/inventory';
+      default:
+        return this.dashboardRoute();
+    }
+  });
+
+  protected readonly auditControlsRoute = computed(() => {
+    // Audit/compliance pages differ per role.
+    switch (this.roleBaseRoute()) {
+      case '/admin':
+        return '/admin/reports/audit';
+      case '/manager':
+        return '/manager/audit-trail';
+      case '/compliance-officer':
+        return '/compliance-officer/audit-trail';
+      default:
+        return this.dashboardRoute();
+    }
+  });
+
+  protected readonly contactForm = new FormGroup({
+    name: new FormControl('', { nonNullable: true }),
+    email: new FormControl('', {
+      nonNullable: true,
+      validators: [Validators.required, Validators.email],
+    }),
+    message: new FormControl('', {
+      nonNullable: true,
+      validators: [Validators.required, Validators.minLength(10)],
+    }),
+  });
+
+  protected readonly contactSubmitting = signal(false);
+  protected readonly contactSuccess = signal<string | null>(null);
+  protected readonly contactError = signal<string | null>(null);
+
   constructor() {
     this.restoreTheme();
     this.applyTheme();
   }
 
   ngOnInit(): void {
-    if (isPlatformBrowser(this.platformId) && this.authService.isAuthenticated()) {
-      const user = this.authService.getCurrentUser();
-      void this.router.navigateByUrl(this.authService.getDashboardRouteForUser(user));
+    // Keep landing page visible - don't auto-redirect
+    // Users can click login button if they want to authenticate
+    if (isPlatformBrowser(this.platformId)) {
+      console.log('📄 Landing page loaded - waiting for user action');
+      
+      // Programmatically prevent overscroll
+      this.preventOverscroll();
     }
+  }
+
+  ngOnDestroy(): void {
+    // Reset body background when leaving landing page
+    if (isPlatformBrowser(this.platformId)) {
+      document.body.style.background = '';
+      document.documentElement.style.background = '';
+    }
+    console.log('🔄 Landing page destroyed - user navigated away');
+  }
+
+  private preventOverscroll(): void {
+    // Set body background to match landing page
+    document.body.style.background = '#f8fafc';
+    document.documentElement.style.background = '#f8fafc';
+    
+    // Prevent overscroll behavior
+    document.body.style.overscrollBehavior = 'none';
+    document.documentElement.style.overscrollBehavior = 'none';
+    
+    // Webkit overscroll behavior (for Safari)
+    (document.body.style as any).webkitOverscrollBehavior = 'none';
+    (document.documentElement.style as any).webkitOverscrollBehavior = 'none';
+    
+    // Additional prevention for touch devices
+    document.addEventListener('touchmove', (e) => {
+      // Allow scrolling within the page content
+      const scrollTop = document.documentElement.scrollTop || document.body.scrollTop;
+      const scrollHeight = document.documentElement.scrollHeight || document.body.scrollHeight;
+      const clientHeight = document.documentElement.clientHeight || window.innerHeight;
+      
+      // Prevent overscroll at top and bottom
+      if ((scrollTop <= 0 && e.touches[0].clientY > e.touches[0].clientY) ||
+          (scrollTop + clientHeight >= scrollHeight && e.touches[0].clientY < e.touches[0].clientY)) {
+        e.preventDefault();
+      }
+    }, { passive: false });
   }
 
   protected toggleMenu(): void {
@@ -289,5 +395,32 @@ export class Landing implements OnInit {
     const toHex = (value: number) => value.toString(16).padStart(2, '0');
 
     return `#${toHex(mix(r))}${toHex(mix(g))}${toHex(mix(b))}`;
+  }
+
+  protected submitContact(): void {
+    this.contactSuccess.set(null);
+    this.contactError.set(null);
+
+    if (this.contactForm.invalid) {
+      this.contactForm.markAllAsTouched();
+      this.contactError.set('Please provide a valid email and a message.');
+      return;
+    }
+
+    this.contactSubmitting.set(true);
+    const payload = this.contactForm.getRawValue();
+
+    this.http.post<ApiResponse<{ id: string }>>('/api/landing/contact', payload).subscribe({
+      next: (res: ApiResponse<{ id: string }>) => {
+        this.contactSubmitting.set(false);
+        this.contactSuccess.set(res?.message ?? 'Thanks — we received your message.');
+        this.contactForm.reset();
+      },
+      error: (err: unknown) => {
+        console.error('Contact submission failed', err);
+        this.contactSubmitting.set(false);
+        this.contactError.set('Something went wrong. Please try again in a moment.');
+      },
+    });
   }
 }

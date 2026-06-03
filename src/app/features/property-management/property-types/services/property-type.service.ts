@@ -18,22 +18,22 @@ export class PropertyTypeService {
   constructor(private apiService: ApiService) {}
 
   getAll(params?: any): Observable<ApiResponseModel<PropertyTypeDto[]>> {
-    return this.apiService.get<ApiResponseModel<PropertyTypeDto[]>>('PropertyTypes', params);
+    return this.apiService.get<PropertyTypeDto[]>('PropertyTypes', params);
   }
 
   getById(id: string): Observable<ApiResponseModel<PropertyTypeDto>> {
-    return this.apiService.get<ApiResponseModel<PropertyTypeDto>>(`PropertyTypes/${id}`);
+    return this.apiService.get<PropertyTypeDto>(`PropertyTypes/${id}`);
   }
 
   create(data: any): Observable<ApiResponseModel<string>> {
-    return this.apiService.post<ApiResponseModel<string>>('PropertyTypes', data);
+    return this.apiService.post<string>('PropertyTypes', data);
   }
 
   update(id: string, data: any): Observable<ApiResponseModel<any>> {
-    return this.apiService.put<ApiResponseModel<any>>(`PropertyTypes/${id}`, data);
+    return this.apiService.put<any>(`PropertyTypes/${id}`, data);
   }
 
   delete(id: string): Observable<ApiResponseModel<any>> {
-    return this.apiService.delete<ApiResponseModel<any>>(`PropertyTypes/${id}`);
+    return this.apiService.delete<any>(`PropertyTypes/${id}`);
   }
 }

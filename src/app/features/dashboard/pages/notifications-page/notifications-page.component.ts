@@ -4,11 +4,18 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { PasApiService } from '../../../../shared/services/pas-api.service';
+import { CurrentUserService } from '../../../../core/services/current-user.service';
+import { AuthService } from '../../../../core/services/auth.service';
 
 import {
-  NotificationFeatureService,
+  NotificationFeatureService as NotificationService,
   Notification,
 } from '../../../common/notifications/services/notification-feature.service';
+import {
+  WorkflowService,
+  ServiceRequest,
+  NotificationMessage,
+} from '../../../../core/services/workflow.service';
 
 export interface RequestUpdate {
   srNumber: string;
@@ -23,6 +30,10 @@ export interface SystemAlert {
   date: string;
 }
 
+export interface ExtendedNotification extends Notification {
+  requestId?: string;
+}
+
 @Component({
   selector: 'app-notifications-page',
   standalone: true,
@@ -34,53 +45,89 @@ export class NotificationsPageComponent {
   private router = inject(Router);
   private modal = inject(NgbModal);
   private readonly pasApi = inject(PasApiService);
-  private readonly notificationService = inject(NotificationFeatureService);
+  private readonly notificationService = inject(NotificationService);
+  private readonly workflowService = inject(WorkflowService);
+  private readonly currentUserService = inject(CurrentUserService);
+  private readonly authService = inject(AuthService);
 
   searchQuery = '';
   filterType = 'all';
-  notifications: Notification[] = [];
+  notifications: ExtendedNotification[] = [];
+  workflowNotifications: ExtendedNotification[] = [];
 
   constructor() {
     this.loadNotifications();
   }
 
+  requestUpdates: RequestUpdate[] = [];
+  systemAlerts: SystemAlert[] = [];
+
   loadNotifications(): void {
+    // API
     this.notificationService.getNotifications().subscribe({
       next: (response) => {
         if (response.success && response.data) {
           this.notifications = response.data.notifications;
         }
       },
-      error: (err) => console.error('Error loading notifications:', err)
+      error: (err) => console.error('Error loading notifications:', err),
     });
+
+    // Workflow
+    const currentUser = this.currentUserService.getCurrentUserValue();
+    if (currentUser?.id) {
+      const role = this.authService.mapUserToDashboardRole(currentUser);
+      const wfNotifs = this.workflowService.getNotificationsForUser(
+        currentUser.id,
+        this.mapRoleToWfRole(role),
+      );
+      this.workflowNotifications = wfNotifs.map((n: NotificationMessage) => ({
+        id: n.id,
+        message: n.message,
+        isRead: n.isRead,
+        sentDate: n.createdDate.toISOString(),
+        isDeleted: false,
+        type: n.type,
+        requestId: n.requestId, // Add requestId here
+      }));
+
+      // Populate Request Updates
+      const requests = this.workflowService.getRequestsForEmployee(currentUser.id);
+      this.requestUpdates = requests.slice(0, 5).map((r: ServiceRequest) => ({
+        srNumber: r.srNumber,
+        status: r.status,
+        submittedDate: r.submittedDate.toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+        }),
+      }));
+    }
   }
 
-  requestUpdates: RequestUpdate[] = [
-    {
-      srNumber: 'SR-2024-123',
-      status: 'Pending Approval',
-      submittedDate: 'Dec 15',
-    },
-    {
-      srNumber: 'SR-2024-122',
-      status: 'Pending Approval',
-      submittedDate: 'Dec 14',
-    },
-  ];
+  private mapRoleToWfRole(role: string | null): any {
+    if (role === 'manager') return 'Manager';
+    if (role === 'admin') return 'Admin';
+    if (role === 'compliance-officer') return 'Compliance';
+    return 'Employee';
+  }
 
-  systemAlerts: SystemAlert[] = [];
+  get filteredNotifications(): ExtendedNotification[] {
+    let combined = [...this.notifications, ...this.workflowNotifications];
 
-  get filteredNotifications(): Notification[] {
-    let filtered = this.notifications;
-    
+    // Sort by date descending
+    combined.sort((a, b) => new Date(b.sentDate).getTime() - new Date(a.sentDate).getTime());
+
     if (this.searchQuery) {
-      filtered = filtered.filter(
-        (n: Notification) =>
-          n.message.toLowerCase().includes(this.searchQuery.toLowerCase())
+      combined = combined.filter((n: Notification) =>
+        n.message.toLowerCase().includes(this.searchQuery.toLowerCase()),
       );
     }
 
-    return filtered;
+    if (this.filterType !== 'all') {
+      // Optional: Filter by type if available in the model
+    }
+
+    return combined;
   }
 
   get unreadCount(): number {
@@ -88,30 +135,64 @@ export class NotificationsPageComponent {
   }
 
   markAllAsRead(): void {
+    // API
     this.notificationService.markAllAsRead().subscribe(() => {
       this.notifications.forEach((n) => (n.isRead = true));
     });
+
+    // Workflow
+    const currentUser = this.currentUserService.getCurrentUserValue();
+    if (currentUser?.id) {
+      const role = this.mapRoleToWfRole(this.authService.mapUserToDashboardRole(currentUser));
+      this.workflowService.markAllNotificationsAsRead(currentUser.id, role);
+      this.workflowNotifications.forEach((n) => (n.isRead = true));
+    }
   }
 
   markAsRead(id: string): void {
-    this.notificationService.markAsRead(id).subscribe(() => {
-      const notification = this.notifications.find((n) => n.id === id);
+    // Check if it's a workflow notification (workflow IDs start with req_)
+    if (id.startsWith('req_')) {
+      this.workflowService.markNotificationAsRead(id);
+      const notification = this.workflowNotifications.find((n) => n.id === id);
       if (notification) {
         notification.isRead = true;
       }
-    });
+    } else {
+      // API
+      this.notificationService.markAsRead(id).subscribe(() => {
+        const notification = this.notifications.find((n) => n.id === id);
+        if (notification) {
+          notification.isRead = true;
+        }
+      });
+    }
   }
 
   dismiss(id: string): void {
-    this.notificationService.deleteNotification(id).subscribe(() => {
-      this.notifications = this.notifications.filter((n) => n.id !== id);
+    if (id.startsWith('req_')) {
+      this.workflowService.dismissNotification(id);
+      this.workflowNotifications = this.workflowNotifications.filter((n) => n.id !== id);
+    } else {
+      this.notificationService.deleteNotification(id).subscribe(() => {
+        this.notifications = this.notifications.filter((n) => n.id !== id);
+      });
+    }
+  }
+
+  viewRequest(srNumber?: string): void {
+    if (!srNumber) return;
+    this.router.navigate(['/employee/dashboard/my-requests'], {
+      queryParams: { search: srNumber },
     });
   }
 
-  viewRequest(srNumber: string): void {
-    // This assumes srNumber can be extracted from message or is part of the data
-    // For now, navigating to requests list or a generic handler
-    this.router.navigate(['/employee/requests/pending']);
+  viewAllRequestUpdates(): void {
+    this.router.navigate(['/employee/dashboard/my-requests']);
+  }
+
+  viewAllSystemAlerts(): void {
+    // Navigate to a section or stay here and just show filter
+    this.searchQuery = 'Alert';
   }
 
   formatDate(date: string): string {

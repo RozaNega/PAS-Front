@@ -28,7 +28,7 @@ export class ItemDetail {
     effect(() => {
       const items = this.items();
       if (items.length > 0 && !this.selectedId()) {
-        this.selectedId.set(items[0].id);
+        this.selectedId.set(String(items[0].id));
       }
     });
   }

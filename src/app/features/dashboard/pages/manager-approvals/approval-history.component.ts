@@ -1,5 +1,8 @@
-import { Component, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Subscription } from 'rxjs';
+import { ManagerDataService } from '../../../../core/services/manager-data.service';
+import { WorkflowService } from '../../../../core/services/workflow.service';
 
 interface HistoryItem {
   id: string;
@@ -16,9 +19,39 @@ interface HistoryItem {
   templateUrl: './approval-history.component.html',
   styleUrls: ['./approval-history.component.scss']
 })
-export class ApprovalHistoryComponent {
-  protected readonly history = signal<HistoryItem[]>([
-    { id: '1', srNumber: 'SR-2024-118', requester: 'John Doe', decision: 'Approved', date: '2024-01-20' },
-    { id: '2', srNumber: 'SR-2024-117', requester: 'Peter Chen', decision: 'Rejected', date: '2024-01-19' }
-  ]);
+export class ApprovalHistoryComponent implements OnInit, OnDestroy {
+  private readonly managerData = inject(ManagerDataService);
+  private readonly workflowService = inject(WorkflowService);
+  private readonly subs: Subscription[] = [];
+
+  protected readonly history = signal<HistoryItem[]>([]);
+
+  ngOnInit(): void {
+    this.loadHistory();
+    this.subs.push(this.workflowService.getRequestUpdates().subscribe(() => this.loadHistory()));
+  }
+
+  ngOnDestroy(): void {
+    this.subs.forEach((sub) => sub.unsubscribe());
+  }
+
+  private loadHistory(): void {
+    this.managerData.syncServiceRequests().subscribe(() => {
+      const approved = this.managerData.requestRows('approved').map((row) => ({
+        id: row.id,
+        srNumber: row.requestNumber,
+        requester: row.requesterName,
+        decision: 'Approved',
+        date: row.approvedDate || row.requestedDate,
+      }));
+      const rejected = this.managerData.requestRows('rejected').map((row) => ({
+        id: row.id,
+        srNumber: row.requestNumber,
+        requester: row.requesterName,
+        decision: 'Rejected',
+        date: row.rejectedDate || row.requestedDate,
+      }));
+      this.history.set([...approved, ...rejected]);
+    });
+  }
 }

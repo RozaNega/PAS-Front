@@ -1,95 +1,74 @@
 import { Injectable } from '@angular/core';
-import { Observable, map } from 'rxjs';
-import { ApiService } from './api.service';
-import { ApiResponse } from '../../types/api-response.type';
-import { normalizePasListResponse, toCamelCaseDeep, unwrapPasEnvelope } from '../utils/pas-api-json.util';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Observable } from 'rxjs';
 
-/** Row from GET /api/Employees (EmployeeDto) */
-export interface EmployeeDto {
-  id: string;
-  employeeCode: string;
-  fullName: string;
+export interface Employee {
+  id: number;
+  employeeId: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phoneNumber: string;
   department: string;
-  position?: string;
-  email?: string;
-  phone?: string;
-  hireDate?: string;
+  designation: string;
+  dateOfBirth: string;
+  dateOfJoining: string;
+  employmentType: string;
+  status: string;
   isActive: boolean;
+  fullName?: string;
+  employeeCode?: string;
+  employeeName?: string;
 }
 
-/** POST /api/Employees — CreateEmployeeCommand */
-export interface CreateEmployeeRequest {
-  employeeCode: string;
-  fullName: string;
-  department: string;
-  position?: string | null;
-  email?: string | null;
-  phone?: string | null;
-  hireDate?: string | null;
+export interface EmployeePaginatedResponse {
+  items: Employee[];
+  pageNumber: number;
+  totalPages: number;
+  totalCount: number;
+  hasPreviousPage: boolean;
+  hasNextPage: boolean;
 }
 
-/** PUT /api/Employees/{id} — UpdateEmployeeCommand */
-export interface UpdateEmployeeRequest {
-  id: string;
-  employeeCode?: string | null;
-  fullName?: string | null;
-  department?: string | null;
-  position?: string | null;
-  email?: string | null;
-  phone?: string | null;
-  hireDate?: string | null;
-  isActive: boolean;
+export interface EmployeeApiResponse {
+  success: boolean;
+  message: string;
+  data: EmployeePaginatedResponse | Employee | null;
+  statusCode: number;
 }
 
-@Injectable({ providedIn: 'root' })
+@Injectable({
+  providedIn: 'root'
+})
 export class EmployeesService {
-  constructor(private apiService: ApiService) {}
+  private baseUrl = '/api/employees';
 
-  getAll(params?: {
-    department?: string;
-    searchTerm?: string;
-    withUserAccountOnly?: boolean;
-  }): Observable<ApiResponse<EmployeeDto[]>> {
-    return this.apiService.get<unknown>('Employees', params).pipe(
-      map((raw) => normalizePasListResponse<EmployeeDto>(raw)),
-    );
+  constructor(private http: HttpClient) {}
+
+  getByUserId(userId: string): Observable<EmployeeApiResponse> {
+    return this.http.get<EmployeeApiResponse>(`${this.baseUrl}/by-user/${userId}`);
   }
 
-  getById(id: string): Observable<ApiResponse<EmployeeDto>> {
-    return this.apiService.get<unknown>(`Employees/${id}`).pipe(
-      map((raw) => this.normalizeEnvelope<EmployeeDto>(raw)),
-    );
+  getEmployees(pageNumber: number = 1, pageSize: number = 10): Observable<EmployeeApiResponse> {
+    let params = new HttpParams()
+      .set('pageNumber', pageNumber.toString())
+      .set('pageSize', pageSize.toString());
+    return this.http.get<EmployeeApiResponse>(this.baseUrl, { params });
   }
 
-  create(data: CreateEmployeeRequest): Observable<ApiResponse<string>> {
-    return this.apiService.post<unknown>('Employees', data).pipe(
-      map((raw) => this.normalizeEnvelope<string>(raw)),
-    );
+  getEmployee(id: number): Observable<EmployeeApiResponse> {
+    return this.http.get<EmployeeApiResponse>(`${this.baseUrl}/${id}`);
   }
 
-  update(data: UpdateEmployeeRequest): Observable<ApiResponse<unknown>> {
-    return this.apiService.put<unknown>(`Employees/${data.id}`, data).pipe(
-      map((raw) => this.normalizeEnvelope(raw)),
-    );
+  createEmployee(employee: Partial<Employee>): Observable<EmployeeApiResponse> {
+    return this.http.post<EmployeeApiResponse>(this.baseUrl, employee);
   }
 
-  delete(id: string): Observable<ApiResponse<unknown>> {
-    return this.apiService.delete<unknown>(`Employees/${id}`).pipe(
-      map((raw) => this.normalizeEnvelope(raw)),
-    );
+  updateEmployee(id: number, employee: Partial<Employee>): Observable<EmployeeApiResponse> {
+    return this.http.put<EmployeeApiResponse>(`${this.baseUrl}/${id}`, employee);
   }
 
-  private normalizeEnvelope<T>(raw: unknown): ApiResponse<T> {
-    const env = unwrapPasEnvelope<unknown>(raw);
-    const data =
-      env.data !== undefined && env.data !== null
-        ? (typeof env.data === 'object' ? toCamelCaseDeep<T>(env.data) : (env.data as T))
-        : (undefined as unknown as T);
-    return {
-      success: env.success,
-      message: env.message ?? '',
-      data,
-      statusCode: env.statusCode ?? 0,
-    };
+  deleteEmployee(id: number): Observable<EmployeeApiResponse> {
+    return this.http.delete<EmployeeApiResponse>(`${this.baseUrl}/${id}`);
   }
 }

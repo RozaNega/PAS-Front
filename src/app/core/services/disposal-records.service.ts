@@ -7,45 +7,93 @@ export interface DisposalRecordDto {
   id: string;
   itemId: string;
   itemName?: string;
-  reason: string;
+  sku?: string;
+  unitOfMeasure?: string;
+  quantity: number;
   disposalDate: string;
-  status: string;
-  approvedBy?: string;
+  disposedBy: string;
+  disposedByName?: string;
+  reason?: string;
+  status?: string;
+  approvedById?: string;
+  approvedByName?: string;
   approvedDate?: string;
+  approvalRemarks?: string;
+  estimatedValue: number;
+  actualValue: number;
+}
+
+export interface DisposalRecordDetailDto extends DisposalRecordDto {
+  items: DisposalItemDetailDto[];
+  createdAt: string;
+  updatedAt?: string;
+  createdBy?: string;
+  auditHistory: DisposalAuditDto[];
+}
+
+export interface DisposalItemDetailDto {
+  itemId: string;
+  itemName?: string;
+  sku?: string;
+  quantity: number;
+  availableStock: number;
+  unitCost: number;
+  totalValue: number;
+  reason?: string;
+}
+
+export interface DisposalAuditDto {
+  date: string;
+  action: string;
+  performedBy: string;
+  remarks?: string;
+}
+
+export interface PaginatedDisposalResponse {
+  items: DisposalRecordDto[];
+  pageNumber: number;
+  totalPages: number;
+  totalCount: number;
+  hasPreviousPage: boolean;
+  hasNextPage: boolean;
 }
 
 export interface CreateDisposalRecordCommand {
-  itemId: string;
-  reason: string;
-  disposalDate: string;
+  items: { itemId: string; quantity: number; reason?: string }[];
+  reason?: string;
 }
 
 export interface ApproveDisposalCommand {
   id: string;
-  notes?: string;
+  isApproved: boolean;
+  remarks?: string;
+  actualValue?: number;
 }
 
 @Injectable({ providedIn: 'root' })
 export class DisposalRecordsService {
   constructor(private apiService: ApiService) {}
 
-  getAll(params?: any): Observable<ApiResponseModel<DisposalRecordDto[]>> {
-    return this.apiService.get<ApiResponseModel<DisposalRecordDto[]>>('DisposalRecords', params);
+  getAll(params?: {
+    itemId?: string;
+    status?: string;
+    fromDate?: string;
+    toDate?: string;
+    pageNumber?: number;
+    pageSize?: number;
+  }): Observable<ApiResponseModel<PaginatedDisposalResponse>> {
+    return this.apiService.get<PaginatedDisposalResponse>('DisposalRecords', params);
   }
 
-  getById(id: string): Observable<ApiResponseModel<DisposalRecordDto>> {
-    return this.apiService.get<ApiResponseModel<DisposalRecordDto>>(`DisposalRecords/${id}`);
+  getById(id: string): Observable<ApiResponseModel<DisposalRecordDetailDto>> {
+    return this.apiService.get<DisposalRecordDetailDto>(`DisposalRecords/${id}`);
   }
 
   create(data: CreateDisposalRecordCommand): Observable<ApiResponseModel<string>> {
-    return this.apiService.post<ApiResponseModel<string>>('DisposalRecords', data);
+    return this.apiService.post<string>('DisposalRecords', data);
   }
 
-  approve(id: string, data?: ApproveDisposalCommand): Observable<ApiResponseModel<any>> {
-    return this.apiService.post<ApiResponseModel<any>>(`DisposalRecords/${id}/approve`, data || {});
-  }
-
-  delete(id: string): Observable<ApiResponseModel<any>> {
-    return this.apiService.delete<ApiResponseModel<any>>(`DisposalRecords/${id}`);
+  approve(id: string, data: ApproveDisposalCommand): Observable<ApiResponseModel<any>> {
+    return this.apiService.post<any>(`DisposalRecords/${id}/approve`, data);
   }
 }

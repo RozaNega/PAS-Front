@@ -338,16 +338,16 @@
                 </tr>
               } @else {
                 @for (item of filteredItems(); track item.id) {
-                  <tr [class.row-selected]="isSelected(item.id)">
+                  <tr [class.row-selected]="isSelected('' + item.id)">
                     <td class="checkbox-col">
-                      <input type="checkbox" [checked]="isSelected(item.id)" (change)="toggleSelection(item.id)" [disabled]="isSubmitting()">
+                      <input type="checkbox" [checked]="isSelected('' + item.id)" (change)="toggleSelection('' + item.id)" [disabled]="isSubmitting()">
                     </td>
                     <td>
                       <div class="item-info">
                         <div class="item-icon">{{ item.itemName.charAt(0) }}</div>
                         <div class="item-text">
                           <span class="name">{{ item.itemName }}</span>
-                          <span class="id">UID: {{ item.id.split('-').pop() }}</span>
+                          <span class="id">UID: {{ ('' + item.id).split('-').pop() }}</span>
                         </div>
                       </div>
                     </td>

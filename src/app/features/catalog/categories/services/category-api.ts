@@ -20,14 +20,14 @@ export class CategoryApi {
     
     // Create nodes
     all.forEach(c => {
-      map.set(c.id, { id: c.id, name: c.name, description: c.description || '', children: [] });
+      map.set(String(c.id), { id: c.id, name: c.name, description: c.description || '', children: [] });
     });
     
     const roots: any[] = [];
     all.forEach(c => {
-      const node = map.get(c.id)!;
-      if (c.parentCategoryId && map.has(c.parentCategoryId)) {
-        const parent = map.get(c.parentCategoryId);
+      const node = map.get(String(c.id))!;
+      if (c.parentCategoryId && map.has(String(c.parentCategoryId))) {
+        const parent = map.get(String(c.parentCategoryId));
         if (parent) parent.children.push(node);
         else roots.push(node);
       } else {
@@ -58,14 +58,14 @@ export class CategoryApi {
     ).subscribe({
       next: (res) => {
         if (res.success && res.data) {
-          this.categoriesSignal.set(res.data);
+          this.categoriesSignal.set(res.data as any);
         }
       }
     });
   }
 
   create(payload: { name: string; description: string; parentCategoryId: string | null }) {
-    return this.categoryService.createCategory(payload).pipe(
+    return this.categoryService.createCategory(payload as any).pipe(
       tap((res) => {
         if (res.success) this.refresh();
       })
@@ -73,14 +73,14 @@ export class CategoryApi {
   }
 
   update(payload: { id: string; name: string; description: string; parentCategoryId: string | null }) {
-    return this.categoryService.update(payload.id, payload).pipe(
+    return this.categoryService.update(payload.id as any, payload as any).pipe(
       tap((res) => {
         if (res.success) this.refresh();
       })
     );
   }
 
-  remove(id: string): void {
+  remove(id: number): void {
     this.categoryService.delete(id).subscribe({
       next: (res) => {
         if (res.success) this.refresh();
@@ -89,7 +89,7 @@ export class CategoryApi {
   }
 
   getById(id: string): CategoryDto | undefined {
-    return this.categories().find((category) => category.id === id);
+    return this.categories().find((category) => String(category.id) === id);
   }
 
   getDetailById(id: string): any {
@@ -97,7 +97,7 @@ export class CategoryApi {
     if (!category) return undefined;
     return {
       ...category,
-      subCategories: this.categories().filter(c => c.parentCategoryId === id),
+      subCategories: this.categories().filter(c => String(c.parentCategoryId ?? '') === id),
       items: []
     };
   }

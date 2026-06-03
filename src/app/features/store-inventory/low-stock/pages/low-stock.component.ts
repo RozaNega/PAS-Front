@@ -1,12 +1,19 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { InventoryService, InventoryStockDto } from '../../../../core/services/inventory.service';
 import { WarehousesService } from '../../../../core/services/warehouses.service';
+import { forkJoin, of } from 'rxjs';
+import { catchError, map } from 'rxjs/operators';
+import { ItemMasterService } from '../../../../core/services/item-master.service';
+import { InventoryValuationItemDto, ReportsService } from '../../../../core/services/reports.service';
+
+type AlertSeverity = 'Critical' | 'Warning' | 'Info';
+type AlertThreshold = 'Critical Only' | 'Critical & Warning' | 'All Low Stock';
 
 interface LowStockItem {
   id: string;
-  severity: 'Critical' | 'Warning' | 'Info';
+  severity: AlertSeverity;
   name: string;
   sku: string;
   current: number;
@@ -14,9 +21,14 @@ interface LowStockItem {
   deficit: number;
   warehouse: string;
   location: string;
+  locations: string[];
+  warehouses: string[];
+  category: string;
+  available: number;
+  reserved: number;
+  unitOfMeasure: string;
   lastOrder: string;
   daysUntilEmpty: number;
-  category: string;
   itemId: string;
   suggestedOrder: number;
   unit: string;
@@ -45,6 +57,12 @@ interface SummaryStats {
   categoriesAffected: number;
 }
 
+interface AnalysisItem {
+  name: string;
+  items: number;
+  percentage: number;
+}
+
 function addDays(d: Date, n: number): Date {
   const x = new Date(d);
   x.setDate(x.getDate() + n);
@@ -53,21 +71,21 @@ function addDays(d: Date, n: number): Date {
 
 function createMockLowStockItems(): LowStockItem[] {
   return [
-    { id: 'mock-ls-01', severity: 'Critical', name: 'Teff - White', sku: 'GRA-TEF-WH-001', current: 8, minStock: 50, deficit: 42, warehouse: 'Grain Silo', location: 'Silo-A-01', lastOrder: '2026-05-18T10:00:00.000Z', daysUntilEmpty: 2, category: 'Grains', itemId: 'item-m01', suggestedOrder: 42, unit: 'Kgs' },
-    { id: 'mock-ls-02', severity: 'Critical', name: 'Coffee - Arabica', sku: 'CRP-COF-AR-002', current: 30, minStock: 200, deficit: 170, warehouse: 'Cold Storage', location: 'Cold-A-02', lastOrder: '2026-05-20T08:30:00.000Z', daysUntilEmpty: 5, category: 'Beverages', itemId: 'item-m02', suggestedOrder: 170, unit: 'Kgs' },
-    { id: 'mock-ls-03', severity: 'Warning', name: 'Maize - Yellow', sku: 'GRA-MAI-YL-003', current: 180, minStock: 400, deficit: 220, warehouse: 'Grain Silo', location: 'Silo-B-02', lastOrder: '2026-05-22T14:00:00.000Z', daysUntilEmpty: 12, category: 'Grains', itemId: 'item-m03', suggestedOrder: 220, unit: 'Kgs' },
-    { id: 'mock-ls-04', severity: 'Critical', name: 'Sesame Seeds', sku: 'OIL-SES-SD-004', current: 5, minStock: 30, deficit: 25, warehouse: 'Main Warehouse', location: 'Dry-A-03', lastOrder: '2026-05-15T11:00:00.000Z', daysUntilEmpty: 3, category: 'Oils & Seeds', itemId: 'item-m04', suggestedOrder: 25, unit: 'Kgs' },
-    { id: 'mock-ls-05', severity: 'Warning', name: 'Wheat - Hard Red', sku: 'GRA-WHT-HR-005', current: 250, minStock: 500, deficit: 250, warehouse: 'Grain Silo', location: 'Silo-B-03', lastOrder: '2026-05-24T16:00:00.000Z', daysUntilEmpty: 15, category: 'Grains', itemId: 'item-m05', suggestedOrder: 250, unit: 'Kgs' },
-    { id: 'mock-ls-06', severity: 'Info', name: 'Barley - Food Grade', sku: 'GRA-BAR-FG-006', current: 150, minStock: 200, deficit: 50, warehouse: 'Grain Silo', location: 'Silo-A-04', lastOrder: '2026-05-25T09:00:00.000Z', daysUntilEmpty: 37, category: 'Grains', itemId: 'item-m06', suggestedOrder: 50, unit: 'Kgs' },
-    { id: 'mock-ls-07', severity: 'Critical', name: 'Sorghum - Red', sku: 'GRA-SRG-RD-007', current: 12, minStock: 100, deficit: 88, warehouse: 'Grain Silo', location: 'Silo-A-05', lastOrder: '2026-05-19T13:00:00.000Z', daysUntilEmpty: 4, category: 'Grains', itemId: 'item-m07', suggestedOrder: 88, unit: 'Kgs' },
-    { id: 'mock-ls-08', severity: 'Warning', name: 'Honey - Pure', sku: 'FOD-HON-PR-008', current: 25, minStock: 60, deficit: 35, warehouse: 'Main Warehouse', location: 'Dry-B-01', lastOrder: '2026-05-21T07:00:00.000Z', daysUntilEmpty: 25, category: 'Food Products', itemId: 'item-m08', suggestedOrder: 35, unit: 'Ltrs' },
-    { id: 'mock-ls-09', severity: 'Info', name: 'Cotton - Raw', sku: 'TEX-COT-RW-009', current: 100, minStock: 150, deficit: 50, warehouse: 'Branch Warehouse', location: 'Dry-B-02', lastOrder: '2026-05-26T10:00:00.000Z', daysUntilEmpty: 33, category: 'Textiles', itemId: 'item-m09', suggestedOrder: 50, unit: 'Kgs' },
-    { id: 'mock-ls-10', severity: 'Critical', name: 'Sugarcane - Raw', sku: 'AGR-SGR-RW-010', current: 3, minStock: 80, deficit: 77, warehouse: 'Branch Warehouse', location: 'Dry-B-03', lastOrder: '2026-05-16T09:00:00.000Z', daysUntilEmpty: 6, category: 'Agricultural', itemId: 'item-m10', suggestedOrder: 77, unit: 'Kgs' },
-    { id: 'mock-ls-11', severity: 'Warning', name: 'Haricot Beans', sku: 'GRA-HBN-RD-011', current: 80, minStock: 200, deficit: 120, warehouse: 'Grain Silo', location: 'Silo-B-04', lastOrder: '2026-05-23T12:00:00.000Z', daysUntilEmpty: 10, category: 'Grains', itemId: 'item-m11', suggestedOrder: 120, unit: 'Kgs' },
-    { id: 'mock-ls-12', severity: 'Critical', name: 'Sunflower Oil', sku: 'OIL-SUN-RF-012', current: 10, minStock: 50, deficit: 40, warehouse: 'Cold Storage', location: 'Cold-B-01', lastOrder: '2026-05-17T15:00:00.000Z', daysUntilEmpty: 5, category: 'Oils & Seeds', itemId: 'item-m12', suggestedOrder: 40, unit: 'Ltrs' },
-    { id: 'mock-ls-13', severity: 'Info', name: 'Salt - Iodized', sku: 'FOD-SLT-ID-013', current: 90, minStock: 120, deficit: 30, warehouse: 'Main Warehouse', location: 'Dry-A-06', lastOrder: '2026-05-28T06:00:00.000Z', daysUntilEmpty: 30, category: 'Food Products', itemId: 'item-m13', suggestedOrder: 30, unit: 'Kgs' },
-    { id: 'mock-ls-14', severity: 'Critical', name: 'Pepper - Red Dry', sku: 'SPC-PPR-RD-014', current: 2, minStock: 25, deficit: 23, warehouse: 'Main Warehouse', location: 'Dry-A-07', lastOrder: '2026-05-15T11:00:00.000Z', daysUntilEmpty: 4, category: 'Spices', itemId: 'item-m14', suggestedOrder: 23, unit: 'Kgs' },
-    { id: 'mock-ls-15', severity: 'Warning', name: 'Chat - Fresh', sku: 'AGR-CHT-FR-015', current: 35, minStock: 80, deficit: 45, warehouse: 'Cold Storage', location: 'Cold-A-03', lastOrder: '2026-05-22T05:00:00.000Z', daysUntilEmpty: 17, category: 'Agricultural', itemId: 'item-m15', suggestedOrder: 45, unit: 'Kgs' },
+    { id: 'mock-ls-01', severity: 'Critical', name: 'Teff - White', sku: 'GRA-TEF-WH-001', current: 8, minStock: 50, deficit: 42, warehouse: 'Grain Silo', location: 'Silo-A-01', locations: ['Grain Silo - Silo-A-01'], warehouses: ['Grain Silo'], lastOrder: '2026-05-18T10:00:00.000Z', daysUntilEmpty: 2, category: 'Grains', itemId: 'item-m01', suggestedOrder: 42, unit: 'Kgs', available: 8, reserved: 0, unitOfMeasure: 'Kgs' },
+    { id: 'mock-ls-02', severity: 'Critical', name: 'Coffee - Arabica', sku: 'CRP-COF-AR-002', current: 30, minStock: 200, deficit: 170, warehouse: 'Cold Storage', location: 'Cold-A-02', locations: ['Cold Storage - Cold-A-02'], warehouses: ['Cold Storage'], lastOrder: '2026-05-20T08:30:00.000Z', daysUntilEmpty: 5, category: 'Beverages', itemId: 'item-m02', suggestedOrder: 170, unit: 'Kgs', available: 30, reserved: 0, unitOfMeasure: 'Kgs' },
+    { id: 'mock-ls-03', severity: 'Warning', name: 'Maize - Yellow', sku: 'GRA-MAI-YL-003', current: 180, minStock: 400, deficit: 220, warehouse: 'Grain Silo', location: 'Silo-B-02', locations: ['Grain Silo - Silo-B-02'], warehouses: ['Grain Silo'], lastOrder: '2026-05-22T14:00:00.000Z', daysUntilEmpty: 12, category: 'Grains', itemId: 'item-m03', suggestedOrder: 220, unit: 'Kgs', available: 180, reserved: 0, unitOfMeasure: 'Kgs' },
+    { id: 'mock-ls-04', severity: 'Critical', name: 'Sesame Seeds', sku: 'OIL-SES-SD-004', current: 5, minStock: 30, deficit: 25, warehouse: 'Main Warehouse', location: 'Dry-A-03', locations: ['Main Warehouse - Dry-A-03'], warehouses: ['Main Warehouse'], lastOrder: '2026-05-15T11:00:00.000Z', daysUntilEmpty: 3, category: 'Oils & Seeds', itemId: 'item-m04', suggestedOrder: 25, unit: 'Kgs', available: 5, reserved: 0, unitOfMeasure: 'Kgs' },
+    { id: 'mock-ls-05', severity: 'Warning', name: 'Wheat - Hard Red', sku: 'GRA-WHT-HR-005', current: 250, minStock: 500, deficit: 250, warehouse: 'Grain Silo', location: 'Silo-B-03', locations: ['Grain Silo - Silo-B-03'], warehouses: ['Grain Silo'], lastOrder: '2026-05-24T16:00:00.000Z', daysUntilEmpty: 15, category: 'Grains', itemId: 'item-m05', suggestedOrder: 250, unit: 'Kgs', available: 250, reserved: 0, unitOfMeasure: 'Kgs' },
+    { id: 'mock-ls-06', severity: 'Info', name: 'Barley - Food Grade', sku: 'GRA-BAR-FG-006', current: 150, minStock: 200, deficit: 50, warehouse: 'Grain Silo', location: 'Silo-A-04', locations: ['Grain Silo - Silo-A-04'], warehouses: ['Grain Silo'], lastOrder: '2026-05-25T09:00:00.000Z', daysUntilEmpty: 37, category: 'Grains', itemId: 'item-m06', suggestedOrder: 50, unit: 'Kgs', available: 150, reserved: 0, unitOfMeasure: 'Kgs' },
+    { id: 'mock-ls-07', severity: 'Critical', name: 'Sorghum - Red', sku: 'GRA-SRG-RD-007', current: 12, minStock: 100, deficit: 88, warehouse: 'Grain Silo', location: 'Silo-A-05', locations: ['Grain Silo - Silo-A-05'], warehouses: ['Grain Silo'], lastOrder: '2026-05-19T13:00:00.000Z', daysUntilEmpty: 4, category: 'Grains', itemId: 'item-m07', suggestedOrder: 88, unit: 'Kgs', available: 12, reserved: 0, unitOfMeasure: 'Kgs' },
+    { id: 'mock-ls-08', severity: 'Warning', name: 'Honey - Pure', sku: 'FOD-HON-PR-008', current: 25, minStock: 60, deficit: 35, warehouse: 'Main Warehouse', location: 'Dry-B-01', locations: ['Main Warehouse - Dry-B-01'], warehouses: ['Main Warehouse'], lastOrder: '2026-05-21T07:00:00.000Z', daysUntilEmpty: 25, category: 'Food Products', itemId: 'item-m08', suggestedOrder: 35, unit: 'Ltrs', available: 25, reserved: 0, unitOfMeasure: 'Ltrs' },
+    { id: 'mock-ls-09', severity: 'Info', name: 'Cotton - Raw', sku: 'TEX-COT-RW-009', current: 100, minStock: 150, deficit: 50, warehouse: 'Branch Warehouse', location: 'Dry-B-02', locations: ['Branch Warehouse - Dry-B-02'], warehouses: ['Branch Warehouse'], lastOrder: '2026-05-26T10:00:00.000Z', daysUntilEmpty: 33, category: 'Textiles', itemId: 'item-m09', suggestedOrder: 50, unit: 'Kgs', available: 100, reserved: 0, unitOfMeasure: 'Kgs' },
+    { id: 'mock-ls-10', severity: 'Critical', name: 'Sugarcane - Raw', sku: 'AGR-SGR-RW-010', current: 3, minStock: 80, deficit: 77, warehouse: 'Branch Warehouse', location: 'Dry-B-03', locations: ['Branch Warehouse - Dry-B-03'], warehouses: ['Branch Warehouse'], lastOrder: '2026-05-16T09:00:00.000Z', daysUntilEmpty: 6, category: 'Agricultural', itemId: 'item-m10', suggestedOrder: 77, unit: 'Kgs', available: 3, reserved: 0, unitOfMeasure: 'Kgs' },
+    { id: 'mock-ls-11', severity: 'Warning', name: 'Haricot Beans', sku: 'GRA-HBN-RD-011', current: 80, minStock: 200, deficit: 120, warehouse: 'Grain Silo', location: 'Silo-B-04', locations: ['Grain Silo - Silo-B-04'], warehouses: ['Grain Silo'], lastOrder: '2026-05-23T12:00:00.000Z', daysUntilEmpty: 10, category: 'Grains', itemId: 'item-m11', suggestedOrder: 120, unit: 'Kgs', available: 80, reserved: 0, unitOfMeasure: 'Kgs' },
+    { id: 'mock-ls-12', severity: 'Critical', name: 'Sunflower Oil', sku: 'OIL-SUN-RF-012', current: 10, minStock: 50, deficit: 40, warehouse: 'Cold Storage', location: 'Cold-B-01', locations: ['Cold Storage - Cold-B-01'], warehouses: ['Cold Storage'], lastOrder: '2026-05-17T15:00:00.000Z', daysUntilEmpty: 5, category: 'Oils & Seeds', itemId: 'item-m12', suggestedOrder: 40, unit: 'Ltrs', available: 10, reserved: 0, unitOfMeasure: 'Ltrs' },
+    { id: 'mock-ls-13', severity: 'Info', name: 'Salt - Iodized', sku: 'FOD-SLT-ID-013', current: 90, minStock: 120, deficit: 30, warehouse: 'Main Warehouse', location: 'Dry-A-06', locations: ['Main Warehouse - Dry-A-06'], warehouses: ['Main Warehouse'], lastOrder: '2026-05-28T06:00:00.000Z', daysUntilEmpty: 30, category: 'Food Products', itemId: 'item-m13', suggestedOrder: 30, unit: 'Kgs', available: 90, reserved: 0, unitOfMeasure: 'Kgs' },
+    { id: 'mock-ls-14', severity: 'Critical', name: 'Pepper - Red Dry', sku: 'SPC-PPR-RD-014', current: 2, minStock: 25, deficit: 23, warehouse: 'Main Warehouse', location: 'Dry-A-07', locations: ['Main Warehouse - Dry-A-07'], warehouses: ['Main Warehouse'], lastOrder: '2026-05-15T11:00:00.000Z', daysUntilEmpty: 4, category: 'Spices', itemId: 'item-m14', suggestedOrder: 23, unit: 'Kgs', available: 2, reserved: 0, unitOfMeasure: 'Kgs' },
+    { id: 'mock-ls-15', severity: 'Warning', name: 'Chat - Fresh', sku: 'AGR-CHT-FR-015', current: 35, minStock: 80, deficit: 45, warehouse: 'Cold Storage', location: 'Cold-A-03', locations: ['Cold Storage - Cold-A-03'], warehouses: ['Cold Storage'], lastOrder: '2026-05-22T05:00:00.000Z', daysUntilEmpty: 17, category: 'Agricultural', itemId: 'item-m15', suggestedOrder: 45, unit: 'Kgs', available: 35, reserved: 0, unitOfMeasure: 'Kgs' },
   ];
 }
 
@@ -128,6 +146,7 @@ function estimateDaysUntilEmpty(current: number, minStock: number): number {
   imports: [CommonModule, FormsModule],
   templateUrl: './low-stock.component.html',
   styleUrls: ['./low-stock.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LowStockComponent implements OnInit {
   private readonly inventory = inject(InventoryService);
@@ -306,6 +325,7 @@ export class LowStockComponent implements OnInit {
   private mapRow(r: InventoryStockDto): LowStockItem {
     const cur = Number(r.currentStock) || 0;
     const min = Number(r.minimumThreshold) || 0;
+    const warehouseName = r.warehouseName || '\u2014';
     return {
       id: r.id,
       severity: computeSeverity(cur, min),
@@ -314,11 +334,16 @@ export class LowStockComponent implements OnInit {
       current: cur,
       minStock: min,
       deficit: Math.max(0, min - cur),
-      warehouse: r.warehouseName || '\u2014',
+      warehouse: warehouseName,
       location: [r.warehouseName, r.shelfLocation].filter(Boolean).join(' \u2014 ') || '\u2014',
+      locations: [warehouseName, r.shelfLocation].filter(Boolean).join(' - ') ? [[warehouseName, r.shelfLocation].filter(Boolean).join(' - ')] : [],
+      warehouses: warehouseName !== '\u2014' ? [warehouseName] : [],
+      category: r.unitOfMeasure || 'General',
+      available: cur,
+      reserved: 0,
+      unitOfMeasure: r.unitOfMeasure || 'Units',
       lastOrder: r.lastUpdated || new Date().toISOString(),
       daysUntilEmpty: estimateDaysUntilEmpty(cur, min),
-      category: r.unitOfMeasure || 'General',
       itemId: r.itemId,
       suggestedOrder: Math.max(0, min - cur),
       unit: r.unitOfMeasure || 'Units',
@@ -472,5 +497,19 @@ export class LowStockComponent implements OnInit {
 
   refreshData(): void {
     this.loadLowStock();
+  }
+
+  trackByAnalysisName(_: number, item: AnalysisItem): string {
+    return item.name;
+  }
+
+  openOrderModal(item: LowStockItem): void {
+    this.selectedItem.set(item);
+    this.showDetailModal.set(true);
+  }
+
+  closeModal(): void {
+    this.showDetailModal.set(false);
+    this.selectedItem.set(null);
   }
 }

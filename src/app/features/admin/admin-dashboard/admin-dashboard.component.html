@@ -1,0 +1,173 @@
+<div class="container-fluid p-4">
+  <!-- Dashboard Header -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <h2 class="mb-1 fw-bold" style="color: #1a237e;">Dashboard</h2>
+          <p class="text-muted mb-0">Welcome back, {{ userName }}</p>
+        </div>
+        <div class="d-flex gap-2">
+          <button class="btn btn-outline-primary btn-sm" (click)="refreshDashboard()">
+            <i class="bi bi-arrow-clockwise me-1"></i> Refresh
+          </button>
+          <button class="btn btn-outline-secondary btn-sm" (click)="exportReport()">
+            <i class="bi bi-download me-1"></i> Export
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPI Cards Row -->
+  <div class="row g-3 mb-4">
+    <div class="col-xl-3 col-md-6" *ngFor="let card of kpiCards">
+      <div class="card border-0 shadow-sm h-100" style="border-radius: 12px;">
+        <div class="card-body d-flex align-items-center">
+          <div class="kpi-icon-wrapper me-3 d-flex align-items-center justify-content-center"
+               [style.background-color]="card.iconBg || '#e8eaf6'"
+               style="width: 52px; height: 52px; border-radius: 12px;">
+            <i class="bi" [ngClass]="card.icon" style="font-size: 1.5rem; color: #1a237e;"></i>
+          </div>
+          <div class="flex-grow-1">
+            <div class="d-flex align-items-center justify-content-between">
+              <span class="text-muted small">{{ card.label }}</span>
+              <span class="badge" [ngClass]="card.trendUp ? 'bg-success' : 'bg-danger'"
+                    *ngIf="card.trend !== undefined">
+                <i class="bi" [ngClass]="card.trendUp ? 'bi-arrow-up' : 'bi-arrow-down'"></i>
+                {{ card.trend }}%
+              </span>
+            </div>
+            <h3 class="mb-0 fw-bold mt-1">{{ card.value }}</h3>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content Row -->
+  <div class="row g-3">
+    <!-- Recent Activities -->
+    <div class="col-lg-8">
+      <div class="card border-0 shadow-sm h-100" style="border-radius: 12px;">
+        <div class="card-header bg-transparent border-bottom-0 pt-3 pb-0 d-flex justify-content-between align-items-center">
+          <h5 class="fw-bold mb-0" style="color: #1a237e;">
+            <i class="bi bi-activity me-2"></i>Recent Activities
+          </h5>
+          <button class="btn btn-sm btn-link text-decoration-none" (click)="viewAllActivities()">
+            View All
+          </button>
+        </div>
+        <div class="card-body">
+          <div *ngIf="recentActivities.length === 0" class="text-center text-muted py-5">
+            <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+            <p class="mt-2 mb-0">No recent activities</p>
+          </div>
+          <ul class="list-unstyled mb-0" *ngIf="recentActivities.length > 0">
+            <li class="py-2 border-bottom border-light" *ngFor="let activity of recentActivities">
+              <div class="d-flex align-items-center">
+                <div class="activity-dot me-3"
+                     [style.background-color]="activity.color || '#1a237e'"
+                     style="width: 10px; height: 10px; border-radius: 50%;"></div>
+                <div class="flex-grow-1">
+                  <p class="mb-0 small">
+                    <strong>{{ activity.action }}</strong>
+                    <span class="text-muted ms-2">{{ activity.module }}</span>
+                  </p>
+                  <small class="text-muted">{{ activity.timestamp }}</small>
+                </div>
+                <span class="badge bg-light text-dark">{{ activity.status }}</span>
+              </div>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="col-lg-4">
+      <div class="card border-0 shadow-sm h-100" style="border-radius: 12px;">
+        <div class="card-header bg-transparent border-bottom-0 pt-3 pb-0">
+          <h5 class="fw-bold mb-0" style="color: #1a237e;">
+            <i class="bi bi-pie-chart me-2"></i>Quick Stats
+          </h5>
+        </div>
+        <div class="card-body">
+          <div *ngFor="let stat of quickStats" class="mb-3">
+            <div class="d-flex justify-content-between mb-1">
+              <span class="small">{{ stat.label }}</span>
+              <span class="small fw-bold">{{ stat.value }}</span>
+            </div>
+            <div class="progress" style="height: 6px;">
+              <div class="progress-bar"
+                   [style.width]="stat.percentage + '%'"
+                   [style.background-color]="stat.color || '#1a237e'"
+                   role="progressbar"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts Row -->
+  <div class="row g-3 mt-4">
+    <div class="col-lg-6">
+      <div class="card border-0 shadow-sm" style="border-radius: 12px;">
+        <div class="card-header bg-transparent border-bottom-0 pt-3 pb-0 d-flex justify-content-between align-items-center">
+          <h5 class="fw-bold mb-0" style="color: #1a237e;">
+            <i class="bi bi-bar-chart me-2"></i>Request Trends
+          </h5>
+          <div class="btn-group btn-group-sm" role="group">
+            <button class="btn btn-outline-primary btn-sm" [class.active]="selectedChartPeriod === 'weekly'" (click)="selectedChartPeriod = 'weekly'">Week</button>
+            <button class="btn btn-outline-primary btn-sm" [class.active]="selectedChartPeriod === 'monthly'" (click)="selectedChartPeriod = 'monthly'">Month</button>
+            <button class="btn btn-outline-primary btn-sm" [class.active]="selectedChartPeriod === 'yearly'" (click)="selectedChartPeriod = 'yearly'">Year</button>
+          </div>
+        </div>
+        <div class="card-body">
+          <canvas id="requestTrendsChart" height="200"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="card border-0 shadow-sm" style="border-radius: 12px;">
+        <div class="card-header bg-transparent border-bottom-0 pt-3 pb-0">
+          <h5 class="fw-bold mb-0" style="color: #1a237e;">
+            <i class="bi bi-pie-chart me-2"></i>Requests by Category
+          </h5>
+        </div>
+        <div class="card-body">
+          <canvas id="requestsByCategoryChart" height="200"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Additional Charts Row -->
+  <div class="row g-3 mt-4">
+    <div class="col-lg-6">
+      <div class="card border-0 shadow-sm" style="border-radius: 12px;">
+        <div class="card-header bg-transparent border-bottom-0 pt-3 pb-0">
+          <h5 class="fw-bold mb-0" style="color: #1a237e;">
+            <i class="bi bi-people me-2"></i>User Activity
+          </h5>
+        </div>
+        <div class="card-body">
+          <canvas id="userActivityChart" height="200"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="card border-0 shadow-sm" style="border-radius: 12px;">
+        <div class="card-header bg-transparent border-bottom-0 pt-3 pb-0">
+          <h5 class="fw-bold mb-0" style="color: #1a237e;">
+            <i class="bi bi-box-seam me-2"></i>Inventory Status
+          </h5>
+        </div>
+        <div class="card-body">
+          <canvas id="inventoryStatusChart" height="200"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

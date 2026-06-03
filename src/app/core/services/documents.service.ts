@@ -19,14 +19,14 @@ export class DocumentsService {
   constructor(private apiService: ApiService) {}
 
   getByEntity(entityName: string, entityId: string): Observable<ApiResponseModel<DocumentAttachmentDto[]>> {
-    return this.apiService.get<ApiResponseModel<DocumentAttachmentDto[]>>('Documents/by-entity', {
+    return this.apiService.get<DocumentAttachmentDto[]>('Documents/by-entity', {
       entityName,
       entityId
     });
   }
 
   getById(id: string): Observable<ApiResponseModel<DocumentAttachmentDto>> {
-    return this.apiService.get<ApiResponseModel<DocumentAttachmentDto>>(`Documents/${id}`);
+    return this.apiService.get<DocumentAttachmentDto>(`Documents/${id}`);
   }
 
   upload(file: File, relatedEntityId: string, relatedEntityName: string): Observable<ApiResponseModel<string>> {
@@ -34,14 +34,14 @@ export class DocumentsService {
     formData.append('File', file);
     formData.append('RelatedEntityId', relatedEntityId);
     formData.append('RelatedEntityName', relatedEntityName);
-    return this.apiService.post<ApiResponseModel<string>>('Documents/upload', formData);
+    return this.apiService.post<string>('Documents/upload', formData);
   }
 
   delete(id: string): Observable<ApiResponseModel<any>> {
-    return this.apiService.delete<ApiResponseModel<any>>(`Documents/${id}`);
+    return this.apiService.delete<any>(`Documents/${id}`);
   }
 
   download(id: string): Observable<Blob> {
-    return this.apiService.get<Blob>(`Documents/${id}/download`, {}, { responseType: 'blob' });
+    return this.apiService.getBlob(`Documents/${id}/download`);
   }
 }
