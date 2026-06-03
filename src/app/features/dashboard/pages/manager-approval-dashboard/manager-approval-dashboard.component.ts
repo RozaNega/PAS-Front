@@ -103,22 +103,7 @@ export class ManagerApprovalDashboardComponent implements OnInit, OnDestroy {
   readonly keyMetrics = computed<KeyMetric[]>(() => {
     const mgr = this.managerQueueId();
     const pending = this.pendingRequests();
-    const all = this.workflowService.getRequestsForManagerAll(mgr);
     const urgentCount = pending.filter((r) => r.priority === 'Urgent' || r.priority === 'High').length;
-
-    const weekAgo = Date.now() - 7 * 86400000;
-    const approvedWeek = all.filter(
-      (r) =>
-        r.status === 'Manager Approved' &&
-        r.managerReviewDate &&
-        new Date(r.managerReviewDate).getTime() >= weekAgo,
-    ).length;
-    const rejectedWeek = all.filter(
-      (r) =>
-        r.status === 'Manager Rejected' &&
-        r.managerReviewDate &&
-        new Date(r.managerReviewDate).getTime() >= weekAgo,
-    ).length;
 
     return [
       {
@@ -127,27 +112,6 @@ export class ManagerApprovalDashboardComponent implements OnInit, OnDestroy {
         value: pending.length,
         trend: `🔴 Urgent / High: ${urgentCount}`,
         tone: urgentCount > 0 ? 'red' : 'blue',
-      },
-      {
-        title: 'Approved (7 days)',
-        subtitle: '',
-        value: approvedWeek,
-        trend: 'From workflow',
-        tone: 'green',
-      },
-      {
-        title: 'Rejected (7 days)',
-        subtitle: '',
-        value: rejectedWeek,
-        trend: 'From workflow',
-        tone: 'red',
-      },
-      {
-        title: 'Total in queue (all statuses)',
-        subtitle: '',
-        value: all.length,
-        trend: 'Assigned to this manager id',
-        tone: 'blue',
       },
       {
         title: 'Pending value (est.)',
@@ -174,12 +138,8 @@ export class ManagerApprovalDashboardComponent implements OnInit, OnDestroy {
       rows.push({
         month: label,
         submitted: all.filter((r) => inMonth(r)).length,
-        approved: all.filter(
-          (r) => inMonth(r) && r.status === 'Manager Approved',
-        ).length,
-        rejected: all.filter(
-          (r) => inMonth(r) && r.status === 'Manager Rejected',
-        ).length,
+        approved: 0,
+        rejected: 0,
       });
     }
     return rows;

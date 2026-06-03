@@ -112,43 +112,36 @@
           <!-- Grid lines -->
           <line x1="50" y1="20" x2="50" y2="180" stroke="#e0e0e0" stroke-width="1" />
           <line x1="50" y1="180" x2="580" y2="180" stroke="#e0e0e0" stroke-width="1" />
-          @for (tick of [0, 1, 2, 3, 4]; track tick) {
-            <text x="40" [attr.y]="25 + tick * 40" text-anchor="end" font-size="12">
-              {{ getTrendYAxisLabel(tick) }}
-            </text>
-          }
-          @for (point of requestTrendData(); track point.month; let index = $index) {
-            <text
-              [attr.x]="100 + index * 80"
-              y="195"
-              text-anchor="middle"
-              font-size="12"
-            >
-              {{ point.month }}
-            </text>
-          }
+          <!-- Y-axis labels -->
+          <text x="40" y="25" text-anchor="end" font-size="12">8</text>
+          <text x="40" y="65" text-anchor="end" font-size="12">6</text>
+          <text x="40" y="105" text-anchor="end" font-size="12">4</text>
+          <text x="40" y="145" text-anchor="end" font-size="12">2</text>
+          <text x="40" y="185" text-anchor="end" font-size="12">0</text>
+          <!-- X-axis labels -->
+          <text x="100" y="195" text-anchor="middle" font-size="12">Jul</text>
+          <text x="180" y="195" text-anchor="middle" font-size="12">Aug</text>
+          <text x="260" y="195" text-anchor="middle" font-size="12">Sep</text>
+          <text x="340" y="195" text-anchor="middle" font-size="12">Oct</text>
+          <text x="420" y="195" text-anchor="middle" font-size="12">Nov</text>
+          <text x="500" y="195" text-anchor="middle" font-size="12">Dec</text>
+          <!-- Data lines -->
           <polyline
-            [attr.points]="getTrendChartPoints('submitted')"
+            points="100,140 180,120 260,100 340,80 420,60 500,100"
             fill="none"
             stroke="#0ea5e9"
             stroke-width="2"
           />
           <polyline
-            [attr.points]="getTrendChartPoints('approved')"
+            points="100,160 180,140 260,120 340,100 420,80 500,140"
             fill="none"
             stroke="#22c55e"
             stroke-width="2"
           />
           <polyline
-            [attr.points]="getTrendChartPoints('completed')"
+            points="100,160 180,140 260,120 340,100 420,80 500,160"
             fill="none"
             stroke="#f59e0b"
-            stroke-width="2"
-          />
-          <polyline
-            [attr.points]="getTrendChartPoints('rejected')"
-            fill="none"
-            stroke="#ef4444"
             stroke-width="2"
           />
         </svg>
@@ -509,22 +502,6 @@
               </tr>
             </thead>
             <tbody>
-              @for (row of requestHistoryRows(); track row.year) {
-                <tr>
-                  <td>{{ row.year }}</td>
-                  <td>{{ row.totalRequests }}</td>
-                  <td>{{ row.approved }}</td>
-                  <td>{{ row.rejected }}</td>
-                  <td>{{ row.completed }}</td>
-                  <td>{{ row.approvalRate }}%</td>
-                </tr>
-              }
-              @if (requestHistoryRows().length === 0) {
-                <tr>
-                  <td colspan="6">No request history found.</td>
-                </tr>
-              }
-              @if (false) {
               <tr>
                 <td>2024</td>
                 <td>23</td>
@@ -549,7 +526,6 @@
                 <td>3</td>
                 <td>80% █████████████████████░░░░░░░</td>
               </tr>
-              }
             </tbody>
           </table>
         </div>
@@ -569,25 +545,6 @@
               </tr>
             </thead>
             <tbody>
-              @for (siv of employeeSivs(); track siv.id) {
-                <tr>
-                  <td>{{ siv.sivNumber }}</td>
-                  <td>{{ siv.date }}</td>
-                  <td>{{ siv.items }}</td>
-                  <td>{{ siv.status }}</td>
-                  <td>
-                    <button class="icon-btn" (click)="viewSIV(siv.id)">View</button>
-                    <button class="icon-btn" (click)="downloadPDF(siv.id)">Print</button>
-                    <button class="icon-btn" (click)="emailSIV(siv.id)">Email</button>
-                  </td>
-                </tr>
-              }
-              @if (employeeSivs().length === 0) {
-                <tr>
-                  <td colspan="5">No issued SIVs found for your requests.</td>
-                </tr>
-              }
-              @if (false) {
               <tr>
                 <td>SIV-045</td>
                 <td>Dec 15</td>
@@ -621,7 +578,6 @@
                   <button class="icon-btn" (click)="emailSIV('SIV-042')">📧 Email</button>
                 </td>
               </tr>
-              }
             </tbody>
           </table>
         </div>
