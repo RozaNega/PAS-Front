@@ -57,8 +57,24 @@ export class MainLayoutComponent implements OnInit {
 
   protected menuItems: MenuItem[] = [];
   private readonly workflowNotificationTick = signal(0);
+  private readonly currentRoute = signal('');
   protected user: User | null = null;
   protected readonly defaultAvatar = DEFAULT_AVATAR_PATH;
+
+  private managerBadgeCounts: {
+    pendingRequests: number;
+    approvedRequests: number;
+    rejectedRequests: number;
+    issuedRequests: number;
+    allSivs: number;
+    issuedSivs: number;
+    lowStockItems: number;
+  } | null = null;
+
+  private compliancePendingCount: number | null = null;
+
+  private lastSeenCounts: Record<string, number> = {};
+  private readonly LAST_SEEN_KEY = 'manager_badge_last_seen';
 
   private readonly rawProfileImageUrl = toSignal(this.currentUserService.profileImageUrl$, {
     initialValue: this.currentUserService.getProfileImageUrl(),
@@ -233,6 +249,7 @@ export class MainLayoutComponent implements OnInit {
   constructor() {}
 
   ngOnInit(): void {
+    this.loadLastSeenCounts();
     this.user = this.authService.getCurrentUser();
     this.updateMenuItems();
     this.signalRService.startConnection();
@@ -246,10 +263,33 @@ export class MainLayoutComponent implements OnInit {
       this.workflowNotificationTick.update((v) => v + 1);
     });
 
+    // Subscribe to badge counts ONCE and store them
+    this.managerData.menuBadgeCounts().subscribe((counts) => {
+      this.managerBadgeCounts = counts;
+      this.applyManagerBadges();
+    });
+
+    this.complianceData.getServiceRequests().subscribe((requests) => {
+      this.compliancePendingCount = requests.filter((request) => {
+        const status = request.status?.toLowerCase() ?? '';
+        return (
+          status.includes('pending') ||
+          status.includes('submitted') ||
+          status.includes('review') ||
+          status.includes('awaiting')
+        );
+      }).length;
+      this.applyComplianceBadges();
+    });
+
     this.router.events
       .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
       .subscribe(() => {
         this.user = this.authService.getCurrentUser();
+        this.currentRoute.set(this.router.url);
+
+        this.markViewedForCurrentRoute();
+
         this.updateMenuItems();
         this.closePopovers();
       });
@@ -434,6 +474,8 @@ export class MainLayoutComponent implements OnInit {
   }
 
   protected logout(): void {
+    this.lastSeenCounts = {};
+    this.saveLastSeenCounts();
     this.authService.logout();
   }
 
@@ -480,19 +522,19 @@ export class MainLayoutComponent implements OnInit {
 
     if (this.isManagerRoute()) {
       this.menuItems = getMenuConfigForRole('manager');
-      this.loadManagerMenuBadges();
+      this.applyManagerBadges();
       return;
     }
 
     if (this.isComplianceOfficerRoute()) {
       this.menuItems = getMenuConfigForRole('compliance-officer');
-      this.loadComplianceMenuBadges();
+      this.applyComplianceBadges();
       return;
     }
 
     if (this.router.url.startsWith('/employee')) {
       this.menuItems = getMenuConfigForRole('employee');
-      this.loadEmployeeMenuBadges();
+      this.applyEmployeeBadges();
       return;
     }
 
@@ -621,86 +663,116 @@ export class MainLayoutComponent implements OnInit {
     return null;
   }
 
-  private loadComplianceMenuBadges(): void {
-    this.complianceData.getServiceRequests().subscribe((requests) => {
-      const pendingCount = requests.filter((request) => {
-        const status = request.status?.toLowerCase() ?? '';
-        return (
-          status.includes('pending') ||
-          status.includes('submitted') ||
-          status.includes('review') ||
-          status.includes('awaiting')
-        );
-      }).length;
+  private applyComplianceBadges(): void {
+    if (this.compliancePendingCount === null) return;
 
-      this.menuItems = this.menuItems.map((item) => ({
-        ...item,
-        children: item.children?.map((child: MenuItem) =>
-          child.route === '/compliance-officer/audits/pending'
-            ? { ...child, badge: pendingCount || undefined }
-            : child,
-        ),
-      }));
+    const currentUrl = this.currentRoute();
+    this.menuItems = this.menuItems.map((item) => ({
+      ...item,
+      children: item.children?.map((child) => {
+        if (child.route === '/compliance-officer/audits/pending') {
+          const isActive = currentUrl.includes('/compliance-officer/audits/pending');
+          return { ...child, badge: isActive ? undefined : (this.compliancePendingCount! || undefined) };
+        }
+        return child;
+      }),
+    }));
+  }
+
+  private applyManagerBadges(): void {
+    if (!this.managerBadgeCounts) return;
+
+    const counts = this.managerBadgeCounts;
+
+    this.menuItems = this.menuItems.map((item) => {
+      if (item.label === 'Service Requests') {
+        const pendingBadge = this.shouldShowBadge('/manager/requests/pending', counts.pendingRequests);
+        const approvedBadge = this.shouldShowBadge('/manager/requests/approved', counts.approvedRequests);
+        const rejectedBadge = this.shouldShowBadge('/manager/requests/rejected', counts.rejectedRequests);
+        const issuedBadge = this.shouldShowBadge('/manager/requests/issued', counts.issuedRequests);
+        const parentBadge = [pendingBadge, approvedBadge, rejectedBadge, issuedBadge].filter(Boolean).length || undefined;
+
+        return {
+          ...item,
+          badge: parentBadge,
+          children: item.children?.map((child) => {
+            if (child.route === '/manager/requests/pending') {
+              return { ...child, badge: pendingBadge };
+            }
+            if (child.route === '/manager/requests/approved') {
+              return { ...child, badge: approvedBadge };
+            }
+            if (child.route === '/manager/requests/rejected') {
+              return { ...child, badge: rejectedBadge };
+            }
+            if (child.route === '/manager/requests/issued') {
+              return { ...child, badge: issuedBadge };
+            }
+            return child;
+          }),
+        };
+      }
+
+      if (item.label === 'Store Issue Vouchers') {
+        return {
+          ...item,
+          badge: counts.allSivs || undefined,
+          children: item.children?.map((child) => {
+            if (child.route === '/manager/sivs/all') {
+              return { ...child, badge: counts.allSivs || undefined };
+            }
+            if (child.route === '/manager/sivs/issued') {
+              return { ...child, badge: counts.issuedSivs || undefined };
+            }
+            return child;
+          }),
+        };
+      }
+
+      if (item.label === 'Inventory') {
+        return {
+          ...item,
+          badge: counts.lowStockItems || undefined,
+          children: item.children?.map((child) => {
+            if (child.route === '/manager/inventory/low-stock') {
+              return { ...child, badge: counts.lowStockItems || undefined };
+            }
+            return child;
+          }),
+        };
+      }
+
+      return item;
     });
   }
 
-  private loadManagerMenuBadges(): void {
-    this.managerData.menuBadgeCounts().subscribe((counts) => {
-      this.menuItems = this.menuItems.map((item) => {
-        if (item.label === 'Service Requests') {
-          return {
-            ...item,
-            children: item.children?.map((child: MenuItem) => {
-              return child;
-            }),
-          };
-        }
-
-        if (item.label === 'Store Issue Vouchers') {
-          return {
-            ...item,
-            badge: counts.allSivs || undefined,
-            children: item.children?.map((child: MenuItem) => {
-              if (child.route === '/manager/sivs/all') {
-                return { ...child, badge: counts.allSivs || undefined };
-              }
-              if (child.route === '/manager/sivs/issued') {
-                return { ...child, badge: counts.issuedSivs || undefined };
-              }
-              return child;
-            }),
-          };
-        }
-
-        if (item.label === 'Inventory') {
-          return {
-            ...item,
-            badge: counts.lowStockItems || undefined,
-            children: item.children?.map((child: MenuItem) => {
-              if (child.route === '/manager/inventory/low-stock') {
-                return { ...child, badge: counts.lowStockItems || undefined };
-              }
-              return child;
-            }),
-          };
-        }
-
-        return item;
-      });
-    });
-  }
-
-  private loadEmployeeMenuBadges(): void {
+  private applyEmployeeBadges(): void {
     const user = this.currentUserService.getCurrentUserValue();
     const employeeId = this.currentUserService.getUserId();
     if (!employeeId) return;
 
+    const requests = this.workflowService.getRequestsForEmployee(employeeId, {
+      email: user?.email,
+    });
+    const pending = requests.filter((r) => WORKFLOW_PENDING_STATUSES.includes(r.status)).length;
+    const completed = requests.filter((r) => r.status === 'Completed').length;
+
+    const currentUrl = this.currentRoute();
     this.menuItems = this.menuItems.map((item) => {
       if (item.label !== 'My Requests') return item;
 
       return {
         ...item,
-        children: item.children?.map((child: MenuItem) => {
+        badge: undefined,
+        children: item.children?.map((child) => {
+          if (child.route === '/employee/requests/pending') {
+            const isActive = currentUrl.includes('/employee/requests/pending');
+            return { ...child, badge: isActive ? undefined : (pending || undefined) };
+          }
+          if (child.route === '/employee/requests/completed') {
+            const isActive = currentUrl.includes('/employee/requests/completed');
+            return { ...child, badge: isActive ? undefined : (completed || undefined) };
+          }
           return child;
         })
       };
@@ -727,5 +799,56 @@ export class MainLayoutComponent implements OnInit {
 
     const diffDays = Math.floor(diffHours / 24);
     return `${diffDays}d ago`;
+  }
+
+  private loadLastSeenCounts(): void {
+    if (typeof localStorage === 'undefined') return;
+    try {
+      const raw = localStorage.getItem(this.LAST_SEEN_KEY);
+      this.lastSeenCounts = raw ? JSON.parse(raw) : {};
+    } catch {
+      this.lastSeenCounts = {};
+    }
+  }
+
+  private saveLastSeenCounts(): void {
+    if (typeof localStorage === 'undefined') return;
+    try {
+      localStorage.setItem(this.LAST_SEEN_KEY, JSON.stringify(this.lastSeenCounts));
+    } catch {
+      /* ignore */
+    }
+  }
+
+  private markCategoryAsViewed(route: string, count: number): void {
+    this.lastSeenCounts[route] = count;
+    this.saveLastSeenCounts();
+  }
+
+  private shouldShowBadge(route: string, currentCount: number): number | undefined {
+    const lastSeen = this.lastSeenCounts[route];
+    if (lastSeen === undefined || currentCount > lastSeen) {
+      return currentCount || undefined;
+    }
+    return undefined;
+  }
+
+  private markViewedForCurrentRoute(): void {
+    if (!this.managerBadgeCounts) return;
+    const url = this.router.url;
+    const counts = this.managerBadgeCounts;
+
+    if (url.includes('/manager/requests/pending')) {
+      this.markCategoryAsViewed('/manager/requests/pending', counts.pendingRequests);
+    }
+    if (url.includes('/manager/requests/approved')) {
+      this.markCategoryAsViewed('/manager/requests/approved', counts.approvedRequests);
+    }
+    if (url.includes('/manager/requests/rejected')) {
+      this.markCategoryAsViewed('/manager/requests/rejected', counts.rejectedRequests);
+    }
+    if (url.includes('/manager/requests/issued')) {
+      this.markCategoryAsViewed('/manager/requests/issued', counts.issuedRequests);
+    }
   }
 }

@@ -97,7 +97,7 @@
               </tr>
             </thead>
             <tbody>
-              @for (request of filteredRequests(); track request.id) {
+              @for (request of filteredRequests(); track request.id + request.status + request.date) {
                 <tr>
                   <td>{{ request.requestNumber }}</td>
                   <td>{{ request.employeeName }}</td>

@@ -112,7 +112,10 @@ export class CreateRequestModalComponent {
 
   submit(): void {
     this.form.items = this.selectedItems;
-    
+
+    // Store the original SR number to ensure consistency
+    const originalSrNumber = this.srNumber;
+
     const apiPayload: ApiServiceRequest = {
       srNumber: this.srNumber?.trim() || undefined,
       items: this.selectedItems.map(item => ({
@@ -126,7 +129,7 @@ export class CreateRequestModalComponent {
     };
 
     console.log('Submitting request payload:', apiPayload);
-    
+
     this.pasApi.createServiceRequest(apiPayload).subscribe({
       next: (response) => {
         console.log('Request saved successfully:', response);
@@ -134,7 +137,8 @@ export class CreateRequestModalComponent {
         this.modal.close({
           ...this.form,
           id: created.id,
-          srNumber: created.srNumber || this.srNumber,
+          // Always use the original SR number we sent to the API, not what the API returned
+          srNumber: originalSrNumber,
           items: this.selectedItems,
         });
       },
@@ -158,7 +162,10 @@ export class CreateRequestModalComponent {
     const data = root['data'] ?? root['Data'];
 
     if (typeof data === 'string' && data.trim()) {
-      return { id: data.trim(), srNumber: this.srNumber };
+      const value = data.trim();
+      return value.toUpperCase().startsWith('SR-')
+        ? { srNumber: this.srNumber }
+        : { id: value, srNumber: this.srNumber };
     }
 
     if (data && typeof data === 'object') {

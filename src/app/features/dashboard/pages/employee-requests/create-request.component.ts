@@ -738,19 +738,16 @@ export class CreateRequestComponent implements OnInit, OnDestroy {
     const root = response as Record<string, unknown>;
     const data = root['data'] ?? root['Data'];
     if (typeof data === 'string' && data.trim()) {
-      return { id: data.trim(), srNumber: this.form.srNumber };
+      const value = data.trim();
+      return value.toUpperCase().startsWith('SR-')
+        ? { srNumber: this.form.srNumber }
+        : { id: value, srNumber: this.form.srNumber };
     }
     if (data && typeof data === 'object') {
       const row = data as Record<string, unknown>;
-      const srNumber =
-        row['srNumber'] ??
-        row['requestNumber'] ??
-        row['srNo'] ??
-        row['serviceRequestNumber'] ??
-        row['number'];
       return {
         id: row['id'] != null ? String(row['id']) : undefined,
-        srNumber: srNumber != null ? String(srNumber) : this.form.srNumber,
+        srNumber: this.form.srNumber,
       };
     }
     const id = root['id'] ?? root['Id'];

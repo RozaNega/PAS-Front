@@ -85,8 +85,8 @@
         </div>
 
 
-        <a class="btn ghost" routerLink="/auth/register" (click)="closeMenu()">Sign Up</a>
-        <a class="btn solid" routerLink="/auth/login" (click)="closeMenu()">Login</a>
+        <a class="btn ghost" (click)="goToSignup(); $event.preventDefault()" href="/auth/register">Sign Up</a>
+        <a class="btn solid" (click)="goToLogin(); $event.preventDefault()" href="/auth/login">Login</a>
       </div>
     </div>
   </header>
@@ -109,9 +109,8 @@
           </p>
 
           <div class="hero-actions">
-            <a class="btn solid" [routerLink]="dashboardRoute()">Go to dashboard</a>
-
-            <a class="btn ghost subtle" href="#features">Explore Platform</a>
+            <a class="btn solid" (click)="goToLogin(); $event.preventDefault()" href="/auth/login">Login</a>
+            <a class="btn ghost" (click)="goToSignup(); $event.preventDefault()" href="/auth/register">Sign Up</a>
           </div>
 
           <div class="stat-row" aria-label="Platform highlights">
@@ -267,8 +266,8 @@
         </ul>
 
         <div class="footer-actions">
-          <a class="btn ghost" routerLink="/auth/register">Book Onboarding</a>
-          <a class="btn solid" routerLink="/auth/login">Login</a>
+          <a class="btn ghost" (click)="goToSignup(); $event.preventDefault()" href="/auth/register">Sign Up</a>
+          <a class="btn solid" (click)="goToLogin(); $event.preventDefault()" href="/auth/login">Login</a>
         </div>
       </div>
 
