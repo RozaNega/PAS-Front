@@ -1,5 +1,5 @@
 ﻿import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 
 import { DashboardService, DashboardStatistics } from '../../../../core/services/dashboard.service';
 
@@ -82,7 +82,7 @@ interface WeeklyTrend {
 @Component({
   selector: 'app-storekeeper-dashboard',
   standalone: true,
-  imports: [RouterLink, NgxEchartsDirective],
+  imports: [NgxEchartsDirective],
   providers: [provideEchartsCore({ echarts })],
   templateUrl: './storekeeper-dashboard.component.html',
   styleUrl: './storekeeper-dashboard.component.scss',

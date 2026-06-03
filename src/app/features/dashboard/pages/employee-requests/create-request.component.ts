@@ -429,7 +429,7 @@ export class CreateRequestComponent implements OnInit, OnDestroy {
       name: item.itemName?.trim() || 'Unknown Item',
       sku: item.sku?.trim() || String(item.id),
       uom,
-      available: item.availableStock ?? item.currentStock ?? 0,
+      available: item.stockQuantity,
       quantity: 1,
       preferredShelfId: null,
       preferredShelfLabel: 'Loading locations...',

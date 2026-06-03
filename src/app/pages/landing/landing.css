@@ -270,6 +270,7 @@
 }
 
 .hero {
+  position: relative;
   animation: fade-up 0.55s ease both;
   padding: 4rem 0 2.4rem;
 }
@@ -1457,6 +1458,7 @@ main,
 }
 
 .hero {
+  position: relative;
   animation: fade-up 0.5s ease both;
   background:
     linear-gradient(90deg, rgb(0 0 0 / 86%), rgb(0 0 0 / 55%)), url('/assets/images/background.png');
@@ -2397,4 +2399,48 @@ body {
 :host-context(body.landing-dark) html,
 :host-context(body.landing-dark) body {
   background: #0b1220;
+}
+
+.hero-social {
+  position: absolute;
+  right: 1rem;
+  bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  align-items: center;
+  z-index: 2;
+}
+
+.hero-social a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  color: #64748b;
+  text-decoration: none;
+  transition: color 0.2s, background 0.2s, transform 0.2s;
+}
+
+.hero-social a:hover {
+  color: #fff;
+  transform: scale(1.15);
+}
+
+.hero-social a[aria-label="YouTube"]:hover {
+  background: #ff0000;
+}
+
+.hero-social a[aria-label="LinkedIn"]:hover {
+  background: #0a66c2;
+}
+
+.hero-social a[aria-label="X"]:hover {
+  background: #000;
+}
+
+.hero-social i {
+  font-size: 1.35rem;
 }

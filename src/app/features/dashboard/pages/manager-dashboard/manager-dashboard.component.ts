@@ -389,7 +389,7 @@ export class ManagerDashboardComponent implements OnInit, OnDestroy {
         sentDate: new Date(),
       });
       this.serviceRequestService
-        .rejectServiceRequest({ id: workflowRequest.id, reason: 'Request rejected by manager' })
+        .reject({ id: workflowRequest.id, reason: 'Request rejected by manager' })
         .pipe(take(1))
         .subscribe({
           next: () => this.syncServiceRequestsFromApi(),
