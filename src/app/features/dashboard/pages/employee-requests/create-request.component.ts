@@ -16,7 +16,6 @@ import { ApiService } from '../../../../core/services/api.service';
 import { InventoryService } from '../../../../core/services/inventory.service';
 import { ShelfLocationDto } from '../../../../core/services/shelves.service';
 import {
-  ItemMasterService,
   ItemMasterListDto,
 } from '../../../../core/services/item-master.service';
 import { WorkflowService } from '../../../../core/services/workflow.service';
@@ -63,7 +62,6 @@ export class CreateRequestComponent implements OnInit, OnDestroy {
   private readonly pasApi = inject(PasApiService);
   private readonly apiService = inject(ApiService);
   private readonly inventoryService = inject(InventoryService);
-  private readonly itemMasterService = inject(ItemMasterService);
   private readonly workflowService = inject(WorkflowService);
   private readonly currentUserService = inject(CurrentUserService);
   private readonly cdr = inject(ChangeDetectorRef);
@@ -259,7 +257,7 @@ export class CreateRequestComponent implements OnInit, OnDestroy {
     selected.loadingShelves = true;
     this.cdr.markForCheck();
 
-    (this.itemMasterService as any).getById(selected.itemId).subscribe({
+    this.apiService.get<any>(`ItemMasters/${selected.itemId}`).subscribe({
       next: (res: any) => {
         const detail = res.data;
         const locations: any[] = detail?.stockLocations ?? [];
