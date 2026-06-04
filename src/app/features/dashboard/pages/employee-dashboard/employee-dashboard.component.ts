@@ -617,8 +617,7 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
   private startApiPolling(): void {
     this.pollingInterval = setInterval(() => {
       this.syncServiceRequestsFromApi();
-      this.loadWorkflowData();
-    }, 3000); // Poll every 3 seconds for faster updates on approvals/rejections
+    }, 5000);
   }
 
   private readonly employeesService = inject(EmployeesService);
@@ -728,10 +727,8 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
           (notification.recipientRole === 'Employee' &&
             (!notification.recipientId || notification.recipientId === this.currentUserId));
         if (forMe) {
-          // Force immediate reload when approval/rejection notification arrives
           this.loadWorkflowData();
           this.loadEmployeeSivs();
-          this.syncServiceRequestsFromApi();
           this.cdr.markForCheck();
         }
       });
@@ -745,17 +742,18 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
       .pipe(take(1))
       .subscribe({
         next: (res) => {
-          const items = this.workflowService.extractApiServiceRequestRows(res);
           const user = this.currentUserService.getCurrentUserValue();
-          this.workflowService.mergeApiServiceRequests(items, {
+          const identity = {
+            email: user?.email,
+            fullName: user?.fullName,
+            username: user?.username,
+            employeeCode: user?.employeeCode,
+          };
+          const rows = this.workflowService.extractApiServiceRequestRows(res);
+          this.workflowService.mergeApiServiceRequests(rows, {
             managerQueueId: this.workflowService.getAssignedManagerQueueId(),
             employeeIdFilter: this.currentUserId,
-            employeeIdentity: {
-              email: user?.email,
-              fullName: user?.fullName,
-              username: user?.username,
-              employeeCode: user?.employeeCode,
-            },
+            employeeIdentity: identity,
           });
           this.loadWorkflowData();
           this.cdr.markForCheck();
@@ -987,7 +985,7 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
         managerName: 'Manager',
         items:
           modalResult.items?.map((item: any) => ({
-            id: 'item_' + Math.random().toString(36).substr(2, 9),
+            id: item.itemId || 'item_' + Math.random().toString(36).substr(2, 9),
             name: item.name,
             description: item.name,
             quantity: item.quantity || item.requestedQty || 1,
@@ -999,7 +997,9 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
         priority: (modalResult.priority || 'Medium') as any,
         status: 'Draft' as any,
         justification: modalResult.remarks || modalResult.justification || 'Service request',
-        requiredDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        requiredDate: modalResult.requiredBy
+          ? new Date(modalResult.requiredBy)
+          : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         estimatedCost: 0,
       },
       {

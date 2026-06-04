@@ -249,6 +249,20 @@ export class ManagerDashboardComponent implements OnInit, OnDestroy {
         description: 'Needs your action',
       },
       {
+        icon: 'bi bi-check-circle',
+        tone: 'success',
+        title: 'Approved Requests',
+        value: requests.filter((item) => item.status === 'Approved').length,
+        description: 'This month',
+      },
+      {
+        icon: 'bi bi-x-circle',
+        tone: 'danger',
+        title: 'Rejected Requests',
+        value: requests.filter((item) => item.status === 'Rejected').length,
+        description: 'This month',
+      },
+      {
         icon: 'bi bi-file-earmark-text',
         tone: 'info',
         title: 'Total Requests',
@@ -262,6 +276,8 @@ export class ManagerDashboardComponent implements OnInit, OnDestroy {
     const requests = this.requests();
     const total = Math.max(requests.length, 1);
     const pending = requests.filter((item) => item.status === 'Pending').length;
+    const approved = requests.filter((item) => item.status === 'Approved').length;
+    const rejected = requests.filter((item) => item.status === 'Rejected').length;
 
     return [
       {
@@ -269,6 +285,18 @@ export class ManagerDashboardComponent implements OnInit, OnDestroy {
         value: pending,
         percent: Math.round((pending / total) * 100),
         color: '#fbbf24',
+      },
+      {
+        label: 'Approved',
+        value: approved,
+        percent: Math.round((approved / total) * 100),
+        color: '#16a34a',
+      },
+      {
+        label: 'Rejected',
+        value: rejected,
+        percent: Math.round((rejected / total) * 100),
+        color: '#ef4444',
       },
     ];
   });
@@ -289,8 +317,14 @@ export class ManagerDashboardComponent implements OnInit, OnDestroy {
   });
 
   readonly filteredRequests = computed(() => {
+    const activeFilter = this.selectedFilter();
     const requests = this.requests();
-    return requests.filter((item) => item.status === 'Pending');
+
+    if (activeFilter === 'All') {
+      return requests;
+    }
+
+    return requests.filter((item) => item.status === activeFilter);
   });
 
   setFilter(filter: RequestFilter): void {
@@ -348,19 +382,6 @@ export class ManagerDashboardComponent implements OnInit, OnDestroy {
         isRead: false,
         sentDate: new Date(),
       });
-      this.serviceRequestService
-        .approveServiceRequest({ id: workflowRequest.id, remarks: 'Request approved by manager' })
-        .pipe(take(1))
-        .subscribe({
-          next: () => this.syncServiceRequestsFromApi(),
-          error: () => {},
-        });
-
-      // Force reload of workflow data to refresh the UI
-      setTimeout(() => {
-        this.loadWorkflowData();
-        this.cdr.markForCheck();
-      }, 100);
     }
   }
 

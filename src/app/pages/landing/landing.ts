@@ -12,7 +12,7 @@ import {
 import { isPlatformBrowser } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 
 type ModuleId = 'property' | 'storage' | 'workflow';
@@ -63,7 +63,6 @@ export class Landing implements OnInit, OnDestroy {
   protected readonly authService = inject(AuthService);
   private readonly platformId = inject(PLATFORM_ID);
   private readonly http = inject(HttpClient);
-  private readonly router = inject(Router);
 
   protected readonly menuOpen = signal(false);
 
@@ -290,16 +289,6 @@ export class Landing implements OnInit, OnDestroy {
   protected closeMenu(): void {
     this.menuOpen.set(false);
     this.themePanelOpen.set(false);
-  }
-
-  protected goToSignup(): void {
-    this.closeMenu();
-    void this.router.navigate(['/auth/register']);
-  }
-
-  protected goToLogin(): void {
-    this.closeMenu();
-    void this.router.navigate(['/auth/login']);
   }
 
   protected toggleThemePanel(): void {

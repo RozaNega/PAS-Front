@@ -197,6 +197,7 @@ export class WorkflowService {
   constructor() {
     this.restoreFromStorage();
     this.listenForCrossTabUpdates();
+    this.clearStaleSeededStorage();
   }
 
   private clearStaleSeededStorage(): void {
@@ -260,9 +261,11 @@ export class WorkflowService {
     for (let i = 9; i <= 10; i++) {
       samples.push(baseRequest(i, 'Completed', 15 + i));
     }
-    samples.push(baseRequest(1, 'Manager Rejected', 3));
-    for (let i = 11; i <= 13; i++) {
-      samples.push(baseRequest(i, 'Submitted', i - 10));
+    for (let i = 11; i <= 12; i++) {
+      samples.push(baseRequest(i, 'Manager Rejected', 3 + i));
+    }
+    for (let i = 13; i <= 15; i++) {
+      samples.push(baseRequest(i, 'Submitted', i - 12));
     }
 
     this.requests.set(samples);
@@ -327,10 +330,22 @@ export class WorkflowService {
     employeeId: string,
     identity?: EmployeeIdentity,
   ): ServiceRequest[] {
-    const userKeys = this.employeeIdentityKeys(employeeId, identity);
+    const id = employeeId?.trim();
+    const email = identity?.email?.trim().toLowerCase();
+    const fullName = identity?.fullName?.trim().toLowerCase();
+    const username = identity?.username?.trim().toLowerCase();
     return this.requests().filter((req) => {
-      const requestKeys = this.employeeMatchKeys(req);
-      return this.hasEmployeeIdentityMatch(requestKeys, userKeys);
+      if (id && req.employeeId === id) {
+        return true;
+      }
+      if (email && req.employeeEmail?.trim().toLowerCase() === email) {
+        return true;
+      }
+      const requesterName = req.employeeName?.trim().toLowerCase();
+      if (requesterName && (requesterName === fullName || requesterName === username)) {
+        return true;
+      }
+      return false;
     });
   }
 
@@ -800,11 +815,11 @@ export class WorkflowService {
     },
   ): void {
     const managerQueueId = options.managerQueueId;
-    const empFilter = options.employeeIdFilter || '';
+    const empFilter = options.employeeIdFilter;
+
     const identity = options.employeeIdentity;
-    const hasEmployeeFilter = this.employeeIdentityKeys(empFilter, identity).length > 0;
     const filtered = rows.filter((r) => {
-      if (!hasEmployeeFilter) return true;
+      if (!empFilter) return true;
       return this.apiRowBelongsToEmployee(r, empFilter, identity);
     });
 
@@ -815,12 +830,9 @@ export class WorkflowService {
       const byId = new Map(existing.map((r) => [r.id, r]));
       for (const sr of filtered) {
         const mapped = this.mapApiRowToServiceRequest(sr, managerQueueId);
-        const prior = byId.get(mapped.id) ?? this.findLocalRequestMatch(mapped, byId);
+        const prior = byId.get(mapped.id);
         if (prior) {
-          const merged = this.mergeServiceRequest(prior, mapped);
-          merged.srNumber = prior.srNumber || mapped.srNumber;
-          byId.delete(prior.id);
-          byId.set(mapped.id, merged);
+          byId.set(mapped.id, this.mergeServiceRequest(prior, mapped));
         } else {
           byId.set(mapped.id, mapped);
         }
@@ -964,7 +976,6 @@ export class WorkflowService {
     const status = this.pickPreferredStatus(existing.status, incoming.status);
     return {
       ...incoming,
-      srNumber: existing.srNumber || incoming.srNumber,
       status,
       employeeId: existing.employeeId || incoming.employeeId,
       employeeName: existing.employeeName || incoming.employeeName,
@@ -979,86 +990,6 @@ export class WorkflowService {
           ? existing.workflowHistory
           : incoming.workflowHistory,
     };
-  }
-
-  private findLocalRequestMatch(
-    incoming: ServiceRequest,
-    candidates: Map<string, ServiceRequest>,
-  ): ServiceRequest | undefined {
-    const incomingEmployeeKeys = this.employeeMatchKeys(incoming);
-    const incomingItems = this.itemSignature(incoming);
-    const incomingSubmittedAt = new Date(incoming.submittedDate).getTime();
-
-    return Array.from(candidates.values()).find((candidate) => {
-      if (!candidate.id.startsWith('req_')) return false;
-      if (!WORKFLOW_PENDING_STATUSES.includes(candidate.status)) return false;
-
-      const sameEmployee =
-        incomingEmployeeKeys.length === 0 ||
-        this.employeeMatchKeys(candidate).some((key) => incomingEmployeeKeys.includes(key));
-      if (!sameEmployee) return false;
-
-      const candidateItems = this.itemSignature(candidate);
-      const sameItems = !!candidateItems && candidateItems === incomingItems;
-      const submittedAt = new Date(candidate.submittedDate).getTime();
-      const closeSubmitTime =
-        Number.isFinite(incomingSubmittedAt) &&
-        Number.isFinite(submittedAt) &&
-        Math.abs(incomingSubmittedAt - submittedAt) <= 10 * 60 * 1000;
-
-      return sameItems || closeSubmitTime;
-    });
-  }
-
-  private employeeMatchKeys(request: ServiceRequest): string[] {
-    return [request.employeeId, request.employeeEmail, request.employeeName]
-      .map((value) => String(value || '').trim().toLowerCase())
-      .filter((value) => value !== 'employee')
-      .filter(Boolean);
-  }
-
-  private employeeIdentityKeys(employeeId: string, identity?: EmployeeIdentity): string[] {
-    const email = identity?.email?.trim().toLowerCase();
-    return [
-      employeeId,
-      identity?.employeeCode,
-      identity?.email,
-      email?.split('@')[0],
-      identity?.fullName,
-      identity?.username,
-    ]
-      .map((value) => String(value || '').trim().toLowerCase())
-      .filter((value) => value !== 'employee')
-      .filter(Boolean);
-  }
-
-  private hasEmployeeIdentityMatch(requestKeys: string[], userKeys: string[]): boolean {
-    if (requestKeys.length === 0 || userKeys.length === 0) {
-      return false;
-    }
-
-    return requestKeys.some((requestKey) =>
-      userKeys.some((userKey) => {
-        if (requestKey === userKey) {
-          return true;
-        }
-
-        const requestLooksLikeName = requestKey.includes(' ');
-        const userLooksLikeName = userKey.includes(' ');
-        if (requestLooksLikeName && userLooksLikeName) {
-          return requestKey.includes(userKey) || userKey.includes(requestKey);
-        }
-
-        return false;
-      }),
-    );
-  }
-
-  private itemSignature(request: ServiceRequest): string {
-    return request.items
-      .map((item) => `${item.name.trim().toLowerCase()}:${item.quantity}`)
-      .sort()
-      .join('|');
   }
 
   private mapApiRowToServiceRequest(
@@ -1137,14 +1068,7 @@ export class WorkflowService {
     const candidate =
       row.srNumber || row.requestNumber || row.srNo || row.serviceRequestNumber || '';
     const normalized = String(candidate || '').trim();
-
-    // Return the normalized SR number if it exists and looks valid
-    if (normalized && (normalized.startsWith('SR-') || normalized.match(/^SR\d+/i))) {
-      return normalized;
-    }
-
-    // Fallback: generate from row ID if provided SR number is invalid
-    return normalized && normalized.length > 0 ? normalized : `SR-${row.id}`;
+    return normalized || `SR-${row.id}`;
   }
 
   private apiRowBelongsToEmployee(
@@ -1162,9 +1086,18 @@ export class WorkflowService {
       .map((value) => String(value || '').trim().toLowerCase())
       .filter(Boolean);
 
-    const userKeys = this.employeeIdentityKeys(employeeId, identity);
+    const userKeys = [
+      employeeId,
+      identity?.email,
+      identity?.email?.split('@')[0],
+      identity?.fullName,
+      identity?.username,
+      identity?.employeeCode,
+    ]
+      .map((value) => String(value || '').trim().toLowerCase())
+      .filter(Boolean);
 
-    if (this.hasEmployeeIdentityMatch(directKeys, userKeys)) {
+    if (directKeys.some((key) => userKeys.includes(key))) {
       return true;
     }
     const requesterName = (row.requesterName || '').trim().toLowerCase();
@@ -1280,8 +1213,7 @@ export class WorkflowService {
       const rawNotif = localStorage.getItem(STORAGE_NOTIFICATIONS);
       if (rawReq) {
         const parsed = JSON.parse(rawReq) as ServiceRequest[];
-        const revived = parsed.map((r) => this.reviveServiceRequest(r));
-        this.requests.set(revived);
+        this.requests.set(parsed.map((r) => this.reviveServiceRequest(r)));
       } else {
         this.requests.set([]);
       }
@@ -1291,8 +1223,6 @@ export class WorkflowService {
       } else {
         this.notifications.set([]);
       }
-      localStorage.removeItem(STORAGE_REQUESTS);
-      localStorage.removeItem(STORAGE_NOTIFICATIONS);
     } catch {
       this.requests.set([]);
       this.notifications.set([]);

@@ -59,9 +59,16 @@ export class RejectedRequestsComponent implements OnInit, OnDestroy {
       rejectedRequests.map((req) => ({
         id: req.id,
         requestNumber: req.srNumber,
+        requesterName: req.employeeName,
+        department: req.department,
+        status: 'Rejected',
         priority: req.priority,
+        requestedDate: req.submittedDate.toLocaleDateString(),
         rejectedDate: req.managerReviewDate ? req.managerReviewDate.toLocaleDateString() : 'N/A',
+        itemCount: req.items.length,
+        estimatedValue: req.estimatedCost || 0,
         description: req.justification,
+        rejectedBy: req.managerName || 'Manager',
         rejectionReason: req.managerComments || 'No reason provided',
       })),
     );

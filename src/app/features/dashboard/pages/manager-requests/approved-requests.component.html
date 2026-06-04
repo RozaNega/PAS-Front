@@ -11,20 +11,15 @@
           <div class="request-number">{{ req.requestNumber }}</div>
           <div class="status-badge approved">Approved</div>
         </div>
-
-        <h3 class="request-title">{{ req.description }}</h3>
-
-        <div class="request-meta">
-          <div class="meta-item">
-            <i class="bi bi-flag"></i>
-            <span>Priority: {{ req.priority }}</span>
+        <div class="request-body">
+          <p class="description">{{ req.description }}</p>
+          <div class="request-details">
+            <div class="detail-row"><span class="label">Requester:</span><span class="value">{{ req.requesterName }} ({{ req.department }})</span></div>
+            <div class="detail-row"><span class="label">Items:</span><span class="value">{{ req.itemCount }}</span></div>
+            <div class="detail-row"><span class="label">Value:</span><span class="value">${{ req.estimatedValue.toLocaleString() }}</span></div>
+            <div class="detail-row"><span class="label">Approved By:</span><span class="value">{{ req.approvedBy }}</span></div>
+            <div class="detail-row"><span class="label">Approved Date:</span><span class="value">{{ req.approvedDate }}</span></div>
           </div>
-          @if (req.approvedDate) {
-            <div class="meta-item">
-              <i class="bi bi-check-circle"></i>
-              <span>Approved: {{ req.approvedDate }}</span>
-            </div>
-          }
         </div>
       </div>
     }
