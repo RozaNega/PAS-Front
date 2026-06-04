@@ -578,14 +578,16 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
     this.toastService.clearAll();
     this.currentUserService.hydrateFromStorage();
     this.profileService.hydrateProfileFromStorage();
-    this.setupProfileSubscription();
-    this.cdr.markForCheck();
-    this.startClock();
 
+    // Set userId immediately before any data loading
     const userId = this.currentUserService.getUserId();
     if (userId) {
       this.currentUserId = userId;
     }
+
+    this.setupProfileSubscription();
+    this.cdr.markForCheck();
+    this.startClock();
 
     this.setupWorkflowSubscriptions();
     this.loadWorkflowData();
@@ -641,6 +643,7 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
         }
         this.loadWorkflowData();
         this.loadEmployeeSivs();
+        this.syncServiceRequestsFromApi();
         this.cdr.markForCheck();
       }
     });

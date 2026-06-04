@@ -693,7 +693,7 @@ export class CreateRequestComponent implements OnInit, OnDestroy {
           },
           {
             id: created.id,
-            srNumber: created.srNumber || this.form.srNumber,
+            srNumber: this.form.srNumber?.trim() || created.srNumber,
           },
         );
 
