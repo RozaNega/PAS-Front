@@ -266,86 +266,58 @@ export const employeeMenuConfig: MenuItem[] = [
 ];
 
 export const managerMenuConfig: MenuItem[] = [
+  { label: 'Dashboard', route: '/manager/dashboard', icon: 'bi bi-house-fill' },
+  { label: 'Profile', route: '/manager/profile', icon: 'bi bi-person-circle' },
   {
-    label: 'Dashboard',
-    icon: 'bi bi-speedometer2',
-    route: '/manager/dashboard',
-    permissions: ['manager_dashboard'],
-  },
-  {
-    label: 'Approvals',
-    icon: 'bi bi-check-circle',
+    label: 'Service Requests',
+    icon: 'bi bi-list-check',
     children: [
-      { label: 'Pending Approvals', route: '/manager/approvals/pending', permissions: ['approve_requests'] },
-      { label: 'My Decisions', route: '/manager/approvals/decisions' },
-      { label: 'Approval History', route: '/manager/approvals/history' },
+      { label: 'All Requests', route: '/manager/requests/all', icon: 'bi bi-list' },
+      { label: 'Pending', route: '/manager/requests/pending', icon: 'bi bi-clock' },
+      { label: 'Approved', route: '/manager/requests/approved', icon: 'bi bi-check-circle' },
+      { label: 'Rejected', route: '/manager/requests/rejected', icon: 'bi bi-x-circle' },
+      { label: 'Issued', route: '/manager/requests/issued', icon: 'bi bi-box-arrow-right' },
     ],
   },
   {
-    label: 'Requests',
-    icon: 'bi bi-file-earmark-text',
+    label: 'Store Issue Vouchers',
+    icon: 'bi bi-file-text',
     children: [
-      { label: 'All Requests', route: '/manager/requests/all' },
-      { label: 'Pending', route: '/manager/requests/pending' },
-      { label: 'Approved', route: '/manager/requests/approved' },
-      { label: 'Rejected', route: '/manager/requests/rejected' },
-      { label: 'Issued', route: '/manager/requests/issued' },
-    ],
-  },
-  {
-    label: 'SIVs',
-    icon: 'bi bi-receipt',
-    children: [
-      { label: 'All SIVs', route: '/manager/sivs/all' },
-      { label: 'Pending SIVs', route: '/manager/sivs/pending' },
-      { label: 'Issued SIVs', route: '/manager/sivs/issued' },
+      { label: 'All SIVs', route: '/manager/sivs/all', icon: 'bi bi-file-earmark-text' },
+      { label: 'Department SIVs', route: '/manager/sivs/issued', icon: 'bi bi-check-circle' },
     ],
   },
   {
     label: 'Inventory',
-    icon: 'bi bi-box-seam',
+    icon: 'bi bi-boxes',
     children: [
-      { label: 'Stock Overview', route: '/manager/inventory' },
-      { label: 'Low Stock', route: '/manager/inventory/low-stock' },
-      { label: 'Stock Movements', route: '/manager/inventory/movements' },
-      { label: 'Stock Ledger', route: '/manager/inventory/ledger' },
-    ],
-  },
-  {
-    label: 'Workflows',
-    icon: 'bi bi-diagram-3',
-    children: [
-      { label: 'All Workflows', route: '/manager/workflows/all' },
-      { label: 'Create Workflow', route: '/manager/workflows/create' },
-      { label: 'Approver Matrix', route: '/manager/workflows/approvers' },
+      { label: 'Stock Overview', route: '/manager/inventory', icon: 'bi bi-box-seam' },
+      {
+        label: 'Low Stock Items',
+        route: '/manager/inventory/low-stock',
+        icon: 'bi bi-exclamation-triangle',
+      },
+      {
+        label: 'Stock Movements',
+        route: '/manager/inventory/movements',
+        icon: 'bi bi-arrow-left-right',
+      },
+      { label: 'Stock Ledger', route: '/manager/inventory/ledger', icon: 'bi bi-journal-text' },
     ],
   },
   {
     label: 'Reports',
-    icon: 'bi bi-file-earmark-bar-graph',
+    icon: 'bi bi-bar-chart-fill',
     children: [
-      { label: 'Inventory Report', route: '/manager/reports/inventory' },
-      { label: 'Approval Reports', route: '/manager/reports/approval' },
-      { label: 'Request Reports', route: '/manager/reports/requests' },
-      { label: 'SIV Reports', route: '/manager/reports/sivs' },
+      {
+        label: 'Approval Reports',
+        route: '/manager/reports/approval',
+        icon: 'bi bi-file-earmark-bar-graph',
+      },
+      { label: 'Department Request Reports', route: '/manager/reports/requests', icon: 'bi bi-file-text' },
+      { label: 'Issuance Report', route: '/manager/reports/sivs', icon: 'bi bi-file-text' },
+      { label: 'Stock Reports', route: '/manager/reports/inventory', icon: 'bi bi-boxes' },
     ],
-  },
-  {
-    label: 'Tools',
-    icon: 'bi bi-tools',
-    children: [
-      { label: 'Audit Trail', route: '/manager/audit-trail' },
-      { label: 'Approval Queue', route: '/manager/approval-queue' },
-      { label: 'Approval Workflow', route: '/manager/approval-workflow' },
-      { label: 'Approver Matrix', route: '/manager/approver-matrix' },
-      { label: 'Decision Reports', route: '/manager/decision-reports' },
-    ],
-  },
-  {
-    label: 'Notifications',
-    icon: 'bi bi-bell',
-    route: '/manager/notifications',
-    permissions: ['view_notifications'],
   },
 ];
 
