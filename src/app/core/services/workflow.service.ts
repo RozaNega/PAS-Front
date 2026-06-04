@@ -197,7 +197,6 @@ export class WorkflowService {
   constructor() {
     this.restoreFromStorage();
     this.listenForCrossTabUpdates();
-    this.clearStaleSeededStorage();
   }
 
   private clearStaleSeededStorage(): void {
@@ -977,6 +976,7 @@ export class WorkflowService {
     return {
       ...incoming,
       status,
+      srNumber: existing.srNumber || incoming.srNumber,
       employeeId: existing.employeeId || incoming.employeeId,
       employeeName: existing.employeeName || incoming.employeeName,
       employeeEmail: existing.employeeEmail || incoming.employeeEmail,
