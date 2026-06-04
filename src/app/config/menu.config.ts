@@ -216,39 +216,51 @@ export const complianceMenuConfig: MenuItem[] = [
 ];
 
 export const employeeMenuConfig: MenuItem[] = [
+  { label: 'Dashboard', route: '/employee/dashboard', icon: 'bi bi-house-fill' },
+  { label: 'User Profile', route: '/employee/dashboard/profile', icon: 'bi bi-person-circle' },
   {
-    label: 'Dashboard',
-    icon: 'bi bi-speedometer2',
-    route: '/employee/dashboard',
-    permissions: ['employee_dashboard'],
+    label: 'My Requests Summary',
+    route: '/employee/dashboard/my-requests-summary',
+    icon: 'bi bi-clipboard-data-fill',
   },
   {
     label: 'My Requests',
-    icon: 'bi bi-file-earmark-text',
+    icon: 'bi bi-card-list',
     children: [
-      { label: 'Create Request', route: '/employee/requests/create' },
-      { label: 'Pending', route: '/employee/requests/pending' },
-      { label: 'Approved', route: '/employee/requests/approved' },
-      { label: 'Rejected', route: '/employee/requests/rejected' },
-      { label: 'Completed', route: '/employee/requests/completed' },
-      { label: 'My SIVs', route: '/employee/requests/sivs' },
+      {
+        label: 'Create New Request',
+        route: '/employee/requests/create',
+        icon: 'bi bi-plus-circle',
+      },
+      {
+        label: 'Pending Approval',
+        route: '/employee/requests/pending',
+        icon: 'bi bi-clock',
+      },
+      {
+        label: 'Approved Requests',
+        route: '/employee/requests/approved',
+        icon: 'bi bi-check-circle',
+      },
+      { label: 'Rejected Requests', route: '/employee/requests/rejected', icon: 'bi bi-x-circle' },
+      {
+        label: 'Completed Requests',
+        route: '/employee/requests/completed',
+        icon: 'bi bi-check2-all',
+      },
+      { label: 'My SIVs', route: '/employee/requests/sivs', icon: 'bi bi-file-text' },
     ],
   },
   {
     label: 'Returns',
-    icon: 'bi bi-arrow-return-left',
+    icon: 'bi bi-arrow-counterclockwise',
     children: [
-      { label: 'My Returns', route: '/employee/returns' },
-      { label: 'Create Return', route: '/employee/returns/create' },
-    ],
-  },
-  {
-    label: 'Dashboard Info',
-    icon: 'bi bi-layout-sidebar',
-    children: [
-      { label: 'Summary', route: '/employee/dashboard/my-requests-summary' },
-      { label: 'Activity', route: '/employee/dashboard/my-activity' },
-      { label: 'Notifications', route: '/employee/dashboard/notifications' },
+      { label: 'My Returns', route: '/employee/returns', icon: 'bi bi-list' },
+      {
+        label: 'Create Return Request',
+        route: '/employee/returns/create',
+        icon: 'bi bi-plus-circle',
+      },
     ],
   },
 ];
