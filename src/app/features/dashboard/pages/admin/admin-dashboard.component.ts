@@ -1,5 +1,5 @@
 import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, CurrencyPipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { EMPTY, of } from 'rxjs';
@@ -8,6 +8,11 @@ import { DashboardService, DashboardStatistics } from '../../../../core/services
 import { ServiceRequestService } from '../../../requisition/service-requests/services/service-request.service';
 import { NotificationService as ToastService } from '../../../../core/services/notification.service';
 import { pasApiUrlHint } from '../../../../core/config/api-base';
+import {
+  WorkflowService,
+  ServiceRequest,
+  NotificationMessage,
+} from '../../../../core/services/workflow.service';
 
 type RequisitionStatus = 'Pending' | 'Approved' | 'Rejected' | 'Completed' | 'Issued';
 
@@ -73,7 +78,7 @@ interface DeptActivity {
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink, RouterLinkActive],
+  imports: [CommonModule, RouterLink, RouterLinkActive, CurrencyPipe],
   templateUrl: './admin-dashboard.component.html',
   styleUrl: './admin-dashboard.component.scss',
 })
@@ -84,6 +89,7 @@ export class AdminDashboardComponent implements OnInit {
   private readonly dashboardService = inject(DashboardService);
   private readonly serviceRequests = inject(ServiceRequestService);
   private readonly toast = inject(ToastService);
+  private readonly workflowService = inject(WorkflowService);
 
   readonly currentDate = signal('');
   readonly currentTime = signal('');
@@ -128,6 +134,10 @@ export class AdminDashboardComponent implements OnInit {
   );
 
   readonly complianceScore = signal(94);
+
+  // Workflow integration
+  readonly workflowRequests = signal<ServiceRequest[]>([]);
+  readonly workflowNotifications = signal<NotificationMessage[]>([]);
   readonly monthlyMax = computed(() =>
     Math.max(1, ...this.monthlyTrend().flatMap(m => [m.requests, m.approved, m.completed]))
   );
@@ -192,6 +202,8 @@ export class AdminDashboardComponent implements OnInit {
 
   ngOnInit(): void {
     this.refreshData();
+    this.setupWorkflowSubscriptions();
+    this.loadWorkflowData();
   }
 
   apiConnectionHint(): string {
@@ -504,6 +516,57 @@ export class AdminDashboardComponent implements OnInit {
     };
     this.currentDate.set(now.toLocaleDateString('en-US', options));
     this.currentTime.set(now.toLocaleTimeString('en-US', { hour12: true }));
+  }
+
+  private setupWorkflowSubscriptions(): void {
+    this.workflowService.getRequestUpdates().subscribe((request) => {
+      this.loadWorkflowData();
+    });
+
+    this.workflowService.getNotificationUpdates().subscribe(() => {
+      this.loadWorkflowData();
+    });
+  }
+
+  loadWorkflowData(): void {
+    const requests = this.workflowService.getRequestsForAdmin();
+    this.workflowRequests.set(requests);
+
+    const notifications = this.workflowService.getNotificationsForUser(
+      'admin_001',
+      'Admin'
+    );
+    this.workflowNotifications.set(notifications);
+  }
+
+  approveRequest(id: string): void {
+    const request = this.workflowRequests().find((r) => r.id === id);
+    if (request) {
+      this.workflowService.adminReviewRequest(
+        id,
+        'approve',
+        'Approved by admin',
+        'admin_001',
+        'Admin User'
+      );
+      this.toast.success(`Request ${request.srNumber} approved`);
+      this.loadWorkflowData();
+    }
+  }
+
+  rejectRequest(id: string): void {
+    const request = this.workflowRequests().find((r) => r.id === id);
+    if (request) {
+      this.workflowService.adminReviewRequest(
+        id,
+        'reject',
+        'Rejected by admin',
+        'admin_001',
+        'Admin User'
+      );
+      this.toast.error(`Request ${request.srNumber} rejected`);
+      this.loadWorkflowData();
+    }
   }
 
   toggleAutoRefresh(): void {

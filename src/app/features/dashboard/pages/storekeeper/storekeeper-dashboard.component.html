@@ -286,3 +286,51 @@
     <span><i class="bi bi-clock"></i> {{ today }}</span>
   </footer>
 </section>
+
+<!-- Workflow Requests Section -->
+<section class="panel workflow-panel">
+  <div class="panel-header">
+    <div class="panel-header-left">
+      <i class="bi bi-kanban"></i>
+      <h3>Approved Requests - Ready for Issue</h3>
+      <span class="count-badge green">{{ workflowRequests().length }}</span>
+    </div>
+    <button type="button" class="action-btn secondary small" (click)="refreshWorkflowData()">
+      <i class="bi bi-arrow-repeat"></i> Refresh
+    </button>
+  </div>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>SR Number</th>
+          <th>Employee</th>
+          <th>Item</th>
+          <th>Qty</th>
+          <th>Value</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (req of workflowRequests(); track req.id) {
+          <tr>
+            <td><span class="mono">{{ req.srNumber }}</span></td>
+            <td>{{ req.employeeName }}</td>
+            <td>{{ req.items[0]?.name || 'Multiple items' }}</td>
+            <td class="text-center">{{ req.items[0]?.quantity || 0 }}</td>
+            <td>{{ req.estimatedCost | currency }}</td>
+            <td><span class="status-badge status-approved">{{ req.status }}</span></td>
+            <td class="text-right">
+              <button type="button" class="action-btn primary small" (click)="processIssue(req.id)">
+                <i class="bi bi-arrow-up-circle"></i> Issue
+              </button>
+            </td>
+          </tr>
+        } @empty {
+          <tr><td colspan="7" class="empty-state">No approved requests waiting for issue</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</section>
