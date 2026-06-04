@@ -581,11 +581,22 @@ export class AdminDashboardComponent implements OnInit {
   }
 
   viewAllRequisitions(): void {
-    void this.router.navigate(['/admin/requisitions']);
+    // Stay on dashboard - requests are shown here
   }
 
   openRequisition(id: string): void {
-    void this.router.navigate(['/admin/requisitions']);
+    // Stay on dashboard - requests are shown here
+  }
+
+  markAllNotificationsAsRead(): void {
+    this.workflowService.markAllNotificationsAsRead('admin_001', 'Admin');
+    this.loadWorkflowData();
+    this.toast.success('All notifications marked as read');
+  }
+
+  dismissNotification(id: string): void {
+    this.workflowService.dismissNotification(id);
+    this.loadWorkflowData();
   }
 
   getStatusClass(status: string): string {

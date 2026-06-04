@@ -257,9 +257,6 @@
           <button type="button" class="action-btn secondary small" (click)="loadWorkflowData()">
             <i class="bi bi-arrow-repeat"></i> Refresh
           </button>
-          <button type="button" class="action-btn primary small" (click)="viewAllRequisitions()">
-            <i class="bi bi-list-ul"></i> View All
-          </button>
         </div>
       </div>
       <div class="table-wrap">
@@ -331,6 +328,46 @@
       }
     </section>
   </div>
+
+  <!-- Notifications Section -->
+  <section class="panel notifications-panel">
+    <div class="panel-header">
+      <div>
+        <h3 class="panel-title"><i class="bi bi-bell"></i> Notifications</h3>
+        <p class="panel-desc">{{ workflowNotifications().length }} notifications, {{ workflowNotifications().filter(n => !n.isRead).length }} unread</p>
+      </div>
+      <div class="panel-actions">
+        <button type="button" class="action-btn secondary small" (click)="markAllNotificationsAsRead()">
+          <i class="bi bi-check-all"></i> Mark All Read
+        </button>
+        <button type="button" class="action-btn secondary small" (click)="loadWorkflowData()">
+          <i class="bi bi-arrow-repeat"></i> Refresh
+        </button>
+      </div>
+    </div>
+    <div class="notifications-list">
+      @for (notification of workflowNotifications().slice(0, 10); track notification.id) {
+        <div class="notification-item" [class.unread]="!notification.isRead">
+          <div class="notification-icon" [class]="'icon-' + notification.type">
+            <i class="bi" [class.bi-info-circle]="notification.type === 'info'"
+               [class.bi-check-circle]="notification.type === 'success'"
+               [class.bi-exclamation-triangle]="notification.type === 'warning'"
+               [class.bi-x-circle]="notification.type === 'error'"></i>
+          </div>
+          <div class="notification-content">
+            <h4>{{ notification.title }}</h4>
+            <p>{{ notification.message }}</p>
+            <span class="notification-time">{{ notification.createdDate | date:'MMM d, y h:mm a' }}</span>
+          </div>
+          <button type="button" class="notification-dismiss" (click)="dismissNotification(notification.id)" title="Dismiss">
+            <i class="bi bi-x"></i>
+          </button>
+        </div>
+      } @empty {
+        <div class="chart-empty">No notifications</div>
+      }
+    </div>
+  </section>
 
   <section class="analytics-row">
     <div class="chart-card">
