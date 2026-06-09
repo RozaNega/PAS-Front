@@ -77,7 +77,7 @@
     <a class="shortcut" routerLink="/admin/inventory"><i class="bi bi-boxes"></i> Inventory</a>
     <a class="shortcut" routerLink="/admin/notifications"><i class="bi bi-bell"></i> Notifications</a>
     <a class="shortcut" routerLink="/admin/users"><i class="bi bi-people"></i> Users</a>
-    <a class="shortcut" routerLink="/admin/reports/valuation"><i class="bi bi-graph-up-arrow"></i> Reports</a>
+    <a class="shortcut" routerLink="/admin/reports"><i class="bi bi-graph-up-arrow"></i> Reports</a>
   </nav>
 
   <section class="summary">
@@ -112,7 +112,7 @@
     <a class="action-btn primary" routerLink="/admin/requisitions">
       <i class="bi bi-inboxes"></i> View Requisitions
     </a>
-    <a class="action-btn secondary" routerLink="/admin/reports/valuation">
+    <a class="action-btn secondary" routerLink="/admin/reports">
       <i class="bi bi-file-bar-graph"></i> Reports
     </a>
     <a class="action-btn secondary" routerLink="/admin/notifications">
@@ -250,12 +250,15 @@
         <div>
           <h3 class="panel-title"><i class="bi bi-inboxes"></i> Recent Service Requests</h3>
           <p class="panel-desc">
-            @if (workflowRequests().length > 0) { From workflow system } @else { No requests found }
+            @if (requisitionsFromApi()) { Loaded from backend } @else if (requisitionsLoading()) { Loading... } @else { No requests found }
           </p>
         </div>
         <div class="panel-actions">
-          <button type="button" class="action-btn secondary small" (click)="loadWorkflowData()">
+          <button type="button" class="action-btn secondary small" (click)="loadRecentServiceRequests()">
             <i class="bi bi-arrow-repeat"></i> Refresh
+          </button>
+          <button type="button" class="action-btn primary small" (click)="viewAllRequisitions()">
+            <i class="bi bi-list"></i> View All
           </button>
         </div>
       </div>
@@ -268,38 +271,36 @@
               <th>Department</th>
               <th>Purpose</th>
               <th>Status</th>
-              <th>Items</th>
               <th>Qty</th>
               <th>Date</th>
               <th class="text-center">Action</th>
             </tr>
           </thead>
           <tbody>
-            @for (req of workflowRequests().slice(0, 8); track req.id) {
-              <tr class="req-row">
+            @for (req of recentRequisitions().slice(0, 8); track req.id) {
+              <tr class="req-row" (click)="openRequisition(req.id)" style="cursor:pointer">
                 <td><span class="sr-badge">{{ req.srNumber }}</span></td>
                 <td>
                   <div class="req-user">
-                    <div class="req-avatar">{{ req.employeeName.charAt(0) }}</div>
-                    <span>{{ req.employeeName }}</span>
+                    <div class="req-avatar">{{ req.requestor.charAt(0) }}</div>
+                    <span>{{ req.requestor }}</span>
                   </div>
                 </td>
                 <td>{{ req.department }}</td>
-                <td class="req-item-cell">{{ req.items[0]?.name || req.justification }}</td>
+                <td class="req-item-cell">{{ req.item }}</td>
                 <td>
                   <span class="status-pill" [class]="getStatusClass(req.status)">{{ req.status }}</span>
                 </td>
-                <td>{{ req.items.length }}</td>
-                <td class="text-center">{{ req.items[0]?.quantity || 0 }}</td>
-                <td class="req-date">{{ req.submittedDate | date:'MMM d, y' }}</td>
+                <td class="text-center">{{ req.quantity }}</td>
+                <td class="req-date">{{ req.date }}</td>
                 <td class="text-center">
-                  <button class="table-btn open" (click)="$event.stopPropagation()" title="Open">
+                  <button class="table-btn open" (click)="openRequisition(req.id); $event.stopPropagation()" title="Open">
                     <i class="bi bi-eye"></i>
                   </button>
                 </td>
               </tr>
             } @empty {
-              <tr><td colspan="9" class="empty-cell">No service requests found.</td></tr>
+              <tr><td colspan="8" class="empty-cell">No service requests found.</td></tr>
             }
           </tbody>
         </table>

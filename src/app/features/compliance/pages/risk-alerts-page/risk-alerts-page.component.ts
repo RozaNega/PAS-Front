@@ -91,11 +91,17 @@ export class RiskAlertsPageComponent implements OnInit {
 
   takeAction(notif: NotificationMessage): void {
     this.markAsRead(notif.id);
+    // Prefer the actual request id — open the admin service-request detail page
+    // (which the admin dashboard itself uses) so the SR can be opened/viewed in one place.
+    if (notif.requestId) {
+      void this.router.navigate(['/admin/requisitions', notif.requestId]);
+      return;
+    }
     if (notif.actionUrl) {
       void this.router.navigate([notif.actionUrl]);
-    } else {
-      void this.router.navigate(['/compliance-officer/dashboard']);
+      return;
     }
+    void this.router.navigate(['/compliance-officer/dashboard']);
   }
 
   refreshAlerts(): void {

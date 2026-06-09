@@ -1,17 +1,168 @@
 <section class="feature-card">
   <h2>{{ title() }}</h2>
-  <form [formGroup]="form" (ngSubmit)="onSubmit()">
+
+  @if (loadError(); as err) {
+    <div class="alert alert-warning" role="alert">
+      <strong>Heads up:</strong> {{ err }}
+      <div class="alert-actions">
+        <button
+          type="button"
+          class="btn btn-secondary btn-sm"
+          (click)="retryLoadWarehouses()"
+          [disabled]="loadingWarehouses()"
+        >
+          {{ loadingWarehouses() ? 'Retrying…' : 'Retry loading warehouses' }}
+        </button>
+      </div>
+    </div>
+  }
+
+  @if (submitSuccess()) {
+    <div class="alert alert-success" role="alert">
+      <strong>Saved!</strong> The shelf location was created successfully.
+    </div>
+  }
+
+  <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
     <div class="form-group">
-      <label for="warehouseId">Warehouse ID *</label>
-      <input type="text" id="warehouseId" formControlName="warehouseId" placeholder="Enter warehouse ID">
+      <label for="warehouseId">Warehouse *</label>
+      <select id="warehouseId" formControlName="warehouseId">
+        <option value="">
+          @if (warehouses().length === 0) {
+            -- No warehouses yet, create one below --
+          } @else {
+            Select Warehouse
+          }
+        </option>
+        @for (wh of warehouses(); track wh.id) {
+          <option [value]="wh.id">{{ wh.warehouseName }} ({{ wh.locationCode }})</option>
+        }
+      </select>
       @if (form.controls.warehouseId.invalid && form.controls.warehouseId.touched) {
-        <p class="error">Warehouse ID is required.</p>
+        @if (form.controls.warehouseId.hasError('required')) {
+          <p class="error">Warehouse is required.</p>
+        } @else if (form.controls.warehouseId.hasError('pattern')) {
+          <p class="error">Selected warehouse has an invalid ID format. Please pick one from the list.</p>
+        }
+      }
+
+      <button
+        type="button"
+        class="btn btn-link btn-sm create-warehouse-toggle"
+        (click)="toggleCreateWarehouse()"
+      >
+        {{ showCreateWarehouse() ? '× Cancel' : '+ Create new warehouse' }}
+      </button>
+
+      @if (showCreateWarehouse()) {
+        <div class="inline-create-warehouse">
+          <h4>New Warehouse</h4>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="wh-name">Name *</label>
+              <input
+                id="wh-name"
+                type="text"
+                [value]="newWarehouse().warehouseName"
+                (input)="updateNewWarehouseField('warehouseName', $any($event.target).value)"
+                placeholder="e.g. Main Warehouse"
+              />
+            </div>
+            <div class="form-group">
+              <label for="wh-code">Location Code *</label>
+              <input
+                id="wh-code"
+                type="text"
+                [value]="newWarehouse().locationCode"
+                (input)="updateNewWarehouseField('locationCode', $any($event.target).value)"
+                placeholder="e.g. MW-001"
+              />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="wh-address">Address *</label>
+            <input
+              id="wh-address"
+              type="text"
+              [value]="newWarehouse().address"
+              (input)="updateNewWarehouseField('address', $any($event.target).value)"
+              placeholder="Street address"
+            />
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="wh-city">City *</label>
+              <input
+                id="wh-city"
+                type="text"
+                [value]="newWarehouse().city"
+                (input)="updateNewWarehouseField('city', $any($event.target).value)"
+                placeholder="City"
+              />
+            </div>
+            <div class="form-group">
+              <label for="wh-country">Country *</label>
+              <input
+                id="wh-country"
+                type="text"
+                [value]="newWarehouse().country"
+                (input)="updateNewWarehouseField('country', $any($event.target).value)"
+                placeholder="Country"
+              />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="wh-contact">Contact Person</label>
+              <input
+                id="wh-contact"
+                type="text"
+                [value]="newWarehouse().contactPerson"
+                (input)="updateNewWarehouseField('contactPerson', $any($event.target).value)"
+                placeholder="Contact person"
+              />
+            </div>
+            <div class="form-group">
+              <label for="wh-phone">Contact Phone</label>
+              <input
+                id="wh-phone"
+                type="text"
+                [value]="newWarehouse().contactPhone"
+                (input)="updateNewWarehouseField('contactPhone', $any($event.target).value)"
+                placeholder="Phone"
+              />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="wh-email">Contact Email</label>
+            <input
+              id="wh-email"
+              type="email"
+              [value]="newWarehouse().contactEmail"
+              (input)="updateNewWarehouseField('contactEmail', $any($event.target).value)"
+              placeholder="email@example.com"
+            />
+          </div>
+
+          @if (newWarehouseError(); as newErr) {
+            <div class="alert alert-error" role="alert">{{ newErr }}</div>
+          }
+
+          <button
+            type="button"
+            class="btn btn-secondary btn-sm"
+            (click)="createNewWarehouse()"
+            [disabled]="creatingWarehouse()"
+          >
+            {{ creatingWarehouse() ? 'Creating…' : 'Create Warehouse' }}
+          </button>
+        </div>
       }
     </div>
 
     <div class="form-group">
       <label for="aisle">Aisle *</label>
-      <input type="text" id="aisle" formControlName="aisle" placeholder="Enter aisle">
+      <input type="text" id="aisle" formControlName="aisle" placeholder="Enter aisle" />
       @if (form.controls.aisle.invalid && form.controls.aisle.touched) {
         <p class="error">Aisle is required.</p>
       }
@@ -19,7 +170,7 @@
 
     <div class="form-group">
       <label for="rack">Rack *</label>
-      <input type="text" id="rack" formControlName="rack" placeholder="Enter rack">
+      <input type="text" id="rack" formControlName="rack" placeholder="Enter rack" />
       @if (form.controls.rack.invalid && form.controls.rack.touched) {
         <p class="error">Rack is required.</p>
       }
@@ -27,7 +178,12 @@
 
     <div class="form-group">
       <label for="shelfNumber">Shelf Number *</label>
-      <input type="text" id="shelfNumber" formControlName="shelfNumber" placeholder="Enter shelf number">
+      <input
+        type="text"
+        id="shelfNumber"
+        formControlName="shelfNumber"
+        placeholder="Enter shelf number"
+      />
       @if (form.controls.shelfNumber.invalid && form.controls.shelfNumber.touched) {
         <p class="error">Shelf Number is required.</p>
       }
@@ -35,41 +191,63 @@
 
     <div class="form-group">
       <label for="zone">Zone</label>
-      <input type="text" id="zone" formControlName="zone" placeholder="Enter zone">
+      <input type="text" id="zone" formControlName="zone" placeholder="Enter zone" />
     </div>
 
     <div class="form-group">
       <label for="binType">Bin Type</label>
-      <input type="text" id="binType" formControlName="binType" placeholder="Enter bin type">
+      <input type="text" id="binType" formControlName="binType" placeholder="Enter bin type" />
     </div>
 
     <div class="form-group">
       <label for="length">Length</label>
-      <input type="number" id="length" formControlName="length" placeholder="Enter length">
+      <input type="number" id="length" formControlName="length" placeholder="Enter length" />
     </div>
 
     <div class="form-group">
       <label for="width">Width</label>
-      <input type="number" id="width" formControlName="width" placeholder="Enter width">
+      <input type="number" id="width" formControlName="width" placeholder="Enter width" />
     </div>
 
     <div class="form-group">
       <label for="height">Height</label>
-      <input type="number" id="height" formControlName="height" placeholder="Enter height">
+      <input type="number" id="height" formControlName="height" placeholder="Enter height" />
     </div>
 
     <div class="form-group">
       <label for="maxWeight">Max Weight</label>
-      <input type="number" id="maxWeight" formControlName="maxWeight" placeholder="Enter max weight">
+      <input
+        type="number"
+        id="maxWeight"
+        formControlName="maxWeight"
+        placeholder="Enter max weight"
+      />
     </div>
 
     <div class="form-group">
       <label for="capacity">Capacity</label>
-      <input type="number" id="capacity" formControlName="capacity" placeholder="Enter capacity">
+      <input type="number" id="capacity" formControlName="capacity" placeholder="Enter capacity" />
     </div>
 
-    <button type="submit" class="btn btn-primary" [disabled]="loading">
-      {{ loading ? 'Saving...' : submitLabel() }}
+    @if (submitError(); as sErr) {
+      <div class="alert alert-error" role="alert">
+        <strong>Could not save:</strong> {{ sErr }}
+      </div>
+    }
+
+    <button
+      type="submit"
+      class="btn btn-primary"
+      [disabled]="!canSubmit()"
+      [title]="
+        isMockWarehouses()
+          ? 'Cannot save while using sample warehouses — create a real one first.'
+          : warehouses().length === 0
+            ? 'Create a warehouse first.'
+            : ''
+      "
+    >
+      {{ loading() ? 'Saving...' : submitLabel() }}
     </button>
   </form>
 </section>

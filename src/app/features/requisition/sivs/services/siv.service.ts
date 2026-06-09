@@ -45,8 +45,8 @@ export interface StoreIssueVoucherItemDto {
 
 /** POST /api/StoreIssueVouchers — CreateStoreIssueVoucherCommand */
 export interface CreateStoreIssueVoucherRequest {
-  serviceRequestId: string;
-  issuedToId: string;
+  serviceRequestId?: string;
+  issuedToId?: string;
   department: string;
   notes?: string;
   items: CreateStoreIssueVoucherItemRequest[];
@@ -67,9 +67,7 @@ function isGuidString(value: string | undefined | null): boolean {
 }
 
 function buildCreateStoreIssueVoucherCommand(data: CreateStoreIssueVoucherRequest): Record<string, unknown> {
-  return {
-    serviceRequestId: data.serviceRequestId,
-    issuedToId: data.issuedToId,
+  const cmd: Record<string, unknown> = {
     department: data.department,
     notes: data.notes ?? '',
     items: data.items.map((i) => {
@@ -89,6 +87,15 @@ function buildCreateStoreIssueVoucherCommand(data: CreateStoreIssueVoucherReques
       return row;
     }),
   };
+
+  if (data.serviceRequestId && isGuidString(data.serviceRequestId)) {
+    cmd['serviceRequestId'] = data.serviceRequestId;
+  }
+  if (data.issuedToId) {
+    cmd['issuedToId'] = data.issuedToId;
+  }
+
+  return cmd;
 }
 
 @Injectable({ providedIn: 'root' })

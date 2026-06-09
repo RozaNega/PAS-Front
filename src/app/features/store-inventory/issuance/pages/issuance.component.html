@@ -1,4 +1,11 @@
 <div class="issuance-page">
+  @if (notification()) {
+    <div class="notification-banner" [class.success]="notification()!.type === 'success'" [class.error]="notification()!.type === 'error'">
+      <i [class]="notification()!.type === 'success' ? 'bi bi-check-circle-fill' : 'bi bi-exclamation-triangle-fill'"></i>
+      {{ notification()!.message }}
+      <button class="notification-dismiss" (click)="notification.set(null)"><i class="bi bi-x-lg"></i></button>
+    </div>
+  }
   <!-- Page Header -->
   <div class="page-header">
     <div class="header-left">
@@ -140,6 +147,7 @@
           </select>
         </div>
         <div class="toolbar-actions">
+          <button class="btn btn-sm btn-outline" (click)="refreshRequisitions()"><i class="bi bi-arrow-clockwise"></i> Refresh</button>
           <button class="btn btn-sm btn-outline" (click)="bulkProcess()"><i class="bi bi-check-all"></i> Bulk Process</button>
           <button class="btn btn-sm btn-outline" (click)="printPickingList()"><i class="bi bi-printer"></i> Pick List</button>
           <button class="btn btn-sm btn-outline" (click)="exportList()"><i class="bi bi-download"></i> Export</button>
@@ -322,7 +330,11 @@
       <!-- Step 1: Select Requisition -->
       @if (sivStep() === 1) {
         <div class="form-section animate-in">
-          <div class="section-title"><i class="bi bi-search"></i> Select Approved Requisition</div>
+          <div class="section-title" style="display: flex; align-items: center; justify-content: space-between;">
+            <span><i class="bi bi-search"></i> Select Approved Requisition</span>
+            <button class="btn btn-outline btn-sm" (click)="refreshRequisitions()"><i class="bi bi-arrow-clockwise"></i> Refresh</button>
+          </div>
+
           <div class="search-box full-width">
             <i class="bi bi-search"></i>
             <input type="text" placeholder="Search by SR# or requester..." [ngModel]="requisitionSearch()" (ngModelChange)="requisitionSearch.set($event)" />
@@ -341,20 +353,31 @@
                 </div>
               </div>
             }
+            @if (filteredRequisitions().length === 0) {
+              <div class="empty-state" style="padding: 2rem; text-align: center;">
+                <p style="color: var(--text-muted);">No approved requisitions found.</p>
+              </div>
+            }
           </div>
         </div>
       }
 
       <!-- Step 2: Requisition Details -->
-      @if (sivStep() === 2 && selectedRequisition()) {
+      @if (sivStep() === 2) {
         <div class="form-section animate-in">
-          <div class="section-title"><i class="bi bi-info-circle"></i> Requisition Details</div>
-          <div class="info-grid">
-            <div class="info-item"><span class="info-label">SR Number</span><span class="info-value">{{ selectedRequisition()?.srNumber }}</span></div>
-            <div class="info-item"><span class="info-label">Requester</span><span class="info-value">{{ selectedRequisition()?.requester }}</span></div>
-            <div class="info-item"><span class="info-label">Department</span><span class="info-value">{{ selectedRequisition()?.department }}</span></div>
-            <div class="info-item"><span class="info-label">Required By</span><span class="info-value">{{ selectedRequisition()?.requiredBy }}</span></div>
-          </div>
+          @if (selectedRequisition()) {
+            <div class="section-title"><i class="bi bi-info-circle"></i> Requisition Details</div>
+            <div class="info-grid">
+              <div class="info-item"><span class="info-label">SR Number</span><span class="info-value">{{ selectedRequisition()?.srNumber }}</span></div>
+              <div class="info-item"><span class="info-label">Requester</span><span class="info-value">{{ selectedRequisition()?.requester }}</span></div>
+              <div class="info-item"><span class="info-label">Department</span><span class="info-value">{{ selectedRequisition()?.department }}</span></div>
+              <div class="info-item"><span class="info-label">Required By</span><span class="info-value">{{ selectedRequisition()?.requiredBy }}</span></div>
+            </div>
+          } @else {
+            <div class="empty-state" style="padding: 2rem; text-align: center;">
+              <p style="color: var(--text-muted);">No requisition selected. Go back to select one.</p>
+            </div>
+          }
         </div>
       }
 
@@ -362,8 +385,9 @@
       @if (sivStep() === 3) {
         <div class="form-section animate-in">
           <div class="section-title"><i class="bi bi-boxes"></i> Items to Issue</div>
-          @for (item of sivItems(); track item.srDetailId) {
-            <div class="item-row">
+
+          @for (item of sivItems(); track item.srDetailId || item.itemId || $index; let i = $index) {
+            <div class="item-row" style="position: relative;">
               <div class="item-row-header">
                 <strong>{{ item.name }}</strong>
                 <span class="item-sku">{{ item.sku }}</span>
@@ -372,11 +396,16 @@
                 <div class="input-group"><label>Requested</label><input type="number" [value]="item.requested" disabled /></div>
                 <div class="input-group"><label>Approved</label><input type="number" [value]="item.approved" disabled /></div>
                 <div class="input-group"><label>Available</label><input type="number" [value]="item.available" disabled /></div>
-                <div class="input-group"><label>To Issue</label><input type="number" [value]="item.quantityToIssue" /></div>
-                <div class="input-group"><label>Shelf</label><input type="text" [value]="item.shelfLocation" /></div>
-                <div class="input-group full-width"><label>Notes</label><input type="text" placeholder="Optional notes" [value]="item.notes" /></div>
+                <div class="input-group"><label>To Issue</label><input type="number" [value]="item.quantityToIssue" (input)="updateSivItem(i, 'quantityToIssue', $event)" min="1" /></div>
+                <div class="input-group"><label>Shelf</label><input type="text" [value]="item.shelfLocation" (input)="updateSivItem(i, 'shelfLocation', $event)" /></div>
+                <div class="input-group full-width"><label>Notes</label><input type="text" placeholder="Optional notes" [value]="item.notes" (input)="updateSivItem(i, 'notes', $event)" /></div>
               </div>
             </div>
+          }
+          @if (sivItems().length === 0) {
+            <p style="text-align: center; color: var(--text-muted); padding: 2rem;">
+              <i class="bi bi-info-circle"></i> No items loaded for this requisition.
+            </p>
           }
         </div>
       }
@@ -658,7 +687,7 @@
           @if (currentStep() === 2) {
             <div class="modal-form-section">
               <h4>Select Items & Quantities</h4>
-              @for (item of (selectedIssueDetail()?.items || []); track item.id) {
+              @for (item of modalIssueItems(); track item.id; let i = $index) {
                 <div class="modal-item-row">
                   <div class="modal-item-info">
                     <strong>{{ item.itemName }}</strong>
@@ -668,11 +697,11 @@
                     <span>Requested: {{ item.requestedQty }}</span>
                     <span>Issued: {{ item.issuedQty }}</span>
                     <span>Pending: {{ item.pendingQty }}</span>
-                    <input type="number" class="qty-input" [value]="item.pendingQty" />
+                    <input type="number" class="qty-input" [value]="item.pendingQty" (input)="updateModalIssueItem(i, $event)" min="0" [max]="item.pendingQty" />
                   </div>
                 </div>
               }
-              @if (!(selectedIssueDetail()?.items || []).length) {
+              @if (!modalIssueItems().length) {
                 <p class="text-muted">Detailed items not available. Proceed with standard issue.</p>
               }
               <div class="partial-options">

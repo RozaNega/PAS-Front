@@ -1,9 +1,9 @@
-import { Component, OnInit, signal, inject } from '@angular/core';
+import { Component, OnInit, signal, inject, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ServiceRequestService, ServiceRequestDetailDto } from '../../services/service-request.service';
-import { StoreIssueVoucherService } from '../../../sivs/services/siv.service';
+import { WorkflowService } from '../../../../../core/services/workflow.service';
 
 @Component({
   selector: 'app-service-request-detail',
@@ -16,23 +16,27 @@ export class ServiceRequestDetailComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly serviceRequestService = inject(ServiceRequestService);
-  private readonly sivService = inject(StoreIssueVoucherService);
+  private readonly workflowService = inject(WorkflowService);
 
   serviceRequest = signal<ServiceRequestDetailDto | null>(null);
   loading = signal(false);
   error = signal<string | null>(null);
-  
-  // Action states
+  notification = signal<{ type: 'success' | 'error'; message: string } | null>(null);
+
   showApprovalModal = signal(false);
   showRejectionModal = signal(false);
   showCommentModal = signal(false);
   showIssueModal = signal(false);
-  
-  // Form data
+  showTimelineModal = signal(false);
+  showActivityModal = signal(false);
+  showMoreMenu = signal(false);
+
   approvalRemarks = signal('');
   rejectionReason = signal('');
   newComment = signal('');
-  
+  timelineData = signal<any[]>([]);
+  activityData = signal<any[]>([]);
+
   requestId = '';
 
   ngOnInit(): void {
@@ -44,64 +48,56 @@ export class ServiceRequestDetailComponent implements OnInit {
     }
   }
 
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(e: MouseEvent): void {
+    const target = e.target as HTMLElement;
+    if (!target.closest('.dropdown-wrapper')) {
+      this.showMoreMenu.set(false);
+    }
+  }
+
+  toggleMoreMenu(): void {
+    this.showMoreMenu.update(v => !v);
+  }
+
   loadServiceRequest(): void {
     this.loading.set(true);
     this.error.set(null);
 
-    console.log('=== SERVICE REQUEST DETAIL DEBUG ===');
-    console.log('Loading service request ID:', this.requestId);
-    console.log('===================================');
-
     this.serviceRequestService.getById(this.requestId).subscribe({
       next: (response) => {
-        console.log('=== SERVICE REQUEST DETAIL RESPONSE ===');
-        console.log('Response:', JSON.stringify(response, null, 2));
-        console.log('======================================');
-        
         if (response.success && response.data) {
-          this.serviceRequest.set(response.data);
+          const sr = response.data;
+          const customSr = this.workflowService.getCustomSrNumber(this.requestId);
+          if (customSr) {
+            (sr as any).srNumber = customSr;
+          }
+          this.serviceRequest.set(sr);
         } else {
           this.error.set(response.message || 'Failed to load service request details');
         }
         this.loading.set(false);
       },
       error: (err) => {
-        console.error('=== SERVICE REQUEST DETAIL ERROR ===');
-        console.error('Full error object:', err);
-        console.error('====================================');
-        
-        let errorMessage = 'Failed to load service request details. Please try again.';
-        
-        if (err.error) {
-          if (err.error.message) {
-            errorMessage = err.error.message;
-          } else if (err.error.title) {
-            errorMessage = err.error.title;
-          } else if (typeof err.error === 'string') {
-            errorMessage = err.error;
-          }
-        }
-        
-        if (err.status) {
-          errorMessage = `[${err.status} ${err.statusText}] ${errorMessage}`;
-        }
-        
+        let errorMessage = 'Failed to load service request details.';
+        if (err.error?.message) errorMessage = err.error.message;
+        else if (err.error?.title) errorMessage = err.error.title;
+        if (err.status) errorMessage = `[${err.status}] ${errorMessage}`;
         this.error.set(errorMessage);
         this.loading.set(false);
       }
     });
   }
 
-  // Navigation
   goBack(): void {
-    this.router.navigate(['/admin/requisitions']);
+    window.history.back();
   }
 
   editRequest(): void {
     this.router.navigate(['/admin/requisitions', this.requestId, 'edit']);
   }
 
-  // Approval Actions
+  // ─── Approval ───
   openApprovalModal(): void {
     this.approvalRemarks.set('');
     this.showApprovalModal.set(true);
@@ -113,29 +109,30 @@ export class ServiceRequestDetailComponent implements OnInit {
   }
 
   approveRequest(): void {
-    const remarks = this.approvalRemarks().trim();
-    
     this.serviceRequestService.approve({
       id: this.requestId,
-      remarks: remarks || 'Approved via admin panel'
+      remarks: this.approvalRemarks().trim() || 'Approved via admin panel'
     }).subscribe({
-      next: (response) => {
-        if (response.success) {
-          alert('Service request approved successfully');
+      next: (res) => {
+        if (res.success) {
+          this.notify('success', 'Service request approved successfully');
           this.closeApprovalModal();
           this.loadServiceRequest();
         } else {
-          alert('Failed to approve request: ' + response.message);
+          this.notify('error', 'Failed to approve: ' + (res.message || 'Server returned failure'));
         }
       },
       error: (err) => {
-        console.error('Error approving request:', err);
-        alert('Failed to approve request. Please try again.');
+        let msg = 'Failed to approve request.';
+        if (err?.error?.message) msg = err.error.message;
+        else if (err?.error?.title) msg = err.error.title;
+        if (err?.status) msg = `[${err.status}] ${msg}`;
+        this.notify('error', msg);
       }
     });
   }
 
-  // Rejection Actions
+  // ─── Rejection ───
   openRejectionModal(): void {
     this.rejectionReason.set('');
     this.showRejectionModal.set(true);
@@ -148,33 +145,33 @@ export class ServiceRequestDetailComponent implements OnInit {
 
   rejectRequest(): void {
     const reason = this.rejectionReason().trim();
-    
     if (!reason) {
-      alert('Please provide a reason for rejection');
+      this.notify('error', 'Please provide a reason for rejection');
       return;
     }
-    
-    this.serviceRequestService.reject({
-      id: this.requestId,
-      reason: reason
-    }).subscribe({
-      next: (response) => {
-        if (response.success) {
-          alert('Service request rejected successfully');
+
+    this.serviceRequestService.reject({ id: this.requestId, reason }).subscribe({
+      next: (res) => {
+        if (res.success) {
+          this.notify('success', 'Service request rejected');
           this.closeRejectionModal();
           this.loadServiceRequest();
         } else {
-          alert('Failed to reject request: ' + response.message);
+          this.notify('error', 'Failed to reject: ' + (res.message || 'Server returned failure'));
         }
       },
       error: (err) => {
-        console.error('Error rejecting request:', err);
-        alert('Failed to reject request. Please try again.');
+        let msg = 'Failed to reject request.';
+        if (err?.error?.message) msg = err.error.message;
+        else if (err?.error?.title) msg = err.error.title;
+        else if (err?.message) msg = err.message;
+        if (err?.status) msg = `[${err.status}] ${msg}`;
+        this.notify('error', msg);
       }
     });
   }
 
-  // Comment Actions
+  // ─── Comment ───
   openCommentModal(): void {
     this.newComment.set('');
     this.showCommentModal.set(true);
@@ -187,30 +184,26 @@ export class ServiceRequestDetailComponent implements OnInit {
 
   addComment(): void {
     const comment = this.newComment().trim();
-    
     if (!comment) {
-      alert('Please enter a comment');
+      this.notify('error', 'Please enter a comment');
       return;
     }
-    
+
     this.serviceRequestService.addComment(this.requestId, comment).subscribe({
-      next: (response) => {
-        if (response.success) {
-          alert('Comment added successfully');
+      next: (res) => {
+        if (res.success) {
+          this.notify('success', 'Comment added successfully');
           this.closeCommentModal();
           this.loadServiceRequest();
         } else {
-          alert('Failed to add comment: ' + response.message);
+          this.notify('error', 'Failed: ' + res.message);
         }
       },
-      error: (err) => {
-        console.error('Error adding comment:', err);
-        alert('Failed to add comment. Please try again.');
-      }
+      error: () => this.notify('error', 'Failed to add comment')
     });
   }
 
-  // Issue Actions
+  // ─── Issue ───
   openIssueModal(): void {
     this.showIssueModal.set(true);
   }
@@ -223,7 +216,6 @@ export class ServiceRequestDetailComponent implements OnInit {
     const request = this.serviceRequest();
     if (!request) return;
 
-    // Create issue request with all items at requested quantities
     const issueData = {
       id: this.requestId,
       items: request.items.map(item => ({
@@ -234,155 +226,188 @@ export class ServiceRequestDetailComponent implements OnInit {
     };
 
     this.serviceRequestService.issue(issueData).subscribe({
-      next: (response) => {
-        if (response.success) {
-          alert('Service request issued successfully. SIV created.');
+      next: (res) => {
+        if (res.success) {
+          this.notify('success', 'Items issued successfully. SIV created.');
           this.closeIssueModal();
           this.loadServiceRequest();
-          
-          // Navigate to SIV if ID is returned
-          if (response.data) {
-            this.router.navigate(['/admin/sivs', response.data]);
+          if (res.data) {
+            this.router.navigate(['/admin/sivs', res.data]);
           }
         } else {
-          alert('Failed to issue request: ' + response.message);
+          this.notify('error', 'Failed: ' + res.message);
         }
       },
-      error: (err) => {
-        console.error('Error issuing request:', err);
-        alert('Failed to issue request. Please try again.');
-      }
+      error: () => this.notify('error', 'Failed to issue items')
     });
   }
 
-  // Delete Action
+  // ─── Delete ───
   deleteRequest(): void {
-    if (confirm('Are you sure you want to delete this service request? This action cannot be undone.')) {
-      this.serviceRequestService.delete(this.requestId).subscribe({
-        next: (response) => {
-          if (response.success) {
-            alert('Service request deleted successfully');
-            this.router.navigate(['/admin/requisitions']);
-          } else {
-            alert('Failed to delete request: ' + response.message);
-          }
-        },
-        error: (err) => {
-          console.error('Error deleting request:', err);
-          alert('Failed to delete request. Please try again.');
+    this.showMoreMenu.set(false);
+    if (!confirm('Are you sure you want to delete this service request? This cannot be undone.')) return;
+
+    this.serviceRequestService.delete(this.requestId).subscribe({
+      next: (res) => {
+        if (res.success) {
+          this.notify('success', 'Service request deleted');
+          this.router.navigate(['/admin/requisitions']);
+        } else {
+          this.notify('error', 'Failed: ' + res.message);
         }
-      });
-    }
+      },
+      error: () => this.notify('error', 'Failed to delete request')
+    });
   }
 
-  // Print/Export Actions
+  // ─── Print ───
   printRequest(): void {
+    this.showMoreMenu.set(false);
     window.print();
   }
 
+  // ─── Export ───
   exportRequest(format: string): void {
-    console.log(`Exporting service request as ${format}...`);
-    alert(`Export as ${format} - Feature coming soon!`);
-  }
+    this.showMoreMenu.set(false);
+    const sr = this.serviceRequest();
+    if (!sr) return;
 
-  // Timeline and Activity
-  viewTimeline(): void {
-    this.serviceRequestService.getTimeline(this.requestId).subscribe({
-      next: (response) => {
-        console.log('Timeline:', response);
-        // TODO: Show timeline in modal or navigate to timeline page
-        alert('Timeline feature - Coming soon!');
-      },
-      error: (err) => {
-        console.error('Error loading timeline:', err);
-        alert('Failed to load timeline');
-      }
-    });
-  }
+    const headers = ['Field', 'Value'];
+    const rows = [
+      ['SR Number', sr.srNumber],
+      ['Status', sr.status],
+      ['Urgency', sr.urgency || ''],
+      ['Requester', sr.requesterName],
+      ['Department', sr.department || ''],
+      ['Date', sr.requestDate],
+      ['Purpose', sr.purpose || ''],
+      ['Notes', sr.notes || ''],
+      ['Total Items', String(sr.totalItems)],
+      ['Total Quantity', String(sr.totalQuantity)],
+      ['Issued Quantity', String(sr.issuedQuantity || 0)],
+    ];
 
-  viewActivity(): void {
-    this.serviceRequestService.getActivity(this.requestId).subscribe({
-      next: (response) => {
-        console.log('Activity:', response);
-        // TODO: Show activity in modal or navigate to activity page
-        alert('Activity log feature - Coming soon!');
-      },
-      error: (err) => {
-        console.error('Error loading activity:', err);
-        alert('Failed to load activity log');
-      }
-    });
-  }
-
-  // Utility Methods
-  getStatusClass(status: string): string {
-    switch (status?.toLowerCase()) {
-      case 'pending':
-        return 'badge-warning';
-      case 'approved':
-        return 'badge-success';
-      case 'rejected':
-        return 'badge-danger';
-      case 'completed':
-        return 'badge-info';
-      case 'issued':
-        return 'badge-primary';
-      default:
-        return 'badge-secondary';
+    if (sr.items?.length) {
+      rows.push(['', '']);
+      rows.push(['--- Items ---', '']);
+      rows.push(['Item', 'SKU | Unit | Requested | Issued | Pending']);
+      sr.items.forEach(item => {
+        rows.push([item.itemName, `${item.sku} | ${item.unitOfMeasure} | ${item.requestedQty} | ${item.issuedQty || 0} | ${item.pendingQty}`]);
+      });
     }
+
+    if (format === 'excel' || format === 'csv') {
+      const csv = [headers, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+      this.download(csv, `SR-${sr.srNumber}.csv`, 'text/csv');
+      this.notify('success', `Exported as CSV`);
+    } else if (format === 'pdf') {
+      const html = `<html><head><style>body{font-family:Arial,sans-serif;padding:20px}table{width:100%;border-collapse:collapse}td,th{border:1px solid #ddd;padding:8px;text-align:left}th{background:#f5f5f5}</style></head><body>
+        <h2>Service Request: ${sr.srNumber}</h2>
+        <table>${rows.map(r => `<tr><td><strong>${r[0]}</strong></td><td>${r[1]}</td></tr>`).join('')}</table>
+        </body></html>`;
+      const blob = new Blob([html], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const w = window.open(url, '_blank');
+      if (w) { w.onload = () => { w.print(); }; }
+      URL.revokeObjectURL(url);
+      this.notify('success', 'PDF ready for print');
+    }
+  }
+
+  private download(content: string, filename: string, mime: string): void {
+    const blob = new Blob([content], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // ─── Timeline ───
+  viewTimeline(): void {
+    this.showMoreMenu.set(false);
+    this.serviceRequestService.getTimeline(this.requestId).subscribe({
+      next: (res) => {
+        if (res.success && res.data) {
+          this.timelineData.set(Array.isArray(res.data) ? res.data : []);
+        } else {
+          this.timelineData.set([]);
+        }
+        this.showTimelineModal.set(true);
+      },
+      error: () => {
+        this.timelineData.set([]);
+        this.showTimelineModal.set(true);
+      }
+    });
+  }
+
+  closeTimelineModal(): void {
+    this.showTimelineModal.set(false);
+  }
+
+  // ─── Activity ───
+  viewActivity(): void {
+    this.showMoreMenu.set(false);
+    this.serviceRequestService.getActivity(this.requestId).subscribe({
+      next: (res) => {
+        if (res.success && res.data) {
+          this.activityData.set(Array.isArray(res.data) ? res.data : []);
+        } else {
+          this.activityData.set([]);
+        }
+        this.showActivityModal.set(true);
+      },
+      error: () => {
+        this.activityData.set([]);
+        this.showActivityModal.set(true);
+      }
+    });
+  }
+
+  closeActivityModal(): void {
+    this.showActivityModal.set(false);
+  }
+
+  // ─── Utility ───
+  getStatusClass(status: string): string {
+    const s = status?.toLowerCase();
+    if (s === 'pending') return 'badge-warning';
+    if (s === 'approved') return 'badge-success';
+    if (s === 'rejected') return 'badge-danger';
+    if (s === 'completed') return 'badge-info';
+    if (s === 'issued') return 'badge-primary';
+    return 'badge-secondary';
   }
 
   getUrgencyClass(urgency: string): string {
-    switch (urgency?.toLowerCase()) {
-      case 'critical':
-        return 'badge-danger';
-      case 'urgent':
-        return 'badge-warning';
-      case 'high':
-        return 'badge-warning';
-      case 'normal':
-        return 'badge-success';
-      case 'low':
-        return 'badge-secondary';
-      default:
-        return 'badge-secondary';
-    }
+    const u = urgency?.toLowerCase();
+    if (u === 'critical') return 'badge-danger';
+    if (u === 'urgent' || u === 'high') return 'badge-warning';
+    if (u === 'normal') return 'badge-success';
+    return 'badge-secondary';
   }
 
   formatDate(date: string | Date): string {
     if (!date) return 'N/A';
-    return new Date(date).toLocaleDateString('en-US', { 
-      year: 'numeric',
-      month: 'short', 
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+    return new Date(date).toLocaleDateString('en-US', {
+      year: 'numeric', month: 'short', day: 'numeric',
+      hour: '2-digit', minute: '2-digit'
     });
   }
 
-  canApprove(): boolean {
-    const request = this.serviceRequest();
-    return request?.status?.toLowerCase() === 'pending';
-  }
-
-  canReject(): boolean {
-    const request = this.serviceRequest();
-    return request?.status?.toLowerCase() === 'pending';
-  }
-
-  canIssue(): boolean {
-    const request = this.serviceRequest();
-    return request?.status?.toLowerCase() === 'approved';
-  }
-
-  canEdit(): boolean {
-    const request = this.serviceRequest();
-    return request?.status?.toLowerCase() === 'pending';
-  }
-
+  canApprove(): boolean { return this.serviceRequest()?.status?.toLowerCase() === 'pending'; }
+  canReject(): boolean { return this.serviceRequest()?.status?.toLowerCase() === 'pending'; }
+  canIssue(): boolean { return this.serviceRequest()?.status?.toLowerCase() === 'approved'; }
+  canEdit(): boolean { return this.serviceRequest()?.status?.toLowerCase() === 'pending'; }
   canDelete(): boolean {
-    const request = this.serviceRequest();
-    const status = request?.status?.toLowerCase();
-    return status === 'pending' || status === 'rejected';
+    const s = this.serviceRequest()?.status?.toLowerCase();
+    return s === 'pending' || s === 'rejected';
+  }
+
+  private notify(type: 'success' | 'error', message: string): void {
+    this.notification.set({ type, message });
+    setTimeout(() => this.notification.set(null), 5000);
   }
 }

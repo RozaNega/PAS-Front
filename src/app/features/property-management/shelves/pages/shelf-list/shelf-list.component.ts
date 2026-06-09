@@ -7,13 +7,17 @@ import { WarehousesService, WarehouseDto } from '../../../../../core/services/wa
 
 interface Shelf {
   id: string;
-  shelfCode: string;
-  shelfName: string;
+  rack: string;
+  shelfNumber: string;
   warehouseId: string;
   warehouseName: string;
   aisle: string;
-  section: string;
-  level: string;
+  zone: string;
+  binType: string;
+  length: number;
+  width: number;
+  height: number;
+  maxWeight: number;
   capacity: number;
   itemsCount: number;
   status: 'Empty' | 'Low' | 'Partial' | 'Full';
@@ -53,11 +57,15 @@ export class ShelfListComponent {
   mockUsed = false;
 
   modalForm = {
-    shelfCode: '',
-    shelfName: '',
+    rack: '',
+    shelfNumber: '',
     aisle: '',
-    section: '',
-    level: '',
+    zone: '',
+    binType: '',
+    length: 0,
+    width: 0,
+    height: 0,
+    maxWeight: 0,
     capacity: 100,
     description: '',
     isActive: true,
@@ -95,8 +103,8 @@ export class ShelfListComponent {
     const whId = this.selectedWarehouseId();
     return this.shelves().filter(s => {
       const matchesSearch = !search ||
-        s.shelfCode.toLowerCase().includes(search) ||
-        s.shelfName.toLowerCase().includes(search) ||
+        s.rack.toLowerCase().includes(search) ||
+        s.shelfNumber.toLowerCase().includes(search) ||
         s.warehouseName.toLowerCase().includes(search);
       const matchesStatus = status === 'All' || s.status === status;
       const matchesWh = whId === 'all' || s.warehouseId === whId;
@@ -159,13 +167,17 @@ export class ShelfListComponent {
             const status: Shelf['status'] = items === 0 ? 'Empty' : pct <= 0.3 ? 'Low' : pct < 1 ? 'Partial' : 'Full';
             shelves.push({
               id: `sh-${String(idx).padStart(3, '0')}`,
-              shelfCode: `${aisle}-R${rack}-S${shelf}`,
-              shelfName: `Aisle ${aisle}, Rack ${rack}, Shelf ${shelf}`,
+              rack: `R${rack}`,
+              shelfNumber: `S${shelf}`,
               warehouseId: w.id,
               warehouseName: w.name,
               aisle,
-              section: `R${rack}`,
-              level: `S${shelf}`,
+              zone: `${aisle}-${rack}`,
+              binType: 'Standard',
+              length: 120,
+              width: 60,
+              height: 40,
+              maxWeight: 50,
               capacity: cap,
               itemsCount: items,
               status,
@@ -199,13 +211,17 @@ export class ShelfListComponent {
         if (response.success && response.data && response.data.length > 0) {
           const shelves: Shelf[] = response.data.map((dto: ShelfLocationDto) => ({
             id: dto.id,
-            shelfCode: dto.shelfCode,
-            shelfName: dto.shelfName,
+            rack: dto.rack || '',
+            shelfNumber: dto.shelfNumber || '',
             warehouseId: dto.warehouseId,
             warehouseName: dto.warehouseName,
             aisle: dto.aisle || '',
-            section: dto.section || '',
-            level: dto.level || '',
+            zone: dto.zone || '',
+            binType: dto.binType || '',
+            length: dto.length || 0,
+            width: dto.width || 0,
+            height: dto.height || 0,
+            maxWeight: dto.maxWeight || 0,
             capacity: dto.capacity || 100,
             itemsCount: dto.currentUtilization || 0,
             status: this.calcStatus(dto.currentUtilization || 0, dto.capacity || 100),
@@ -284,11 +300,15 @@ export class ShelfListComponent {
   openAddModal(): void {
     this.selectedShelf.set(null);
     this.modalForm = {
-      shelfCode: '',
-      shelfName: '',
+      rack: '',
+      shelfNumber: '',
       aisle: '',
-      section: '',
-      level: '',
+      zone: '',
+      binType: '',
+      length: 0,
+      width: 0,
+      height: 0,
+      maxWeight: 0,
       capacity: 100,
       description: '',
       isActive: true,
@@ -301,11 +321,15 @@ export class ShelfListComponent {
   openEditModal(shelf: Shelf): void {
     this.selectedShelf.set(shelf);
     this.modalForm = {
-      shelfCode: shelf.shelfCode,
-      shelfName: shelf.shelfName,
+      rack: shelf.rack,
+      shelfNumber: shelf.shelfNumber,
       aisle: shelf.aisle,
-      section: shelf.section,
-      level: shelf.level,
+      zone: shelf.zone,
+      binType: shelf.binType,
+      length: shelf.length,
+      width: shelf.width,
+      height: shelf.height,
+      maxWeight: shelf.maxWeight,
       capacity: shelf.capacity,
       description: shelf.description,
       isActive: shelf.isActive,
@@ -337,8 +361,8 @@ export class ShelfListComponent {
 
   validateForm(): boolean {
     const errors: Record<string, string> = {};
-    if (!this.modalForm.shelfCode.trim()) errors['shelfCode'] = 'Shelf code is required';
-    if (!this.modalForm.shelfName.trim()) errors['shelfName'] = 'Shelf name is required';
+    if (!this.modalForm.rack.trim()) errors['rack'] = 'Rack is required';
+    if (!this.modalForm.shelfNumber.trim()) errors['shelfNumber'] = 'Shelf number is required';
     if (this.modalForm.capacity < 1) errors['capacity'] = 'Capacity must be at least 1';
     this.formErrors.set(errors);
     return Object.keys(errors).length === 0;
@@ -352,27 +376,35 @@ export class ShelfListComponent {
 
     if (editing) {
       const updated: Shelf = { ...editing,
-        shelfCode: data.shelfCode,
-        shelfName: data.shelfName,
+        rack: data.rack,
+        shelfNumber: data.shelfNumber,
         aisle: data.aisle,
-        section: data.section,
-        level: data.level,
+        zone: data.zone,
+        binType: data.binType,
+        length: data.length,
+        width: data.width,
+        height: data.height,
+        maxWeight: data.maxWeight,
         capacity: data.capacity,
         description: data.description,
         isActive: data.isActive,
       };
       this.shelves.update(arr => arr.map(s => s.id === editing.id ? updated : s));
-      this.notification.set({ type: 'success', message: `Shelf "${updated.shelfCode}" updated.` });
+      this.notification.set({ type: 'success', message: `Shelf "${updated.rack}-${updated.shelfNumber}" updated.` });
     } else {
       const newShelf: Shelf = {
         id: 'sh-' + String(Date.now()).slice(-6),
-        shelfCode: data.shelfCode,
-        shelfName: data.shelfName,
+        rack: data.rack,
+        shelfNumber: data.shelfNumber,
         warehouseId: wh?.id || 'wh-001',
         warehouseName: wh?.warehouseName || 'Main Warehouse',
         aisle: data.aisle,
-        section: data.section,
-        level: data.level,
+        zone: data.zone,
+        binType: data.binType,
+        length: data.length,
+        width: data.width,
+        height: data.height,
+        maxWeight: data.maxWeight,
         capacity: data.capacity,
         itemsCount: 0,
         status: 'Empty',
@@ -381,7 +413,7 @@ export class ShelfListComponent {
         createdAt: new Date().toISOString(),
       };
       this.shelves.update(arr => [...arr, newShelf]);
-      this.notification.set({ type: 'success', message: `Shelf "${newShelf.shelfCode}" created.` });
+      this.notification.set({ type: 'success', message: `Shelf "${newShelf.rack}-${newShelf.shelfNumber}" created.` });
     }
     this.closeModal();
   }
@@ -390,16 +422,16 @@ export class ShelfListComponent {
     const shelf = this.shelfToDelete();
     if (!shelf) return;
     this.shelves.update(arr => arr.filter(s => s.id !== shelf.id));
-    this.notification.set({ type: 'success', message: `Shelf "${shelf.shelfCode}" deleted.` });
+    this.notification.set({ type: 'success', message: `Shelf "${shelf.rack}-${shelf.shelfNumber}" deleted.` });
     this.closeModal();
     this.page.set(1);
   }
 
   exportCSV(): void {
     const items = this.filteredShelves();
-    const header = 'Code,Name,Warehouse,Aisle,Section,Level,Capacity,Items,Occupancy %,Status,Active,Created';
+    const header = 'Rack,Shelf Number,Warehouse,Aisle,Zone,Capacity,Items,Occupancy %,Status,Active,Created';
     const rows = items.map(s =>
-      `"${s.shelfCode}","${s.shelfName}","${s.warehouseName}","${s.aisle}","${s.section}","${s.level}",${s.capacity},${s.itemsCount},${s.capacity > 0 ? Math.round(s.itemsCount / s.capacity * 100) : 0},"${s.status}",${s.isActive},"${s.createdAt}"`
+      `"${s.rack}","${s.shelfNumber}","${s.warehouseName}","${s.aisle}","${s.zone}",${s.capacity},${s.itemsCount},${s.capacity > 0 ? Math.round(s.itemsCount / s.capacity * 100) : 0},"${s.status}",${s.isActive},"${s.createdAt}"`
     );
     const csv = [header, ...rows].join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });

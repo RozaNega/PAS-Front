@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { ServiceRequestService, ServiceRequestDto } from '../../services/service-request.service';
+import { WorkflowService } from '../../../../../core/services/workflow.service';
 
 @Component({
   selector: 'app-service-request-list',
@@ -15,6 +16,7 @@ export class ServiceRequestListComponent implements OnInit {
   private readonly serviceRequestService = inject(ServiceRequestService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+  private readonly workflowService = inject(WorkflowService);
 
   readonly currentYear = new Date().getFullYear();
 
@@ -216,6 +218,19 @@ export class ServiceRequestListComponent implements OnInit {
       (o['userName'] as string | undefined) ??
       (o['createdByName'] as string | undefined);
     return this.displayValue(raw);
+  }
+
+  /**
+   * Resolve the SR number to display: prefer the employee-supplied custom SR number
+   * (saved locally when the request was created) over the backend auto-generated one.
+   * Falls back to whatever the backend returned, then to the row id.
+   */
+  displaySrNumber(sr: ServiceRequestDto): string {
+    const api = sr.srNumber?.trim();
+    const custom = this.workflowService.getCustomSrNumber(String(sr.id));
+    if (custom) return custom;
+    if (api) return api;
+    return String(sr.id ?? '—');
   }
 
   departmentDisplay(sr: ServiceRequestDto): string {

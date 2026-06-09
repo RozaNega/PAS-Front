@@ -140,7 +140,7 @@ export class CrossRoleService {
   getAllSIVs(): Observable<FlowSIV[]> {
     return forkJoin({
       sivs: this.requisitionsService.getAllSIVs().pipe(
-        map((res) => res.data ?? []),
+        map((res) => (res.data ?? []).filter((s: any) => s && s.id && s.id !== '00000000-0000-0000-0000-000000000000')),
         catchError(() => of([] as StoreIssueVoucherDto[])),
       ),
       requests: this.getAllRequests(),
@@ -155,7 +155,7 @@ export class CrossRoleService {
     );
   }
 
-  /** SIVs for a specific employee, matched via their request IDs. */
+  /** SIVs for a specific employee, matched via their request IDs or issuer. */
   getSIVsForEmployee(
     employeeId: string,
     identity?: { email?: string; fullName?: string; username?: string },
@@ -170,8 +170,16 @@ export class CrossRoleService {
       map(({ sivs, requests }) => {
         const myIds = new Set(requests.map((r) => r.id));
         const requestById = new Map(requests.map((r) => [r.id, r]));
+        const nameKeys = [identity?.fullName, identity?.username, identity?.email?.split('@')[0]]
+          .map((v) => v?.trim().toLowerCase())
+          .filter((v): v is string => !!v);
         return sivs
-          .filter((siv) => myIds.has(String(siv.serviceRequestId)))
+          .filter((siv) => {
+            if (myIds.has(String(siv.serviceRequestId))) return true;
+            if ((siv.issuedBy || '').toLowerCase() === employeeId.toLowerCase()) return true;
+            if (nameKeys.some(k => (siv.issuedBy || '').toLowerCase().includes(k))) return true;
+            return false;
+          })
           .map((siv) => this.toFlowSIV(siv, requestById.get(String(siv.serviceRequestId))));
       }),
       catchError(() => of([] as FlowSIV[])),

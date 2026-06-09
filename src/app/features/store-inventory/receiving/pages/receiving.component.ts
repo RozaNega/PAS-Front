@@ -1,7 +1,10 @@
-import { Component, signal, computed, inject } from '@angular/core';
+import { Component, signal, computed, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CurrentUserService } from '../../../../core/services/current-user.service';
+import { ReceivingNotesService, CreateReceivingNoteCommand } from '../../../../core/services/receiving-notes.service';
+import { SuppliersService } from '../../../../core/services/suppliers.service';
+import { ItemMasterService, ItemMasterPaginatedResponse } from '../../../../core/services/item-master.service';
 
 import { NgxEchartsDirective, provideEchartsCore } from 'ngx-echarts';
 import * as echarts from 'echarts/core';
@@ -12,6 +15,7 @@ import { CanvasRenderer } from 'echarts/renderers';
 echarts.use([BarChart, PieChart, LineChart, TooltipComponent, GridComponent, LegendComponent, CanvasRenderer]);
 
 interface GRNItem {
+  itemId: string;
   itemName: string;
   sku: string;
   ordered: number;
@@ -84,14 +88,21 @@ interface GRNSupplier {
   templateUrl: './receiving.component.html',
   styleUrls: ['./receiving.component.scss'],
 })
-export class ReceivingComponent {
+export class ReceivingComponent implements OnInit {
   todayDate = new Date().toLocaleDateString();
   activeTab = signal<'summary' | 'grn' | 'inspection' | 'history'>('summary');
 
   private readonly currentUserService = inject(CurrentUserService);
+  private readonly receivingNotesService = inject(ReceivingNotesService);
+  private readonly suppliersService = inject(SuppliersService);
+  private readonly itemMasterService = inject(ItemMasterService);
+
+  availableItems = signal<{ id: string; name: string; sku: string; uom: string }[]>([]);
+  selectedItemId = signal('');
 
   isLoading = signal(false);
   errorMessage = signal('');
+  notification = signal<{ type: 'success' | 'error'; message: string } | null>(null);
 
   // ══════════════════════════════════════════════════════════════
   //  SUMMARY / OVERVIEW
@@ -158,14 +169,7 @@ export class ReceivingComponent {
   grnStep = signal(1);
   readonly totalGrnSteps = 4;
 
-  suppliers = signal<GRNSupplier[]>([
-    { id: '1', name: 'ABC Supplies Ltd' },
-    { id: '2', name: 'Global Parts Inc' },
-    { id: '3', name: 'TechDistributor Co' },
-    { id: '4', name: 'LogiMart Logistics' },
-    { id: '5', name: 'Prime Materials' },
-    { id: '6', name: 'Quality Goods Supply' },
-  ]);
+  suppliers = signal<GRNSupplier[]>([]);
 
   searchSupplier = signal('');
   selectedSupplier = signal<GRNSupplier | null>(null);
@@ -174,12 +178,7 @@ export class ReceivingComponent {
   receivedDate = signal(new Date().toISOString().split('T')[0]);
   grnNumber = signal('');
 
-  grnItems = signal<GRNItem[]>([
-    { itemName: 'Steel Rods 12mm', sku: 'SR-12MM', ordered: 100, delivered: 100, accepted: 100, rejected: 0, uom: 'PCS' },
-    { itemName: 'Copper Wire 2.5mm', sku: 'CW-2.5MM', ordered: 5000, delivered: 4800, accepted: 4700, rejected: 100, uom: 'M' },
-    { itemName: 'PVC Pipes 4in', sku: 'PVC-4IN', ordered: 200, delivered: 200, accepted: 200, rejected: 0, uom: 'PCS' },
-    { itemName: 'Aluminum Sheets', sku: 'AL-SHT', ordered: 50, delivered: 45, accepted: 42, rejected: 3, uom: 'SHT' },
-  ]);
+  grnItems = signal<GRNItem[]>([]);
 
   notes = signal('');
   generatePrint = signal(true);
@@ -206,12 +205,54 @@ export class ReceivingComponent {
   grnPreviousStep(): void { this.grnStep.update(s => Math.max(s - 1, 1)); }
 
   submitGRN(): void {
+    const supplier = this.selectedSupplier();
+    if (!supplier) {
+      this.showNotification('error', 'Please select a supplier');
+      return;
+    }
+
+    if (this.grnItems().length === 0) {
+      this.showNotification('error', 'Please add at least one item');
+      return;
+    }
+
+    const command: CreateReceivingNoteCommand = {
+      grnNumber: this.grnNumber() || undefined,
+      supplierId: supplier.id,
+      poNumber: this.poNumber() || undefined,
+      deliveryNoteNumber: this.deliveryNote() || undefined,
+      remarks: this.notes() || undefined,
+      items: this.grnItems().map(item => ({
+        itemId: item.itemId,
+        quantity: item.accepted,
+        unitPrice: 0,
+      })),
+    };
+
     this.isLoading.set(true);
-    setTimeout(() => {
-      this.isLoading.set(false);
-      this.resetGRNForm();
-      this.activeTab.set('history');
-    }, 1000);
+    this.receivingNotesService.create(command).subscribe({
+      next: (res) => {
+        this.isLoading.set(false);
+        if (res.success) {
+          this.showNotification('success', `GRN "${this.grnNumber()}" created successfully!`);
+          this.resetGRNForm();
+          this.loadHistoryFromApi();
+          this.activeTab.set('history');
+        } else {
+          this.showNotification('error', 'Failed to create GRN: ' + (res.message || 'Unknown error'));
+        }
+      },
+      error: (err) => {
+        this.isLoading.set(false);
+        const msg = err?.status === 0 ? 'Cannot connect to server.' : err?.error?.message || 'Error creating GRN.';
+        this.showNotification('error', msg);
+      }
+    });
+  }
+
+  private showNotification(type: 'success' | 'error', message: string): void {
+    this.notification.set({ type, message });
+    setTimeout(() => this.notification.set(null), 5000);
   }
 
   cancelGRN(): void {
@@ -224,6 +265,7 @@ export class ReceivingComponent {
     this.poNumber.set('');
     this.deliveryNote.set('');
     this.notes.set('');
+    this.grnItems.set([]);
   }
 
   getGrnStepTitle(): string {
@@ -270,6 +312,92 @@ export class ReceivingComponent {
   constructor() {
     this.loadInspections();
     this.loadHistory();
+  }
+
+  ngOnInit(): void {
+    this.loadSuppliersFromApi();
+    this.loadItemsFromApi();
+    this.loadHistoryFromApi();
+  }
+
+  private loadSuppliersFromApi(): void {
+    this.suppliersService.getAll().subscribe({
+      next: (res) => {
+        const list = Array.isArray(res.data) ? res.data : (res.data as any)?.items;
+        if (list?.length) {
+          this.suppliers.set(list.map((s: any) => ({ id: String(s.id), name: s.supplierName || s.name })));
+        } else {
+          console.warn('[GRN] No suppliers returned from API', res);
+        }
+      },
+      error: (err) => console.error('[GRN] Failed to load suppliers', err)
+    });
+  }
+
+  private loadItemsFromApi(): void {
+    this.itemMasterService.getItemMasters(1, 500).subscribe({
+      next: (res) => {
+        if (res.success && res.data && typeof res.data === 'object' && 'items' in res.data) {
+          const items = (res.data as ItemMasterPaginatedResponse).items;
+          this.availableItems.set(items.map((i: any) => ({
+            id: String(i.id),
+            name: i.itemName || i.name,
+            sku: i.sku,
+            uom: i.unitOfMeasure || 'PCS',
+          })));
+        } else {
+          console.warn('[GRN] No items returned from API', res);
+        }
+      },
+      error: (err) => console.error('[GRN] Failed to load items', err)
+    });
+  }
+
+  addGrnItem(item: { id: string; name: string; sku: string; uom: string }): void {
+    this.grnItems.update(items => [
+      ...items,
+      { itemId: item.id, itemName: item.name, sku: item.sku, ordered: 0, delivered: 0, accepted: 0, rejected: 0, uom: item.uom }
+    ]);
+  }
+
+  removeGrnItem(index: number): void {
+    this.grnItems.update(items => items.filter((_, i) => i !== index));
+  }
+
+  addItemFromSelect(): void {
+    const id = this.selectedItemId();
+    if (!id) return;
+    const item = this.availableItems().find(i => i.id === id);
+    if (item && !this.grnItems().some(i => i.itemId === id)) {
+      this.addGrnItem(item);
+      this.selectedItemId.set('');
+    }
+  }
+
+  updateGrnItem(index: number, field: string, event: Event): void {
+    const val = Number((event.target as HTMLInputElement).value);
+    this.grnItems.update(items => items.map((item, i) => i === index ? { ...item, [field]: val } : item));
+  }
+
+  private loadHistoryFromApi(): void {
+    this.receivingNotesService.getAll({ pageNumber: 1, pageSize: 50 }).subscribe({
+      next: (res) => {
+        if (res.success && res.data?.items?.length) {
+          const items = res.data.items;
+          this.allHistory.set(items.map((n: any) => ({
+            grnNumber: n.grnNumber || '—',
+            date: n.receivedDate ? new Date(n.receivedDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—',
+            supplier: n.supplierName || '—',
+            poNumber: '—',
+            items: n.itemCount || 0,
+            value: n.totalQuantity || 0,
+            status: n.status || 'Pending',
+            inspectedBy: n.receivedByName || '—',
+          })));
+        }
+      },
+      error: () => {}
+    });
   }
 
   private loadInspections(): void {

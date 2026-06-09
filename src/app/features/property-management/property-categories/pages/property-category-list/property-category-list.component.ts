@@ -5,7 +5,7 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { FormBuilder, Validators } from '@angular/forms';
 import { finalize } from 'rxjs';
 
-import { CategoriesService } from '../../../../../core/services/categories.service';
+import { PropertyCategoriesService, PropertyCategory as ApiPropertyCategory } from '../../../../../core/services/property-categories.service';
 
 interface Category {
   id: string;
@@ -55,7 +55,7 @@ const BAR_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4
 export class PropertyCategoryListComponent implements OnInit {
   private router = inject(Router);
   private readonly formBuilder = inject(FormBuilder);
-  private readonly categoriesService = inject(CategoriesService);
+  private readonly categoriesService = inject(PropertyCategoriesService);
 
   selectedCategory = signal<Category | null>(null);
   showModal = signal(false);
@@ -330,10 +330,9 @@ export class PropertyCategoryListComponent implements OnInit {
     this.loading.set(true);
 
     if (editing) {
-      this.categoriesService.update(Number(editing.id), {
+      this.categoriesService.update(String(editing.id), {
         name: data.name,
-        description: data.description,
-        parentCategoryId: data.parentId ? Number(data.parentId) : undefined
+        description: data.description
       }).pipe(finalize(() => this.loading.set(false)))
       .subscribe({
         next: (response) => {
@@ -351,23 +350,25 @@ export class PropertyCategoryListComponent implements OnInit {
         }
       });
     } else {
-      this.categoriesService.createCategory({
+      this.categoriesService.create({
         name: data.name,
-        description: data.description,
-        parentCategoryId: data.parentId ? Number(data.parentId) : undefined
+        description: data.description
       }).pipe(finalize(() => this.loading.set(false)))
       .subscribe({
-        next: (response) => {
+        next: (response: { success: boolean; message?: string }) => {
           if (response.success) {
             this.closeModal();
             this.loadCategories();
             this.showNotification('Category created successfully', 'success');
           } else {
-            this.showNotification('Failed to create category: ' + response.message, 'error');
+            this.showNotification('Failed to create category: ' + (response.message ?? 'Unknown error'), 'error');
           }
         },
-        error: () => {
-          this.showNotification('Error creating category', 'error');
+        error: (err: unknown) => {
+          const msg = (err as { error?: { message?: string }; message?: string })?.error?.message
+            ?? (err as { message?: string })?.message
+            ?? 'Unknown error';
+          this.showNotification('Error creating category: ' + msg, 'error');
         }
       });
     }

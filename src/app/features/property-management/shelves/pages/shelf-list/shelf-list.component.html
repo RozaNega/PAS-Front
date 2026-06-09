@@ -227,8 +227,8 @@
                 <div class="rack-grid">
                   @for (shelf of whGroup.shelves; track shelf.id) {
                     <div class="rack-cell" [style.--cell-color]="getOccupancyColor(getOccupancyPct(shelf))"
-                      (click)="openDetailModal(shelf)" [title]="shelf.shelfCode + ': ' + shelf.itemsCount + '/' + shelf.capacity">
-                      <span class="cell-code">{{ shelf.shelfCode }}</span>
+                      (click)="openDetailModal(shelf)" [title]="shelf.rack + '-' + shelf.shelfNumber + ': ' + shelf.itemsCount + '/' + shelf.capacity">
+                      <span class="cell-code">{{ shelf.rack }}-{{ shelf.shelfNumber }}</span>
                       <span class="cell-pct">{{ getOccupancyPct(shelf) }}%</span>
                     </div>
                   }
@@ -261,13 +261,13 @@
                     <div class="cell-name" (click)="openDetailModal(shelf)" style="cursor:pointer">
                       <div class="cell-icon"><i class="bi bi-grid-3x3-gap"></i></div>
                       <div>
-                        <span class="name">{{ shelf.shelfCode }}</span>
-                        <span class="meta">{{ shelf.shelfName }}</span>
+                        <span class="name">{{ shelf.rack }}-{{ shelf.shelfNumber }}</span>
+                        <span class="meta">{{ shelf.zone }}</span>
                       </div>
                     </div>
                   </td>
                   <td>{{ shelf.warehouseName }}</td>
-                  <td>{{ shelf.aisle }}{{ shelf.section }}{{ shelf.level ? '-' + shelf.level : '' }}</td>
+                  <td>{{ shelf.aisle }}{{ shelf.rack }}{{ shelf.shelfNumber ? '-' + shelf.shelfNumber : '' }}</td>
                   <td>{{ formatNumber(shelf.capacity) }}</td>
                   <td>{{ formatNumber(shelf.itemsCount) }}</td>
                   <td>
@@ -356,9 +356,9 @@
             <h4><i class="bi bi-info-circle"></i> Shelf Details</h4>
             <div class="form-grid">
               <div class="form-group">
-                <label>Shelf Code <span class="required">*</span></label>
-                <input type="text" [(ngModel)]="modalForm.shelfCode" placeholder="A-R1-S1">
-                @if (fieldError('shelfCode')) { <span class="form-error">{{ fieldError('shelfCode') }}</span> }
+                <label>Rack <span class="required">*</span></label>
+                <input type="text" [(ngModel)]="modalForm.rack" placeholder="R1">
+                @if (fieldError('rack')) { <span class="form-error">{{ fieldError('rack') }}</span> }
               </div>
               <div class="form-group">
                 <label>Capacity <span class="required">*</span></label>
@@ -366,9 +366,9 @@
                 @if (fieldError('capacity')) { <span class="form-error">{{ fieldError('capacity') }}</span> }
               </div>
               <div class="form-group full-width">
-                <label>Shelf Name <span class="required">*</span></label>
-                <input type="text" [(ngModel)]="modalForm.shelfName" placeholder="Aisle A, Rack 1, Shelf 1">
-                @if (fieldError('shelfName')) { <span class="form-error">{{ fieldError('shelfName') }}</span> }
+                <label>Shelf Number <span class="required">*</span></label>
+                <input type="text" [(ngModel)]="modalForm.shelfNumber" placeholder="S1">
+                @if (fieldError('shelfNumber')) { <span class="form-error">{{ fieldError('shelfNumber') }}</span> }
               </div>
               <div class="form-group full-width">
                 <label>Warehouse</label>
@@ -383,12 +383,12 @@
                 <input type="text" [(ngModel)]="modalForm.aisle" placeholder="A">
               </div>
               <div class="form-group">
-                <label>Section / Rack</label>
-                <input type="text" [(ngModel)]="modalForm.section" placeholder="R1">
+                <label>Zone</label>
+                <input type="text" [(ngModel)]="modalForm.zone" placeholder="A-1">
               </div>
               <div class="form-group">
-                <label>Level</label>
-                <input type="text" [(ngModel)]="modalForm.level" placeholder="S1">
+                <label>Bin Type</label>
+                <input type="text" [(ngModel)]="modalForm.binType" placeholder="Standard">
               </div>
               <div class="form-group">
                 <div class="toggle-row" style="margin-top: 1.5rem">
@@ -418,14 +418,14 @@
         @let shelf = selectedShelf();
         @if (shelf) {
           <div class="modal-header">
-            <h2><i class="bi bi-grid-3x3-gap-fill"></i> {{ shelf.shelfCode }}</h2>
+            <h2><i class="bi bi-grid-3x3-gap-fill"></i> {{ shelf.rack }}-{{ shelf.shelfNumber }}</h2>
             <button class="icon-btn" (click)="closeModal()"><i class="bi bi-x-lg"></i></button>
           </div>
           <div class="modal-body">
             <div class="detail-grid">
               <div class="detail-field full-width">
-                <span class="detail-label">Shelf Name</span>
-                <span class="detail-value">{{ shelf.shelfName }}</span>
+                <span class="detail-label">Zone</span>
+                <span class="detail-value">{{ shelf.zone }}</span>
               </div>
               <div class="detail-field">
                 <span class="detail-label">Warehouse</span>
@@ -444,12 +444,12 @@
                 <span class="detail-value">{{ shelf.aisle || '—' }}</span>
               </div>
               <div class="detail-field">
-                <span class="detail-label">Section</span>
-                <span class="detail-value">{{ shelf.section || '—' }}</span>
+                <span class="detail-label">Rack</span>
+                <span class="detail-value">{{ shelf.rack || '—' }}</span>
               </div>
               <div class="detail-field">
-                <span class="detail-label">Level</span>
-                <span class="detail-value">{{ shelf.level || '—' }}</span>
+                <span class="detail-label">Shelf Number</span>
+                <span class="detail-value">{{ shelf.shelfNumber || '—' }}</span>
               </div>
               <div class="detail-field">
                 <span class="detail-label">Capacity</span>
@@ -503,7 +503,7 @@
           </div>
           <div class="modal-body delete-body">
             <div class="delete-icon"><i class="bi bi-trash3-fill"></i></div>
-            <p class="delete-warning">Delete <strong>"{{ shelf.shelfCode }}"</strong>?</p>
+            <p class="delete-warning">Delete <strong>"{{ shelf.rack }}-{{ shelf.shelfNumber }}"</strong>?</p>
             <p class="delete-hint">This will permanently remove this shelf record. Items assigned to this shelf may be affected.</p>
           </div>
           <div class="modal-footer">

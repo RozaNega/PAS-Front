@@ -773,6 +773,36 @@ $bounce: 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 }
 
+// ═══════════════════════ NOTIFICATION BANNER ═══════════════════════
+.notification-banner {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 20px; border-radius: 8px; margin-bottom: 16px;
+  font-size: 14px; font-weight: 500;
+
+  &.success {
+    background: $success-light; color: $success-dark; border: 1px solid rgba($success, 0.2);
+  }
+  &.error {
+    background: $danger-light; color: $danger-dark; border: 1px solid rgba($danger, 0.2);
+  }
+
+  i { font-size: 16px; }
+
+  .notification-dismiss {
+    margin-left: auto;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    color: inherit;
+    opacity: 0.6;
+    transition: opacity $transition;
+    &:hover { opacity: 1; background: rgba(0, 0, 0, 0.05); }
+    i { font-size: 12px; }
+  }
+}
+
 // ═══════════════════════ RESPONSIVE ═══════════════════════
 @media (max-width: 768px) {
   .issuance-page { padding: 16px; }

@@ -1,108 +1,41 @@
-import { Component, signal, inject } from '@angular/core';
+import { Component, signal, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, Validators, FormGroup } from '@angular/forms';
+import { finalize } from 'rxjs';
 
-interface FormData {
-  tagNumber: string;
-  propertyName: string;
-  serialNumber: string;
-  modelNumber: string;
-  description: string;
-  propertyType: string;
-  category: string;
-  unitPrice: number;
-  quantity: number;
-  totalValue: number;
-  currency: string;
-  purchaseDate: string;
-  poNumber: string;
-  supplier: string;
-  location: string;
-  safetyBox: string;
-  shelf: string;
-  warrantyStart: string;
-  warrantyEnd: string;
-  maintenanceSchedule: string;
-  assignedTo: string;
-  notes: string;
-}
+import { PropertiesService } from '../../../../../core/services/properties.service';
+import { PropertyTypesService, PropertyTypeDto } from '../../../../../core/services/property-types.service';
+import { LocationsService, LocationDto } from '../../../../../core/services/locations.service';
+import { SafetyBoxesService, SafetyBoxDto } from '../../../../../core/services/safety-boxes.service';
+import { PropertyCategoryService, PropertyCategoryDto } from '../../../../property-management/property-categories/services/property-category.service';
 
 @Component({
   selector: 'app-property-form',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule],
   templateUrl: './property-form.component.html',
   styleUrls: ['./property-form.component.scss']
 })
-export class PropertyFormComponent {
+export class PropertyFormComponent implements OnInit {
   private router = inject(Router);
+  private fb = inject(FormBuilder);
+  private propertiesService = inject(PropertiesService);
+  private propertyTypesService = inject(PropertyTypesService);
+  private locationsService = inject(LocationsService);
+  private safetyBoxesService = inject(SafetyBoxesService);
+  private propertyCategoryService = inject(PropertyCategoryService);
 
   currentStep = signal(1);
   readonly totalSteps = 4;
+  loading = false;
+  submitting = false;
 
-  formData = signal<FormData>({
-    tagNumber: '',
-    propertyName: '',
-    serialNumber: '',
-    modelNumber: '',
-    description: '',
-    propertyType: '',
-    category: '',
-    unitPrice: 0,
-    quantity: 1,
-    totalValue: 0,
-    currency: 'ETB',
-    purchaseDate: '',
-    poNumber: '',
-    supplier: '',
-    location: '',
-    safetyBox: '',
-    shelf: '',
-    warrantyStart: '',
-    warrantyEnd: '',
-    maintenanceSchedule: 'Every 6 months',
-    assignedTo: '',
-    notes: ''
-  });
-
-  propertyTypes = [
-    { value: 'electronics', label: 'Electronics', icon: '💻' },
-    { value: 'furniture', label: 'Furniture', icon: '🪑' },
-    { value: 'vehicles', label: 'Vehicles', icon: '🚗' },
-    { value: 'machinery', label: 'Machinery', icon: '⚙️' }
-  ];
-
-  categories = [
-    { value: 'computers', label: 'Computers' },
-    { value: 'printers', label: 'Printers' },
-    { value: 'servers', label: 'Servers' },
-    { value: 'networking', label: 'Networking' }
-  ];
-
-  suppliers = [
-    { value: 'tech-solutions', label: 'Tech Solutions PLC' },
-    { value: 'office-depot', label: 'Office Depot Trading' },
-    { value: 'global-suppliers', label: 'Global Suppliers Inc' }
-  ];
-
-  locations = [
-    { value: 'hq-floor1-it', label: 'Headquarters - Floor 1 - IT' },
-    { value: 'warehouse-aisle5', label: 'Warehouse A - Aisle 5' },
-    { value: 'branch-manager', label: 'Branch Office - Manager' }
-  ];
-
-  safetyBoxes = [
-    { value: 'safe-001', label: 'Safe-001 (HQ - Floor 2)' },
-    { value: 'safe-002', label: 'Safe-002 (Warehouse)' },
-    { value: 'none', label: 'None' }
-  ];
-
-  shelves = [
-    { value: 'shelf-a1', label: 'Shelf A-1' },
-    { value: 'shelf-b3', label: 'Shelf B-3' },
-    { value: 'shelf-c2', label: 'Shelf C-2' }
-  ];
+  propertyTypes = signal<PropertyTypeDto[]>([]);
+  categories = signal<PropertyCategoryDto[]>([]);
+  locations = signal<LocationDto[]>([]);
+  safetyBoxes = signal<SafetyBoxDto[]>([]);
 
   employees = [
     { value: 'john-doe', label: 'John Doe (IT Manager)' },
@@ -118,7 +51,6 @@ export class PropertyFormComponent {
   ];
 
   stepIcons = ['bi-info-circle', 'bi-currency-dollar', 'bi-geo-alt', 'bi-shield-check'];
-
   stepLabels = ['Basic Info', 'Financial', 'Location', 'Additional'];
 
   uploadedFiles = signal<{ name: string; size: number; type: string }[]>([]);
@@ -126,11 +58,108 @@ export class PropertyFormComponent {
   showCancelConfirm = signal(false);
   showSuccessModal = signal(false);
 
-  totalValue = signal(0);
+  form: FormGroup;
+
+  constructor() {
+    this.form = this.fb.group({
+      tagNumber: ['', Validators.required],
+      propertyName: ['', Validators.required],
+      serialNumber: ['', Validators.required],
+      modelNumber: [''],
+      description: [''],
+      propertyTypeId: ['', Validators.required],
+      propertyCategoryId: [''],
+      unitPrice: [0, [Validators.required, Validators.min(0)]],
+      quantity: [1, [Validators.required, Validators.min(1)]],
+      currency: ['ETB'],
+      purchaseDate: ['', Validators.required],
+      poNumber: [''],
+      supplier: [''],
+      locationId: ['', Validators.required],
+      safetyBoxId: [''],
+      shelfNumber: [0],
+      warrantyStart: [''],
+      warrantyEnd: [''],
+      maintenanceSchedule: ['Every 6 months'],
+      assignedTo: [''],
+      notes: ['']
+    });
+
+    // Auto-calculate total value when unitPrice or quantity changes
+    this.form.get('unitPrice')?.valueChanges.subscribe(() => this.updateTotalValue());
+    this.form.get('quantity')?.valueChanges.subscribe(() => this.updateTotalValue());
+  }
+
+  ngOnInit(): void {
+    this.loadDropdownData();
+  }
+
+  loadDropdownData(): void {
+    // Load property types
+    this.propertyTypesService.getAll().subscribe({
+      next: (response) => {
+        if (response.success && response.data) {
+          // Handle both paginated and array responses
+          const items = Array.isArray(response.data) ? response.data : ((response.data as any)?.items || []);
+          this.propertyTypes.set(items);
+        }
+      }
+    });
+
+    // Load property categories (using the correct service with GUID IDs)
+    this.propertyCategoryService.getAll().subscribe({
+      next: (response) => {
+        if (response.success && response.data) {
+          const items = Array.isArray(response.data) ? response.data : ((response.data as any)?.items || []);
+          this.categories.set(items);
+        }
+      }
+    });
+
+    // Load locations
+    this.locationsService.getAll().subscribe({
+      next: (response) => {
+        if (response.success && response.data) {
+          // Handle both paginated and array responses
+          const items = Array.isArray(response.data) ? response.data : ((response.data as any)?.items || []);
+          this.locations.set(items);
+        }
+      }
+    });
+
+    // Load safety boxes
+    this.safetyBoxesService.getAll().subscribe({
+      next: (response) => {
+        if (response.success && response.data) {
+          // Handle both paginated and array responses
+          const items = Array.isArray(response.data) ? response.data : ((response.data as any)?.items || []);
+          this.safetyBoxes.set(items);
+        }
+      }
+    });
+  }
+
+  updateTotalValue(): void {
+    const unitPrice = this.form.get('unitPrice')?.value || 0;
+    const quantity = this.form.get('quantity')?.value || 1;
+    // We don't store totalValue in the form, just calculate it for display
+  }
+
+  get totalValue(): number {
+    const unitPrice = this.form.get('unitPrice')?.value || 0;
+    const quantity = this.form.get('quantity')?.value || 1;
+    return unitPrice * quantity;
+  }
 
   nextStep(): void {
     if (this.currentStep() < this.totalSteps) {
-      this.currentStep.update(s => s + 1);
+      // Validate current step before moving to next
+      if (this.isCurrentStepValid()) {
+        this.currentStep.update(s => s + 1);
+      } else {
+        this.form.markAllAsTouched();
+        this.showNotification('Please fill in all required fields', 'error');
+      }
     }
   }
 
@@ -146,14 +175,9 @@ export class PropertyFormComponent {
     }
   }
 
-  calculateTotalValue(): void {
-    const data = this.formData();
-    this.formData.update(d => ({ ...d, totalValue: d.unitPrice * d.quantity }));
-  }
-
   generateTagNumber(): void {
     const tag = 'TAG-' + Date.now().toString(36).toUpperCase();
-    this.formData.update(d => ({ ...d, tagNumber: tag }));
+    this.form.patchValue({ tagNumber: tag });
   }
 
   handleFileUpload(event: Event): void {
@@ -178,12 +202,83 @@ export class PropertyFormComponent {
     setTimeout(() => this.notification.set(null), 3500);
   }
 
+  isCurrentStepValid(): boolean {
+    const step = this.currentStep();
+    if (step === 1) {
+      return !!(this.form.get('tagNumber')?.valid &&
+             this.form.get('propertyName')?.valid &&
+             this.form.get('serialNumber')?.valid &&
+             this.form.get('propertyTypeId')?.valid);
+    }
+    if (step === 2) {
+      return !!(this.form.get('unitPrice')?.valid &&
+             this.form.get('quantity')?.valid &&
+             this.form.get('purchaseDate')?.valid);
+    }
+    if (step === 3) {
+      return !!this.form.get('locationId')?.valid;
+    }
+    return true;
+  }
+
   saveAsDraft(): void {
     this.showNotification('Property saved as draft!', 'success');
   }
 
   submitForm(): void {
-    this.showSuccessModal.set(true);
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      this.showNotification('Please fill in all required fields', 'error');
+      return;
+    }
+
+    this.submitting = true;
+
+    const formValue = this.form.value;
+
+    // Build the payload matching the backend CreatePropertyCommand
+    // Only include propertyCategoryId if a valid value was selected
+    const payload: Record<string, unknown> = {
+      tagNumber: formValue.tagNumber,
+      name: formValue.propertyName,
+      serialNumber: formValue.serialNumber,
+      propertyTypeId: formValue.propertyTypeId,
+      unitPrice: formValue.unitPrice,
+      quantity: formValue.quantity,
+      purchaseDate: formValue.purchaseDate,
+      locationId: formValue.locationId,
+    };
+
+    // Only add optional fields if they have values
+    if (formValue.propertyCategoryId) payload['propertyCategoryId'] = formValue.propertyCategoryId;
+    if (formValue.modelNumber) payload['modelNumber'] = formValue.modelNumber;
+    if (formValue.description) payload['description'] = formValue.description;
+    if (formValue.poNumber) payload['poNumber'] = formValue.poNumber;
+    if (formValue.supplier) payload['supplier'] = formValue.supplier;
+    if (formValue.warrantyStart) payload['warrantyStart'] = formValue.warrantyStart;
+    if (formValue.warrantyEnd) payload['warrantyEnd'] = formValue.warrantyEnd;
+    if (formValue.maintenanceSchedule) payload['maintenanceSchedule'] = formValue.maintenanceSchedule;
+    if (formValue.assignedTo) payload['assignedTo'] = formValue.assignedTo;
+    if (formValue.notes) payload['notes'] = formValue.notes;
+    if (formValue.safetyBoxId) payload['safetyBoxId'] = formValue.safetyBoxId;
+    if (formValue.shelfNumber) payload['shelfNumber'] = formValue.shelfNumber;
+
+    this.propertiesService.create(payload)
+      .pipe(finalize(() => this.submitting = false))
+      .subscribe({
+        next: (response) => {
+          if (response.success) {
+            this.showSuccessModal.set(true);
+            this.showNotification('Property created successfully!', 'success');
+          } else {
+            this.showNotification('Failed to create property: ' + response.message, 'error');
+          }
+        },
+        error: (error) => {
+          console.error('Error creating property:', error);
+          this.showNotification('Error creating property: ' + (error.error?.message || 'Unknown error'), 'error');
+        }
+      });
   }
 
   closeSuccessModal(): void {
@@ -212,5 +307,16 @@ export class PropertyFormComponent {
     if (this.currentStep() === step) return 'active';
     if (this.currentStep() > step) return 'completed';
     return '';
+  }
+
+  // Helper to display error messages
+  hasError(controlName: string, errorName: string): boolean {
+    const control = this.form.get(controlName);
+    return !!control && control.touched && control.hasError(errorName);
+  }
+
+  isInvalid(controlName: string): boolean {
+    const control = this.form.get(controlName);
+    return !!control && control.invalid && (control.touched || control.dirty);
   }
 }

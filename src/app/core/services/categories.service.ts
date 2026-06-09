@@ -5,12 +5,12 @@ import { Observable } from 'rxjs';
 export type CategoryDto = Category;
 
 export interface Category {
-  id: number;
+  id: number | string;
   categoryName: string;
   description: string;
   isActive: boolean;
   name?: string;
-  parentCategoryId?: number;
+  parentCategoryId?: number | string;
   parentCategoryName?: string;
   itemsCount?: number;
   subCategoriesCount?: number;
@@ -44,7 +44,7 @@ export class CategoriesService {
     return this.http.get<ApiResponse<PaginatedResponse<Category>>>(`${this.baseUrl}?pageNumber=${pageNumber}&pageSize=${pageSize}`);
   }
 
-  getCategory(id: number): Observable<ApiResponse<Category>> {
+  getCategory(id: number | string): Observable<ApiResponse<Category>> {
     return this.http.get<ApiResponse<Category>>(`${this.baseUrl}/${id}`);
   }
 
@@ -56,23 +56,23 @@ export class CategoriesService {
     return this.http.post<ApiResponse<Category>>(this.baseUrl, category);
   }
 
-  update(id: number, category: Partial<Category>): Observable<ApiResponse<Category>> {
+  update(id: number | string, category: Partial<Category>): Observable<ApiResponse<Category>> {
     return this.updateCategory(id, category);
   }
 
-  updateCategory(id: number, category: Partial<Category>): Observable<ApiResponse<Category>> {
+  updateCategory(id: number | string, category: Partial<Category>): Observable<ApiResponse<Category>> {
     return this.http.put<ApiResponse<Category>>(`${this.baseUrl}/${id}`, category);
   }
 
-  delete(id: number): Observable<ApiResponse<null>> {
+  delete(id: number | string): Observable<ApiResponse<null>> {
     return this.deleteCategory(id);
   }
 
-  deleteCategory(id: number): Observable<ApiResponse<null>> {
+  deleteCategory(id: number | string): Observable<ApiResponse<null>> {
     return this.http.delete<ApiResponse<null>>(`${this.baseUrl}/${id}`);
   }
 
-  toggleCategoryStatus(id: number, isActive: boolean): Observable<ApiResponse<Category>> {
+  toggleCategoryStatus(id: number | string, isActive: boolean): Observable<ApiResponse<Category>> {
     return this.http.patch<ApiResponse<Category>>(`${this.baseUrl}/${id}/toggle-status`, { isActive });
   }
 }

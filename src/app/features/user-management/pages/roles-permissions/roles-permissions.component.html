@@ -1,4 +1,11 @@
 <div class="roles-permissions-container">
+  @if (notification(); as n) {
+    <div class="notification-banner" [class.success]="n.type === 'success'" [class.error]="n.type === 'error'">
+      <i [class]="n.type === 'success' ? 'bi bi-check-circle-fill' : 'bi bi-exclamation-circle-fill'"></i>
+      {{ n.message }}
+    </div>
+  }
+
   <div class="page-header">
     <div class="header-info">
       <h1>Roles & Permissions Management</h1>
@@ -30,6 +37,9 @@
               <span class="role-name">{{ role.name }}</span>
               <span class="role-count">{{ role.userCount }} users</span>
             </div>
+            <button type="button" class="btn-icon danger" (click)="deleteRole(role.id, role.name, $event)" title="Delete role">
+              <i class="bi bi-trash3"></i>
+            </button>
             @if (selectedRole() === role.id) {
               <i class="bi bi-check-circle check-icon"></i>
             }
@@ -106,29 +116,25 @@
             <h4>Role Details</h4>
             <div class="form-field">
               <label>Role Name <span class="required">*</span></label>
-              <input type="text" placeholder="Enter role name">
+              <input type="text" placeholder="Enter role name" [ngModel]="newRoleName()" (ngModelChange)="newRoleName.set($event)">
             </div>
             <div class="form-field">
               <label>Description</label>
-              <textarea placeholder="Describe this role..."></textarea>
+              <textarea placeholder="Describe this role..." [ngModel]="newRoleDescription()" (ngModelChange)="newRoleDescription.set($event)"></textarea>
             </div>
             <div class="form-field">
               <label>Role Color</label>
               <div class="color-picker">
-                <button type="button" class="color-btn red"></button>
-                <button type="button" class="color-btn green"></button>
-                <button type="button" class="color-btn blue"></button>
-                <button type="button" class="color-btn yellow"></button>
-                <button type="button" class="color-btn purple"></button>
-                <button type="button" class="color-btn orange"></button>
-                <button type="button" class="color-btn gray"></button>
+                @for (c of ['red','green','blue','yellow','purple','orange','gray']; track c) {
+                  <button type="button" class="color-btn {{ c }}" [class.active]="newRoleColor() === c" (click)="newRoleColor.set(c)"></button>
+                }
               </div>
             </div>
           </div>
           <div class="form-section">
             <h4>Copy from Existing Role</h4>
             <div class="form-field">
-              <select>
+              <select [ngModel]="copyFromRoleId()" (ngModelChange)="copyFromRoleId.set($event)">
                 <option value="">Select role to copy permissions from...</option>
                 @for (role of roles(); track role.id) {
                   <option [value]="role.id">{{ role.name }}</option>
@@ -136,19 +142,16 @@
               </select>
             </div>
           </div>
-          <div class="form-section">
-            <h4>Permission Presets</h4>
-            <div class="presets">
-              <button type="button" class="preset-btn">Full Access</button>
-              <button type="button" class="preset-btn">Read Only</button>
-              <button type="button" class="preset-btn">Custom</button>
-              <button type="button" class="preset-btn">Department Only</button>
-            </div>
-          </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" (click)="closeCreateModal()">Cancel</button>
-          <button type="button" class="btn btn-primary">Create Role</button>
+          <button type="button" class="btn btn-primary" [disabled]="saving()" (click)="createRole()">
+            @if (saving()) {
+              <span class="spinner-border spinner-border-sm"></span> Creating...
+            } @else {
+              <i class="bi bi-plus-lg"></i> Create Role
+            }
+          </button>
         </div>
       </div>
     </div>

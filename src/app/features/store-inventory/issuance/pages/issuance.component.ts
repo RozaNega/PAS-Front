@@ -1,10 +1,13 @@
-import { Component, signal, computed, inject } from '@angular/core';
+import { Component, signal, computed, inject, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { CrossRoleService, FlowRequest, FlowSIV } from '../../../../core/services/cross-role.service';
+import { interval, Subscription } from 'rxjs';
+import { CrossRoleService } from '../../../../core/services/cross-role.service';
 import { ServiceRequestDetail, ServiceRequestItem } from '../../../requisition/service-requests/models/service-request.model';
 import { CurrentUserService } from '../../../../core/services/current-user.service';
+import { StoreIssueVoucherService, CreateStoreIssueVoucherRequest } from '../../../requisition/sivs/services/siv.service';
+import { ServiceRequestService as CoreServiceRequestService, ServiceRequest as CoreServiceRequest } from '../../../../core/services/service-request.service';
 
 import { NgxEchartsDirective, provideEchartsCore } from 'ngx-echarts';
 import * as echarts from 'echarts/core';
@@ -63,6 +66,7 @@ interface Requisition {
 
 interface SIVItem {
   srDetailId: string;
+  itemId?: string;
   name: string;
   sku: string;
   requested: number;
@@ -91,7 +95,7 @@ interface SIV {
   templateUrl: './issuance.component.html',
   styleUrls: ['./issuance.component.scss'],
 })
-export class IssuanceComponent {
+export class IssuanceComponent implements OnInit, OnDestroy {
   todayDate = new Date().toLocaleDateString();
   activeTab = signal<'overview' | 'pending' | 'create' | 'history' | 'print'>('overview');
 
@@ -99,10 +103,25 @@ export class IssuanceComponent {
   private readonly crossRoleService = inject(CrossRoleService);
   private readonly currentUserService = inject(CurrentUserService);
   private readonly router = inject(Router);
+  private readonly sivService = inject(StoreIssueVoucherService);
+  private readonly coreServiceRequestService = inject(CoreServiceRequestService);
 
   // ── Shared State ──
   isLoading = signal(false);
   errorMessage = signal('');
+  notification = signal<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  // ── Auto-refresh ──
+  private refreshSubscription?: Subscription;
+  private readonly REFRESH_INTERVAL_MS = 30000;
+  private static readonly ZERO_GUID = '00000000-0000-0000-0000-000000000000';
+
+  private isValidGuid(id: string | undefined | null): boolean {
+    if (id == null) return false;
+    const str = String(id).trim();
+    if (!str || str === IssuanceComponent.ZERO_GUID || str === '0') return false;
+    return true;
+  }
 
   // ══════════════════════════════════════════════════════════════
   //  OVERVIEW / CHARTS
@@ -207,55 +226,89 @@ export class IssuanceComponent {
   showProcessModal = signal(false);
   selectedIssue = signal<PendingIssue | null>(null);
   selectedIssueDetail = signal<ServiceRequestDetail | null>(null);
+  modalIssueItems = signal<ServiceRequestItem[]>([]);
   isProcessing = signal(false);
   currentStep = signal(1);
 
-  constructor() {
+  constructor() {}
+
+  ngOnInit(): void {
     this.loadPendingIssues();
     this.loadSIVs();
     this.loadHistorySIVs();
     this.loadPrintSIVs();
+    this.startAutoRefresh();
   }
 
-  private loadPendingIssues(): void {
-    this.isLoading.set(true);
-    this.crossRoleService.getApprovedRequests().subscribe({
-      next: (requests) => {
-        this.allIssues.set(requests.map(r => this.mapToPendingIssue(r)));
-        this.isLoading.set(false);
-      },
-      error: () => {
-        this.allIssues.set(this.mockPendingIssues());
-        this.isLoading.set(false);
+  ngOnDestroy(): void {
+    this.stopAutoRefresh();
+  }
+
+  private startAutoRefresh(): void {
+    this.stopAutoRefresh();
+    this.refreshSubscription = interval(this.REFRESH_INTERVAL_MS).subscribe(() => {
+      if (this.activeTab() === 'create' || this.activeTab() === 'pending') {
+        this.loadSIVs();
+        this.loadPendingIssues();
+      }
+      if (this.activeTab() === 'history' || this.activeTab() === 'print') {
+        this.loadHistorySIVs();
+        this.loadPrintSIVs();
       }
     });
   }
 
-  private mockPendingIssues(): PendingIssue[] {
-    return [
-      { id: '1', srNumber: 'SR-2024-045', requester: 'John Doe', department: 'IT', requestedDate: 'Dec 14, 2024', waitingTime: '2d 4h', waitingDays: 2, priority: 'Urgent', requiredBy: 'Dec 18, 2024', items: [{ name: 'Dell Laptop', requested: 3, available: 10, location: 'A-R01', status: 'Available' }] },
-      { id: '2', srNumber: 'SR-2024-046', requester: 'Sarah Smith', department: 'HR', requestedDate: 'Dec 13, 2024', waitingTime: '1d 2h', waitingDays: 1, priority: 'Medium', requiredBy: 'Dec 20, 2024', items: [{ name: 'Office Chair', requested: 5, available: 12, location: 'B-R02', status: 'Available' }] },
-      { id: '3', srNumber: 'SR-2024-047', requester: 'Mike Wilson', department: 'Finance', requestedDate: 'Dec 15, 2024', waitingTime: '3d 6h', waitingDays: 3, priority: 'Normal', requiredBy: 'Dec 22, 2024', items: [{ name: 'A4 Paper', requested: 20, available: 50, location: 'C-R03', status: 'Available' }] },
-      { id: '4', srNumber: 'SR-2024-048', requester: 'Emily Davis', department: 'Operations', requestedDate: 'Dec 14, 2024', waitingTime: '2d 0h', waitingDays: 2, priority: 'Urgent', requiredBy: 'Dec 17, 2024', items: [{ name: 'Safety Goggles', requested: 10, available: 5, location: 'D-R01', status: 'Low Stock' }, { name: 'Work Gloves', requested: 15, available: 30, location: 'D-R01', status: 'Available' }] },
-      { id: '5', srNumber: 'SR-2024-049', requester: 'James Brown', department: 'Marketing', requestedDate: 'Dec 12, 2024', waitingTime: '4d 1h', waitingDays: 4, priority: 'Medium', requiredBy: 'Dec 25, 2024', items: [{ name: 'Monitor Stand', requested: 4, available: 8, location: 'A-R02', status: 'Available' }] },
-      { id: '6', srNumber: 'SR-2024-050', requester: 'Lisa White', department: 'IT', requestedDate: 'Dec 15, 2024', waitingTime: '1d 5h', waitingDays: 1, priority: 'Urgent', requiredBy: 'Dec 19, 2024', items: [{ name: 'Network Switch', requested: 2, available: 4, location: 'E-R01', status: 'Available' }] },
-    ];
+  private stopAutoRefresh(): void {
+    if (this.refreshSubscription) {
+      this.refreshSubscription.unsubscribe();
+      this.refreshSubscription = undefined;
+    }
   }
 
-  private mapToPendingIssue(r: FlowRequest): PendingIssue {
-    const days = r.waitingDays ?? 0;
+  private mapCoreToRequisition(r: CoreServiceRequest): Requisition {
     return {
-      id: r.id,
-      srNumber: r.srNumber,
-      requester: r.requesterName,
-      department: r.department,
-      requestedDate: new Date(r.requestDate).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }),
-      waitingTime: `${days}d ${Math.floor(Math.random() * 24)}h`,
-      waitingDays: days,
-      priority: r.urgency === 'Urgent' || r.urgency === 'High' ? 'Urgent' : r.urgency === 'Low' ? 'Normal' : 'Medium',
-      requiredBy: new Date(Date.now() + (days + 3) * 86400000).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }),
+      id: String(r.id),
+      srNumber: r.requestNumber || r.title || `SR-${r.id}`,
+      requester: r.requester || r.requesterId || 'Employee',
+      department: r.department || 'Unassigned',
+      priority: r.priority || 'Medium',
+      requiredBy: new Date(Date.now() + 3 * 86400000).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }),
+    };
+  }
+
+  private mapCoreToPendingIssue(r: CoreServiceRequest): PendingIssue {
+    const submitted = new Date(r.submittedDate);
+    const waitingDays = Math.max(0, Math.floor((Date.now() - submitted.getTime()) / 86400000));
+    return {
+      id: String(r.id),
+      srNumber: r.requestNumber || r.title || `SR-${r.id}`,
+      requester: r.requester || r.requesterId || 'Employee',
+      department: r.department || 'Unassigned',
+      requestedDate: submitted.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }),
+      waitingTime: `${waitingDays}d ${Math.floor(Math.random() * 24)}h`,
+      waitingDays,
+      priority: r.priority === 'Urgent' || r.priority === 'High' ? 'Urgent' : r.priority === 'Low' ? 'Normal' : 'Medium',
+      requiredBy: new Date(Date.now() + (waitingDays + 3) * 86400000).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }),
       items: [],
     };
+  }
+
+  private loadPendingIssues(): void {
+    this.isLoading.set(true);
+    this.coreServiceRequestService.getApprovedRequests().subscribe({
+      next: (res) => {
+        const list = Array.isArray(res.data) ? res.data : res.data ? [res.data] : [];
+        console.log('[Pending] Core API approved requests:', list.length);
+        const valid = list.filter(r => this.isValidGuid(String(r.id)));
+        this.allIssues.set(valid.map(r => this.mapCoreToPendingIssue(r)));
+        this.isLoading.set(false);
+      },
+      error: (err) => {
+        console.error('[Pending] Failed to load:', err);
+        this.allIssues.set([]);
+        this.isLoading.set(false);
+      }
+    });
   }
 
   onSearchChange(value: string): void { this.searchTerm.set(value); }
@@ -266,8 +319,21 @@ export class IssuanceComponent {
     this.selectedIssue.set(issue);
     this.currentStep.set(1);
     this.isProcessing.set(false);
+    this.modalIssueItems.set([]);
+
+    if (!this.isValidGuid(issue.id)) {
+      this.showNotification('error', 'Invalid service request ID. Cannot load details.');
+      this.showProcessModal.set(true);
+      return;
+    }
+
     this.crossRoleService.getRequestDetail(issue.id).subscribe({
-      next: (detail) => this.selectedIssueDetail.set(detail),
+      next: (detail) => {
+        this.selectedIssueDetail.set(detail);
+        if (detail?.items?.length) {
+          this.modalIssueItems.set(detail.items.map(i => ({ ...i })));
+        }
+      },
       error: () => this.selectedIssueDetail.set(null),
     });
     this.showProcessModal.set(true);
@@ -286,15 +352,39 @@ export class IssuanceComponent {
   processIssue(): void {
     this.isProcessing.set(true);
     const issue = this.selectedIssue();
-    if (!issue) { this.isProcessing.set(false); return; }
-    this.crossRoleService.issueRequest(issue.id, []).subscribe({
-      next: () => {
+    if (!issue || !this.isValidGuid(issue.id)) {
+      this.isProcessing.set(false);
+      this.showNotification('error', 'Invalid service request. Cannot process issue.');
+      return;
+    }
+
+    const items = this.modalIssueItems()
+      .filter(item => item.pendingQty > 0)
+      .map(item => ({
+        srDetailId: item.id,
+        issuedQty: item.pendingQty,
+        shelfId: item.shelfId || undefined,
+      }));
+
+    console.log('[SIV] Processing issue for:', issue.srNumber, 'items:', items);
+    this.crossRoleService.issueRequest(issue.id, items).subscribe({
+      next: (success) => {
+        console.log('[SIV] Issue result:', success);
         this.isProcessing.set(false);
+        if (success) {
+          this.showNotification('success', `Issue for ${issue.srNumber} processed! SIV created.`);
+        } else {
+          this.showNotification('error', 'Failed to process issue. Please try again.');
+        }
         this.closeProcessModal();
         this.loadPendingIssues();
+        this.loadHistorySIVs();
+        this.loadPrintSIVs();
       },
-      error: () => {
+      error: (err) => {
+        console.error('[SIV] Issue error:', err);
         this.isProcessing.set(false);
+        this.showNotification('error', 'Error processing issue.');
         this.closeProcessModal();
       }
     });
@@ -353,42 +443,70 @@ export class IssuanceComponent {
   requireManagerSignature = signal(false);
 
   private loadSIVs(): void {
-    this.crossRoleService.getApprovedRequests().subscribe({
-      next: (requests) => this.requisitions.set(requests.map(r => this.mapToRequisition(r))),
-      error: () => this.requisitions.set(this.mockRequisitions()),
+    this.coreServiceRequestService.getApprovedRequests().subscribe({
+      next: (res) => {
+        const list = Array.isArray(res.data) ? res.data : res.data ? [res.data] : [];
+        console.log('[SIV] Core API approved requests:', list.length);
+        const valid = list.filter(r => this.isValidGuid(String(r.id)));
+        console.log('[SIV] After filter:', valid.length, 'valid');
+        this.requisitions.set(valid.map(r => this.mapCoreToRequisition(r)));
+      },
+      error: (err) => {
+        console.error('[SIV] Failed to load approved requests:', err);
+        this.requisitions.set([]);
+      },
     });
   }
 
-  private mockRequisitions(): Requisition[] {
-    return [
-      { id: '1', srNumber: 'SR-2024-045', requester: 'John Doe', department: 'IT', priority: 'Urgent', requiredBy: 'Dec 18, 2024' },
-      { id: '2', srNumber: 'SR-2024-046', requester: 'Sarah Smith', department: 'HR', priority: 'Medium', requiredBy: 'Dec 20, 2024' },
-      { id: '3', srNumber: 'SR-2024-047', requester: 'Mike Wilson', department: 'Finance', priority: 'Normal', requiredBy: 'Dec 22, 2024' },
-      { id: '4', srNumber: 'SR-2024-048', requester: 'Emily Davis', department: 'Operations', priority: 'Urgent', requiredBy: 'Dec 17, 2024' },
-      { id: '5', srNumber: 'SR-2024-049', requester: 'James Brown', department: 'Marketing', priority: 'Medium', requiredBy: 'Dec 25, 2024' },
-    ];
-  }
-
-  private mapToRequisition(r: FlowRequest): Requisition {
-    return {
-      id: r.id,
-      srNumber: r.srNumber,
-      requester: r.requesterName,
-      department: r.department,
-      priority: r.urgency,
-      requiredBy: new Date(Date.now() + 3 * 86400000).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }),
-    };
-  }
-
   selectRequisition(req: Requisition): void {
+    if (!this.isValidGuid(req.id)) {
+      this.showNotification('error', 'Invalid requisition ID. Cannot load this request.');
+      return;
+    }
+
     this.selectedRequisition.set(req);
     this.generateSivNumber();
     this.issueDate.set(new Date().toISOString().split('T')[0]);
     const user = this.currentUserService['currentUserSubject']?.value;
     this.issuedBy.set(user?.fullName || user?.username || 'Store Keeper');
-    this.sivItems.set([
-      { srDetailId: '1', name: 'Sample Item', sku: 'ITM-001', requested: 10, approved: 8, available: 15, quantityToIssue: 8, shelfLocation: 'A-R01-S02', notes: '' }
-    ]);
+
+    this.isLoading.set(true);
+    this.sivItems.set([]);
+    console.log('[SIV] Loading items for request:', req.id, req.srNumber);
+    this.crossRoleService.getRequestDetail(req.id).subscribe({
+      next: (detail) => {
+        console.log('[SIV] Detail response:', JSON.stringify(detail));
+        this.isLoading.set(false);
+        const items = detail?.items;
+        if (items?.length) {
+          this.sivItems.set(items.map(item => ({
+            srDetailId: item.id || '',
+            itemId: item.itemId || '',
+            name: item.itemName || (item as any).name || (item as any).Name || 'Item',
+            sku: item.sku || '',
+            requested: item.requestedQty || 0,
+            approved: item.requestedQty || 0,
+            available: 0,
+            quantityToIssue: item.pendingQty || item.requestedQty || 1,
+            shelfLocation: item.shelfLocation || '',
+            shelfId: item.shelfId || '',
+            notes: '',
+          })));
+          console.log('[SIV] Loaded', this.sivItems().length, 'items');
+          this.sivStep.set(2);
+        } else {
+          console.warn('[SIV] No items in detail');
+          this.showNotification('error', 'No items found in this requisition.');
+          this.sivItems.set([]);
+        }
+      },
+      error: (err) => {
+        console.error('[SIV] Failed to load detail:', err);
+        this.isLoading.set(false);
+        this.showNotification('error', 'Could not load requisition details. Please try again.');
+        this.sivItems.set([]);
+      },
+    });
   }
 
   private generateSivNumber(): void {
@@ -396,23 +514,101 @@ export class IssuanceComponent {
     this.sivNumber.set(`SIV-${new Date().getFullYear()}-${String(count).padStart(3, '0')}`);
   }
 
-  sivNextStep(): void { this.sivStep.update(s => Math.min(s + 1, this.totalSivSteps)); }
+  sivNextStep(): void {
+    if (this.sivStep() === 1 && !this.selectedRequisition()) return;
+    if (this.sivStep() === 2 && this.sivItems().length === 0) {
+      this.showNotification('error', 'No items loaded for this requisition.');
+      return;
+    }
+    if (this.sivStep() === 3 && this.sivItems().length === 0) {
+      this.showNotification('error', 'Please add at least one item.');
+      return;
+    }
+    this.sivStep.update(s => Math.min(s + 1, this.totalSivSteps));
+  }
   sivPreviousStep(): void { this.sivStep.update(s => Math.max(s - 1, 1)); }
 
   generateSIV(): void {
+    const req = this.selectedRequisition();
+    if (!req || !this.isValidGuid(req.id)) {
+      this.showNotification('error', 'No valid requisition selected. Please go back and select a requisition.');
+      return;
+    }
+
+    const items = this.sivItems().filter(i => i.quantityToIssue > 0);
+    if (!items.length) {
+      this.showNotification('error', 'Please add at least one item with quantity > 0');
+      return;
+    }
+
+    const user = this.currentUserService['currentUserSubject']?.value;
+    const command: CreateStoreIssueVoucherRequest = {
+      serviceRequestId: req.id,
+      issuedToId: req.requester || user?.id || user?.username || '',
+      department: req.department || 'General',
+      notes: '',
+      items: items.map(i => ({
+        itemId: i.itemId || i.srDetailId,
+        srDetailId: i.srDetailId || undefined,
+        issuedQty: i.quantityToIssue,
+        shelfId: i.shelfId || undefined,
+      })),
+    };
+
+    console.log('[SIV] Creating SIV with payload:', JSON.stringify(command));
     this.isProcessingSiv.set(true);
-    setTimeout(() => {
-      this.isProcessingSiv.set(false);
-      this.sivStep.set(1);
-      this.selectedRequisition.set(null);
-      this.activeTab.set('history');
-    }, 1000);
+    this.sivService.create(command).subscribe({
+      next: (res) => {
+        console.log('[SIV] Create response:', JSON.stringify(res));
+        this.isProcessingSiv.set(false);
+        if (res.success) {
+          this.showNotification('success', `SIV created successfully! ID: ${res.data}`);
+          this.sivStep.set(1);
+          this.selectedRequisition.set(null);
+          this.sivItems.set([]);
+          this.loadHistorySIVs();
+          this.loadPrintSIVs();
+          this.activeTab.set('history');
+        } else {
+          this.showNotification('error', 'Failed to create SIV: ' + (res.message || 'Unknown error'));
+        }
+      },
+      error: (err) => {
+        console.error('[SIV] Create error:', err);
+        this.isProcessingSiv.set(false);
+        const backendMsg = err?.error?.message || err?.message || '';
+        const friendlyMsg = backendMsg.toLowerCase().includes('not found')
+          ? 'The associated service request could not be found. Please try again.'
+          : backendMsg || 'Error creating SIV.';
+        this.showNotification('error', friendlyMsg);
+      },
+    });
+  }
+
+  updateSivItem(index: number, field: string, event: Event): void {
+    const val = field === 'notes'
+      ? (event.target as HTMLInputElement).value
+      : Number((event.target as HTMLInputElement).value);
+    this.sivItems.update(items => items.map((item, i) => i === index ? { ...item, [field]: val } : item));
+  }
+
+  updateModalIssueItem(index: number, event: Event): void {
+    const val = Number((event.target as HTMLInputElement).value);
+    this.modalIssueItems.update(items => items.map((item, i) => i === index ? { ...item, pendingQty: val } : item));
+  }
+
+  private showNotification(type: 'success' | 'error', message: string): void {
+    this.notification.set({ type, message });
+    setTimeout(() => this.notification.set(null), 5000);
   }
 
   cancelCreate(): void {
     this.sivStep.set(1);
     this.selectedRequisition.set(null);
+    this.sivItems.set([]);
   }
+
+
 
   getSivStepTitle(): string {
     switch (this.sivStep()) {
@@ -458,6 +654,7 @@ export class IssuanceComponent {
   private loadHistorySIVs(): void {
     this.crossRoleService.getAllSIVs().subscribe({
       next: (flowSivs) => {
+        console.log('[SIV] History loaded:', flowSivs.length, 'SIVs');
         this.sivs.set(flowSivs.map(siv => ({
           sivNumber: siv.sivNumber,
           date: siv.issueDate,
@@ -465,22 +662,14 @@ export class IssuanceComponent {
           requester: siv.requesterName,
           department: siv.department,
           items: siv.totalItems,
-          value: Math.round(Math.random() * 5000) + 500,
+          value: 0,
         })));
       },
-      error: () => this.sivs.set(this.mockSIVs()),
+      error: (err) => {
+        console.error('[SIV] Failed to load history:', err);
+        this.sivs.set([]);
+      },
     });
-  }
-
-  private mockSIVs(): SIVRecord[] {
-    return [
-      { sivNumber: 'SIV-2024-001', date: 'Dec 15, 2024', srNumber: 'SR-2024-045', requester: 'John Doe', department: 'IT', items: 3, value: 2499 },
-      { sivNumber: 'SIV-2024-002', date: 'Dec 14, 2024', srNumber: 'SR-2024-043', requester: 'Sarah Smith', department: 'HR', items: 5, value: 450 },
-      { sivNumber: 'SIV-2024-003', date: 'Dec 14, 2024', srNumber: 'SR-2024-041', requester: 'Mike Wilson', department: 'Finance', items: 2, value: 2800 },
-      { sivNumber: 'SIV-2024-004', date: 'Dec 13, 2024', srNumber: 'SR-2024-039', requester: 'Emily Davis', department: 'Operations', items: 4, value: 120 },
-      { sivNumber: 'SIV-2024-005', date: 'Dec 13, 2024', srNumber: 'SR-2024-037', requester: 'James Brown', department: 'Marketing', items: 1, value: 75 },
-      { sivNumber: 'SIV-2024-006', date: 'Dec 12, 2024', srNumber: 'SR-2024-035', requester: 'Lisa White', department: 'IT', items: 6, value: 150 },
-    ];
   }
 
   openSivDetailsModal(siv: SIVRecord): void {
@@ -534,20 +723,11 @@ export class IssuanceComponent {
           requester: siv.requesterName,
           department: siv.department,
           totalItems: siv.totalItems,
-          totalValue: Math.round(Math.random() * 5000) + 500,
+          totalValue: 0,
         })));
       },
-      error: () => this.printSivs.set(this.mockPrintSIVs()),
+      error: () => this.printSivs.set([]),
     });
-  }
-
-  private mockPrintSIVs(): SIV[] {
-    return [
-      { sivNumber: 'SIV-2024-001', date: 'Dec 15, 2024', requester: 'John Doe', department: 'IT', totalItems: 3, totalValue: 2499 },
-      { sivNumber: 'SIV-2024-002', date: 'Dec 14, 2024', requester: 'Sarah Smith', department: 'HR', totalItems: 5, totalValue: 450 },
-      { sivNumber: 'SIV-2024-003', date: 'Dec 14, 2024', requester: 'Mike Wilson', department: 'Finance', totalItems: 2, totalValue: 2800 },
-      { sivNumber: 'SIV-2024-004', date: 'Dec 13, 2024', requester: 'Emily Davis', department: 'Operations', totalItems: 4, totalValue: 120 },
-    ];
   }
 
   selectPrintSIV(siv: SIV): void { this.selectedPrintSIV.set(siv); }
@@ -578,5 +758,10 @@ export class IssuanceComponent {
     if (value >= 1000000) return '$' + (value / 1000000).toFixed(2) + 'M';
     if (value >= 1000) return '$' + (value / 1000).toFixed(0) + 'K';
     return '$' + value.toString();
+  }
+
+  refreshRequisitions(): void {
+    this.loadSIVs();
+    this.loadPendingIssues();
   }
 }

@@ -18,7 +18,9 @@ type RequisitionStatus = 'Pending' | 'Approved' | 'Rejected' | 'Completed' | 'Is
 
 interface RequisitionRow {
   readonly id: string;
+  readonly srNumber: string;
   readonly requestor: string;
+  readonly department: string;
   readonly item: string;
   readonly quantity: number;
   readonly date: string;
@@ -379,7 +381,9 @@ export class AdminDashboardComponent implements OnInit {
         }
         const rows: RequisitionRow[] = list.map((sr) => ({
           id: sr.id,
+          srNumber: sr.srNumber || '—',
           requestor: sr.requesterName || '—',
+          department: sr.department || '—',
           item: sr.purpose?.trim() || (sr.totalItems > 1 ? `${sr.totalItems} line items` : 'Service request'),
           quantity: this.num(sr.totalQuantity),
           date: this.formatShortDate(sr.requestDate),
@@ -391,14 +395,14 @@ export class AdminDashboardComponent implements OnInit {
 
   private fallbackSampleRequisitions(): RequisitionRow[] {
     return [
-      { id: 'REQ-2024-042', requestor: 'Abebe Kebede', item: 'Dell Latitude Laptop', quantity: 2, date: '28 Apr 2024', status: 'Pending' },
-      { id: 'REQ-2024-041', requestor: 'Meron Alemu', item: 'Office Chairs (Ergonomic)', quantity: 5, date: '27 Apr 2024', status: 'Approved' },
-      { id: 'REQ-2024-040', requestor: 'Getachew Tadesse', item: 'HP LaserJet Printer', quantity: 1, date: '26 Apr 2024', status: 'Rejected' },
-      { id: 'REQ-2024-039', requestor: 'Sara Tilahun', item: 'A4 Printer Paper (10 boxes)', quantity: 10, date: '25 Apr 2024', status: 'Completed' },
-      { id: 'REQ-2024-038', requestor: 'Biruk Desta', item: 'Conference Table', quantity: 1, date: '24 Apr 2024', status: 'Issued' },
-      { id: 'REQ-2024-037', requestor: 'Tsion Girma', item: 'Network Switch Cisco', quantity: 3, date: '23 Apr 2024', status: 'Pending' },
-      { id: 'REQ-2024-036', requestor: 'Hanna Solomon', item: 'Projector Epson', quantity: 2, date: '22 Apr 2024', status: 'Approved' },
-      { id: 'REQ-2024-035', requestor: 'Elias Worku', item: 'Air Conditioner 2 Ton', quantity: 4, date: '21 Apr 2024', status: 'Completed' },
+      { id: 'REQ-2024-042', srNumber: 'SR-2024-042', requestor: 'Abebe Kebede', department: 'IT', item: 'Dell Latitude Laptop', quantity: 2, date: '28 Apr 2024', status: 'Pending' },
+      { id: 'REQ-2024-041', srNumber: 'SR-2024-041', requestor: 'Meron Alemu', department: 'HR', item: 'Office Chairs (Ergonomic)', quantity: 5, date: '27 Apr 2024', status: 'Approved' },
+      { id: 'REQ-2024-040', srNumber: 'SR-2024-040', requestor: 'Getachew Tadesse', department: 'Finance', item: 'HP LaserJet Printer', quantity: 1, date: '26 Apr 2024', status: 'Rejected' },
+      { id: 'REQ-2024-039', srNumber: 'SR-2024-039', requestor: 'Sara Tilahun', department: 'Operations', item: 'A4 Printer Paper (10 boxes)', quantity: 10, date: '25 Apr 2024', status: 'Completed' },
+      { id: 'REQ-2024-038', srNumber: 'SR-2024-038', requestor: 'Biruk Desta', department: 'Marketing', item: 'Conference Table', quantity: 1, date: '24 Apr 2024', status: 'Issued' },
+      { id: 'REQ-2024-037', srNumber: 'SR-2024-037', requestor: 'Tsion Girma', department: 'IT', item: 'Network Switch Cisco', quantity: 3, date: '23 Apr 2024', status: 'Pending' },
+      { id: 'REQ-2024-036', srNumber: 'SR-2024-036', requestor: 'Hanna Solomon', department: 'Sales', item: 'Projector Epson', quantity: 2, date: '22 Apr 2024', status: 'Approved' },
+      { id: 'REQ-2024-035', srNumber: 'SR-2024-035', requestor: 'Elias Worku', department: 'Operations', item: 'Air Conditioner 2 Ton', quantity: 4, date: '21 Apr 2024', status: 'Completed' },
     ];
   }
 
@@ -581,11 +585,11 @@ export class AdminDashboardComponent implements OnInit {
   }
 
   viewAllRequisitions(): void {
-    // Stay on dashboard - requests are shown here
+    void this.router.navigate(['/admin/requisitions']);
   }
 
   openRequisition(id: string): void {
-    // Stay on dashboard - requests are shown here
+    void this.router.navigate(['/admin/requisitions', id]);
   }
 
   markAllNotificationsAsRead(): void {

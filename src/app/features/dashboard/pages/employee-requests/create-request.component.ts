@@ -216,17 +216,21 @@ export class CreateRequestComponent implements OnInit, OnDestroy {
         catchError(() => of([] as ItemMasterListDto[])),
       ),
       shelves: this.inventoryService.getAllShelves().pipe(
-        map((res) => res.data ?? []),
-        catchError((err: any) => {
-          const status = err?.status ?? 0;
-          if (status === 401 || status === 403) {
-            this.shelfLoadError =
-              'Shelf locations are not available for your account. You can still submit the request and let the storekeeper choose.';
-          } else {
-            this.shelfLoadError = 'Failed to load shelf locations. You can still submit the request.';
+        map((res) => {
+          const shelves = res.data ?? [];
+          if (shelves.length > 0) {
+            return shelves;
           }
-          this.cdr.markForCheck();
-          return of([] as ShelfLocationDto[]);
+          // Shelf locations endpoint returned empty — try extracting from inventory stock
+          return this.extractShelvesFromInventoryStock();
+        }),
+        switchMap((shelves) => {
+          if (shelves instanceof Observable) return shelves;
+          return of(shelves);
+        }),
+        catchError((err: any) => {
+          // Primary shelf endpoint failed — try extracting from inventory stock
+          return this.extractShelvesFromInventoryStock();
         }),
       ),
     }).subscribe({
@@ -290,6 +294,22 @@ export class CreateRequestComponent implements OnInit, OnDestroy {
         } else {
           // No stock locations — fall back to global shelf list
           selected.shelfOptions = this.buildFallbackOptions();
+          if (selected.shelfOptions.length === 0) {
+            this.inventoryService.getAllShelves().pipe(
+              map((res) => res.data ?? []),
+              catchError(() => of([] as ShelfLocationDto[])),
+            ).subscribe((shelves) => {
+              this.fallbackShelves = shelves;
+              selected.shelfOptions = this.buildFallbackOptions();
+              if (selected.shelfOptions.length > 0) {
+                const first = selected.shelfOptions[0];
+                selected.preferredShelfId = first.shelfId;
+                selected.preferredShelfLabel = first.label;
+                selected.available = first.available;
+              }
+              this.cdr.markForCheck();
+            });
+          }
         }
 
         // Auto-select the shelf with most available stock
@@ -343,10 +363,46 @@ export class CreateRequestComponent implements OnInit, OnDestroy {
   private buildFallbackShelfLabel(shelf: ShelfLocationDto): string {
     const parts: string[] = [];
     if (shelf.aisle) parts.push(`Aisle ${shelf.aisle}`);
-    if (shelf.section) parts.push(`Section ${shelf.section}`);
-    if (shelf.level) parts.push(`Level ${shelf.level}`);
-    if (shelf.position) parts.push(`Pos ${shelf.position}`);
+    if (shelf.rack) parts.push(`Rack ${shelf.rack}`);
+    if (shelf.shelfNumber) parts.push(`Shelf ${shelf.shelfNumber}`);
+    if (shelf.zone) parts.push(`Zone ${shelf.zone}`);
     return parts.length > 0 ? parts.join(' / ') : `Shelf ${shelf.id.slice(0, 8)}`;
+  }
+
+  /**
+   * Fallback: extract unique shelf locations from InventoryStock records
+   * when the dedicated ShelfLocations endpoint is unavailable.
+   */
+  private extractShelvesFromInventoryStock(): Observable<ShelfLocationDto[]> {
+    return this.inventoryService.getStockOverview({ pageSize: 200 }).pipe(
+      map((res) => {
+        const stockItems = res.data ?? [];
+        const seen = new Map<string, ShelfLocationDto>();
+        for (const stock of stockItems) {
+          const shelfId = stock.shelfId;
+          if (!shelfId || seen.has(shelfId)) continue;
+          seen.set(shelfId, {
+            id: shelfId,
+            warehouseId: stock.warehouseId ?? '',
+            warehouseName: stock.warehouseName ?? '',
+            aisle: stock.shelfLocation ?? '',
+            rack: '',
+            shelfNumber: '',
+            zone: '',
+            binType: '',
+            length: 0,
+            width: 0,
+            height: 0,
+            maxWeight: 0,
+            capacity: 0,
+            isActive: true,
+            createdAt: new Date().toISOString(),
+          } as ShelfLocationDto);
+        }
+        return Array.from(seen.values());
+      }),
+      catchError(() => of([] as ShelfLocationDto[])),
+    );
   }
 
   seedSampleShelfLocation(item: SelectedItem): void {
@@ -669,6 +725,14 @@ export class CreateRequestComponent implements OnInit, OnDestroy {
       next: (response) => {
         const created = this.extractCreatedRequestMeta(response);
         const user = this.currentUserService.getCurrentUserValue();
+
+        // Store custom SR number mapping so it persists when loaded from API
+        const customSr = this.form.srNumber?.trim();
+        const requestId = created.id || '';
+        if (customSr && requestId) {
+          this.workflowService.storeCustomSrNumber(requestId, customSr);
+        }
+
         this.workflowService.submitRequest(
           {
             employeeId: user?.id || '',

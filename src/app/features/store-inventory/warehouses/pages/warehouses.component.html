@@ -330,33 +330,44 @@
               }
             </div>
             <div class="form-group">
-              <label>Warehouse Code <span class="required">*</span></label>
-              <input type="text" [(ngModel)]="modalForm.warehouseCode" placeholder="WH-001">
-              @if (fieldError('warehouseCode')) {
-                <span class="form-error">{{ fieldError('warehouseCode') }}</span>
+              <label>Location Code <span class="required">*</span></label>
+              <input type="text" [(ngModel)]="modalForm.locationCode" placeholder="WH-001">
+              @if (fieldError('locationCode')) {
+                <span class="form-error">{{ fieldError('locationCode') }}</span>
               }
             </div>
             <div class="form-group">
-              <label>Location <span class="required">*</span></label>
-              <input type="text" [(ngModel)]="modalForm.location" placeholder="Addis Ababa, Main District">
-              @if (fieldError('location')) {
-                <span class="form-error">{{ fieldError('location') }}</span>
+              <label>Address <span class="required">*</span></label>
+              <input type="text" [(ngModel)]="modalForm.address" placeholder="Bole Road, Main District">
+              @if (fieldError('address')) {
+                <span class="form-error">{{ fieldError('address') }}</span>
               }
             </div>
             <div class="form-group">
-              <label>Capacity (units) <span class="required">*</span></label>
-              <input type="number" [(ngModel)]="modalForm.capacity" placeholder="10000" min="1">
-              @if (fieldError('capacity')) {
-                <span class="form-error">{{ fieldError('capacity') }}</span>
+              <label>City <span class="required">*</span></label>
+              <input type="text" [(ngModel)]="modalForm.city" placeholder="Addis Ababa">
+              @if (fieldError('city')) {
+                <span class="form-error">{{ fieldError('city') }}</span>
               }
             </div>
             <div class="form-group">
-              <label>Manager Name</label>
-              <input type="text" [(ngModel)]="modalForm.managerName" placeholder="John Doe">
+              <label>Country <span class="required">*</span></label>
+              <input type="text" [(ngModel)]="modalForm.country" placeholder="Ethiopia">
+              @if (fieldError('country')) {
+                <span class="form-error">{{ fieldError('country') }}</span>
+              }
             </div>
             <div class="form-group">
-              <label>Contact Number</label>
-              <input type="text" [(ngModel)]="modalForm.contactNumber" placeholder="+251 911 000 000">
+              <label>Contact Person</label>
+              <input type="text" [(ngModel)]="modalForm.contactPerson" placeholder="John Doe">
+            </div>
+            <div class="form-group">
+              <label>Contact Phone</label>
+              <input type="text" [(ngModel)]="modalForm.contactPhone" placeholder="+251 911 000 000">
+            </div>
+            <div class="form-group">
+              <label>Contact Email</label>
+              <input type="email" [(ngModel)]="modalForm.contactEmail" placeholder="john@example.com">
             </div>
             <div class="form-group toggle-group">
               <label>Status</label>

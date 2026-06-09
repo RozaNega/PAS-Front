@@ -701,6 +701,13 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'reports/inventory',
+        loadComponent: () =>
+          import('./features/store-inventory/reports-page/reports-page.component').then(
+            (m) => m.ReportsPageComponent,
+          ),
+      },
+      {
         path: 'audit-trail',
         loadComponent: () =>
           import('./features/dashboard/pages/audit-reference-page/audit-reference-page.component').then(

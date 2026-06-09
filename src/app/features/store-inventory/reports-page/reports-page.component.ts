@@ -1,6 +1,7 @@
 import { Component, signal, computed, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { NgxEchartsDirective, provideEchartsCore } from 'ngx-echarts';
 import * as echarts from 'echarts/core';
 import { BarChart, LineChart, PieChart } from 'echarts/charts';
@@ -112,6 +113,7 @@ export class ReportsPageComponent implements OnInit {
   private readonly reportsService = inject(ReportsService);
   private readonly inventoryService = inject(InventoryService);
   private readonly warehousesService = inject(WarehousesService);
+  private readonly router = inject(Router);
 
   activeTab: ReportTab = 'stock';
 
@@ -467,22 +469,54 @@ export class ReportsPageComponent implements OnInit {
     this.reportGenerated.set(false);
     this.loadError.set('');
 
+    const is401 = (err: any) => err?.status === 401;
+
     forkJoin({
       valuation: this.reportsService.getInventoryValuation({ asOfDate: this.endDate() }).pipe(
         map((r) => r.data ?? null),
-        catchError(() => of(null)),
+        catchError((err) => {
+          if (is401(err)) { this.router.navigate(['/auth/login']); return of(undefined as any); }
+          return of(null);
+        }),
       ),
       movement: this.reportsService.getStockMovement({ fromDate: this.startDate(), toDate: this.endDate() }).pipe(
         map((r) => r.data ?? null),
-        catchError(() => of(null)),
+        catchError((err) => {
+          if (is401(err)) return of(undefined as any);
+          return of(null);
+        }),
       ),
       warehouses: this.warehousesService.getAll().pipe(
         map((r) => r.data ?? []),
         catchError(() => of([] as WarehouseDto[])),
       ),
+      stockItems: this.inventoryService.getStockOverview({ pageSize: 500 }).pipe(
+        map((r) => r.data ?? []),
+        catchError(() => of([] as any[])),
+      ),
     }).subscribe({
-      next: ({ valuation, movement, warehouses }) => {
-        this.valuationItems.set((valuation?.items ?? []).map((item) => this.toStockItem(item)));
+      next: ({ valuation, movement, warehouses, stockItems }) => {
+        if (valuation === undefined || movement === undefined) return;
+
+        if (valuation) {
+          this.valuationItems.set((valuation.items ?? []).map((item: InventoryValuationItemDto) => this.toStockItem(item)));
+        } else if (stockItems?.length) {
+          this.valuationItems.set(stockItems.map((item: any) => ({
+            id: item.itemId || item.id,
+            sku: item.sku || 'N/A',
+            name: item.itemName || 'Unknown',
+            category: item.categoryName || 'Uncategorized',
+            warehouse: item.warehouseName || 'N/A',
+            warehouseNames: [item.warehouseName || 'N/A'],
+            quantity: item.currentStock ?? 0,
+            unitPrice: item.averageCost ?? item.unitPrice ?? 0,
+            total: (item.currentStock ?? 0) * (item.averageCost ?? item.unitPrice ?? 0),
+            status: (item.currentStock ?? 0) <= 0 ? 'Out of Stock' as const
+              : (item.currentStock ?? 0) <= (item.minimumThreshold ?? 10) ? 'Low Stock' as const
+              : 'In Stock' as const,
+          })));
+        }
+
         this.movementReport.set(movement);
         this.warehouses.set(warehouses);
         this.buildMockIssuances();
@@ -490,7 +524,9 @@ export class ReportsPageComponent implements OnInit {
         this.reportGenerated.set(true);
         this.lastRunTime.set(new Date());
         this.isLoading.set(false);
-        if (!valuation) this.loadError.set('Some backend data unavailable. Showing mock data.');
+        if (!valuation && !stockItems?.length) {
+          this.loadError.set('Report data unavailable. Check your login and permissions.');
+        }
       },
       error: () => {
         this.valuationItems.set([]);
@@ -501,7 +537,7 @@ export class ReportsPageComponent implements OnInit {
         this.reportGenerated.set(true);
         this.lastRunTime.set(new Date());
         this.isLoading.set(false);
-        this.loadError.set('Backend unavailable. Showing mock data.');
+        this.loadError.set('Backend unavailable. Showing sample data.');
       },
     });
   }

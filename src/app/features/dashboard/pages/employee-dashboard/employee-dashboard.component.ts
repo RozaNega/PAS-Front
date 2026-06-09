@@ -1015,14 +1015,34 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
     alert(`Request ${newRequest.srNumber} submitted successfully!`);
   }
 
+  /**
+   * Track a request: open a local tracking view that doesn't require the
+   * broken backend `GetServiceRequestByIdQuery` endpoint. The detail page
+   * is built from in-app workflow data so the employee's custom SR number
+   * is shown without hitting the API.
+   */
   trackRequest(srNumber: string, forceStatus?: string): void {
     const request = this.workflowRequests().find((r) => r.srNumber === srNumber);
-    const modalRef = this.modalService.open(TrackRequestModalComponent, {
-      size: 'lg',
-      backdrop: 'static',
-    });
-    modalRef.componentInstance.srNumber = srNumber;
-    if (request) {
+    if (!request) {
+      // Nothing to track — still let the user know
+      void this.router.navigate(['/employee/requests']);
+      return;
+    }
+
+    // Persist the SR-number-to-id mapping so the admin and other dashboards
+    // can resolve the employee's custom SR number.
+    this.workflowService.storeCustomSrNumber(request.id, request.srNumber);
+
+    // Show a tracking modal that displays the request status and timeline.
+    // We avoid calling the broken backend `GetServiceRequestByIdQuery` endpoint
+    // (which fails with "d.Shelf is invalid inside Include") by using the
+    // in-app workflow data.
+    try {
+      const modalRef = this.modalService.open(TrackRequestModalComponent, {
+        size: 'lg',
+        backdrop: 'static',
+      });
+      modalRef.componentInstance.srNumber = request.srNumber;
       modalRef.componentInstance.status = forceStatus || request.status;
       modalRef.componentInstance.priority = request.priority;
       modalRef.componentInstance.items = request.items.map((i) => i.name);
@@ -1030,7 +1050,72 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
         request.submittedDate,
       ).toLocaleDateString();
       modalRef.componentInstance.requiredDate = new Date(request.requiredDate).toLocaleDateString();
+    } catch {
+      // Fallback: navigate to the appropriate list page
+      const status: string = forceStatus || request.status;
+      let route = '/employee/requests/pending';
+      if (
+        status === 'Manager Approved' ||
+        status === 'Admin Approved' ||
+        status === 'Compliance Review' ||
+        status === 'Completed'
+      ) {
+        route = '/employee/requests/approved';
+      } else if (status === 'Manager Rejected' || status === 'Admin Rejected') {
+        route = '/employee/requests/rejected';
+      } else if (status === 'Completed') {
+        route = '/employee/requests/completed';
+      }
+      void this.router.navigateByUrl(route);
     }
+  }
+
+  /**
+   * Click handler for a notification in the in-dashboard notifications list.
+   * Routes the user to the right page based on the notification type.
+   * "Request ready for processing" notifications go to the admin processing page.
+   */
+  openNotification(n: {
+    id: string;
+    requestId: string;
+    type: string;
+    sivId?: string;
+    message?: string;
+    title?: string;
+  }): void {
+    this.markNotificationAsRead(n.id);
+
+    // If the notification refers to a specific request, navigate to it
+    if (n.requestId && n.requestId !== 'N/A') {
+      const request = this.workflowRequests().find((r) => r.id === n.requestId);
+
+      if (request) {
+        // Persist the SR mapping for the admin flow
+        this.workflowService.storeCustomSrNumber(request.id, request.srNumber);
+
+        // "Request ready for processing" (admin) → open admin processing page
+        const text = ((n.message || '') + ' ' + (n.title || '')).toLowerCase();
+        if (text.includes('ready for processing') || text.includes('admin')) {
+          void this.router.navigate(['/admin/requisitions/pending']);
+          return;
+        }
+        // Compliance review → compliance dashboard
+        if (text.includes('compliance')) {
+          void this.router.navigate(['/compliance-officer/dashboard']);
+          return;
+        }
+        // Manager review → manager dashboard
+        if (text.includes('manager')) {
+          void this.router.navigate(['/manager/dashboard']);
+          return;
+        }
+        // Default: take the user to the right list page based on status
+        this.trackRequest(request.srNumber);
+        return;
+      }
+    }
+    // Default: send to the requests list page
+    void this.router.navigate(['/employee/requests/pending']);
   }
 
   cancelRequest(srNumber: string): void {

@@ -8,6 +8,7 @@ import {
   OnDestroy,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import {
   WorkflowService,
   ServiceRequest,
@@ -217,7 +218,8 @@ interface AdminSummaryCard {
                 </div>
                 @if (notification.actionRequired) {
                   <div class="notification-action">
-                    <button class="btn btn--small btn--primary" type="button">
+                    <button class="btn btn--small btn--primary" type="button"
+                      (click)="takeNotificationAction(notification)">
                       Action Required
                     </button>
                   </div>
@@ -848,6 +850,7 @@ interface AdminSummaryCard {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AdminDashboardComponent implements OnInit, OnDestroy {
+  private readonly router = inject(Router);
   private readonly workflowService = inject(WorkflowService);
   private readonly crossRoleService = inject(CrossRoleService);
 
@@ -1019,8 +1022,15 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   }
 
   viewRequestDetails(requestId: string): void {
-    // Navigate to request details page
-    console.log('Viewing request details:', requestId);
+    this.router.navigate(['/admin/requisitions', requestId]);
+  }
+
+  takeNotificationAction(notification: NotificationMessage): void {
+    if (notification.requestId) {
+      this.router.navigate(['/admin/requisitions', notification.requestId]);
+    } else if (notification.actionUrl) {
+      this.router.navigate([notification.actionUrl]);
+    }
   }
 
   getStatusBadgeClass(status: string): string {

@@ -14,6 +14,14 @@
     </div>
   </div>
 
+  <!-- Notification -->
+  @if (notification(); as n) {
+    <div class="notification-banner" [class.success]="n.type === 'success'" [class.error]="n.type === 'error'">
+      <i class="bi" [class.bi-check-circle-fill]="n.type === 'success'" [class.bi-exclamation-triangle-fill]="n.type === 'error'"></i>
+      <span>{{ n.message }}</span>
+    </div>
+  }
+
   <!-- Tab Navigation -->
   <div class="tab-nav">
     <button class="tab-btn" [class.active]="activeTab() === 'summary'" (click)="activeTab.set('summary')">
@@ -172,20 +180,43 @@
       @if (grnStep() === 2) {
         <div class="form-section animate-in">
           <div class="section-title"><i class="bi bi-boxes"></i> Items & Quantities</div>
-          @for (item of grnItems(); track item.sku) {
-            <div class="item-row">
+
+          <div style="margin-bottom: 1rem; display: flex; gap: 0.5rem; align-items: center;">
+            <select style="flex: 1; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: var(--border-radius-sm); background: var(--bg-secondary); color: var(--text-primary);"
+              [ngModel]="selectedItemId()" (ngModelChange)="selectedItemId.set($event)">
+              <option value="">Select an item to add...</option>
+              @for (item of availableItems(); track item.id) {
+                <option [value]="item.id">{{ item.name }} ({{ item.sku }})</option>
+              }
+            </select>
+            <button type="button" class="btn btn-sm btn-primary" style="white-space: nowrap;"
+              (click)="addItemFromSelect()">
+              <i class="bi bi-plus-lg"></i> Add
+            </button>
+          </div>
+
+          @for (item of grnItems(); track item.sku; let i = $index) {
+            <div class="item-row" style="position: relative;">
+              <button type="button" class="btn btn-sm btn-danger" style="position: absolute; top: 8px; right: 8px; padding: 2px 8px;"
+                (click)="removeGrnItem(i)">
+                <i class="bi bi-trash"></i>
+              </button>
               <div class="item-row-header">
                 <strong>{{ item.itemName }}</strong>
                 <span class="item-sku">{{ item.sku }}</span>
               </div>
               <div class="item-inputs">
-                <div class="input-group"><label>Ordered</label><input type="number" [value]="item.ordered" disabled /></div>
-                <div class="input-group"><label>Delivered</label><input type="number" [value]="item.delivered" /></div>
-                <div class="input-group"><label>Accepted</label><input type="number" [value]="item.accepted" /></div>
-                <div class="input-group"><label>Rejected</label><input type="number" [value]="item.rejected" /></div>
+                <div class="input-group"><label>Ordered</label><input type="number" [value]="item.ordered" (input)="updateGrnItem(i, 'ordered', $event)" /></div>
+                <div class="input-group"><label>Delivered</label><input type="number" [value]="item.delivered" (input)="updateGrnItem(i, 'delivered', $event)" /></div>
+                <div class="input-group"><label>Accepted</label><input type="number" [value]="item.accepted" (input)="updateGrnItem(i, 'accepted', $event)" /></div>
+                <div class="input-group"><label>Rejected</label><input type="number" [value]="item.rejected" (input)="updateGrnItem(i, 'rejected', $event)" /></div>
                 <div class="input-group"><label>UOM</label><input type="text" [value]="item.uom" disabled /></div>
               </div>
             </div>
+          }
+
+          @if (grnItems().length === 0) {
+            <p style="text-align: center; color: var(--text-muted); padding: 2rem;">No items added. Select an item above to add it to the GRN.</p>
           }
         </div>
       }

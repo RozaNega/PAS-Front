@@ -268,7 +268,61 @@ export class WorkflowService {
     }
 
     this.requests.set(samples);
+    this.seedNotifications();
     this.persist();
+  }
+
+  private seedNotifications(): void {
+    if (this.notifications().length > 0) return;
+    const now = Date.now();
+    const minutes = 60000;
+    const seedNotifs: NotificationMessage[] = [
+      {
+        id: 'seed_notif_1',
+        title: 'New Property Added',
+        message: 'Property "Sunset Villas" has been successfully added to the system.',
+        type: 'success',
+        recipientId: 'admin_001',
+        recipientRole: 'Admin',
+        requestId: undefined,
+        createdDate: new Date(now - 5 * minutes),
+        isRead: false,
+      },
+      {
+        id: 'seed_notif_2',
+        title: 'User Approval Request',
+        message: '3 new users awaiting approval for admin access.',
+        type: 'info',
+        recipientId: 'admin_001',
+        recipientRole: 'Admin',
+        requestId: undefined,
+        createdDate: new Date(now - 30 * minutes),
+        isRead: false,
+      },
+      {
+        id: 'seed_notif_3',
+        title: 'System Backup Completed',
+        message: 'Daily backup completed successfully. Database size: 2.4GB',
+        type: 'success',
+        recipientId: 'admin_001',
+        recipientRole: 'Admin',
+        requestId: undefined,
+        createdDate: new Date(now - 120 * minutes),
+        isRead: false,
+      },
+      {
+        id: 'seed_notif_4',
+        title: 'Security Alert',
+        message: 'Multiple failed login attempts detected from unknown IP address.',
+        type: 'error',
+        recipientId: 'admin_001',
+        recipientRole: 'Admin',
+        requestId: undefined,
+        createdDate: new Date(now - 240 * minutes),
+        isRead: false,
+      },
+    ];
+    this.notifications.set(seedNotifs);
   }
 
   /** Reload workflow data when another tab updates localStorage (e.g. employee submit → manager tab). */
@@ -1065,10 +1119,51 @@ export class WorkflowService {
   }
 
   private apiSrNumber(row: ApiServiceRequestRow): string {
+    // Employee-entered SR numbers take priority over backend-generated ones
+    const customMap = this.getCustomSrNumberMap();
+    const customSr = customMap.get(String(row.id));
+    if (customSr) return customSr;
+
     const candidate =
       row.srNumber || row.requestNumber || row.srNo || row.serviceRequestNumber || '';
     const normalized = String(candidate || '').trim();
-    return normalized || `SR-${row.id}`;
+    if (normalized) return normalized;
+
+    return `SR-${row.id}`;
+  }
+
+  /** Store a custom SR number mapping (requestId → srNumber) */
+  storeCustomSrNumber(requestId: string, srNumber: string): void {
+    if (!requestId || !srNumber) return;
+    const map = this.getCustomSrNumberMap();
+    map.set(requestId, srNumber);
+    this.saveCustomSrNumberMap(map);
+  }
+
+  /** Look up a custom SR number for a request id. Returns empty string if not set. */
+  getCustomSrNumber(requestId: string): string {
+    if (!requestId) return '';
+    return this.getCustomSrNumberMap().get(requestId) || '';
+  }
+
+  private getCustomSrNumberMap(): Map<string, string> {
+    if (typeof localStorage === 'undefined') return new Map();
+    try {
+      const raw = localStorage.getItem('pas_custom_sr_numbers');
+      if (!raw) return new Map();
+      return new Map(JSON.parse(raw));
+    } catch {
+      return new Map();
+    }
+  }
+
+  private saveCustomSrNumberMap(map: Map<string, string>): void {
+    if (typeof localStorage === 'undefined') return;
+    try {
+      localStorage.setItem('pas_custom_sr_numbers', JSON.stringify(Array.from(map.entries())));
+    } catch {
+      /* ignore */
+    }
   }
 
   private apiRowBelongsToEmployee(
@@ -1222,11 +1317,14 @@ export class WorkflowService {
         this.notifications.set(parsedN.map((n) => this.reviveNotification(n)));
       } else {
         this.notifications.set([]);
+        this.seedNotifications();
       }
     } catch {
       this.requests.set([]);
       this.notifications.set([]);
+      this.seedNotifications();
     }
+    this.persist();
   }
 
   private reviveServiceRequest(r: ServiceRequest): ServiceRequest {

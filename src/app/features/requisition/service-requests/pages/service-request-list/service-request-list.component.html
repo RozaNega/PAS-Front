@@ -178,7 +178,7 @@
             <tr *ngFor="let sr of pagedRequests(); trackBy: trackByRequestId">
               <td>
                 <button type="button" class="req-table__sr-btn req-table__sr" (click)="viewServiceRequest(sr.id)">
-                  {{ sr.srNumber || '—' }}
+                  {{ displaySrNumber(sr) }}
                 </button>
               </td>
               <td [class.req-cell-muted]="!hasText(requesterDisplay(sr))">

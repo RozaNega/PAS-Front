@@ -1,5 +1,6 @@
 import {
   ChangeDetectionStrategy,
+  ChangeDetectorRef,
   Component,
   computed,
   inject,
@@ -16,6 +17,8 @@ import {
   Notification,
 } from '../../services/notification-feature.service';
 import { NotificationService as ToastService } from '../../../../../core/services/notification.service';
+import { WorkflowService } from '../../../../../core/services/workflow.service';
+import { CurrentUserService } from '../../../../../core/services/current-user.service';
 import { pasApiUrlHint } from '../../../../../core/config/api-base';
 
 @Component({
@@ -30,6 +33,9 @@ export class NotificationListComponent {
   private readonly router = inject(Router);
   private readonly notificationsApi = inject(NotificationFeatureService);
   private readonly toast = inject(ToastService);
+  private readonly workflowService = inject(WorkflowService);
+  private readonly currentUserService = inject(CurrentUserService);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   readonly notifications = signal<Notification[]>([]);
   readonly loading = signal(false);
@@ -111,29 +117,96 @@ export class NotificationListComponent {
   loadNotifications(): void {
     this.loading.set(true);
     this.loadError.set(null);
+
+    // Determine user role from URL to get the right workflow notifications
+    const url = this.router.url;
+    let workflowRole: 'Admin' | 'Manager' | 'Employee' | null = null;
+    let workflowUserId = '';
+    if (url.startsWith('/admin')) {
+      workflowRole = 'Admin';
+      workflowUserId = 'admin_001';
+    } else if (url.startsWith('/manager')) {
+      workflowRole = 'Manager';
+      workflowUserId = this.workflowService.getDefaultManagerQueueId();
+    } else if (url.startsWith('/employee')) {
+      workflowRole = 'Employee';
+      const user = this.currentUserService.getCurrentUserValue();
+      workflowUserId = user?.id || 'employee_001';
+    } else if (url.startsWith('/storekeeper')) {
+      workflowRole = 'Manager';
+      workflowUserId = 'storekeeper_001';
+    }
+
+    // Load from backend API
     this.notificationsApi
       .getNotifications()
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
         next: (response) => {
-          if (response.success !== false && response.data?.notifications) {
-            this.notifications.set(response.data.notifications);
-          } else {
-            this.notifications.set([]);
-            if (response.success === false && response.message) {
-              this.loadError.set(response.message);
-            }
+          const apiNotifications: Notification[] =
+            response.success !== false && response.data?.notifications
+              ? response.data.notifications
+              : [];
+
+          if (response.success === false && response.message) {
+            this.loadError.set(response.message);
           }
+
+          // Merge with workflow notifications
+          const workflowNotifications = workflowRole
+            ? this.workflowService
+                .getNotificationsForUser(workflowUserId, workflowRole)
+                .map((wn): Notification => ({
+                  id: wn.id,
+                  message: wn.message,
+                  isRead: wn.isRead,
+                  sentDate: wn.createdDate?.toISOString() || new Date().toISOString(),
+                  type: wn.type || 'info',
+                }))
+            : [];
+
+          // Deduplicate by id
+          const seenIds = new Set(apiNotifications.map((n) => n.id));
+          const uniqueWorkflow = workflowNotifications.filter((n) => !seenIds.has(n.id));
+
+          // Combine: backend first, then workflow notifications
+          const combined = [...apiNotifications, ...uniqueWorkflow];
+          this.notifications.set(combined);
+
+          if (combined.length === 0 && this.loadError) {
+            this.loadError.set(
+              `Could not load notifications. ${pasApiUrlHint()}`,
+            );
+          }
+          this.cdr.markForCheck();
         },
         error: (err: unknown) => {
-          this.notifications.set([]);
-          const hint = pasApiUrlHint();
-          const msg =
-            err instanceof HttpErrorResponse && err.status === 0
-              ? `Could not reach the notifications API. ${hint}`
-              : `Could not load notifications. ${hint}`;
-          this.loadError.set(msg);
-          this.toast.error('Failed to load notifications');
+          // Backend failed — fall back to workflow notifications only
+          const workflowNotifications = workflowRole
+            ? this.workflowService
+                .getNotificationsForUser(workflowUserId, workflowRole)
+                .map((wn): Notification => ({
+                  id: wn.id,
+                  message: wn.message,
+                  isRead: wn.isRead,
+                  sentDate: wn.createdDate?.toISOString() || new Date().toISOString(),
+                  type: wn.type || 'info',
+                }))
+            : [];
+
+          if (workflowNotifications.length > 0) {
+            this.notifications.set(workflowNotifications);
+            this.loadError.set(null);
+          } else {
+            this.notifications.set([]);
+            const hint = pasApiUrlHint();
+            const msg =
+              err instanceof HttpErrorResponse && err.status === 0
+                ? `Could not reach the notifications API. ${hint}`
+                : `Could not load notifications. ${hint}`;
+            this.loadError.set(msg);
+          }
+          this.cdr.markForCheck();
         },
       });
   }

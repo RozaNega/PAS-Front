@@ -1,10 +1,9 @@
 import { Component, signal, computed, inject, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { timeout, catchError } from 'rxjs/operators';
-import { of } from 'rxjs';
 import { ItemMasterService, ItemMasterPaginatedResponse } from '../../../../core/services/item-master.service';
 import { InventoryService } from '../../../../core/services/inventory.service';
+import { CategoriesService, CategoryDto } from '../../../../core/services/categories.service';
 
 import { NgxEchartsDirective, provideEchartsCore } from 'ngx-echarts';
 import * as echarts from 'echarts/core';
@@ -163,10 +162,13 @@ export class ItemCatalogComponent {
     { date: 'Dec 10, 2024', type: 'Transfer', quantity: 5, reference: 'TRF-2024-008', user: 'Mike Wilson', balance: 38 }
   ]);
 
-  newItem = signal<Partial<Item & { isActive?: boolean }>>({ sku: '', name: '', category: '', uom: 'PCS', minStock: 0, currentStock: 0, price: 0, isActive: true });
+  newItem = signal<Partial<Item & { isActive?: boolean; categoryId?: string }>>({ sku: '', name: '', category: '', uom: 'PCS', minStock: 0, currentStock: 0, price: 0, isActive: true, categoryId: '' });
 
   private readonly itemService = inject(ItemMasterService);
   private readonly inventoryService = inject(InventoryService);
+  private readonly categoriesService = inject(CategoriesService);
+
+  backendCategories = signal<CategoryDto[]>([]);
 
   bulkEditDraft = signal<{ category?: string; uom?: string; minStock?: number }>({ category: undefined, uom: undefined, minStock: undefined });
   bulkAdjustDraft = signal<{ adjustmentType?: 'increase'|'decrease'|'set'; quantity?: number; reason?: string }>({ adjustmentType: 'increase', quantity: 0, reason: '' });
@@ -233,6 +235,21 @@ export class ItemCatalogComponent {
 
   constructor() {
     this.loadItems();
+    this.loadCategories();
+  }
+
+  loadCategories(): void {
+    this.categoriesService.getAll(1, 100).subscribe({
+      next: (res: any) => {
+        const data = res?.data;
+        if (res?.success && Array.isArray(data)) {
+          this.backendCategories.set(data);
+        } else if (res?.success && data?.items) {
+          this.backendCategories.set(data.items);
+        }
+      },
+      error: () => {}
+    });
   }
 
   loadItems(page = 1, pageSize = 50): void {
@@ -416,7 +433,7 @@ export class ItemCatalogComponent {
 
   openAddForm(): void {
     this.isEditing.set(false);
-    this.newItem.set({ sku: '', name: '', category: '', uom: 'PCS', minStock: 0, currentStock: 0, price: 0, isActive: true });
+    this.newItem.set({ sku: '', name: '', category: '', uom: 'PCS', minStock: 0, currentStock: 0, price: 0, isActive: true, categoryId: '' });
     this.showAddForm.set(true);
   }
 
@@ -430,7 +447,8 @@ export class ItemCatalogComponent {
 
   editItem(item: Item): void {
     this.isEditing.set(true);
-    this.newItem.set({ sku: item.sku, name: item.name, category: item.category, uom: item.uom, minStock: item.minStock, currentStock: item.currentStock, price: item.price, isActive: item.status !== 'Out of Stock' });
+    const categoryId = this.resolveCategoryId(item.category);
+    this.newItem.set({ sku: item.sku, name: item.name, category: item.category, uom: item.uom, minStock: item.minStock, currentStock: item.currentStock, price: item.price, isActive: item.status !== 'Out of Stock', categoryId });
     this.selectedItem.set(item);
     this.showAddForm.set(true);
   }
@@ -439,6 +457,11 @@ export class ItemCatalogComponent {
     if (stock <= 0) return 'Out of Stock';
     if (stock <= minStock) return 'Low Stock';
     return 'Active';
+  }
+
+  resolveCategoryId(categoryName: string): string {
+    const match = this.backendCategories().find(c => (c.categoryName || c.name || '') === categoryName);
+    return match ? String(match.id) : '';
   }
 
   private addToLocal(draft: Partial<Item & { isActive?: boolean }>): void {
@@ -471,14 +494,26 @@ export class ItemCatalogComponent {
     const draft = this.newItem();
     if (!draft || !draft.sku || !draft.name) return;
     this.isLoading.set(true);
-    this.addToLocal(draft);
-    this.cancelAddForm();
-    this.newItem.set({ sku: '', name: '', category: '', uom: 'PCS', minStock: 0, currentStock: 0, price: 0, isActive: true });
-    this.showToast('Item created successfully');
-    const payload: any = { sku: draft.sku, itemName: draft.name, categoryName: draft.category, unitOfMeasure: draft.uom, minStockLevel: draft.minStock, stockQuantity: draft.currentStock, isActive: draft.isActive ?? true };
-    this.itemService.createItemMaster(payload).pipe(timeout(5000), catchError(() => of(null))).subscribe({
-      next: (res) => { this.isLoading.set(false); if (res) this.loadItems(); },
-      error: () => { this.isLoading.set(false); }
+    const categoryId = draft.categoryId || this.resolveCategoryId(draft.category || '');
+    const payload: any = { sku: draft.sku, itemName: draft.name, categoryId, categoryName: draft.category, unitOfMeasure: draft.uom, minStockLevel: draft.minStock, stockQuantity: draft.currentStock, description: '', requiresInspection: false, isActive: draft.isActive ?? true };
+    console.log('[ItemCatalog] createItem payload:', JSON.stringify(payload, null, 2));
+    this.itemService.createItemMaster(payload).subscribe({
+      next: (res) => {
+        this.isLoading.set(false);
+        if (res?.success) {
+          this.cancelAddForm();
+          this.newItem.set({ sku: '', name: '', category: '', uom: 'PCS', minStock: 0, currentStock: 0, price: 0, isActive: true, categoryId: '' });
+          this.loadItems();
+          this.showToast('Item created successfully');
+        } else {
+          this.showToast('Failed to create item: ' + (res?.message || 'Unknown error'), 'error');
+        }
+      },
+      error: (err) => {
+        this.isLoading.set(false);
+        const detail = err?.error?.message || err?.error?.errors || err?.message || 'Server error';
+        this.showToast('Failed to save item: ' + detail, 'error');
+      }
     });
   }
 
@@ -487,14 +522,24 @@ export class ItemCatalogComponent {
     const id = this.selectedItem()?.id;
     if (!id || !draft) return;
     this.isLoading.set(true);
-    this.updateLocal(id, draft);
-    this.cancelAddForm();
-    this.isEditing.set(false);
-    this.showToast('Item updated');
-    const payload: any = { sku: draft.sku, itemName: draft.name, categoryName: draft.category, unitOfMeasure: draft.uom, minStockLevel: draft.minStock, stockQuantity: draft.currentStock, isActive: draft.isActive ?? true };
-    this.itemService.updateItemMaster(Number(id), payload).pipe(timeout(5000), catchError(() => of(null))).subscribe({
-      next: (res) => { this.isLoading.set(false); if (res) this.loadItems(); },
-      error: () => { this.isLoading.set(false); }
+    const categoryId = draft.categoryId || this.resolveCategoryId(draft.category || '');
+    const payload: any = { sku: draft.sku, itemName: draft.name, categoryId, categoryName: draft.category, unitOfMeasure: draft.uom, minStockLevel: draft.minStock, stockQuantity: draft.currentStock, description: '', requiresInspection: false, isActive: draft.isActive ?? true };
+    this.itemService.updateItemMaster(Number(id), payload).subscribe({
+      next: (res) => {
+        this.isLoading.set(false);
+        this.cancelAddForm();
+        this.isEditing.set(false);
+        if (res?.success) {
+          this.loadItems();
+          this.showToast('Item updated');
+        } else {
+          this.showToast('Failed to update item', 'error');
+        }
+      },
+      error: (err) => {
+        this.isLoading.set(false);
+        this.showToast('Failed to update item: ' + (err?.message || 'Server error'), 'error');
+      }
     });
   }
 
@@ -502,6 +547,11 @@ export class ItemCatalogComponent {
     const numFields = ['minStock', 'currentStock', 'price'];
     const v = numFields.includes(field) ? Number(value) : value;
     this.newItem.update(n => ({ ...(n as any), [field]: v }));
+  }
+
+  onCategorySelect(categoryName: string): void {
+    const match = this.backendCategories().find(c => (c.categoryName || c.name || '') === categoryName);
+    this.newItem.update(n => ({ ...(n as any), category: categoryName, categoryId: match ? String(match.id) : '' }));
   }
 
   adjustStock(item: Item): void {

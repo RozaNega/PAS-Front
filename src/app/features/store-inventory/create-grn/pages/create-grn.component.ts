@@ -1,6 +1,9 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
+import { ReceivingNotesService, CreateReceivingNoteCommand } from '../../../../core/services/receiving-notes.service';
+import { SuppliersService } from '../../../../core/services/suppliers.service';
 
 interface GRNItem {
   name: string;
@@ -19,6 +22,13 @@ interface GRNItem {
   styleUrls: ['./create-grn.component.scss']
 })
 export class CreateGRNComponent {
+  private readonly receivingNotesService = inject(ReceivingNotesService);
+  private readonly suppliersService = inject(SuppliersService);
+  private readonly router = inject(Router);
+
+  isLoading = signal(false);
+  notification = signal<{ type: 'success' | 'error'; message: string } | null>(null);
+
   currentStep = signal(1);
   totalSteps = 4;
 
@@ -104,11 +114,46 @@ export class CreateGRNComponent {
   }
 
   saveAsDraft(): void {
-    console.log('Save as draft');
+    this.submitGRN('Draft');
   }
 
   submitForInspectionAction(): void {
-    console.log('Submit for inspection');
+    this.submitGRN('Pending Inspection');
+  }
+
+  private submitGRN(status: string): void {
+    const command: CreateReceivingNoteCommand = {
+      grnNumber: this.grnNumber(),
+      supplierId: this.supplier(),
+      poNumber: this.poNumber() || undefined,
+      deliveryNoteNumber: this.deliveryNoteNumber() || undefined,
+      remarks: this.notes() || undefined,
+      items: this.grnItems().map(item => ({
+        itemId: item.sku,
+        quantity: item.receivedQty,
+        unitPrice: item.unitPrice,
+      })),
+    };
+
+    this.isLoading.set(true);
+    this.receivingNotesService.create(command).subscribe({
+      next: (res) => {
+        this.isLoading.set(false);
+        if (res.success) {
+          this.notification.set({ type: 'success', message: `GRN "${this.grnNumber()}" created successfully!` });
+          setTimeout(() => {
+            this.router.navigate(['/admin/receiving/grn']);
+          }, 1500);
+        } else {
+          this.notification.set({ type: 'error', message: 'Failed: ' + (res.message || 'Unknown error') });
+        }
+      },
+      error: (err) => {
+        this.isLoading.set(false);
+        const msg = err?.status === 0 ? 'Cannot connect to server.' : err?.error?.message || 'Error creating GRN.';
+        this.notification.set({ type: 'error', message: msg });
+      }
+    });
   }
 
   cancel(): void {

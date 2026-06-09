@@ -780,6 +780,13 @@
   gap: 0.4rem;
 }
 
+.shelf-hint {
+  font-size: 0.78rem;
+  color: var(--text-color-muted);
+  margin-top: 0.25rem;
+  display: block;
+}
+
 .shelf-none {
   color: #dc2626;
 }

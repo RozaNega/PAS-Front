@@ -85,6 +85,16 @@ export class UsersService {
     return this.http.patch<UserApiResponse>(`${this.baseUrl}/${id}/toggle-status`, {});
   }
 
+  /**
+   * Send a password-reset email to a user.
+   * Uses the existing /api/Auth/forgot-password endpoint which generates a
+   * reset token and emails it. In dev, the token is returned in the response
+   * and shown in the API logs.
+   */
+  resetUserPassword(payload: { email: string; userId?: string | number; username?: string }): Observable<UserApiResponse> {
+    return this.http.post<UserApiResponse>('/api/Auth/forgot-password', { email: payload.email });
+  }
+
   uploadProfilePhoto(userId: string, file: File): Observable<UserApiResponse> {
     const formData = new FormData();
     formData.append('file', file, file.name);
