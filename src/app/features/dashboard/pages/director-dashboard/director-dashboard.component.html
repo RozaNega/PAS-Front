@@ -1,0 +1,156 @@
+<div class="director-dashboard">
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h4 class="mb-1 fw-bold">
+        <i class="bi bi-person-badge me-2"></i>Director Dashboard
+      </h4>
+      <p class="text-muted mb-0 small">
+        <i class="bi bi-calendar3 me-1"></i>{{ currentDate() }}
+        &nbsp;·&nbsp;
+        <i class="bi bi-clock me-1"></i>{{ currentTime() }}
+      </p>
+    </div>
+    <div class="d-flex gap-2 align-items-center">
+      <span *ngIf="isMockData()" class="badge bg-warning text-dark px-3 py-2">
+        <i class="bi bi-info-circle me-1"></i>Offline Mode
+      </span>
+      <span *ngIf="lastRefreshed()" class="text-muted small">
+        <i class="bi bi-arrow-clockwise me-1"></i>{{ lastRefreshed() }}
+      </span>
+      <button class="btn btn-outline-secondary btn-sm" (click)="refreshData()" [disabled]="isLoading()">
+        <i class="bi bi-arrow-clockwise" [class.spin]="isLoading()"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading() && !hasLoadedOnce()" class="text-center py-5">
+    <div class="spinner-border text-primary mb-3" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+    <p class="text-muted">Loading dashboard data...</p>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="loadError()" class="alert alert-danger d-flex align-items-center gap-2 mb-4">
+    <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+    <div>
+      <strong>Dashboard Error</strong><br />
+      <span class="small">{{ loadError() }}</span>
+    </div>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="row g-3 mb-4" *ngIf="hasLoadedOnce()">
+    <div *ngFor="let card of summaryCards()" class="col-xl-3 col-lg-6 col-md-6">
+      <div class="card border-0 shadow-sm h-100 summary-card">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <span class="summary-icon bg-{{ card.color }} bg-opacity-10 p-2 rounded">
+              <i class="{{ card.icon }} text-{{ card.color }} fs-5"></i>
+            </span>
+          </div>
+          <h3 class="fw-bold mb-0">{{ card.value }}</h3>
+          <p class="text-muted small mb-0">{{ card.title }}</p>
+          <div class="mt-2">
+            <div class="progress" style="height: 4px;">
+              <div class="progress-bar bg-{{ card.color }}" role="progressbar"
+                   [style.width.%]="card.microPct"
+                   [attr.aria-valuenow]="card.microPct" aria-valuemin="0" aria-valuemax="100">
+              </div>
+            </div>
+            <small class="text-muted">{{ card.trend }}</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3" *ngIf="hasLoadedOnce()">
+    <!-- High-Value Requisitions -->
+    <div class="col-lg-7">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center py-3">
+          <h6 class="fw-bold mb-0">
+            <i class="bi bi-exclamation-octagon me-2 text-warning"></i>High-Value Requisitions (>$5,000)
+          </h6>
+          <button class="btn btn-sm btn-outline-primary" (click)="viewAllRequisitions()">
+            View All
+          </button>
+        </div>
+        <div class="card-body p-0">
+          <div *ngIf="highValueRequisitions().length === 0" class="text-center py-4">
+            <i class="bi bi-check-circle text-success fs-3"></i>
+            <p class="text-muted mt-2 mb-0">No high-value requisitions pending your review.</p>
+          </div>
+          <div class="table-responsive" *ngIf="highValueRequisitions().length > 0">
+            <table class="table table-hover mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th class="ps-3">ID</th>
+                  <th>Employee</th>
+                  <th>Amount</th>
+                  <th>Status</th>
+                  <th>Pending</th>
+                  <th class="pe-3"></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let req of highValueRequisitions()">
+                  <td class="ps-3 fw-medium">{{ req.srNumber }}</td>
+                  <td>{{ req.employeeName }}</td>
+                  <td class="fw-semibold">{{ Math.round(req.estimatedCost).toLocaleString() }} ETB</td>
+                  <td><span class="badge" [class]="getStatusClass(req.status)">{{ req.status }}</span></td>
+                  <td>{{ req.pendingDays }} days</td>
+                  <td class="pe-3 text-end">
+                    <button class="btn btn-sm btn-outline-primary" (click)="viewRequisitionDetail(req.id)">
+                      <i class="bi bi-eye"></i>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Critical Alerts -->
+    <div class="col-lg-5">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-white border-bottom py-3">
+          <h6 class="fw-bold mb-0">
+            <i class="bi bi-bell me-2 text-danger"></i>Critical Alerts
+            <span *ngIf="totalCriticalAlerts() > 0" class="badge bg-danger ms-2">{{ totalCriticalAlerts() }}</span>
+          </h6>
+        </div>
+        <div class="card-body p-0">
+          <div *ngIf="criticalAlerts().length === 0" class="text-center py-4">
+            <i class="bi bi-check-circle text-success fs-3"></i>
+            <p class="text-muted mt-2 mb-0">No critical alerts at this time.</p>
+          </div>
+          <div class="list-group list-group-flush" *ngIf="criticalAlerts().length > 0">
+            <div *ngFor="let alert of criticalAlerts()" class="list-group-item border-0 border-bottom py-3">
+              <div class="d-flex gap-2">
+                <span class="mt-1">
+                  <i class="bi bi-exclamation-circle-fill text-{{ alert.severity === 'Critical' ? 'danger' : 'warning' }}"></i>
+                </span>
+                <div class="flex-grow-1">
+                  <div class="d-flex justify-content-between">
+                    <strong class="small">{{ alert.title }}</strong>
+                    <span class="badge bg-{{ alert.severity === 'Critical' ? 'danger' : 'warning' }} bg-opacity-10 text-{{ alert.severity === 'Critical' ? 'danger' : 'warning' }} px-2 py-1">
+                      {{ alert.severity }}
+                    </span>
+                  </div>
+                  <p class="text-muted small mb-0">{{ alert.description }}</p>
+                  <small class="text-muted">{{ alert.time }}</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

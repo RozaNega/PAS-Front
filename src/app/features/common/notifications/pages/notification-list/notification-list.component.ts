@@ -173,7 +173,7 @@ export class NotificationListComponent {
           const combined = [...apiNotifications, ...uniqueWorkflow];
           this.notifications.set(combined);
 
-          if (combined.length === 0 && this.loadError) {
+          if (combined.length === 0 && this.loadError()) {
             this.loadError.set(
               `Could not load notifications. ${pasApiUrlHint()}`,
             );

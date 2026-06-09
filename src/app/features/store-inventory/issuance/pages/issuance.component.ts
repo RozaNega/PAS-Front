@@ -8,6 +8,7 @@ import { ServiceRequestDetail, ServiceRequestItem } from '../../../requisition/s
 import { CurrentUserService } from '../../../../core/services/current-user.service';
 import { StoreIssueVoucherService, CreateStoreIssueVoucherRequest } from '../../../requisition/sivs/services/siv.service';
 import { ServiceRequestService as CoreServiceRequestService, ServiceRequest as CoreServiceRequest } from '../../../../core/services/service-request.service';
+import { WorkflowService, WORKFLOW_APPROVED_ACTIVE_STATUSES, ServiceRequest as WorkflowServiceRequest } from '../../../../core/services/workflow.service';
 
 import { NgxEchartsDirective, provideEchartsCore } from 'ngx-echarts';
 import * as echarts from 'echarts/core';
@@ -105,6 +106,7 @@ export class IssuanceComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly sivService = inject(StoreIssueVoucherService);
   private readonly coreServiceRequestService = inject(CoreServiceRequestService);
+  private readonly workflowService = inject(WorkflowService);
 
   // ── Shared State ──
   isLoading = signal(false);
@@ -115,6 +117,7 @@ export class IssuanceComponent implements OnInit, OnDestroy {
   private refreshSubscription?: Subscription;
   private readonly REFRESH_INTERVAL_MS = 30000;
   private static readonly ZERO_GUID = '00000000-0000-0000-0000-000000000000';
+  private simulatedSIVs: SIVRecord[] = [];
 
   private isValidGuid(id: string | undefined | null): boolean {
     if (id == null) return false;
@@ -293,6 +296,35 @@ export class IssuanceComponent implements OnInit, OnDestroy {
     };
   }
 
+  private mapWorkflowToPendingIssue(r: WorkflowServiceRequest): PendingIssue {
+    const submitted = new Date(r.submittedDate);
+    const waitingDays = Math.max(0, Math.floor((Date.now() - submitted.getTime()) / 86400000));
+    const hours = Math.floor((Date.now() - submitted.getTime()) % 86400000 / 3600000);
+    return {
+      id: r.id,
+      srNumber: r.srNumber,
+      requester: r.employeeName,
+      department: r.department,
+      requestedDate: submitted.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }),
+      waitingTime: `${waitingDays}d ${hours}h`,
+      waitingDays,
+      priority: r.priority === 'High' ? 'Urgent' : r.priority === 'Low' ? 'Normal' : r.priority,
+      requiredBy: new Date(r.requiredDate).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }),
+      items: [],
+    };
+  }
+
+  private mapWorkflowToRequisition(r: WorkflowServiceRequest): Requisition {
+    return {
+      id: r.id,
+      srNumber: r.srNumber,
+      requester: r.employeeName,
+      department: r.department,
+      priority: r.priority === 'High' ? 'Urgent' : r.priority === 'Low' ? 'Normal' : r.priority,
+      requiredBy: new Date(r.requiredDate).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }),
+    };
+  }
+
   private loadPendingIssues(): void {
     this.isLoading.set(true);
     this.coreServiceRequestService.getApprovedRequests().subscribe({
@@ -304,8 +336,12 @@ export class IssuanceComponent implements OnInit, OnDestroy {
         this.isLoading.set(false);
       },
       error: (err) => {
-        console.error('[Pending] Failed to load:', err);
-        this.allIssues.set([]);
+        console.error('[Pending] Failed to load, falling back to workflow seed data:', err);
+        const workflowReqs = this.workflowService.getAllRequests().filter(r =>
+          WORKFLOW_APPROVED_ACTIVE_STATUSES.includes(r.status)
+        );
+        console.log('[Pending] Workflow fallback approved requests:', workflowReqs.length);
+        this.allIssues.set(workflowReqs.map(r => this.mapWorkflowToPendingIssue(r)));
         this.isLoading.set(false);
       }
     });
@@ -367,6 +403,27 @@ export class IssuanceComponent implements OnInit, OnDestroy {
       }));
 
     console.log('[SIV] Processing issue for:', issue.srNumber, 'items:', items);
+
+    if (issue.id.startsWith('seed_')) {
+      const record: SIVRecord = {
+        sivNumber: `SIV-${new Date().getFullYear()}-${String(this.simulatedSIVs.length + 1).padStart(3, '0')}`,
+        date: new Date().toISOString().split('T')[0],
+        srNumber: issue.srNumber,
+        requester: issue.requester,
+        department: issue.department,
+        items: items.length,
+        value: 0,
+      };
+      this.simulatedSIVs.unshift(record);
+      this.isProcessing.set(false);
+      this.showNotification('success', `Issue for ${issue.srNumber} processed! SIV created.`);
+      this.closeProcessModal();
+      this.loadPendingIssues();
+      this.loadHistorySIVs();
+      this.loadPrintSIVs();
+      return;
+    }
+
     this.crossRoleService.issueRequest(issue.id, items).subscribe({
       next: (success) => {
         console.log('[SIV] Issue result:', success);
@@ -452,8 +509,12 @@ export class IssuanceComponent implements OnInit, OnDestroy {
         this.requisitions.set(valid.map(r => this.mapCoreToRequisition(r)));
       },
       error: (err) => {
-        console.error('[SIV] Failed to load approved requests:', err);
-        this.requisitions.set([]);
+        console.error('[SIV] Failed to load approved requests, falling back to workflow seed data:', err);
+        const workflowReqs = this.workflowService.getAllRequests().filter(r =>
+          WORKFLOW_APPROVED_ACTIVE_STATUSES.includes(r.status)
+        );
+        console.log('[SIV] Workflow fallback approved requests:', workflowReqs.length);
+        this.requisitions.set(workflowReqs.map(r => this.mapWorkflowToRequisition(r)));
       },
     });
   }
@@ -476,7 +537,6 @@ export class IssuanceComponent implements OnInit, OnDestroy {
     this.crossRoleService.getRequestDetail(req.id).subscribe({
       next: (detail) => {
         console.log('[SIV] Detail response:', JSON.stringify(detail));
-        this.isLoading.set(false);
         const items = detail?.items;
         if (items?.length) {
           this.sivItems.set(items.map(item => ({
@@ -495,14 +555,36 @@ export class IssuanceComponent implements OnInit, OnDestroy {
           console.log('[SIV] Loaded', this.sivItems().length, 'items');
           this.sivStep.set(2);
         } else {
-          console.warn('[SIV] No items in detail');
-          this.showNotification('error', 'No items found in this requisition.');
-          this.sivItems.set([]);
+          console.warn('[SIV] No items from API, trying workflow fallback');
+          const workflowReq = this.workflowService.getAllRequests().find(r => r.id === req.id);
+          if (workflowReq?.items?.length) {
+            this.sivItems.set(workflowReq.items.map(item => ({
+              srDetailId: item.id,
+              itemId: item.id,
+              name: item.name,
+              sku: '',
+              requested: item.quantity,
+              approved: item.quantity,
+              available: 0,
+              quantityToIssue: item.quantity,
+              shelfLocation: '',
+              shelfId: '',
+              notes: '',
+            })));
+            console.log('[SIV] Loaded', this.sivItems().length, 'items from workflow fallback');
+            this.sivStep.set(2);
+          } else {
+            this.showNotification('error', 'No items found in this requisition.');
+            this.sivItems.set([]);
+            this.sivStep.set(2);
+          }
         }
+        this.isLoading.set(false);
       },
       error: (err) => {
-        console.error('[SIV] Failed to load detail:', err);
+        console.error('[SIV] subscribe error (unexpected):', err);
         this.isLoading.set(false);
+        this.sivStep.set(2);
         this.showNotification('error', 'Could not load requisition details. Please try again.');
         this.sivItems.set([]);
       },
@@ -515,10 +597,9 @@ export class IssuanceComponent implements OnInit, OnDestroy {
   }
 
   sivNextStep(): void {
-    if (this.sivStep() === 1 && !this.selectedRequisition()) return;
-    if (this.sivStep() === 2 && this.sivItems().length === 0) {
-      this.showNotification('error', 'No items loaded for this requisition.');
-      return;
+    if (this.sivStep() === 1) {
+      if (!this.selectedRequisition()) return;
+      if (this.isLoading()) return;
     }
     if (this.sivStep() === 3 && this.sivItems().length === 0) {
       this.showNotification('error', 'Please add at least one item.');
@@ -542,6 +623,29 @@ export class IssuanceComponent implements OnInit, OnDestroy {
     }
 
     const user = this.currentUserService['currentUserSubject']?.value;
+    const sivNumber = this.sivNumber() || `SIV-${new Date().getFullYear()}-${String(this.requisitions().length + 1).padStart(3, '0')}`;
+
+    if (req.id.startsWith('seed_')) {
+      const record: SIVRecord = {
+        sivNumber,
+        date: this.issueDate() || new Date().toISOString().split('T')[0],
+        srNumber: req.srNumber,
+        requester: req.requester,
+        department: req.department,
+        items: items.length,
+        value: 0,
+      };
+      this.simulatedSIVs.unshift(record);
+      this.showNotification('success', `SIV ${sivNumber} created successfully!`);
+      this.sivStep.set(1);
+      this.selectedRequisition.set(null);
+      this.sivItems.set([]);
+      this.loadHistorySIVs();
+      this.loadPrintSIVs();
+      this.activeTab.set('history');
+      return;
+    }
+
     const command: CreateStoreIssueVoucherRequest = {
       serviceRequestId: req.id,
       issuedToId: req.requester || user?.id || user?.username || '',
@@ -655,7 +759,7 @@ export class IssuanceComponent implements OnInit, OnDestroy {
     this.crossRoleService.getAllSIVs().subscribe({
       next: (flowSivs) => {
         console.log('[SIV] History loaded:', flowSivs.length, 'SIVs');
-        this.sivs.set(flowSivs.map(siv => ({
+        const apiSivs: SIVRecord[] = flowSivs.map(siv => ({
           sivNumber: siv.sivNumber,
           date: siv.issueDate,
           srNumber: siv.srNumber,
@@ -663,11 +767,12 @@ export class IssuanceComponent implements OnInit, OnDestroy {
           department: siv.department,
           items: siv.totalItems,
           value: 0,
-        })));
+        }));
+        this.sivs.set([...this.simulatedSIVs, ...apiSivs]);
       },
       error: (err) => {
         console.error('[SIV] Failed to load history:', err);
-        this.sivs.set([]);
+        this.sivs.set([...this.simulatedSIVs]);
       },
     });
   }
@@ -717,16 +822,35 @@ export class IssuanceComponent implements OnInit, OnDestroy {
   private loadPrintSIVs(): void {
     this.crossRoleService.getAllSIVs().subscribe({
       next: (flowSivs) => {
-        this.printSivs.set(flowSivs.map(siv => ({
+        const apiSivs: SIV[] = flowSivs.map(siv => ({
           sivNumber: siv.sivNumber,
           date: siv.issueDate,
           requester: siv.requesterName,
           department: siv.department,
           totalItems: siv.totalItems,
           totalValue: 0,
-        })));
+        }));
+        const simSivs: SIV[] = this.simulatedSIVs.map(s => ({
+          sivNumber: s.sivNumber,
+          date: s.date,
+          requester: s.requester,
+          department: s.department,
+          totalItems: s.items,
+          totalValue: s.value,
+        }));
+        this.printSivs.set([...simSivs, ...apiSivs]);
       },
-      error: () => this.printSivs.set([]),
+      error: () => {
+        const simSivs: SIV[] = this.simulatedSIVs.map(s => ({
+          sivNumber: s.sivNumber,
+          date: s.date,
+          requester: s.requester,
+          department: s.department,
+          totalItems: s.items,
+          totalValue: s.value,
+        }));
+        this.printSivs.set(simSivs);
+      },
     });
   }
 

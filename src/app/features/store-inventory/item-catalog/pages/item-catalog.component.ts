@@ -1,4 +1,4 @@
-import { Component, signal, computed, inject, effect } from '@angular/core';
+import { Component, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ItemMasterService, ItemMasterPaginatedResponse } from '../../../../core/services/item-master.service';
@@ -78,6 +78,7 @@ export class ItemCatalogComponent {
   isLoading = signal(false);
 
   items = signal<Item[]>(this.mockItems());
+  private userStatus = new Map<string, Item['status']>();
 
   showItemModal = signal(false);
   showAddForm = signal(false);
@@ -162,7 +163,7 @@ export class ItemCatalogComponent {
     { date: 'Dec 10, 2024', type: 'Transfer', quantity: 5, reference: 'TRF-2024-008', user: 'Mike Wilson', balance: 38 }
   ]);
 
-  newItem = signal<Partial<Item & { isActive?: boolean; categoryId?: string }>>({ sku: '', name: '', category: '', uom: 'PCS', minStock: 0, currentStock: 0, price: 0, isActive: true, categoryId: '' });
+  newItem = signal<Partial<Item & { isActive?: boolean; categoryId?: string }>>({ sku: '', name: '', category: '', uom: 'PCS', minStock: 0, currentStock: 0, price: 0, status: 'Active', isActive: true, categoryId: '' });
 
   private readonly itemService = inject(ItemMasterService);
   private readonly inventoryService = inject(InventoryService);
@@ -258,17 +259,32 @@ export class ItemCatalogComponent {
         if (res?.success && res.data) {
           const paginated = res.data as ItemMasterPaginatedResponse;
           const dt = paginated.items || [];
-          const mapped = dt.map(i => ({
-            id: String(i.id),
-            sku: i.sku,
-            name: i.itemName,
-            category: i.categoryName || 'Uncategorized',
-            uom: i.unitOfMeasure || 'PCS',
-            minStock: i.minStockLevel ?? 0,
-            currentStock: i.currentStock ?? (i.stockQuantity ?? 0),
-            status: (i.isActive ? ((i.currentStock ?? (i.stockQuantity ?? 0)) === 0 ? 'Out of Stock' : ((i.isLowStock || (i.currentStock ?? 0) <= (i.minStockLevel ?? 0)) ? 'Low Stock' : 'Active')) : 'Out of Stock') as any,
-            price: 0
-          } as unknown as Item));
+          const mapped = dt.map(i => {
+            const id = i.id != null ? String(i.id) : undefined;
+            const stock = i.currentStock ?? i.stockQuantity;
+            const min = i.minStockLevel ?? 0;
+            const backendStatus = i['status'] as Item['status'] | undefined;
+            const saved = id && this.userStatus.get(id);
+            let status: Item['status'];
+            if (backendStatus) { status = backendStatus; }
+            else if (saved) { status = saved; }
+            else if (i.isActive === false) { status = 'Out of Stock'; }
+            else if (i.isLowStock) { status = 'Low Stock'; }
+            else if (stock != null && stock <= 0 && !i.isLowStock) { status = 'Active'; }
+            else if (stock != null && stock <= min) { status = 'Low Stock'; }
+            else { status = 'Active'; }
+            return {
+              id,
+              sku: i.sku,
+              name: i.itemName,
+              category: i.categoryName || 'Uncategorized',
+              uom: i.unitOfMeasure || 'PCS',
+              minStock: min,
+              currentStock: stock ?? 0,
+              status,
+              price: i['unitPrice'] ?? 0
+            } as Item;
+          });
           this.items.set(mapped);
         }
       },
@@ -367,12 +383,12 @@ export class ItemCatalogComponent {
     let remaining = selected.length;
     selected.forEach(item => {
       if (!item.id) { remaining -= 1; if (remaining === 0) this.loadItems(); return; }
-      const payload: any = {};
-      if (draft.category !== undefined) payload.categoryName = draft.category;
+      const payload: any = { id: item.id };
+      if (draft.category !== undefined) payload.categoryId = this.resolveCategoryId(draft.category) || undefined;
       if (draft.uom !== undefined) payload.unitOfMeasure = draft.uom;
       if (draft.minStock !== undefined) payload.minStockLevel = draft.minStock;
-      if (Object.keys(payload).length === 0) { remaining -= 1; if (remaining === 0) this.loadItems(); return; }
-      this.itemService.updateItemMaster(Number(item.id!), payload).subscribe({
+      if (Object.keys(payload).length <= 1) { remaining -= 1; if (remaining === 0) this.loadItems(); return; }
+      this.itemService.updateItemMaster(item.id, payload).subscribe({
         next: () => { remaining -= 1; if (remaining === 0) { this.showBulkImportModal.set(false); this.selectedIds.set([]); this.loadItems(); this.showToast(`${selected.length} items updated`); } },
         error: () => { remaining -= 1; if (remaining === 0) { this.showBulkImportModal.set(false); this.selectedIds.set([]); this.loadItems(); } }
       });
@@ -433,7 +449,7 @@ export class ItemCatalogComponent {
 
   openAddForm(): void {
     this.isEditing.set(false);
-    this.newItem.set({ sku: '', name: '', category: '', uom: 'PCS', minStock: 0, currentStock: 0, price: 0, isActive: true, categoryId: '' });
+    this.newItem.set({ sku: '', name: '', category: '', uom: 'PCS', minStock: 0, currentStock: 0, price: 0, status: 'Active', isActive: true, categoryId: '' });
     this.showAddForm.set(true);
   }
 
@@ -448,7 +464,7 @@ export class ItemCatalogComponent {
   editItem(item: Item): void {
     this.isEditing.set(true);
     const categoryId = this.resolveCategoryId(item.category);
-    this.newItem.set({ sku: item.sku, name: item.name, category: item.category, uom: item.uom, minStock: item.minStock, currentStock: item.currentStock, price: item.price, isActive: item.status !== 'Out of Stock', categoryId });
+    this.newItem.set({ sku: item.sku, name: item.name, category: item.category, uom: item.uom, minStock: item.minStock, currentStock: item.currentStock, price: item.price, status: item.status, isActive: item.status !== 'Out of Stock', categoryId });
     this.selectedItem.set(item);
     this.showAddForm.set(true);
   }
@@ -495,15 +511,27 @@ export class ItemCatalogComponent {
     if (!draft || !draft.sku || !draft.name) return;
     this.isLoading.set(true);
     const categoryId = draft.categoryId || this.resolveCategoryId(draft.category || '');
-    const payload: any = { sku: draft.sku, itemName: draft.name, categoryId, categoryName: draft.category, unitOfMeasure: draft.uom, minStockLevel: draft.minStock, stockQuantity: draft.currentStock, description: '', requiresInspection: false, isActive: draft.isActive ?? true };
-    console.log('[ItemCatalog] createItem payload:', JSON.stringify(payload, null, 2));
+    const payload: any = { sku: draft.sku, itemName: draft.name, categoryId: categoryId || undefined, unitOfMeasure: draft.uom, minStockLevel: draft.minStock ?? 0, requiresInspection: false, unitPrice: Number(draft.price) || 0, status: draft.status || 'Active' };
     this.itemService.createItemMaster(payload).subscribe({
       next: (res) => {
         this.isLoading.set(false);
         if (res?.success) {
+          const newId = res.data != null ? String(res.data) : undefined;
+          this.userStatus.set(newId || draft.sku!, (draft.status as Item['status']) || 'Active');
+          const newItem: Item = {
+            id: newId,
+            sku: draft.sku || '',
+            name: draft.name || '',
+            category: draft.category || 'Uncategorized',
+            uom: draft.uom || 'PCS',
+            minStock: draft.minStock ?? 0,
+            currentStock: draft.currentStock ?? 0,
+            price: draft.price ?? 0,
+            status: (draft.status as Item['status']) || 'Active',
+          };
+          this.items.update(list => [...list, newItem]);
           this.cancelAddForm();
-          this.newItem.set({ sku: '', name: '', category: '', uom: 'PCS', minStock: 0, currentStock: 0, price: 0, isActive: true, categoryId: '' });
-          this.loadItems();
+          this.newItem.set({ sku: '', name: '', category: '', uom: 'PCS', minStock: 0, currentStock: 0, price: 0, status: 'Active', isActive: true, categoryId: '' });
           this.showToast('Item created successfully');
         } else {
           this.showToast('Failed to create item: ' + (res?.message || 'Unknown error'), 'error');
@@ -523,14 +551,17 @@ export class ItemCatalogComponent {
     if (!id || !draft) return;
     this.isLoading.set(true);
     const categoryId = draft.categoryId || this.resolveCategoryId(draft.category || '');
-    const payload: any = { sku: draft.sku, itemName: draft.name, categoryId, categoryName: draft.category, unitOfMeasure: draft.uom, minStockLevel: draft.minStock, stockQuantity: draft.currentStock, description: '', requiresInspection: false, isActive: draft.isActive ?? true };
-    this.itemService.updateItemMaster(Number(id), payload).subscribe({
+    const payload: any = { id, sku: draft.sku, itemName: draft.name, categoryId: categoryId || undefined, unitOfMeasure: draft.uom, minStockLevel: draft.minStock ?? 0, requiresInspection: false, unitPrice: Number(draft.price) || 0, status: draft.status || 'Active' };
+    this.itemService.updateItemMaster(id, payload).subscribe({
       next: (res) => {
         this.isLoading.set(false);
         this.cancelAddForm();
         this.isEditing.set(false);
         if (res?.success) {
-          this.loadItems();
+          this.userStatus.set(id, (draft.status as Item['status']) || 'Active');
+          this.items.update(list =>
+            list.map(i => i.id === id ? { ...i, sku: draft.sku || i.sku, name: draft.name || i.name, category: draft.category || i.category, uom: draft.uom || i.uom, minStock: draft.minStock ?? i.minStock, currentStock: draft.currentStock ?? i.currentStock, price: draft.price ?? i.price, status: (draft.status as Item['status']) || i.status } : i)
+          );
           this.showToast('Item updated');
         } else {
           this.showToast('Failed to update item', 'error');
@@ -547,6 +578,10 @@ export class ItemCatalogComponent {
     const numFields = ['minStock', 'currentStock', 'price'];
     const v = numFields.includes(field) ? Number(value) : value;
     this.newItem.update(n => ({ ...(n as any), [field]: v }));
+  }
+
+  onFormStatusChange(status: string): void {
+    this.newItem.update(n => ({ ...(n as any), status, isActive: status !== 'Out of Stock' }));
   }
 
   onCategorySelect(categoryName: string): void {
@@ -609,7 +644,7 @@ export class ItemCatalogComponent {
   }
 
   onIsActiveChange(checked: boolean): void {
-    this.setNewItemField('isActive', checked);
+    this.newItem.update(n => ({ ...(n as any), isActive: checked, status: checked ? (n.status === 'Out of Stock' ? 'Active' : n.status) : 'Out of Stock' }));
   }
 
   onSelectAllChange(checked: boolean): void {

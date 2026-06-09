@@ -446,7 +446,7 @@
         </div>
         <div>
           @if (sivStep() < totalSivSteps) {
-            <button class="btn btn-primary" [disabled]="sivStep() === 1 && !selectedRequisition()" (click)="sivNextStep()">Next <i class="bi bi-arrow-right"></i></button>
+            <button class="btn btn-primary" [disabled]="(sivStep() === 1 && (!selectedRequisition() || isLoading()))" (click)="sivNextStep()">Next <i class="bi bi-arrow-right"></i></button>
           }
           @if (sivStep() === totalSivSteps) {
             <button class="btn btn-primary" [disabled]="isProcessingSiv()" (click)="generateSIV()">

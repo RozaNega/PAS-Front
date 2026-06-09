@@ -18,6 +18,8 @@ export interface ItemMaster {
   isLowStock: boolean;
   stockQuantity: number;
   isActive: boolean;
+  unitPrice?: number;
+  status?: string;
   [key: string]: unknown;
 }
 
@@ -54,7 +56,7 @@ export class ItemMasterService {
     return this.http.get<ItemMasterApiResponse>(this.baseUrl, { params });
   }
 
-  getItemMaster(id: number): Observable<ItemMasterApiResponse> {
+  getItemMaster(id: number | string): Observable<ItemMasterApiResponse> {
     return this.http.get<ItemMasterApiResponse>(`${this.baseUrl}/${id}`);
   }
 
@@ -62,11 +64,11 @@ export class ItemMasterService {
     return this.http.post<ItemMasterApiResponse>(this.baseUrl, item);
   }
 
-  updateItemMaster(id: number, item: Partial<ItemMaster>): Observable<ItemMasterApiResponse> {
+  updateItemMaster(id: number | string, item: Partial<ItemMaster>): Observable<ItemMasterApiResponse> {
     return this.http.put<ItemMasterApiResponse>(`${this.baseUrl}/${id}`, item);
   }
 
-  deleteItemMaster(id: number): Observable<ItemMasterApiResponse> {
+  deleteItemMaster(id: number | string): Observable<ItemMasterApiResponse> {
     return this.http.delete<ItemMasterApiResponse>(`${this.baseUrl}/${id}`);
   }
 

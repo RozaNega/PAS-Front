@@ -16,6 +16,30 @@ export class ProfileService {
     private readonly currentUserService: CurrentUserService,
   ) {}
 
+  fetchProfileFromApi(): Observable<any> {
+    const userId = this.currentUserService.getUserId();
+    if (!userId) {
+      return throwError(() => new Error('User not found'));
+    }
+    return this.apiService.get<any>(`Users/${userId}`).pipe(
+      map(res => res.data)
+    );
+  }
+
+  uploadProfilePhotoToApi(file: File): Observable<string> {
+    return this.uploadProfileImage(file);
+  }
+
+  updateProfileViaApi(data: Partial<Record<string, unknown>>): Observable<{ succeeded: boolean }> {
+    const userId = this.currentUserService.getUserId();
+    if (!userId) {
+      return throwError(() => new Error('User not found'));
+    }
+    return this.apiService.put(`Users/${userId}`, data).pipe(
+      map(res => ({ succeeded: res.success }))
+    );
+  }
+
   uploadProfileImage(file: File, userId?: string): Observable<string> {
     const id = userId ?? this.currentUserService.getUserId();
     if (!id) {

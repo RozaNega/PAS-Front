@@ -1,0 +1,191 @@
+<div class="role-workflow-guide-page">
+  <header class="page-heading">
+    <div>
+      <p class="eyebrow">AFROCOM access policy</p>
+      <h1>Role Interaction & Workflow Guide</h1>
+      <p class="summary">
+        Complete operating map for system roles, permissions, approval handoffs,
+        notifications, receiving, issuing, and audit monitoring.
+      </p>
+    </div>
+    <div class="heading-stat">
+      <span class="stat-value">{{ roles.length }}</span>
+      <span class="stat-label">active roles</span>
+    </div>
+  </header>
+
+  <section class="section-block">
+    <div class="section-title">
+      <i class="bi bi-people"></i>
+      <h2>The 5 Roles</h2>
+    </div>
+
+    <div class="role-grid">
+      @for (role of roles; track role.key) {
+        <article class="role-panel role-{{ role.key }}">
+          <div class="role-panel-header">
+            <span class="role-name">{{ role.name }}</span>
+            <span class="role-title">{{ role.simpleTitle }}</span>
+          </div>
+          <p>{{ role.mainJob }}</p>
+          <dl>
+            <div>
+              <dt>Decision power</dt>
+              <dd>{{ role.decisionPower }}</dd>
+            </div>
+            <div>
+              <dt>Dashboard</dt>
+              <dd>{{ role.dashboardScope }}</dd>
+            </div>
+          </dl>
+          <p class="role-tone">{{ role.tone }}</p>
+        </article>
+      }
+    </div>
+  </section>
+
+  <section class="section-block">
+    <div class="section-title">
+      <i class="bi bi-shield-lock"></i>
+      <h2>Permission Matrix</h2>
+    </div>
+
+    <div class="table-wrap">
+      <table class="policy-table">
+        <thead>
+          <tr>
+            <th>Action</th>
+            @for (column of matrixColumns; track column.key) {
+              <th>{{ column.label }}</th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of permissionMatrix; track row.action) {
+            <tr>
+              <th scope="row">{{ row.action }}</th>
+              @for (column of matrixColumns; track column.key) {
+                <td>
+                  <span class="permission-pill" [ngClass]="permissionTone(row[column.key])">
+                    {{ row[column.key] }}
+                  </span>
+                </td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="section-block">
+    <div class="section-title">
+      <i class="bi bi-diagram-3"></i>
+      <h2>Workflow Scenarios</h2>
+    </div>
+
+    <div class="workflow-list">
+      @for (scenario of workflowScenarios; track scenario.key) {
+        <article class="workflow-panel">
+          <div class="workflow-header">
+            <h3>{{ scenario.title }}</h3>
+            <p>{{ scenario.summary }}</p>
+          </div>
+
+          <div class="step-flow">
+            @for (step of scenario.steps; track step.actor + step.title; let last = $last) {
+              <div class="step-item">
+                <div class="step-marker">{{ $index + 1 }}</div>
+                <div class="step-content">
+                  <span class="step-actor">{{ step.actor }}</span>
+                  <strong>{{ step.title }}</strong>
+                  <p>{{ step.detail }}</p>
+                </div>
+              </div>
+              @if (!last) {
+                <div class="step-link" aria-hidden="true"></div>
+              }
+            }
+          </div>
+
+          <div class="branch-grid">
+            @for (branch of scenario.branches; track branch.condition) {
+              <div class="branch-item">
+                <span>{{ branch.condition }}</span>
+                <p>{{ branch.outcome }}</p>
+              </div>
+            }
+          </div>
+        </article>
+      }
+    </div>
+  </section>
+
+  <section class="split-section">
+    <div class="section-block">
+      <div class="section-title">
+        <i class="bi bi-bell"></i>
+        <h2>Notification System</h2>
+      </div>
+
+      <div class="table-wrap compact">
+        <table class="policy-table">
+          <thead>
+            <tr>
+              <th>Event</th>
+              <th>Sender</th>
+              <th>Receivers</th>
+              <th>Method</th>
+              <th>Priority</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (rule of notificationRules; track rule.event) {
+              <tr>
+                <th scope="row">{{ rule.event }}</th>
+                <td>{{ rule.sender }}</td>
+                <td>{{ rule.receivers }}</td>
+                <td>{{ rule.method }}</td>
+                <td>
+                  <span class="priority-badge" [ngClass]="priorityTone(rule.priority)">
+                    {{ rule.priority }}
+                  </span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="section-block">
+      <div class="section-title">
+        <i class="bi bi-check2-square"></i>
+        <h2>Approval Workflow</h2>
+      </div>
+
+      <div class="table-wrap compact">
+        <table class="policy-table">
+          <thead>
+            <tr>
+              <th>Item / Request</th>
+              <th>Created By</th>
+              <th>Approved By</th>
+              <th>Escalated To</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (rule of approvalRules; track rule.itemOrRequest) {
+              <tr>
+                <th scope="row">{{ rule.itemOrRequest }}</th>
+                <td>{{ rule.createdBy }}</td>
+                <td>{{ rule.approvedBy }}</td>
+                <td>{{ rule.escalatedTo }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</div>

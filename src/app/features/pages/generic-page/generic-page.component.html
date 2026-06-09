@@ -1084,7 +1084,7 @@
             </div>
           } @else {
             <div class="qr-scan-list">
-              @for (scan of recentScans; track scan.id) {
+              @for (scan of recentScans(); track scan.id) {
                 <div class="qr-scan-row" [class.selected]="scan.id === selectedScanId" (click)="selectScan(scan.id)">
                   <div class="qr-scan-indicator"></div>
                   <div class="qr-scan-icon"><i class="bi bi-upc-scan"></i></div>

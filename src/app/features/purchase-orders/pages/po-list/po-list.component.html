@@ -1,0 +1,263 @@
+<div class="po-list-page req-page">
+  <header class="req-hero">
+    <div class="req-hero__text">
+      <p class="req-hero__eyebrow">Procurement</p>
+      <h1 class="req-hero__title">Purchase orders</h1>
+      <p class="req-hero__subtitle">
+        Manage purchase orders — track approvals, place orders, receive goods, and monitor full lifecycle from draft to completion.
+      </p>
+    </div>
+    <div class="req-hero__actions">
+      <button type="button" class="btn btn-primary" (click)="createNewPo()">
+        <i class="bi bi-plus-lg"></i>
+        New PO
+      </button>
+      <details #exportSheet class="req-action-sheet req-action-sheet--below">
+        <summary class="btn btn-outline-secondary req-action-sheet__summary">
+          <i class="bi bi-download"></i>
+          Export
+        </summary>
+        <div class="req-action-sheet__panel" role="menu">
+          <button type="button" class="req-action-sheet__item" (click)="exportPos('pdf', $event); closeSheet(exportSheet)">
+            <i class="bi bi-file-pdf req-action-sheet__item-icon req-action-sheet__item-icon--danger"></i>
+            <span>Export PDF</span>
+          </button>
+          <button type="button" class="req-action-sheet__item" (click)="exportPos('excel', $event); closeSheet(exportSheet)">
+            <i class="bi bi-file-earmark-spreadsheet req-action-sheet__item-icon req-action-sheet__item-icon--success"></i>
+            <span>Export Excel</span>
+          </button>
+          <button type="button" class="req-action-sheet__item" (click)="exportPos('csv', $event); closeSheet(exportSheet)">
+            <i class="bi bi-filetype-csv req-action-sheet__item-icon req-action-sheet__item-icon--primary"></i>
+            <span>Export CSV</span>
+          </button>
+        </div>
+      </details>
+    </div>
+  </header>
+
+  <nav class="req-segments" role="tablist" aria-label="PO status">
+    <button type="button" class="req-segment req-segment--all" [class.active]="statusFilter() === 'All'" (click)="statusFilter.set('All')" role="tab">
+      <span class="req-segment__inner">
+        <i class="bi bi-grid-1x2-fill req-segment__icon" aria-hidden="true"></i>
+        <span class="req-segment__label">All POs</span>
+        <span class="req-count">{{ statusCounts().all }}</span>
+      </span>
+    </button>
+    <button type="button" class="req-segment req-segment--pending" [class.active]="statusFilter() === 'Pending Approval'" (click)="statusFilter.set('Pending Approval')" role="tab">
+      <span class="req-segment__inner">
+        <i class="bi bi-hourglass-split req-segment__icon" aria-hidden="true"></i>
+        <span class="req-segment__label">Pending</span>
+        <span class="req-count">{{ statusCounts().pending }}</span>
+      </span>
+    </button>
+    <button type="button" class="req-segment req-segment--approved" [class.active]="statusFilter() === 'Approved'" (click)="statusFilter.set('Approved')" role="tab">
+      <span class="req-segment__inner">
+        <i class="bi bi-check-circle-fill req-segment__icon" aria-hidden="true"></i>
+        <span class="req-segment__label">Approved</span>
+        <span class="req-count">{{ statusCounts().approved }}</span>
+      </span>
+    </button>
+    <button type="button" class="req-segment req-segment--ordered" [class.active]="statusFilter() === 'Ordered'" (click)="statusFilter.set('Ordered')" role="tab">
+      <span class="req-segment__inner">
+        <i class="bi bi-truck req-segment__icon" aria-hidden="true"></i>
+        <span class="req-segment__label">Ordered</span>
+        <span class="req-count">{{ statusCounts().ordered }}</span>
+      </span>
+    </button>
+    <button type="button" class="req-segment req-segment--received" [class.active]="statusFilter() === 'Received'" (click)="statusFilter.set('Received')" role="tab">
+      <span class="req-segment__inner">
+        <i class="bi bi-box-seam-fill req-segment__icon" aria-hidden="true"></i>
+        <span class="req-segment__label">Received</span>
+        <span class="req-count">{{ statusCounts().received }}</span>
+      </span>
+    </button>
+    <button type="button" class="req-segment req-segment--completed" [class.active]="statusFilter() === 'Completed'" (click)="statusFilter.set('Completed')" role="tab">
+      <span class="req-segment__inner">
+        <i class="bi bi-flag-fill req-segment__icon" aria-hidden="true"></i>
+        <span class="req-segment__label">Completed</span>
+        <span class="req-count">{{ statusCounts().completed }}</span>
+      </span>
+    </button>
+  </nav>
+
+  <div class="req-loading" *ngIf="loading()">
+    <div class="spinner-border text-primary" role="status" aria-hidden="true"></div>
+    <span>Loading purchase orders&hellip;</span>
+  </div>
+
+  <div class="req-alert" *ngIf="error() && !loading()" role="alert">
+    <i class="bi bi-exclamation-octagon-fill flex-shrink-0"></i>
+    <span class="flex-grow-1">{{ error() }}</span>
+    <button type="button" class="btn btn-sm btn-outline-danger" (click)="loadPos()">Retry</button>
+  </div>
+
+  <div class="req-content" *ngIf="!loading()">
+    <section class="req-toolbar" aria-label="Filters">
+      <div class="req-field">
+        <label for="search">Search</label>
+        <input
+          type="search"
+          id="search"
+          class="form-control"
+          [value]="searchTerm()"
+          (input)="onSearch($event)"
+          placeholder="PO number, supplier, created by&hellip;" />
+      </div>
+      <div class="req-field">
+        <label for="supplier">Supplier</label>
+        <select id="supplier" class="form-control" [value]="supplierFilter()" (change)="onSupplierFilter($event)">
+          <option *ngFor="let s of suppliers()" [value]="s">{{ s }}</option>
+        </select>
+      </div>
+      <div class="req-field" style="flex: 0 1 120px">
+        <label for="rowsPerPage">Rows</label>
+        <select id="rowsPerPage" class="form-control" [value]="rowsPerPage()" (change)="onRowsPerPageChange($event)">
+          <option value="10">10</option>
+          <option value="25">25</option>
+          <option value="50">50</option>
+          <option value="100">100</option>
+        </select>
+      </div>
+      <div class="req-toolbar__actions">
+        <button type="button" class="btn btn-outline-secondary" (click)="resetFilters()">
+          <i class="bi bi-arrow-counterclockwise"></i>
+          Reset
+        </button>
+      </div>
+    </section>
+
+    <section class="req-datatable" aria-label="Purchase orders">
+      <div class="req-datatable__meta">
+        <span>
+          Showing <strong>{{ displayRange().start }}</strong>&ndash;<strong>{{ displayRange().end }}</strong> of
+          <strong>{{ filteredPos().length }}</strong>
+          purchase orders
+        </span>
+      </div>
+
+      <div class="req-table-wrap">
+        <table class="req-table">
+          <thead>
+            <tr>
+              <th>PO number</th>
+              <th>Supplier</th>
+              <th>Status</th>
+              <th>Total cost</th>
+              <th>Created by</th>
+              <th>Created date</th>
+              <th>Approved by</th>
+              <th scope="col" class="text-end">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngIf="pagedPos().length === 0">
+              <td colspan="8">
+                <div class="req-empty">
+                  <i class="bi bi-cart-x"></i>
+                  <p>No purchase orders match your filters.</p>
+                </div>
+              </td>
+            </tr>
+            <tr *ngFor="let po of pagedPos(); trackBy: trackByPoId">
+              <td>
+                <button type="button" class="req-table__sr-btn req-table__sr" (click)="viewPo(po.id)">
+                  {{ displayCell(po.poNumber) }}
+                </button>
+              </td>
+              <td [class.req-cell-muted]="!hasCell(po.supplierName)">{{ displayCell(po.supplierName) }}</td>
+              <td>
+                <span class="req-badge" [ngClass]="getStatusClass(po.status)">{{ displayCell(po.status) }}</span>
+              </td>
+              <td class="tabular-nums">\${{ po.totalCost.toLocaleString() }}</td>
+              <td [class.req-cell-muted]="!hasCell(po.createdBy)">{{ displayCell(po.createdBy) }}</td>
+              <td class="text-nowrap">{{ formatDate(po.createdDate) }}</td>
+              <td [class.req-cell-muted]="!hasCell(po.approvedBy)">{{ displayCell(po.approvedBy) }}</td>
+              <td class="text-end">
+                <div class="req-actions justify-content-end">
+                  <button type="button" class="btn btn-sm btn-outline-primary" (click)="viewPo(po.id)" title="View">
+                    <i class="bi bi-eye"></i>
+                  </button>
+                  <details #rowSheet class="req-action-sheet">
+                    <summary class="btn btn-sm btn-outline-secondary req-action-sheet__summary" title="More actions">
+                      <i class="bi bi-three-dots-vertical"></i>
+                    </summary>
+                    <div class="req-action-sheet__panel" role="menu">
+                      <button type="button" class="req-action-sheet__item" (click)="viewPo(po.id); closeSheet(rowSheet)">
+                        <i class="bi bi-eye req-action-sheet__item-icon"></i>
+                        <span>View</span>
+                      </button>
+                      <div class="req-action-sheet__sep" *ngIf="statusEquals(po, 'Pending Approval')"></div>
+                      <button
+                        type="button"
+                        class="req-action-sheet__item req-action-sheet__item--success"
+                        *ngIf="statusEquals(po, 'Pending Approval')"
+                        (click)="approvePo(po); closeSheet(rowSheet)">
+                        <i class="bi bi-check-lg req-action-sheet__item-icon"></i>
+                        <span>Approve</span>
+                      </button>
+                      <button
+                        type="button"
+                        class="req-action-sheet__item req-action-sheet__item--danger"
+                        *ngIf="statusEquals(po, 'Pending Approval')"
+                        (click)="rejectPo(po); closeSheet(rowSheet)">
+                        <i class="bi bi-x-lg req-action-sheet__item-icon"></i>
+                        <span>Reject</span>
+                      </button>
+                      <div class="req-action-sheet__sep" *ngIf="statusEquals(po, 'Approved')"></div>
+                      <button
+                        type="button"
+                        class="req-action-sheet__item"
+                        *ngIf="statusEquals(po, 'Approved')"
+                        (click)="markOrdered(po); closeSheet(rowSheet)">
+                        <i class="bi bi-truck req-action-sheet__item-icon"></i>
+                        <span>Mark Ordered</span>
+                      </button>
+                      <div class="req-action-sheet__sep" *ngIf="statusEquals(po, 'Ordered') || statusEquals(po, 'Received')"></div>
+                      <button
+                        type="button"
+                        class="req-action-sheet__item"
+                        *ngIf="statusEquals(po, 'Ordered')"
+                        (click)="markReceived(po); closeSheet(rowSheet)">
+                        <i class="bi bi-box-seam req-action-sheet__item-icon"></i>
+                        <span>Mark Received</span>
+                      </button>
+                      <div class="req-action-sheet__sep" *ngIf="statusEquals(po, 'Draft') || statusEquals(po, 'Pending Approval')"></div>
+                      <button
+                        type="button"
+                        class="req-action-sheet__item req-action-sheet__item--danger"
+                        *ngIf="statusEquals(po, 'Draft') || statusEquals(po, 'Pending Approval')"
+                        (click)="cancelPo(po); closeSheet(rowSheet)">
+                        <i class="bi bi-slash-circle req-action-sheet__item-icon"></i>
+                        <span>Cancel</span>
+                      </button>
+                    </div>
+                  </details>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <nav class="req-pagination" *ngIf="totalPages() > 1" aria-label="Pagination">
+      <ul class="pagination mb-0">
+        <li class="page-item" [class.disabled]="currentPage() === 1">
+          <button type="button" class="page-link" (click)="goToPage(currentPage() - 1)" [disabled]="currentPage() === 1">
+            <i class="bi bi-chevron-left"></i>
+          </button>
+        </li>
+        <li class="page-item" *ngFor="let page of [].constructor(totalPages()); let i = index" [class.active]="currentPage() === i + 1">
+          <button type="button" class="page-link" (click)="goToPage(i + 1)">{{ i + 1 }}</button>
+        </li>
+        <li class="page-item" [class.disabled]="currentPage() === totalPages()">
+          <button type="button" class="page-link" (click)="goToPage(currentPage() + 1)" [disabled]="currentPage() === totalPages()">
+            <i class="bi bi-chevron-right"></i>
+          </button>
+        </li>
+      </ul>
+    </nav>
+  </div>
+
+  <footer class="req-footer">AFRICOM Asset Management Platform &middot; {{ currentYear }}</footer>
+</div>

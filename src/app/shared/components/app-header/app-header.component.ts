@@ -151,7 +151,7 @@ interface NotificationItem {
             </div>
           </div>
           <div class="user-dropdown-actions">
-            <a class="dropdown-item" href="#"><i class="bi bi-person"></i><span>Profile</span></a>
+            <a class="dropdown-item" href="#" (click)="navigateToProfile()"><i class="bi bi-person"></i><span>Profile</span></a>
             <a class="dropdown-item" href="#"><i class="bi bi-gear"></i><span>Settings</span></a>
             <div class="dropdown-divider"></div>
             <a class="dropdown-item" href="#" (click)="signOut()"
@@ -222,6 +222,22 @@ export class AppHeaderComponent implements OnInit {
     this.showNotifications.set(!this.showNotifications());
     this.showUserMenu.set(false);
   }
+  navigateToProfile(): void {
+    this.showUserMenu.set(false);
+    const url = this.router.url;
+    if (url.startsWith('/admin')) {
+      this.router.navigate(['/admin/profile']);
+    } else if (url.startsWith('/storekeeper')) {
+      this.router.navigate(['/storekeeper/profile']);
+    } else if (url.startsWith('/manager')) {
+      this.router.navigate(['/manager/profile']);
+    } else if (url.startsWith('/compliance-officer')) {
+      this.router.navigate(['/compliance-officer/profile']);
+    } else {
+      this.router.navigate(['/employee/dashboard/profile']);
+    }
+  }
+
   toggleUserMenu() {
     this.showUserMenu.set(!this.showUserMenu());
     this.showNotifications.set(false);

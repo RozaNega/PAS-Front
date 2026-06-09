@@ -22,5 +22,5 @@ export function resolveApiBaseUrl(): string {
 }
 
 export function pasApiUrlHint(): string {
-  return `If the API is not reachable, set the base URL then reload: localStorage.setItem('${PAS_API_URL_STORAGE_KEY}', 'http://localhost:5030/api')`;
+  return `If the API is not reachable, set the base URL then reload: localStorage.setItem('${PAS_API_URL_STORAGE_KEY}', 'http://localhost:5028/api')`;
 }

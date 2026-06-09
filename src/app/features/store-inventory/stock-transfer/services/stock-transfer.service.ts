@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { Observable, map, catchError, of } from 'rxjs';
 import { ApiService } from '../../../../core/services/api.service';
 import { ApiResponseModel } from '../../../../core/models/api-response.model';
+import { normalizePasListResponse, toCamelCaseDeep } from '../../../../core/utils/pas-api-json.util';
 
 export interface TransferItem {
   sku: string;
@@ -119,18 +120,19 @@ export class StockTransferService {
       pageSize: 100
     }).pipe(
       map((res: any) => {
-        if (res.success !== false && Array.isArray(res.data)) {
-          const items = (res.data as any[]).map(item => ({
+        const normalized = normalizePasListResponse<any>(res);
+        if (normalized.success !== false && Array.isArray(normalized.data)) {
+          const items = (normalized.data as any[]).map(item => ({
             sku: item.sku || '',
             itemId: item.itemId || '',
             name: item.itemName || '',
-            available: item.currentStock || 0,
+            available: item.currentQuantity || 0,
             toTransfer: 0,
             price: item.unitPrice || 0
           }));
-          return { ...res, data: items } as ApiResponseModel<TransferItem[]>;
+          return { ...normalized, data: items } as ApiResponseModel<TransferItem[]>;
         }
-        return { ...res, data: [] } as ApiResponseModel<TransferItem[]>;
+        return { ...normalized, data: [] } as ApiResponseModel<TransferItem[]>;
       }),
       catchError(() => {
         const mockItems = this.createMockItems().map(item => ({
@@ -153,7 +155,7 @@ export class StockTransferService {
 
   // Create stock transfer
   createTransfer(request: StockTransferRequest): Observable<ApiResponseModel<StockTransferResponse>> {
-    return this.apiService.post<StockTransferResponse>('StockTransfers', request).pipe(
+    return this.apiService.post<StockTransferResponse>('TransferRecords', request).pipe(
       catchError((error: any) => {
         console.error('Transfer creation failed:', error);
         return of({
@@ -174,15 +176,15 @@ export class StockTransferService {
     dateFrom?: string;
     dateTo?: string;
   }): Observable<ApiResponseModel<TransferHistory[]>> {
-    return this.apiService.get<unknown>('StockTransfers', filters).pipe(
+    return this.apiService.get<unknown>('TransferRecords', filters).pipe(
       map((res: any) => {
         if (res.success !== false && Array.isArray(res.data)) {
           const history = (res.data as any[]).map(transfer => ({
             id: transfer.id || '',
-            date: new Date(transfer.createdAt).toLocaleDateString() || '',
-            fromTo: `${transfer.fromWarehouse?.warehouseName || 'WH'} → ${transfer.toWarehouse?.warehouseName || 'WH'}`,
-            items: transfer.items?.length || 0,
-            qty: transfer.items?.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0) || 0,
+            date: new Date(transfer.createdAt || transfer.transferDate).toLocaleDateString() || '',
+            fromTo: `${transfer.fromWarehouse?.warehouseName || transfer.fromLocation?.warehouseName || 'WH'} → ${transfer.toWarehouse?.warehouseName || transfer.toLocation?.warehouseName || 'WH'}`,
+            items: transfer.items?.length || 1,
+            qty: transfer.items?.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0) || transfer.quantity || 0,
             status: transfer.status || 'pending',
             transferNumber: transfer.transferNumber || ''
           }));

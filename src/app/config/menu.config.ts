@@ -93,6 +93,11 @@ export const adminMenuConfig: MenuItem[] = [
     permissions: ['view_notifications'],
   },
   {
+    label: 'Profile',
+    icon: 'bi bi-person-circle',
+    route: '/admin/profile',
+  },
+  {
     label: 'System Settings',
     icon: 'bi bi-gear',
     children: [
@@ -158,6 +163,11 @@ export const storekeeperMenuConfig: MenuItem[] = [
     icon: 'bi bi-bell',
     route: '/storekeeper/notifications',
     permissions: ['view_notifications'],
+  },
+  {
+    label: 'Profile',
+    icon: 'bi bi-person-circle',
+    route: '/storekeeper/profile',
   },
 ];
 
