@@ -33,6 +33,13 @@ export const routes: Routes = [
         path: 'dashboard',
         loadComponent: () => import('./features/dashboard/pages/admin/admin-dashboard.component').then(m => m.AdminDashboardComponent),
       },
+      {
+        path: 'profile',
+        loadComponent: () =>
+          import('./features/dashboard/pages/admin-profile/admin-profile.component').then(
+            (m) => m.AdminProfileComponent,
+          ),
+      },
       // Property Management
       {
         path: 'properties',
@@ -357,6 +364,13 @@ export const routes: Routes = [
       {
         path: 'catalog/categories',
         loadComponent: () => import('./features/store-inventory/categories/pages/categories.component').then(m => m.CategoriesComponent),
+      },
+      {
+        path: 'profile',
+        loadComponent: () =>
+          import('./features/dashboard/pages/storekeeper-profile/storekeeper-profile.component').then(
+            (m) => m.StorekeeperProfileComponent,
+          ),
       },
       // Reports (unified page with tabs)
       {

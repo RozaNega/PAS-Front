@@ -9,6 +9,8 @@ export interface Notification {
   isRead: boolean;
   sentDate: Date;
   type?: string;
+  title?: string;
+  actionUrl?: string;
   createdAt?: Date;
   updatedAt?: Date;
   isDeleted?: boolean;

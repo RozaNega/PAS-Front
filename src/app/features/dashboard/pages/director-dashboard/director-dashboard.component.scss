@@ -1,0 +1,22 @@
+.director-dashboard {
+  .summary-card {
+    transition: transform 0.2s ease;
+    &:hover { transform: translateY(-2px); }
+  }
+  .summary-icon {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .spin { animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .table > :not(caption) > * > * { vertical-align: middle; }
+  .badge.status-success { background-color: #d1fae5; color: #065f46; }
+  .badge.status-warning { background-color: #fef3c7; color: #92400e; }
+  .badge.status-danger { background-color: #fee2e2; color: #991b1b; }
+  .badge.status-info { background-color: #dbeafe; color: #1e40af; }
+  .alert-critical { background-color: #fee2e2; color: #991b1b; }
+  .alert-warning { background-color: #fef3c7; color: #92400e; }
+}

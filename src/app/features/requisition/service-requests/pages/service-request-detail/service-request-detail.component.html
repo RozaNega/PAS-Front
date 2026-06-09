@@ -22,9 +22,9 @@
         <div class="header-left">
           <div class="sr-title-row">
             <h1 class="sr-number">{{ sr.srNumber }}</h1>
-            <span class="status-chip" [attr.data-status]="sr.status?.toLowerCase()">{{ sr.status }}</span>
+            <span class="status-chip" [attr.data-status]="sr.status.toLowerCase()">{{ sr.status }}</span>
             @if (sr.urgency) {
-              <span class="urgency-chip" [attr.data-urgency]="sr.urgency?.toLowerCase()">{{ sr.urgency }}</span>
+              <span class="urgency-chip" [attr.data-urgency]="sr.urgency.toLowerCase()">{{ sr.urgency }}</span>
             }
           </div>
           <div class="sr-meta">
@@ -138,7 +138,7 @@
                 </div>
                 <div class="detail-item">
                   <span class="detail-label">Status</span>
-                  <span class="detail-value"><span class="status-chip" [attr.data-status]="sr.status?.toLowerCase()">{{ sr.status }}</span></span>
+                  <span class="detail-value"><span class="status-chip" [attr.data-status]="sr.status.toLowerCase()">{{ sr.status }}</span></span>
                 </div>
                 <div class="detail-item">
                   <span class="detail-label">Urgency</span>
@@ -164,7 +164,7 @@
           <div class="card">
             <div class="card-head">
               <h3><i class="bi bi-box-seam"></i> Requested Items</h3>
-              <span class="count-badge">{{ sr.items?.length || 0 }} items</span>
+              <span class="count-badge">{{ sr.items.length || 0 }} items</span>
             </div>
             <div class="card-body no-padding">
               <table class="data-table">

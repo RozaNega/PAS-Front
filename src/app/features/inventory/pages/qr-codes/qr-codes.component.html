@@ -1,94 +1,113 @@
-<div class="qr-codes-page">
-  <div class="page-header" *ngIf="!printMode()">
-    <div class="header-content">
-      <div class="header-left">
-        <h1>Generate QR Codes</h1>
-        <p>QR codes for inventory tracking and scanning</p>
+<div class="qr-page">
+  <!-- ── Header ── -->
+  <div class="qr-header" [class.print-hide]="printMode()">
+    <div class="header-left">
+      <div class="header-icon"><i class="bi bi-qr-code"></i></div>
+      <div>
+        <h1>QR Codes</h1>
+        <p *ngIf="items().length">{{ items().length }} item(s) &middot; Generated locally</p>
+        <p *ngIf="!items().length">Generate and manage QR codes</p>
       </div>
-      <div class="header-actions">
-        <button type="button" class="btn btn-outline-primary" (click)="print()">
-          <i class="bi bi-printer"></i> Print
+    </div>
+    <div class="header-actions" *ngIf="items().length">
+      <button class="btn btn-sm btn-outline" (click)="showManual.update(v => !v)" [class.active]="showManual()">
+        <i class="bi bi-pencil-square"></i> Manual
+      </button>
+      <button class="btn btn-sm btn-outline" (click)="downloadAll()" [disabled]="loading()">
+        <i class="bi bi-download"></i> Download All
+      </button>
+      <button class="btn btn-sm btn-outline" (click)="print()" [disabled]="loading()">
+        <i class="bi bi-printer"></i> Print
+      </button>
+      <button class="btn btn-sm btn-outline-secondary" (click)="clearItems()" *ngIf="items().length">
+        <i class="bi bi-trash3"></i> Clear
+      </button>
+      <button class="btn btn-sm btn-outline-secondary" (click)="cancel()">
+        <i class="bi bi-arrow-left"></i> Back
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Manual QR Input ── -->
+  <div class="manual-panel" *ngIf="showManual() && items().length">
+    <div class="manual-row">
+      <input type="text" class="manual-input" placeholder="Enter any text, SKU, or URL to generate a QR code…"
+             [(ngModel)]="manualInput" (keyup.enter)="generateManual()" />
+      <button class="btn btn-primary" (click)="generateManual()" [disabled]="!manualInput().trim() || manualGenerating()">
+        <i class="bi bi-qr-code"></i> Generate
+      </button>
+    </div>
+    <div class="manual-preview" *ngIf="manualQrUrl()">
+      <img [src]="manualQrUrl()" alt="Manual QR" class="manual-qr-img" />
+      <div class="manual-preview-actions">
+        <button class="btn btn-sm btn-primary" (click)="addManualAsItem()">
+          <i class="bi bi-plus-lg"></i> Add to List
         </button>
-        <button type="button" class="btn btn-outline-info" (click)="download()">
+        <a [href]="manualQrUrl()" download="qr-manual.png" class="btn btn-sm btn-outline">
           <i class="bi bi-download"></i> Download
-        </button>
-        <button type="button" class="btn btn-outline-secondary" (click)="cancel()">
-          <i class="bi bi-x"></i> Close
-        </button>
+        </a>
       </div>
     </div>
   </div>
 
-  <!-- Loading State -->
-  <div class="loading-container" *ngIf="loading()">
-    <div class="spinner-border text-primary" role="status">
-      <span class="visually-hidden">Generating...</span>
-    </div>
-    <p>Generating QR codes...</p>
+  <!-- ── Loading ── -->
+  <div class="qr-loading" *ngIf="loading()">
+    <div class="spinner"></div>
+    <p>Generating QR codes…</p>
   </div>
 
-  <!-- QR Codes Grid -->
-  <div class="qr-codes-grid" *ngIf="!loading()">
-    <div class="qr-code-card" *ngFor="let item of items()">
-      <div class="qr-code-container">
-        <img [src]="getQRCode(item.id)" [alt]="'QR Code for ' + item.itemName" class="qr-image">
+  <!-- ── Search Bar ── -->
+  <div class="qr-search" *ngIf="items().length && !loading()">
+    <i class="bi bi-search"></i>
+    <input type="text" class="search-input" placeholder="Search by name or SKU…" [(ngModel)]="searchTerm" />
+    <button class="search-clear" *ngIf="searchTerm()" (click)="searchTerm.set('')"><i class="bi bi-x-lg"></i></button>
+  </div>
+
+  <!-- ── QR Grid ── -->
+  <div class="qr-grid" *ngIf="!loading() && filteredItems().length">
+    <div class="qr-card" *ngFor="let item of filteredItems()">
+      <div class="qr-card-img">
+        <img *ngIf="item.dataUrl" [src]="item.dataUrl" [alt]="item.itemName" />
+        <div class="qr-card-placeholder" *ngIf="!item.dataUrl">
+          <i class="bi bi-hourglass-split"></i>
+          <span>Generating…</span>
+        </div>
       </div>
-      <div class="qr-info">
+      <div class="qr-card-body">
         <h4>{{ item.itemName }}</h4>
-        <p class="sku">{{ item.sku }}</p>
-        <p class="warehouse">{{ item.warehouseName }}</p>
-        <p class="location">{{ item.shelfLocation }}</p>
+        <p class="qr-sku">{{ item.sku }}</p>
+        <p class="qr-loc" *ngIf="item.warehouse || item.shelf">
+          {{ item.warehouse }}{{ item.warehouse && item.shelf ? ' · ' : '' }}{{ item.shelf }}
+        </p>
+      </div>
+      <div class="qr-card-footer">
+        <button class="btn btn-xs btn-outline" (click)="downloadSingle(item)" title="Download">
+          <i class="bi bi-download"></i>
+        </button>
       </div>
     </div>
   </div>
 
-  <!-- Empty State -->
-  <div class="empty-state" *ngIf="!loading() && items().length === 0">
-    <i class="bi bi-qr-code"></i>
-    <p>No items selected</p>
+  <!-- ── No Results ── -->
+  <div class="qr-empty" *ngIf="!loading() && items().length && !filteredItems().length">
+    <i class="bi bi-search"></i>
+    <h3>No matches</h3>
+    <p>Try a different search term.</p>
+    <button class="btn btn-sm btn-outline" (click)="searchTerm.set('')">Clear Search</button>
   </div>
+
+  <!-- ── Empty State ── -->
+  <div class="qr-empty qr-empty-start" *ngIf="!loading() && !items().length">
+    <div class="empty-icon"><i class="bi bi-qr-code"></i></div>
+    <h3>No QR Codes Yet</h3>
+    <p>Select inventory items from the stock overview or item catalog to generate QR codes.</p>
+    <div class="empty-actions">
+      <button class="btn btn-primary" (click)="cancel()">
+        <i class="bi bi-building"></i> Go to Inventory
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Print notice ── -->
+  <div class="print-notice" *ngIf="printMode()"><p>Preparing for print…</p></div>
 </div>
-
-<!-- Print Stylesheet -->
-<style media="print">
-  .page-header {
-    display: none;
-  }
-
-  .qr-codes-page {
-    padding: 0;
-  }
-
-  .qr-codes-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 0;
-    page-break-inside: avoid;
-  }
-
-  .qr-code-card {
-    page-break-inside: avoid;
-    border: 1px solid #ccc;
-    padding: 20px;
-    text-align: center;
-
-    .qr-image {
-      width: 150px;
-      height: 150px;
-    }
-
-    .qr-info {
-      margin-top: 10px;
-      font-size: 11px;
-
-      h4 {
-        margin: 5px 0;
-        font-size: 12px;
-      }
-
-      p {
-        margin: 3px 0;
-      }
-    }
-  }
-</style>

@@ -1,0 +1,241 @@
+<div class="po-detail-page req-page">
+  <header class="req-hero">
+    <div class="req-hero__text">
+      <p class="req-hero__eyebrow">Purchase order</p>
+      <h1 class="req-hero__title">{{ po()?.poNumber || 'Loading&hellip;' }}</h1>
+    </div>
+    <div class="req-hero__actions">
+      <button type="button" class="btn btn-outline-secondary" (click)="goBack()">
+        <i class="bi bi-arrow-left"></i>
+        Back to list
+      </button>
+      <button type="button" class="btn btn-outline-danger" (click)="cancel()" *ngIf="po() && (statusEquals(po()!, 'Draft') || statusEquals(po()!, 'Pending Approval'))">
+        <i class="bi bi-slash-circle"></i>
+        Cancel PO
+      </button>
+    </div>
+  </header>
+
+  <div class="req-loading" *ngIf="loading()">
+    <div class="spinner-border text-primary" role="status" aria-hidden="true"></div>
+    <span>Loading purchase order details&hellip;</span>
+  </div>
+
+  <div class="req-alert" *ngIf="error() && !loading()" role="alert">
+    <i class="bi bi-exclamation-octagon-fill flex-shrink-0"></i>
+    <span class="flex-grow-1">{{ error() }}</span>
+    <button type="button" class="btn btn-sm btn-outline-danger" (click)="goBack()">Go back</button>
+  </div>
+
+  <div class="req-content" *ngIf="po() && !loading()">
+    <div class="row g-4">
+      <div class="col-lg-8">
+        <section class="card mb-4">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">PO details</h5>
+            <span class="req-badge req-badge--lg" [ngClass]="getStatusClass(po()!.status)">
+              {{ po()!.status }}
+            </span>
+          </div>
+          <div class="card-body">
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <dl class="mb-0">
+                  <dt>Supplier</dt>
+                  <dd class="fw-semibold">{{ po()!.supplierName }}</dd>
+                  <dt>Created by</dt>
+                  <dd>{{ po()!.createdBy }}</dd>
+                  <dt>Created date</dt>
+                  <dd>{{ formatDate(po()!.createdDate) }}</dd>
+                </dl>
+              </div>
+              <div class="col-md-6">
+                <dl class="mb-0">
+                  <dt>Total cost</dt>
+                  <dd class="fw-semibold fs-5">{{ formatCurrency(po()!.totalCost) }}</dd>
+                  <dt>Requires director approval</dt>
+                  <dd>
+                    <span class="badge" [ngClass]="po()!.requiresDirectorApproval ? 'bg-warning' : 'bg-secondary'">
+                      {{ po()!.requiresDirectorApproval ? 'Yes' : 'No' }}
+                    </span>
+                  </dd>
+                </dl>
+              </div>
+            </div>
+
+            <div class="row" *ngIf="po()!.notes">
+              <div class="col-12">
+                <dl>
+                  <dt>Notes</dt>
+                  <dd>{{ po()!.notes }}</dd>
+                </dl>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="card mb-4">
+          <div class="card-header">
+            <h5 class="mb-0">Items ({{ po()!.items.length }})</h5>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-striped mb-0">
+                <thead>
+                  <tr>
+                    <th>Item</th>
+                    <th>SKU</th>
+                    <th class="text-end">Qty</th>
+                    <th class="text-end">Unit cost</th>
+                    <th class="text-end">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let item of po()!.items; trackBy: trackByItemId">
+                    <td>{{ item.itemName }}</td>
+                    <td><code>{{ item.sku }}</code></td>
+                    <td class="text-end">{{ item.quantity }} {{ item.unitOfMeasure }}</td>
+                    <td class="text-end">{{ formatCurrency(item.unitCost) }}</td>
+                    <td class="text-end fw-semibold">{{ formatCurrency(item.totalCost) }}</td>
+                  </tr>
+                </tbody>
+                <tfoot>
+                  <tr class="fw-bold">
+                    <td colspan="4" class="text-end">Total</td>
+                    <td class="text-end">{{ formatCurrency(po()!.totalCost) }}</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section class="card mb-4">
+          <div class="card-header">
+            <h5 class="mb-0">Approval chain</h5>
+          </div>
+          <div class="card-body">
+            <ul class="list-unstyled mb-0">
+              <li class="mb-2 d-flex align-items-center gap-2">
+                <i class="bi bi-person-circle text-primary"></i>
+                <span>Created by: <strong>{{ po()!.createdBy }}</strong></span>
+                <span class="text-muted">({{ formatDate(po()!.createdDate) }})</span>
+              </li>
+              <li class="mb-2 d-flex align-items-center gap-2" *ngIf="po()!.approvedBy">
+                <i class="bi bi-check-circle-fill text-success"></i>
+                <span>Approved by: <strong>{{ po()!.approvedBy }}</strong></span>
+                <span class="text-muted">({{ formatDate(po()!.approvedDate) }})</span>
+              </li>
+              <li class="mb-2 d-flex align-items-center gap-2" *ngIf="po()!.directorApprovedBy">
+                <i class="bi bi-check-circle-fill text-warning"></i>
+                <span>Director approved by: <strong>{{ po()!.directorApprovedBy }}</strong></span>
+                <span class="text-muted">({{ formatDate(po()!.directorApprovedDate) }})</span>
+              </li>
+              <li class="mb-2 d-flex align-items-center gap-2" *ngIf="po()!.rejectedBy">
+                <i class="bi bi-x-circle-fill text-danger"></i>
+                <span>Rejected by: <strong>{{ po()!.rejectedBy }}</strong></span>
+                <span class="text-muted">({{ formatDate(po()!.rejectedDate) }})</span>
+                <span *ngIf="po()!.rejectedReason" class="text-muted">&mdash; {{ po()!.rejectedReason }}</span>
+              </li>
+            </ul>
+          </div>
+        </section>
+      </div>
+
+      <div class="col-lg-4">
+        <section class="card mb-4">
+          <div class="card-header">
+            <h5 class="mb-0">Actions</h5>
+          </div>
+          <div class="card-body d-flex flex-column gap-2">
+            <button type="button" class="btn btn-success w-100" (click)="approve()" *ngIf="statusEquals(po()!, 'Pending Approval')">
+              <i class="bi bi-check-lg"></i>
+              Approve
+            </button>
+            <button type="button" class="btn btn-danger w-100" (click)="openRejectModal()" *ngIf="statusEquals(po()!, 'Pending Approval')">
+              <i class="bi bi-x-lg"></i>
+              Reject
+            </button>
+            <button type="button" class="btn btn-primary w-100" (click)="markOrdered()" *ngIf="statusEquals(po()!, 'Approved')">
+              <i class="bi bi-truck"></i>
+              Mark Ordered
+            </button>
+            <button type="button" class="btn btn-success w-100" (click)="markReceived()" *ngIf="statusEquals(po()!, 'Ordered')">
+              <i class="bi bi-box-seam"></i>
+              Mark Received
+            </button>
+          </div>
+        </section>
+
+        <section class="card mb-4">
+          <div class="card-header">
+            <h5 class="mb-0">Timeline</h5>
+          </div>
+          <div class="card-body">
+            <ul class="list-unstyled mb-0">
+              <li class="mb-2 d-flex align-items-center gap-2">
+                <i class="bi bi-circle-fill" [ngClass]="po()!.status !== 'Draft' ? 'text-success' : 'text-muted'" style="font-size: 0.6rem;"></i>
+                <span>Created</span>
+                <span class="text-muted ms-auto">{{ formatDate(po()!.createdDate) }}</span>
+              </li>
+              <li class="mb-2 d-flex align-items-center gap-2" *ngIf="po()!.approvedDate || po()!.rejectedDate">
+                <i class="bi bi-circle-fill" [ngClass]="po()!.status === 'Approved' || po()!.status === 'Ordered' || po()!.status === 'Received' || po()!.status === 'Completed' ? 'text-success' : 'text-danger'" style="font-size: 0.6rem;"></i>
+                <span>{{ po()!.approvedDate ? 'Approved' : 'Rejected' }}</span>
+                <span class="text-muted ms-auto">{{ formatDate(po()!.approvedDate || po()!.rejectedDate) }}</span>
+              </li>
+              <li class="mb-2 d-flex align-items-center gap-2" *ngIf="po()!.orderedDate">
+                <i class="bi bi-circle-fill text-info" style="font-size: 0.6rem;"></i>
+                <span>Ordered</span>
+                <span class="text-muted ms-auto">{{ formatDate(po()!.orderedDate) }}</span>
+              </li>
+              <li class="mb-2 d-flex align-items-center gap-2" *ngIf="po()!.receivedDate">
+                <i class="bi bi-circle-fill text-primary" style="font-size: 0.6rem;"></i>
+                <span>Received</span>
+                <span class="text-muted ms-auto">{{ formatDate(po()!.receivedDate) }}</span>
+              </li>
+              <li class="mb-2 d-flex align-items-center gap-2" *ngIf="po()!.completedDate">
+                <i class="bi bi-circle-fill text-success" style="font-size: 0.6rem;"></i>
+                <span>Completed</span>
+                <span class="text-muted ms-auto">{{ formatDate(po()!.completedDate) }}</span>
+              </li>
+            </ul>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reject modal overlay -->
+  <div class="modal-backdrop fade show" *ngIf="showRejectModal()" (click)="closeRejectModal()"></div>
+  <div class="modal fade show d-block" *ngIf="showRejectModal()" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Reject purchase order</h5>
+          <button type="button" class="btn-close" (click)="closeRejectModal()"></button>
+        </div>
+        <div class="modal-body">
+          <p>Are you sure you want to reject <strong>{{ po()?.poNumber }}</strong>?</p>
+          <div class="mb-3">
+            <label for="rejectReason" class="form-label">Reason for rejection</label>
+            <textarea
+              id="rejectReason"
+              class="form-control"
+              rows="3"
+              [(ngModel)]="rejectReason"
+              placeholder="Enter the reason for rejection&hellip;"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="closeRejectModal()">Cancel</button>
+          <button type="button" class="btn btn-danger" [disabled]="!rejectReason().trim()" (click)="confirmReject()">
+            <i class="bi bi-x-lg"></i>
+            Reject
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="req-footer">AFRICOM Asset Management Platform</footer>
+</div>
