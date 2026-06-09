@@ -47,6 +47,7 @@ export class SafetyBoxListComponent {
   selectedBox = signal<SafetyBox | null>(null);
   boxToDelete = signal<SafetyBox | null>(null);
 
+  locations = signal<Array<{ id: string; name: string }>>([]);
   locationOptions = signal<string[]>(['All']);
   mockUsed = false;
 
@@ -149,20 +150,27 @@ export class SafetyBoxListComponent {
     this.locationService.getAll().subscribe({
       next: (response) => {
         if (response.success && response.data) {
+          this.locations.set(response.data.map(l => ({ id: l.id, name: l.name })));
           const names = response.data.map(l => l.name);
           this.locationOptions.set(['All', ...names]);
         }
+        this.loadSafetyBoxes();
       },
-      error: () => {}
+      error: () => {
+        this.loadSafetyBoxes();
+      }
     });
+  }
 
+  private loadSafetyBoxes(): void {
     this.safetyBoxService.getAll().subscribe({
       next: (response) => {
         if (response.success && response.data && response.data.length > 0) {
+          const locs = this.locations();
           const boxes: SafetyBox[] = response.data.map((dto: SafetyBoxDto) => ({
             id: dto.id,
             boxNumber: dto.boxNumber,
-            location: dto.locationId,
+            location: locs.find(l => l.id === dto.locationId)?.name || dto.locationId,
             totalShelves: dto.capacity,
             occupiedShelves: dto.currentCount,
             status: this.calcStatus(dto.currentCount, dto.capacity),
@@ -263,7 +271,7 @@ export class SafetyBoxListComponent {
     this.selectedBox.set(box);
     this.modalForm = {
       boxNumber: box.boxNumber,
-      location: box.location,
+      location: this.getLocationNameById(box.location),
       totalShelves: box.totalShelves,
       description: box.description,
       keyCardRequired: box.keyCardRequired,
@@ -306,55 +314,117 @@ export class SafetyBoxListComponent {
     return Object.keys(errors).length === 0;
   }
 
+  private getLocationIdByName(name: string): string {
+    const loc = this.locations().find(l => l.name === name);
+    return loc ? loc.id : name;
+  }
+
+  private getLocationNameById(id: string): string {
+    const loc = this.locations().find(l => l.id === id);
+    return loc ? loc.name : id;
+  }
+
   saveBox(): void {
     if (!this.validateForm()) return;
     const data = this.modalForm;
     const editing = this.selectedBox();
+    const locationId = this.getLocationIdByName(data.location);
 
     if (editing) {
-      const updated: SafetyBox = {
-        ...editing,
+      this.safetyBoxService.update(editing.id, {
         boxNumber: data.boxNumber,
-        location: data.location,
+        locationId: locationId,
         totalShelves: data.totalShelves,
         description: data.description,
-        keyCardRequired: data.keyCardRequired,
-        biometricAccess: data.biometricAccess,
-        cctvMonitored: data.cctvMonitored,
-        access247: data.access247,
-        accessCode: data.accessCode,
-      };
-      this.safetyBoxes.update(boxes => boxes.map(b => b.id === editing.id ? updated : b));
-      this.notification.set({ type: 'success', message: `Safety box "${updated.boxNumber}" updated.` });
+      }).subscribe({
+        next: (response) => {
+          if (response.success) {
+            const updated: SafetyBox = {
+              ...editing,
+              boxNumber: data.boxNumber,
+              location: data.location,
+              totalShelves: data.totalShelves,
+              description: data.description,
+              keyCardRequired: data.keyCardRequired,
+              biometricAccess: data.biometricAccess,
+              cctvMonitored: data.cctvMonitored,
+              access247: data.access247,
+              accessCode: data.accessCode,
+            };
+            this.safetyBoxes.update(boxes => boxes.map(b => b.id === editing.id ? updated : b));
+            this.notification.set({ type: 'success', message: `Safety box "${updated.boxNumber}" updated.` });
+          } else {
+            this.notification.set({ type: 'error', message: response.message || 'Failed to update safety box.' });
+          }
+          this.closeModal();
+        },
+        error: (error: unknown) => {
+          console.error('Error updating safety box:', error);
+          this.notification.set({ type: 'error', message: 'Failed to update safety box. Please try again.' });
+          this.closeModal();
+        },
+      });
     } else {
-      const newBox: SafetyBox = {
-        id: 'sb-' + String(Date.now()).slice(-6),
+      this.safetyBoxService.create({
         boxNumber: data.boxNumber,
-        location: data.location,
+        locationId: locationId,
         totalShelves: data.totalShelves,
-        occupiedShelves: 0,
-        status: 'Empty',
         description: data.description,
-        keyCardRequired: data.keyCardRequired,
-        biometricAccess: data.biometricAccess,
-        cctvMonitored: data.cctvMonitored,
-        access247: data.access247,
-        accessCode: data.accessCode,
-        createdAt: new Date().toISOString(),
-      };
-      this.safetyBoxes.update(boxes => [...boxes, newBox]);
-      this.notification.set({ type: 'success', message: `Safety box "${newBox.boxNumber}" created.` });
+      }).subscribe({
+        next: (response) => {
+          if (response.success) {
+            const newBox: SafetyBox = {
+              id: response.data || 'sb-' + String(Date.now()).slice(-6),
+              boxNumber: data.boxNumber,
+              location: data.location,
+              totalShelves: data.totalShelves,
+              occupiedShelves: 0,
+              status: 'Empty',
+              description: data.description,
+              keyCardRequired: data.keyCardRequired,
+              biometricAccess: data.biometricAccess,
+              cctvMonitored: data.cctvMonitored,
+              access247: data.access247,
+              accessCode: data.accessCode,
+              createdAt: new Date().toISOString(),
+            };
+            this.safetyBoxes.update(boxes => [...boxes, newBox]);
+            this.notification.set({ type: 'success', message: `Safety box "${newBox.boxNumber}" created.` });
+          } else {
+            this.notification.set({ type: 'error', message: response.message || 'Failed to create safety box.' });
+          }
+          this.closeModal();
+        },
+        error: (error: unknown) => {
+          console.error('Error creating safety box:', error);
+          this.notification.set({ type: 'error', message: 'Failed to create safety box. Please try again.' });
+          this.closeModal();
+        },
+      });
     }
-    this.closeModal();
   }
 
   confirmDelete(): void {
     const box = this.boxToDelete();
     if (!box) return;
-    this.safetyBoxes.update(boxes => boxes.filter(b => b.id !== box.id));
-    this.notification.set({ type: 'success', message: `Safety box "${box.boxNumber}" deleted.` });
-    this.closeModal();
-    this.page.set(1);
+    this.safetyBoxService.delete(box.id).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.safetyBoxes.update(boxes => boxes.filter(b => b.id !== box.id));
+          this.notification.set({ type: 'success', message: `Safety box "${box.boxNumber}" deleted.` });
+        } else {
+          this.notification.set({ type: 'error', message: response.message || 'Failed to delete safety box.' });
+        }
+        this.closeModal();
+        this.page.set(1);
+      },
+      error: (error: unknown) => {
+        console.error('Error deleting safety box:', error);
+        this.notification.set({ type: 'error', message: 'Failed to delete safety box. Please try again.' });
+        this.closeModal();
+        this.page.set(1);
+      },
+    });
   }
 
   exportCSV(): void {

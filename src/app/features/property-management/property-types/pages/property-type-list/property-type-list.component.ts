@@ -1,15 +1,20 @@
-import { Component, signal, computed, inject } from '@angular/core';
+import { Component, signal, computed, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, Validators } from '@angular/forms';
+import { finalize } from 'rxjs';
+
+import { PropertyTypesService, PropertyTypeDto } from '../../../../../core/services/property-types.service';
 
 interface PropertyType {
   id: string;
   name: string;
-  icon: string;
+  description: string;
   propertiesCount: number;
   customFields: number;
   status: 'Active' | 'Inactive';
+  icon: string;
 }
 
 interface CustomField {
@@ -44,32 +49,25 @@ interface BarItem {
 
 const BAR_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6'];
 
-const MOCK_TYPES: PropertyType[] = [
-  { id: '1', name: 'Computer', icon: '💻', propertiesCount: 234, customFields: 5, status: 'Active' },
-  { id: '2', name: 'Printer', icon: '🖨️', propertiesCount: 56, customFields: 3, status: 'Active' },
-  { id: '3', name: 'Furniture', icon: '🪑', propertiesCount: 189, customFields: 4, status: 'Active' },
-  { id: '4', name: 'Vehicle', icon: '🚗', propertiesCount: 23, customFields: 6, status: 'Active' },
-  { id: '5', name: 'Machinery', icon: '⚙️', propertiesCount: 67, customFields: 7, status: 'Inactive' },
-  { id: '6', name: 'Office Equipment', icon: '📠', propertiesCount: 145, customFields: 2, status: 'Active' },
-  { id: '7', name: 'Software License', icon: '💿', propertiesCount: 89, customFields: 4, status: 'Active' }
-];
-
 @Component({
   selector: 'app-property-type-list',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule],
   templateUrl: './property-type-list.component.html',
   styleUrls: ['./property-type-list.component.scss']
 })
-export class PropertyTypeListComponent {
+export class PropertyTypeListComponent implements OnInit {
   private router = inject(Router);
+  private readonly formBuilder = inject(FormBuilder);
+  private readonly propertyTypesService = inject(PropertyTypesService);
 
   searchTerm = signal('');
   statusFilter = signal('All');
   showModal = signal(false);
   editingType = signal<PropertyType | null>(null);
+  loading = signal(false);
 
-  propertyTypes = signal<PropertyType[]>(MOCK_TYPES);
+  propertyTypes = signal<PropertyType[]>([]);
 
   customFields = signal<CustomField[]>([
     { name: 'Processor', type: 'Text', required: true },
@@ -80,12 +78,12 @@ export class PropertyTypeListComponent {
 
   modalFormData = signal({
     name: '',
-    icon: '💻',
     description: '',
+    status: 'Active',
+    icon: '💻',
     warrantyPeriod: '12 months',
-    depreciationRate: '20% per year',
-    locationCategory: 'IT Equipment',
-    status: 'Active'
+    depreciationRate: '10% per year',
+    locationCategory: 'IT Equipment'
   });
 
   filteredTypes = computed(() => {
@@ -152,6 +150,38 @@ export class PropertyTypeListComponent {
   typeToDelete = signal<string | null>(null);
   notification = signal<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
 
+  ngOnInit(): void {
+    this.loadPropertyTypes();
+  }
+
+  loadPropertyTypes(): void {
+    this.loading.set(true);
+    this.propertyTypesService.getAll()
+      .pipe(finalize(() => this.loading.set(false)))
+      .subscribe({
+        next: (response) => {
+          if (response.success && response.data) {
+            // Handle both paginated and array responses
+            const items = Array.isArray(response.data) ? response.data : ((response.data as any)?.items || []);
+            const transformedTypes = items.map((type: any) => ({
+              id: type.id,
+              name: type.name ?? '',
+              description: type.description ?? '',
+              propertiesCount: type.propertiesCount ?? 0,
+              customFields: 0, // custom fields count not returned by API
+              status: (type.isActive !== false ? 'Active' : 'Inactive') as 'Active' | 'Inactive',
+              icon: '💻'
+            }));
+            this.propertyTypes.set(transformedTypes);
+          }
+        },
+        error: (err) => {
+          console.error('Failed to load property types:', err);
+          this.showNotification('Failed to load property types from server', 'error');
+        }
+      });
+  }
+
   onSearchChange(event: Event): void {
     const input = event.target as HTMLInputElement;
     this.searchTerm.set(input.value);
@@ -170,12 +200,12 @@ export class PropertyTypeListComponent {
     this.editingType.set(null);
     this.modalFormData.set({
       name: '',
-      icon: '💻',
       description: '',
+      status: 'Active',
+      icon: '💻',
       warrantyPeriod: '12 months',
-      depreciationRate: '20% per year',
-      locationCategory: 'IT Equipment',
-      status: 'Active'
+      depreciationRate: '10% per year',
+      locationCategory: 'IT Equipment'
     });
     this.customFields.set([]);
     this.showModal.set(true);
@@ -185,12 +215,12 @@ export class PropertyTypeListComponent {
     this.editingType.set(type);
     this.modalFormData.set({
       name: type.name,
-      icon: type.icon,
-      description: '',
+      description: type.description,
+      status: type.status,
+      icon: '💻',
       warrantyPeriod: '12 months',
-      depreciationRate: '20% per year',
-      locationCategory: 'IT Equipment',
-      status: type.status
+      depreciationRate: '10% per year',
+      locationCategory: 'IT Equipment'
     });
     this.showModal.set(true);
   }
@@ -219,26 +249,48 @@ export class PropertyTypeListComponent {
   saveType(): void {
     const data = this.modalFormData();
     const editing = this.editingType();
+    this.loading.set(true);
 
     if (editing) {
-      this.propertyTypes.update(types =>
-        types.map(t => t.id === editing.id ? { ...t, ...data, customFields: this.customFields().length, status: data.status as 'Active' | 'Inactive' } : t)
-      );
-      this.showNotification('Property type updated', 'success');
-    } else {
-      const newType: PropertyType = {
-        id: Date.now().toString(),
+      this.propertyTypesService.update({
+        id: editing.id,
         name: data.name,
-        icon: data.icon,
-        propertiesCount: 0,
-        customFields: this.customFields().length,
-        status: data.status as 'Active' | 'Inactive'
-      };
-      this.propertyTypes.update(types => [...types, newType]);
-      this.showNotification('New property type created', 'success');
+        description: data.description
+      }).pipe(finalize(() => this.loading.set(false)))
+      .subscribe({
+        next: (response) => {
+          if (response.success) {
+            this.loadPropertyTypes();
+            this.closeModal();
+            this.showNotification('Property type updated successfully', 'success');
+          } else {
+            this.showNotification('Failed to update property type: ' + response.message, 'error');
+          }
+        },
+        error: () => {
+          this.showNotification('Error updating property type', 'error');
+        }
+      });
+    } else {
+      this.propertyTypesService.create({
+        name: data.name,
+        description: data.description
+      }).pipe(finalize(() => this.loading.set(false)))
+      .subscribe({
+        next: (response) => {
+          if (response.success) {
+            this.loadPropertyTypes();
+            this.closeModal();
+            this.showNotification('Property type created successfully', 'success');
+          } else {
+            this.showNotification('Failed to create property type: ' + response.message, 'error');
+          }
+        },
+        error: () => {
+          this.showNotification('Error creating property type', 'error');
+        }
+      });
     }
-
-    this.closeModal();
   }
 
   requestDelete(id: string): void {
@@ -254,17 +306,51 @@ export class PropertyTypeListComponent {
   confirmDelete(): void {
     const id = this.typeToDelete();
     if (id) {
-      const type = this.propertyTypes().find(t => t.id === id);
-      this.propertyTypes.update(types => types.filter(t => t.id !== id));
-      this.showNotification(`Property type "${type?.name}" deleted`, 'success');
+      this.loading.set(true);
+      this.propertyTypesService.delete(id)
+        .pipe(finalize(() => this.loading.set(false)))
+        .subscribe({
+          next: (response) => {
+            if (response.success) {
+              this.propertyTypes.update(types => types.filter(t => t.id !== id));
+              this.showNotification('Property type deleted successfully', 'success');
+            } else {
+              this.showNotification('Failed to delete property type: ' + response.message, 'error');
+            }
+          },
+          error: (err) => {
+            console.error('Error deleting property type:', err);
+            this.showNotification('Error deleting property type', 'error');
+          }
+        });
     }
     this.cancelDelete();
   }
 
   toggleStatus(id: string): void {
-    this.propertyTypes.update(types =>
-      types.map(t => t.id === id ? { ...t, status: t.status === 'Active' ? 'Inactive' : 'Active' } : t)
-    );
+    const type = this.propertyTypes().find(t => t.id === id);
+    if (type) {
+      const newStatus = type.status === 'Active' ? 'Inactive' : 'Active';
+      this.loading.set(true);
+      this.propertyTypesService.update({
+        id: type.id,
+        name: type.name,
+        description: type.description
+      }).pipe(finalize(() => this.loading.set(false)))
+      .subscribe({
+        next: (response) => {
+          if (response.success) {
+            this.loadPropertyTypes();
+            this.showNotification(`Property type ${newStatus.toLowerCase()}`, 'success');
+          } else {
+            this.showNotification('Failed to update status: ' + response.message, 'error');
+          }
+        },
+        error: () => {
+          this.showNotification('Error updating status', 'error');
+        }
+      });
+    }
   }
 
   duplicateType(type: PropertyType): void {

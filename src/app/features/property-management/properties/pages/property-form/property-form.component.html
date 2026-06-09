@@ -1,4 +1,4 @@
-﻿<div class="property-form-container">
+﻿<div class="property-form-container" [formGroup]="form">
   <div class="page-header gradient-header">
     <div class="header-icon">
       <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -10,23 +10,23 @@
       <p class="subtitle">Register a new asset in the system</p>
     </div>
     <div class="header-actions">
-      <button class="btn btn-secondary" (click)="requestCancel()">
-        <i class="bi bi-x-lg"></i> Close
+      <button class="btn btn-secondary" (click)="requestCancel()" title="Close">
+        <i class="bi bi-x-lg"></i> <span>Close</span>
       </button>
     </div>
   </div>
 
   @if (notification(); as notif) {
-    <div class="notification-banner" [class.success]="notif.type === 'success'" [class.error]="notif.type === 'error'" [class.info]="notif.type === 'info'">
+    <div class="notification-banner" [class.success]="notif.type === 'success'" [class.error]="notif.type === 'error'" [class.info]="notif.type === 'info'" role="alert">
       <i class="bi" [class.bi-check-circle-fill]="notif.type === 'success'" [class.bi-exclamation-circle-fill]="notif.type === 'error'" [class.bi-info-circle-fill]="notif.type === 'info'"></i>
       <span>{{ notif.message }}</span>
-      <button class="notif-close" (click)="notification.set(null)">
+      <button class="notif-close" (click)="notification.set(null)" title="Dismiss notification">
         <i class="bi bi-x"></i>
       </button>
     </div>
   }
 
-  <div class="stepper">
+  <div class="stepper" role="navigation" aria-label="Form steps">
     @for (step of [1, 2, 3, 4]; track step) {
       <div class="step" [class.active]="currentStep() === step" [class.completed]="currentStep() > step" (click)="goToStep(step)">
         <div class="step-number" [class.active]="currentStep() === step" [class.completed]="currentStep() > step">
@@ -50,49 +50,61 @@
         <h3><i class="bi bi-info-circle"></i> Basic Information</h3>
         <div class="form-grid">
           <div class="form-field">
-            <label>Tag Number <span class="required">*</span></label>
+            <label for="tagNumber">Tag Number <span class="required">*</span></label>
             <div class="input-group">
-              <input type="text" [(ngModel)]="formData().tagNumber" placeholder="TAG-________">
-              <button class="input-btn" (click)="generateTagNumber()">
-                <i class="bi bi-arrow-clockwise"></i> Generate
+              <input type="text" id="tagNumber" formControlName="tagNumber" placeholder="TAG-________" [class.is-invalid]="isInvalid('tagNumber')" aria-required="true">
+              <button class="input-btn" type="button" (click)="generateTagNumber()" title="Generate tag number">
+                <i class="bi bi-arrow-clockwise"></i> <span>Generate</span>
               </button>
             </div>
+            @if (hasError('tagNumber', 'required')) {
+              <small class="error">Tag number is required.</small>
+            }
           </div>
           <div class="form-field">
-            <label>Property Name <span class="required">*</span></label>
-            <input type="text" [(ngModel)]="formData().propertyName" placeholder="e.g., Dell XPS Laptop">
+            <label for="propertyName">Property Name <span class="required">*</span></label>
+            <input type="text" id="propertyName" formControlName="propertyName" placeholder="e.g., Dell XPS Laptop" [class.is-invalid]="isInvalid('propertyName')" aria-required="true">
+            @if (hasError('propertyName', 'required')) {
+              <small class="error">Property name is required.</small>
+            }
           </div>
           <div class="form-field">
-            <label>Serial Number <span class="required">*</span></label>
-            <input type="text" [(ngModel)]="formData().serialNumber" placeholder="Enter serial number">
+            <label for="serialNumber">Serial Number <span class="required">*</span></label>
+            <input type="text" id="serialNumber" formControlName="serialNumber" placeholder="Enter serial number" [class.is-invalid]="isInvalid('serialNumber')" aria-required="true">
+            @if (hasError('serialNumber', 'required')) {
+              <small class="error">Serial number is required.</small>
+            }
           </div>
           <div class="form-field">
-            <label>Model Number</label>
-            <input type="text" [(ngModel)]="formData().modelNumber" placeholder="e.g., XPS 9530">
+            <label for="modelNumber">Model Number</label>
+            <input type="text" id="modelNumber" formControlName="modelNumber" placeholder="e.g., XPS 9530">
           </div>
           <div class="form-field full-width">
-            <label>Description</label>
-            <textarea [(ngModel)]="formData().description" rows="3" placeholder="Brief description of the property"></textarea>
+            <label for="description">Description</label>
+            <textarea id="description" formControlName="description" rows="3" placeholder="Brief description of the property"></textarea>
           </div>
         </div>
 
         <h3><i class="bi bi-tags"></i> Classification</h3>
         <div class="form-grid">
           <div class="form-field">
-            <label>Property Type <span class="required">*</span></label>
-            <select [(ngModel)]="formData().propertyType">
+            <label for="propertyTypeId">Property Type <span class="required">*</span></label>
+            <select id="propertyTypeId" formControlName="propertyTypeId" [class.is-invalid]="isInvalid('propertyTypeId')" aria-required="true">
               <option value="">Select Type</option>
-              @for (type of propertyTypes; track type.value) {
-                <option [value]="type.value">{{ type.icon }} {{ type.label }}</option>
+              @for (type of propertyTypes(); track type.id) {
+                <option [value]="type.id">{{ type.name }}</option>
               }
             </select>
+            @if (hasError('propertyTypeId', 'required')) {
+              <small class="error">Property type is required.</small>
+            }
           </div>
           <div class="form-field">
-            <label>Category <span class="required">*</span></label>
-            <select [(ngModel)]="formData().category">
+            <label for="propertyCategoryId">Category</label>
+            <select id="propertyCategoryId" formControlName="propertyCategoryId">
               <option value="">Select Category</option>
-              @for (cat of categories; track cat.value) {
-                <option [value]="cat.value">{{ cat.label }}</option>
+              @for (cat of categories(); track cat.id) {
+                <option [value]="cat.id">{{ cat.name }}</option>
               }
             </select>
           </div>
@@ -105,44 +117,54 @@
         <h3><i class="bi bi-currency-dollar"></i> Financial Details</h3>
         <div class="form-grid">
           <div class="form-field">
-            <label>Unit Price <span class="required">*</span></label>
+            <label for="unitPrice">Unit Price <span class="required">*</span></label>
             <div class="input-group">
               <span class="currency-prefix">ETB</span>
-              <input type="number" [(ngModel)]="formData().unitPrice" (ngModelChange)="calculateTotalValue()" placeholder="0.00">
+              <input type="number" id="unitPrice" formControlName="unitPrice" placeholder="0.00" step="0.01" min="0" [class.is-invalid]="isInvalid('unitPrice')" aria-required="true">
             </div>
+            @if (hasError('unitPrice', 'required')) {
+              <small class="error">Unit price is required.</small>
+            }
+            @if (hasError('unitPrice', 'min')) {
+              <small class="error">Unit price must be positive.</small>
+            }
           </div>
           <div class="form-field">
-            <label>Quantity <span class="required">*</span></label>
-            <input type="number" [(ngModel)]="formData().quantity" (ngModelChange)="calculateTotalValue()" min="1">
+            <label for="quantity">Quantity <span class="required">*</span></label>
+            <input type="number" id="quantity" formControlName="quantity" min="1" [class.is-invalid]="isInvalid('quantity')" aria-required="true">
+            @if (hasError('quantity', 'required')) {
+              <small class="error">Quantity is required.</small>
+            }
+            @if (hasError('quantity', 'min')) {
+              <small class="error">Quantity must be at least 1.</small>
+            }
           </div>
           <div class="form-field">
-            <label>Total Value</label>
-            <input type="text" [value]="formatCurrency(formData().totalValue)" disabled class="total-field">
+            <label for="totalValue">Total Value</label>
+            <input type="text" id="totalValue" [value]="formatCurrency(totalValue)" disabled class="total-field" readonly>
           </div>
           <div class="form-field">
-            <label>Currency</label>
-            <select [(ngModel)]="formData().currency">
+            <label for="currency">Currency</label>
+            <select id="currency" formControlName="currency">
               <option value="ETB">ETB (Birr)</option>
               <option value="USD">USD</option>
               <option value="EUR">EUR</option>
             </select>
           </div>
           <div class="form-field">
-            <label>Purchase Date <span class="required">*</span></label>
-            <input type="date" [(ngModel)]="formData().purchaseDate">
+            <label for="purchaseDate">Purchase Date <span class="required">*</span></label>
+            <input type="date" id="purchaseDate" formControlName="purchaseDate" [class.is-invalid]="isInvalid('purchaseDate')" aria-required="true">
+            @if (hasError('purchaseDate', 'required')) {
+              <small class="error">Purchase date is required.</small>
+            }
           </div>
           <div class="form-field">
-            <label>PO Number</label>
-            <input type="text" [(ngModel)]="formData().poNumber" placeholder="PO-________">
+            <label for="poNumber">PO Number</label>
+            <input type="text" id="poNumber" formControlName="poNumber" placeholder="PO-________">
           </div>
           <div class="form-field full-width">
-            <label>Supplier / Vendor</label>
-            <select [(ngModel)]="formData().supplier">
-              <option value="">Select Supplier</option>
-              @for (sup of suppliers; track sup.value) {
-                <option [value]="sup.value">{{ sup.label }}</option>
-              }
-            </select>
+            <label for="supplier">Supplier / Vendor</label>
+            <input type="text" id="supplier" formControlName="supplier" placeholder="Enter supplier name">
           </div>
         </div>
       </div>
@@ -153,34 +175,30 @@
         <h3><i class="bi bi-geo-alt"></i> Location Details</h3>
         <div class="form-grid">
           <div class="form-field full-width">
-            <label>Location <span class="required">*</span></label>
-            <select [(ngModel)]="formData().location">
+            <label for="locationId">Location <span class="required">*</span></label>
+            <select id="locationId" formControlName="locationId" [class.is-invalid]="isInvalid('locationId')" aria-required="true">
               <option value="">Select Location</option>
-              @for (loc of locations; track loc.value) {
-                <option [value]="loc.value">{{ loc.label }}</option>
+              @for (loc of locations(); track loc.id) {
+                <option [value]="loc.id">{{ loc.name }}</option>
+              }
+            </select>
+            @if (hasError('locationId', 'required')) {
+              <small class="error">Location is required.</small>
+            }
+          </div>
+          <div class="form-field full-width">
+            <label for="safetyBoxId">Safety Box</label>
+            <select id="safetyBoxId" formControlName="safetyBoxId" [attr.aria-label]="'Select safety box'">
+              <option value="">Select Box</option>
+              @for (box of safetyBoxes(); track box.id) {
+                <option [value]="box.id">{{ box.boxNumber }}</option>
               }
             </select>
           </div>
           <div class="form-field full-width">
-            <label>Safety Box</label>
-            <select [(ngModel)]="formData().safetyBox">
-              <option value="">Select Box</option>
-              @for (box of safetyBoxes; track box.value) {
-                <option [value]="box.value">{{ box.label }}</option>
-              }
-            </select>
+            <label for="shelfNumber">Shelf Number</label>
+            <input type="number" id="shelfNumber" formControlName="shelfNumber" min="0" placeholder="Enter shelf number">
           </div>
-          @if (formData().safetyBox && formData().safetyBox !== 'none') {
-            <div class="form-field full-width">
-              <label>Shelf / Bin</label>
-              <select [(ngModel)]="formData().shelf">
-                <option value="">Select Shelf</option>
-                @for (shelf of shelves; track shelf.value) {
-                  <option [value]="shelf.value">{{ shelf.label }}</option>
-                }
-              </select>
-            </div>
-          }
         </div>
       </div>
     }
@@ -190,16 +208,16 @@
         <h3><i class="bi bi-shield-check"></i> Warranty & Maintenance</h3>
         <div class="form-grid">
           <div class="form-field">
-            <label>Warranty Start</label>
-            <input type="date" [(ngModel)]="formData().warrantyStart">
+            <label for="warrantyStart">Warranty Start</label>
+            <input type="date" id="warrantyStart" formControlName="warrantyStart">
           </div>
           <div class="form-field">
-            <label>Warranty End</label>
-            <input type="date" [(ngModel)]="formData().warrantyEnd">
+            <label for="warrantyEnd">Warranty End</label>
+            <input type="date" id="warrantyEnd" formControlName="warrantyEnd">
           </div>
           <div class="form-field full-width">
-            <label>Maintenance Schedule</label>
-            <select [(ngModel)]="formData().maintenanceSchedule">
+            <label for="maintenanceSchedule">Maintenance Schedule</label>
+            <select id="maintenanceSchedule" formControlName="maintenanceSchedule">
               @for (schedule of maintenanceSchedules; track schedule.value) {
                 <option [value]="schedule.value">{{ schedule.label }}</option>
               }
@@ -210,8 +228,8 @@
         <h3><i class="bi bi-person"></i> Assignee</h3>
         <div class="form-grid">
           <div class="form-field full-width">
-            <label>Assigned To</label>
-            <select [(ngModel)]="formData().assignedTo">
+            <label for="assignedTo">Assigned To</label>
+            <select id="assignedTo" formControlName="assignedTo" [attr.aria-label]="'Select employee'">
               <option value="">Select Employee</option>
               @for (emp of employees; track emp.value) {
                 <option [value]="emp.value">{{ emp.label }}</option>
@@ -222,8 +240,8 @@
 
         <h3><i class="bi bi-paperclip"></i> Attachments</h3>
         <div class="upload-area">
-          <input type="file" multiple (change)="handleFileUpload($event)" #fileInput>
-          <div class="upload-placeholder" (click)="fileInput.click()">
+          <input type="file" id="fileInput" multiple (change)="handleFileUpload($event)" #fileInputRef>
+          <div class="upload-placeholder" (click)="fileInputRef.click()" tabindex="0" role="button" aria-label="Browse files">
             <i class="bi bi-cloud-arrow-up"></i>
             <p>Drag & drop or <span>browse files</span></p>
           </div>
@@ -233,7 +251,7 @@
                 <div class="file-item">
                   <i class="bi bi-file-earmark"></i>
                   <span>{{ file.name }}</span>
-                  <button class="btn-remove" (click)="removeFile($index)">
+                  <button class="btn-remove" (click)="removeFile($index)" [attr.aria-label]="'Remove ' + file.name">
                     <i class="bi bi-x"></i>
                   </button>
                 </div>
@@ -245,7 +263,8 @@
         <h3><i class="bi bi-pencil"></i> Notes</h3>
         <div class="form-grid">
           <div class="form-field full-width">
-            <textarea [(ngModel)]="formData().notes" rows="3" placeholder="Additional notes or remarks"></textarea>
+            <label for="notes">Notes</label>
+            <textarea id="notes" formControlName="notes" rows="3" placeholder="Additional notes or remarks"></textarea>
           </div>
         </div>
       </div>
@@ -253,23 +272,27 @@
   </div>
 
   <div class="step-footer">
-    <button class="btn btn-secondary" (click)="saveAsDraft()">
-      <i class="bi bi-save"></i> Save Draft
+    <button class="btn btn-secondary" (click)="saveAsDraft()" type="button">
+      <i class="bi bi-save"></i> <span>Save Draft</span>
     </button>
     <div class="step-nav">
       @if (currentStep() > 1) {
-        <button class="btn btn-secondary" (click)="previousStep()">
-          <i class="bi bi-arrow-left"></i> Previous
+        <button class="btn btn-secondary" (click)="previousStep()" type="button">
+          <i class="bi bi-arrow-left"></i> <span>Previous</span>
         </button>
       }
       @if (currentStep() < totalSteps) {
-        <button class="btn btn-primary" (click)="nextStep()">
-          Next <i class="bi bi-arrow-right"></i>
+        <button class="btn btn-primary" (click)="nextStep()" type="button">
+          <span>Next</span> <i class="bi bi-arrow-right"></i>
         </button>
       }
       @if (currentStep() === totalSteps) {
-        <button class="btn btn-primary" (click)="submitForm()">
-          <i class="bi bi-check-lg"></i> Submit
+        <button class="btn btn-primary" (click)="submitForm()" [disabled]="submitting" type="submit">
+          @if (!submitting) {
+            <span><i class="bi bi-check-lg"></i> <span>Submit</span></span>
+          } @else {
+            <span><i class="bi bi-hourglass-split"></i> <span>Submitting...</span></span>
+          }
         </button>
       }
     </div>
@@ -281,7 +304,7 @@
     <div class="modal-content confirm-modal" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h3>Discard Changes?</h3>
-        <button class="btn-close" (click)="cancelDismiss()">
+        <button class="btn-close" (click)="cancelDismiss()" title="Close">
           <i class="bi bi-x-lg"></i>
         </button>
       </div>
@@ -292,9 +315,9 @@
         <p>Are you sure you want to cancel?<br>Any unsaved changes will be lost.</p>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-secondary" (click)="cancelDismiss()">Stay</button>
-        <button class="btn btn-danger" (click)="cancelConfirm()">
-          <i class="bi bi-x-lg"></i> Discard
+        <button class="btn btn-secondary" (click)="cancelDismiss()" type="button">Stay</button>
+        <button class="btn btn-danger" (click)="cancelConfirm()" type="button">
+          <i class="bi bi-x-lg"></i> <span>Discard</span>
         </button>
       </div>
     </div>
@@ -309,25 +332,25 @@
           <i class="bi bi-check-circle-fill"></i>
         </div>
         <h3>Property Registered!</h3>
-        <p>Property <strong>{{ formData().tagNumber || formData().propertyName }}</strong> has been successfully registered in the system.</p>
+        <p>Property <strong>{{ form.get('tagNumber')?.value || form.get('propertyName')?.value }}</strong> has been successfully registered in the system.</p>
         <div class="success-details">
           <div class="success-detail-item">
             <span>Name</span>
-            <span>{{ formData().propertyName }}</span>
+            <span>{{ form.get('propertyName')?.value }}</span>
           </div>
           <div class="success-detail-item">
             <span>Tag</span>
-            <span>{{ formData().tagNumber || 'Auto-generated' }}</span>
+            <span>{{ form.get('tagNumber')?.value || 'Auto-generated' }}</span>
           </div>
           <div class="success-detail-item">
             <span>Value</span>
-            <span>{{ formatCurrency(formData().totalValue) }}</span>
+            <span>{{ formatCurrency(totalValue) }}</span>
           </div>
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-primary" (click)="closeSuccessModal()">
-          <i class="bi bi-check-lg"></i> Done
+        <button class="btn btn-primary" (click)="closeSuccessModal()" type="button">
+          <i class="bi bi-check-lg"></i> <span>Done</span>
         </button>
       </div>
     </div>

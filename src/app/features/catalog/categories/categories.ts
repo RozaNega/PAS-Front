@@ -122,7 +122,7 @@ export class Categories {
     });
   }
 
-  protected removeCategory(id: number): void {
+  protected removeCategory(id: number | string): void {
     if (confirm('Delete this category?')) {
       this.categoryApi.remove(id);
     }

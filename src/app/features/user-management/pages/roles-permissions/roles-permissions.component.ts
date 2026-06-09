@@ -26,6 +26,14 @@ export class RolesPermissionsComponent implements OnInit {
 
   roles = signal<RoleRow[]>([]);
 
+  // Create role form
+  newRoleName = signal('');
+  newRoleDescription = signal('');
+  newRoleColor = signal('blue');
+  copyFromRoleId = signal('');
+  saving = signal(false);
+  notification = signal<{ type: 'success' | 'error'; message: string } | null>(null);
+
   permissions = [
     {
       category: 'Dashboard',
@@ -175,6 +183,71 @@ export class RolesPermissionsComponent implements OnInit {
 
   closeCreateModal(): void {
     this.showCreateModal.set(false);
+    this.newRoleName.set('');
+    this.newRoleDescription.set('');
+    this.newRoleColor.set('blue');
+    this.copyFromRoleId.set('');
+  }
+
+  createRole(): void {
+    const name = this.newRoleName().trim();
+    if (!name) {
+      this.showNotification('error', 'Role name is required');
+      return;
+    }
+    this.saving.set(true);
+    this.rolesService.createRole({
+      name,
+      description: this.newRoleDescription(),
+    }).subscribe({
+      next: (res: any) => {
+        this.saving.set(false);
+        if (res.success && res.data) {
+          const palette = ['red', 'blue', 'green', 'gray', 'purple', 'orange'];
+          const created = res.data as any;
+          const newRow: RoleRow = {
+            id: created.id,
+            name: created.roleName || name,
+            userCount: 0,
+            color: this.newRoleColor(),
+            description: this.newRoleDescription(),
+          };
+          this.roles.update(list => [...list, newRow]);
+          this.showNotification('success', `Role "${name}" created successfully`);
+          this.closeCreateModal();
+        } else {
+          this.showNotification('error', res.message || 'Failed to create role');
+        }
+      },
+      error: (err: any) => {
+        this.saving.set(false);
+        this.showNotification('error', err?.error?.message || 'Failed to create role');
+      }
+    });
+  }
+
+  deleteRole(roleId: string, roleName: string, e: Event): void {
+    e.stopPropagation();
+    if (!confirm(`Delete role "${roleName}"? This cannot be undone.`)) return;
+    this.rolesService.deleteRole(roleId).subscribe({
+      next: (res: any) => {
+        if (res.success) {
+          this.roles.update(list => list.filter(r => r.id !== roleId));
+          if (this.selectedRole() === roleId) {
+            this.selectedRole.set(this.roles()[0]?.id ?? null);
+          }
+          this.showNotification('success', `Role "${roleName}" deleted`);
+        } else {
+          this.showNotification('error', res.message || 'Failed to delete role');
+        }
+      },
+      error: (err: any) => this.showNotification('error', err?.error?.message || 'Failed to delete role')
+    });
+  }
+
+  showNotification(type: 'success' | 'error', message: string): void {
+    this.notification.set({ type, message });
+    setTimeout(() => this.notification.set(null), 5000);
   }
 
   saveChanges(): void {

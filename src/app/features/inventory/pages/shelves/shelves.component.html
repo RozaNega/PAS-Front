@@ -19,19 +19,19 @@
     <div class="filter-row">
       <div class="filter-group">
         <label for="search">Search</label>
-        <input 
-          type="text" 
-          id="search" 
-          class="form-control" 
+        <input
+          type="text"
+          id="search"
+          class="form-control"
           [value]="searchTerm()"
           (input)="onSearch($event)"
-          placeholder="Search by shelf code, name, aisle...">
+          placeholder="Search by rack, shelf number, zone...">
       </div>
       <div class="filter-group">
         <label for="warehouse">Warehouse</label>
-        <select 
-          id="warehouse" 
-          class="form-control" 
+        <select
+          id="warehouse"
+          class="form-control"
           [value]="warehouseFilter()"
           (change)="onWarehouseFilter($event)">
           <option value="All">All Warehouses</option>
@@ -42,9 +42,9 @@
       </div>
       <div class="filter-group">
         <label for="status">Status</label>
-        <select 
-          id="status" 
-          class="form-control" 
+        <select
+          id="status"
+          class="form-control"
           [value]="statusFilter()"
           (change)="onStatusFilter($event)">
           <option *ngFor="let status of statuses" [value]="status">{{ status }}</option>
@@ -52,9 +52,9 @@
       </div>
       <div class="filter-group">
         <label for="rowsPerPage">Show</label>
-        <select 
-          id="rowsPerPage" 
-          class="form-control" 
+        <select
+          id="rowsPerPage"
+          class="form-control"
           [value]="rowsPerPage()"
           (change)="onRowsPerPageChange($event)">
           <option value="10">10</option>
@@ -90,23 +90,21 @@
 
   <!-- Content -->
   <div class="content" *ngIf="!loading()">
-    <!-- Results Info -->
     <div class="results-info">
       <span>
         Showing {{ displayRange().start }}-{{ displayRange().end }} of {{ filteredShelves().length }} shelves
       </span>
     </div>
 
-    <!-- Shelves Table -->
     <div class="table-container">
       <div class="table-responsive">
         <table class="table table-hover">
           <thead>
             <tr>
-              <th>Shelf Code</th>
-              <th>Shelf Name</th>
+              <th>Rack</th>
+              <th>Shelf #</th>
               <th>Warehouse</th>
-              <th>Location</th>
+              <th>Zone</th>
               <th>Capacity</th>
               <th>Utilization</th>
               <th>Status</th>
@@ -116,7 +114,7 @@
           </thead>
           <tbody>
             <tr *ngIf="pagedShelves().length === 0">
-              <td colspan="9" class="text-center">
+              <td colspan="10" class="text-center">
                 <div class="empty-state">
                   <i class="bi bi-grid-3x3"></i>
                   <p>No shelves found</p>
@@ -128,17 +126,14 @@
             </tr>
             <tr *ngFor="let shelf of pagedShelves(); trackBy: trackByShelfId">
               <td>
-                <strong>{{ shelf.shelfCode }}</strong>
+                <strong>{{ shelf.rack }}</strong>
               </td>
-              <td>{{ shelf.shelfName }}</td>
+              <td>{{ shelf.shelfNumber }}</td>
               <td>{{ shelf.warehouseName }}</td>
               <td>
                 <div class="location-info">
-                  <span *ngIf="shelf.aisle" class="location-part">A: {{ shelf.aisle }}</span>
-                  <span *ngIf="shelf.section" class="location-part">S: {{ shelf.section }}</span>
-                  <span *ngIf="shelf.level" class="location-part">L: {{ shelf.level }}</span>
-                  <span *ngIf="shelf.position" class="location-part">P: {{ shelf.position }}</span>
-                  <span *ngIf="!shelf.aisle && !shelf.section && !shelf.level && !shelf.position" class="text-muted">-</span>
+                  <span *ngIf="shelf.zone" class="location-part">Z: {{ shelf.zone }}</span>
+                  <span *ngIf="!shelf.zone" class="text-muted">-</span>
                 </div>
               </td>
               <td>
@@ -148,8 +143,8 @@
               <td>
                 <div *ngIf="shelf.currentUtilization !== undefined && shelf.capacity; else noUtilization">
                   <div class="progress" style="height: 20px;">
-                    <div 
-                      class="progress-bar" 
+                    <div
+                      class="progress-bar"
                       [class.bg-success]="(shelf.currentUtilization || 0) < 70"
                       [class.bg-warning]="(shelf.currentUtilization || 0) >= 70 && (shelf.currentUtilization || 0) < 90"
                       [class.bg-danger]="(shelf.currentUtilization || 0) >= 90"
@@ -168,18 +163,20 @@
               <td>{{ formatDate(shelf.createdAt) }}</td>
               <td>
                 <div class="action-buttons">
-                  <button 
-                    type="button" 
-                    class="btn btn-sm btn-outline-primary" 
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-outline-primary"
                     (click)="openEditModal(shelf)"
-                    title="Edit Shelf">
+                    title="Edit Shelf"
+                    aria-label="Edit shelf">
                     <i class="bi bi-pencil"></i>
                   </button>
-                  <button 
-                    type="button" 
-                    class="btn btn-sm btn-outline-danger" 
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-outline-danger"
                     (click)="deleteShelf(shelf)"
-                    title="Delete Shelf">
+                    title="Delete Shelf"
+                    aria-label="Delete shelf">
                     <i class="bi bi-trash"></i>
                   </button>
                 </div>
@@ -190,23 +187,22 @@
       </div>
     </div>
 
-    <!-- Pagination -->
     <div class="pagination-container" *ngIf="totalPages() > 1">
       <nav aria-label="Shelves pagination">
         <ul class="pagination">
           <li class="page-item" [class.disabled]="currentPage() === 1">
-            <button class="page-link" (click)="goToPage(currentPage() - 1)" [disabled]="currentPage() === 1">
+            <button class="page-link" (click)="goToPage(currentPage() - 1)" [disabled]="currentPage() === 1" aria-label="Previous page">
               <i class="bi bi-chevron-left"></i>
             </button>
           </li>
-          <li 
-            class="page-item" 
+          <li
+            class="page-item"
             *ngFor="let page of [].constructor(totalPages()); let i = index"
             [class.active]="currentPage() === i + 1">
             <button class="page-link" (click)="goToPage(i + 1)">{{ i + 1 }}</button>
           </li>
           <li class="page-item" [class.disabled]="currentPage() === totalPages()">
-            <button class="page-link" (click)="goToPage(currentPage() + 1)" [disabled]="currentPage() === totalPages()">
+            <button class="page-link" (click)="goToPage(currentPage() + 1)" [disabled]="currentPage() === totalPages()" aria-label="Next page">
               <i class="bi bi-chevron-right"></i>
             </button>
           </li>
@@ -221,38 +217,38 @@
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title">Add New Shelf</h5>
-          <button type="button" class="btn-close" (click)="closeCreateModal()"></button>
+          <button type="button" class="btn-close" (click)="closeCreateModal()" aria-label="Close"></button>
         </div>
+
+        <div class="alert alert-warning" *ngIf="!warehousesLoadedFromApi() || warehouses().length === 0">
+          <i class="bi bi-exclamation-triangle"></i>
+          <strong>Cannot create a shelf location.</strong>
+          {{ warehousesLoadError() || 'No warehouses are available.' }}
+          <button type="button" class="btn btn-outline-secondary btn-sm ms-2" (click)="loadWarehouses()">
+            <i class="bi bi-arrow-clockwise"></i> Retry
+          </button>
+        </div>
+
         <form [formGroup]="createForm" (ngSubmit)="createShelf()">
           <div class="modal-body">
             <div class="row">
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label for="createShelfCode" class="form-label">Shelf Code *</label>
-                  <input 
-                    type="text" 
-                    id="createShelfCode" 
-                    class="form-control"
-                    formControlName="shelfCode"
-                    placeholder="e.g., A1-01">
-                  <div class="invalid-feedback" *ngIf="createForm.get('shelfCode')?.invalid && createForm.get('shelfCode')?.touched">
-                    <div *ngIf="createForm.get('shelfCode')?.errors?.['required']">Shelf code is required</div>
-                    <div *ngIf="createForm.get('shelfCode')?.errors?.['maxlength']">Shelf code must be 20 characters or less</div>
+                  <label for="createRack" class="form-label">Rack *</label>
+                  <input type="text" id="createRack" class="form-control" formControlName="rack" placeholder="e.g., A1-01">
+                  <div class="invalid-feedback" *ngIf="createForm.get('rack')?.invalid && createForm.get('rack')?.touched">
+                    <div *ngIf="createForm.get('rack')?.errors?.['required']">Rack is required</div>
+                    <div *ngIf="createForm.get('rack')?.errors?.['maxlength']">Rack must be 20 characters or less</div>
                   </div>
                 </div>
               </div>
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label for="createShelfName" class="form-label">Shelf Name *</label>
-                  <input 
-                    type="text" 
-                    id="createShelfName" 
-                    class="form-control"
-                    formControlName="shelfName"
-                    placeholder="e.g., Electronics Shelf A1">
-                  <div class="invalid-feedback" *ngIf="createForm.get('shelfName')?.invalid && createForm.get('shelfName')?.touched">
-                    <div *ngIf="createForm.get('shelfName')?.errors?.['required']">Shelf name is required</div>
-                    <div *ngIf="createForm.get('shelfName')?.errors?.['maxlength']">Shelf name must be 100 characters or less</div>
+                  <label for="createShelfNumber" class="form-label">Shelf Number *</label>
+                  <input type="text" id="createShelfNumber" class="form-control" formControlName="shelfNumber" placeholder="e.g., 1">
+                  <div class="invalid-feedback" *ngIf="createForm.get('shelfNumber')?.invalid && createForm.get('shelfNumber')?.touched">
+                    <div *ngIf="createForm.get('shelfNumber')?.errors?.['required']">Shelf number is required</div>
+                    <div *ngIf="createForm.get('shelfNumber')?.errors?.['maxlength']">Shelf number must be 100 characters or less</div>
                   </div>
                 </div>
               </div>
@@ -261,30 +257,22 @@
               <div class="col-md-6">
                 <div class="mb-3">
                   <label for="createWarehouse" class="form-label">Warehouse *</label>
-                  <select 
-                    id="createWarehouse" 
-                    class="form-control"
-                    formControlName="warehouseId">
+                  <select id="createWarehouse" class="form-control" formControlName="warehouseId">
                     <option value="">Select Warehouse</option>
                     <option *ngFor="let warehouse of warehouses()" [value]="warehouse.id">
-                      {{ warehouse.warehouseName }}
+                      {{ warehouse.warehouseName }} ({{ warehouse.locationCode }})
                     </option>
                   </select>
-                  <div class="invalid-feedback" *ngIf="createForm.get('warehouseId')?.invalid && createForm.get('warehouseId')?.touched">
-                    Warehouse is required
+                  <div class="invalid-feedback d-block" *ngIf="createForm.get('warehouseId')?.invalid && createForm.get('warehouseId')?.touched">
+                    <div *ngIf="createForm.get('warehouseId')?.errors?.['required']">Warehouse is required</div>
+                    <div *ngIf="createForm.get('warehouseId')?.errors?.['pattern']">Selected warehouse has an invalid ID. Please pick one from the list.</div>
                   </div>
                 </div>
               </div>
               <div class="col-md-6">
                 <div class="mb-3">
                   <label for="createCapacity" class="form-label">Capacity</label>
-                  <input 
-                    type="number" 
-                    id="createCapacity" 
-                    class="form-control"
-                    formControlName="capacity"
-                    placeholder="Maximum items"
-                    min="0">
+                  <input type="number" id="createCapacity" class="form-control" formControlName="capacity" placeholder="Maximum items" min="0">
                   <div class="invalid-feedback" *ngIf="createForm.get('capacity')?.invalid && createForm.get('capacity')?.touched">
                     Capacity must be 0 or greater
                   </div>
@@ -292,67 +280,59 @@
               </div>
             </div>
             <div class="row">
-              <div class="col-md-3">
+              <div class="col-md-4">
                 <div class="mb-3">
                   <label for="createAisle" class="form-label">Aisle</label>
-                  <input 
-                    type="text" 
-                    id="createAisle" 
-                    class="form-control"
-                    formControlName="aisle"
-                    placeholder="A1">
+                  <input type="text" id="createAisle" class="form-control" formControlName="aisle" placeholder="A1">
                 </div>
               </div>
-              <div class="col-md-3">
+              <div class="col-md-4">
                 <div class="mb-3">
-                  <label for="createSection" class="form-label">Section</label>
-                  <input 
-                    type="text" 
-                    id="createSection" 
-                    class="form-control"
-                    formControlName="section"
-                    placeholder="S1">
+                  <label for="createZone" class="form-label">Zone</label>
+                  <input type="text" id="createZone" class="form-control" formControlName="zone" placeholder="Z1">
                 </div>
               </div>
-              <div class="col-md-3">
+              <div class="col-md-4">
                 <div class="mb-3">
-                  <label for="createLevel" class="form-label">Level</label>
-                  <input 
-                    type="text" 
-                    id="createLevel" 
-                    class="form-control"
-                    formControlName="level"
-                    placeholder="L1">
-                </div>
-              </div>
-              <div class="col-md-3">
-                <div class="mb-3">
-                  <label for="createPosition" class="form-label">Position</label>
-                  <input 
-                    type="text" 
-                    id="createPosition" 
-                    class="form-control"
-                    formControlName="position"
-                    placeholder="P1">
+                  <label for="createBinType" class="form-label">Bin Type</label>
+                  <input type="text" id="createBinType" class="form-control" formControlName="binType" placeholder="e.g., Standard">
                 </div>
               </div>
             </div>
-            <div class="mb-3">
-              <label for="createDescription" class="form-label">Description</label>
-              <textarea 
-                id="createDescription" 
-                class="form-control"
-                formControlName="description"
-                rows="3"
-                placeholder="Optional description or notes about this shelf..."></textarea>
-              <div class="invalid-feedback" *ngIf="createForm.get('description')?.invalid && createForm.get('description')?.touched">
-                Description must be 500 characters or less
+            <div class="row">
+              <div class="col-md-3">
+                <div class="mb-3">
+                  <label for="createLength" class="form-label">Length</label>
+                  <input type="number" id="createLength" class="form-control" formControlName="length" placeholder="cm" min="0">
+                </div>
+              </div>
+              <div class="col-md-3">
+                <div class="mb-3">
+                  <label for="createWidth" class="form-label">Width</label>
+                  <input type="number" id="createWidth" class="form-control" formControlName="width" placeholder="cm" min="0">
+                </div>
+              </div>
+              <div class="col-md-3">
+                <div class="mb-3">
+                  <label for="createHeight" class="form-label">Height</label>
+                  <input type="number" id="createHeight" class="form-control" formControlName="height" placeholder="cm" min="0">
+                </div>
+              </div>
+              <div class="col-md-3">
+                <div class="mb-3">
+                  <label for="createMaxWeight" class="form-label">Max Weight</label>
+                  <input type="number" id="createMaxWeight" class="form-control" formControlName="maxWeight" placeholder="kg" min="0">
+                </div>
               </div>
             </div>
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" (click)="closeCreateModal()">Cancel</button>
-            <button type="submit" class="btn btn-primary" [disabled]="loading() || !createForm.valid">
+            <button
+              type="submit"
+              class="btn btn-primary"
+              [disabled]="loading() || !createForm.valid || !warehousesLoadedFromApi() || warehouses().length === 0"
+              [title]="!warehousesLoadedFromApi() || warehouses().length === 0 ? 'Cannot save: no warehouses available from the server.' : ''">
               <span *ngIf="!loading()">
                 <i class="bi bi-plus-circle"></i> Create Shelf
               </span>
@@ -367,44 +347,34 @@
         </form>
       </div>
     </div>
-  </div>
-
   <!-- Edit Shelf Modal -->
   <div class="modal fade" [class.show]="showEditModal()" [style.display]="showEditModal() ? 'block' : 'none'" *ngIf="showEditModal()">
     <div class="modal-dialog modal-lg">
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title">Edit Shelf</h5>
-          <button type="button" class="btn-close" (click)="closeEditModal()"></button>
+          <button type="button" class="btn-close" (click)="closeEditModal()" aria-label="Close"></button>
         </div>
         <form [formGroup]="editForm" (ngSubmit)="updateShelf()">
           <div class="modal-body">
             <div class="row">
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label for="editShelfCode" class="form-label">Shelf Code *</label>
-                  <input 
-                    type="text" 
-                    id="editShelfCode" 
-                    class="form-control"
-                    formControlName="shelfCode">
-                  <div class="invalid-feedback" *ngIf="editForm.get('shelfCode')?.invalid && editForm.get('shelfCode')?.touched">
-                    <div *ngIf="editForm.get('shelfCode')?.errors?.['required']">Shelf code is required</div>
-                    <div *ngIf="editForm.get('shelfCode')?.errors?.['maxlength']">Shelf code must be 20 characters or less</div>
+                  <label for="editRack" class="form-label">Rack *</label>
+                  <input type="text" id="editRack" class="form-control" formControlName="rack">
+                  <div class="invalid-feedback" *ngIf="editForm.get('rack')?.invalid && editForm.get('rack')?.touched">
+                    <div *ngIf="editForm.get('rack')?.errors?.['required']">Rack is required</div>
+                    <div *ngIf="editForm.get('rack')?.errors?.['maxlength']">Rack must be 20 characters or less</div>
                   </div>
                 </div>
               </div>
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label for="editShelfName" class="form-label">Shelf Name *</label>
-                  <input 
-                    type="text" 
-                    id="editShelfName" 
-                    class="form-control"
-                    formControlName="shelfName">
-                  <div class="invalid-feedback" *ngIf="editForm.get('shelfName')?.invalid && editForm.get('shelfName')?.touched">
-                    <div *ngIf="editForm.get('shelfName')?.errors?.['required']">Shelf name is required</div>
-                    <div *ngIf="editForm.get('shelfName')?.errors?.['maxlength']">Shelf name must be 100 characters or less</div>
+                  <label for="editShelfNumber" class="form-label">Shelf Number *</label>
+                  <input type="text" id="editShelfNumber" class="form-control" formControlName="shelfNumber">
+                  <div class="invalid-feedback" *ngIf="editForm.get('shelfNumber')?.invalid && editForm.get('shelfNumber')?.touched">
+                    <div *ngIf="editForm.get('shelfNumber')?.errors?.['required']">Shelf number is required</div>
+                    <div *ngIf="editForm.get('shelfNumber')?.errors?.['maxlength']">Shelf number must be 100 characters or less</div>
                   </div>
                 </div>
               </div>
@@ -413,29 +383,22 @@
               <div class="col-md-6">
                 <div class="mb-3">
                   <label for="editWarehouse" class="form-label">Warehouse *</label>
-                  <select 
-                    id="editWarehouse" 
-                    class="form-control"
-                    formControlName="warehouseId">
+                  <select id="editWarehouse" class="form-control" formControlName="warehouseId">
                     <option value="">Select Warehouse</option>
                     <option *ngFor="let warehouse of warehouses()" [value]="warehouse.id">
-                      {{ warehouse.warehouseName }}
+                      {{ warehouse.warehouseName }} ({{ warehouse.locationCode }})
                     </option>
                   </select>
-                  <div class="invalid-feedback" *ngIf="editForm.get('warehouseId')?.invalid && editForm.get('warehouseId')?.touched">
-                    Warehouse is required
+                  <div class="invalid-feedback d-block" *ngIf="editForm.get('warehouseId')?.invalid && editForm.get('warehouseId')?.touched">
+                    <div *ngIf="editForm.get('warehouseId')?.errors?.['required']">Warehouse is required</div>
+                    <div *ngIf="editForm.get('warehouseId')?.errors?.['pattern']">Selected warehouse has an invalid ID. Please pick one from the list.</div>
                   </div>
                 </div>
               </div>
               <div class="col-md-6">
                 <div class="mb-3">
                   <label for="editCapacity" class="form-label">Capacity</label>
-                  <input 
-                    type="number" 
-                    id="editCapacity" 
-                    class="form-control"
-                    formControlName="capacity"
-                    min="0">
+                  <input type="number" id="editCapacity" class="form-control" formControlName="capacity" min="0">
                   <div class="invalid-feedback" *ngIf="editForm.get('capacity')?.invalid && editForm.get('capacity')?.touched">
                     Capacity must be 0 or greater
                   </div>
@@ -443,65 +406,54 @@
               </div>
             </div>
             <div class="row">
-              <div class="col-md-3">
+              <div class="col-md-4">
                 <div class="mb-3">
                   <label for="editAisle" class="form-label">Aisle</label>
-                  <input 
-                    type="text" 
-                    id="editAisle" 
-                    class="form-control"
-                    formControlName="aisle">
+                  <input type="text" id="editAisle" class="form-control" formControlName="aisle">
                 </div>
               </div>
-              <div class="col-md-3">
+              <div class="col-md-4">
                 <div class="mb-3">
-                  <label for="editSection" class="form-label">Section</label>
-                  <input 
-                    type="text" 
-                    id="editSection" 
-                    class="form-control"
-                    formControlName="section">
+                  <label for="editZone" class="form-label">Zone</label>
+                  <input type="text" id="editZone" class="form-control" formControlName="zone">
                 </div>
               </div>
-              <div class="col-md-3">
+              <div class="col-md-4">
                 <div class="mb-3">
-                  <label for="editLevel" class="form-label">Level</label>
-                  <input 
-                    type="text" 
-                    id="editLevel" 
-                    class="form-control"
-                    formControlName="level">
-                </div>
-              </div>
-              <div class="col-md-3">
-                <div class="mb-3">
-                  <label for="editPosition" class="form-label">Position</label>
-                  <input 
-                    type="text" 
-                    id="editPosition" 
-                    class="form-control"
-                    formControlName="position">
+                  <label for="editBinType" class="form-label">Bin Type</label>
+                  <input type="text" id="editBinType" class="form-control" formControlName="binType">
                 </div>
               </div>
             </div>
-            <div class="mb-3">
-              <label for="editDescription" class="form-label">Description</label>
-              <textarea 
-                id="editDescription" 
-                class="form-control"
-                formControlName="description"
-                rows="3"></textarea>
-              <div class="invalid-feedback" *ngIf="editForm.get('description')?.invalid && editForm.get('description')?.touched">
-                Description must be 500 characters or less
+            <div class="row">
+              <div class="col-md-3">
+                <div class="mb-3">
+                  <label for="editLength" class="form-label">Length</label>
+                  <input type="number" id="editLength" class="form-control" formControlName="length" min="0">
+                </div>
+              </div>
+              <div class="col-md-3">
+                <div class="mb-3">
+                  <label for="editWidth" class="form-label">Width</label>
+                  <input type="number" id="editWidth" class="form-control" formControlName="width" min="0">
+                </div>
+              </div>
+              <div class="col-md-3">
+                <div class="mb-3">
+                  <label for="editHeight" class="form-label">Height</label>
+                  <input type="number" id="editHeight" class="form-control" formControlName="height" min="0">
+                </div>
+              </div>
+              <div class="col-md-3">
+                <div class="mb-3">
+                  <label for="editMaxWeight" class="form-label">Max Weight</label>
+                  <input type="number" id="editMaxWeight" class="form-control" formControlName="maxWeight" min="0">
+                </div>
               </div>
             </div>
             <div class="mb-3">
               <div class="form-check">
-                <input 
-                  type="checkbox" 
-                  id="editIsActive" 
-                  class="form-check-input"
-                  formControlName="isActive">
+                <input type="checkbox" id="editIsActive" class="form-check-input" formControlName="isActive">
                 <label for="editIsActive" class="form-check-label">Active</label>
               </div>
             </div>
@@ -509,9 +461,7 @@
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" (click)="closeEditModal()">Cancel</button>
             <button type="submit" class="btn btn-primary" [disabled]="loading() || !editForm.valid">
-              <span *ngIf="!loading()">
-                <i class="bi bi-check-circle"></i> Update Shelf
-              </span>
+              <span *ngIf="!loading()"><i class="bi bi-check-circle"></i> Update Shelf</span>
               <span *ngIf="loading()">
                 <div class="spinner-border spinner-border-sm" role="status">
                   <span class="visually-hidden">Loading...</span>
@@ -528,3 +478,6 @@
   <!-- Modal Backdrop -->
   <div class="modal-backdrop fade show" *ngIf="showCreateModal() || showEditModal()"></div>
 </div>
+</div>
+
+  

@@ -80,7 +80,7 @@ export class CategoryApi {
     );
   }
 
-  remove(id: number): void {
+  remove(id: number | string): void {
     this.categoryService.delete(id).subscribe({
       next: (res) => {
         if (res.success) this.refresh();

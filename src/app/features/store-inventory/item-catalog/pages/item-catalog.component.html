@@ -205,10 +205,16 @@
         <div class="form-row">
           <div class="form-group">
             <label>Category</label>
-            <select class="form-select" [ngModel]="newItem().category" (ngModelChange)="setNewItemField('category', $event)">
+            <select class="form-select" [ngModel]="newItem().category" (ngModelChange)="onCategorySelect($event)">
               <option value="">Select category</option>
-              @for (cat of categories.slice(1); track cat) {
-                <option [value]="cat">{{ cat }}</option>
+              @if (backendCategories().length > 0) {
+                @for (cat of backendCategories(); track cat.id) {
+                  <option [value]="cat.categoryName || cat.name">{{ cat.categoryName || cat.name }}</option>
+                }
+              } @else {
+                @for (cat of categories.slice(1); track cat) {
+                  <option [value]="cat">{{ cat }}</option>
+                }
               }
             </select>
           </div>

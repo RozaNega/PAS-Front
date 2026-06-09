@@ -106,110 +106,8 @@ export class MainLayoutComponent implements OnInit {
       return notifications;
     }
 
-    // Admin-specific notifications
-    if (this.router.url.startsWith('/admin')) {
-      return [
-        {
-          id: 'admin_1',
-          type: 'success',
-          title: 'New Property Added',
-          message: 'Property "Sunset Villas" has been successfully added to the system.',
-          time: '5m ago',
-        },
-        {
-          id: 'admin_2',
-          type: 'info',
-          title: 'User Approval Request',
-          message: '3 new users awaiting approval for admin access.',
-          time: '30m ago',
-        },
-        {
-          id: 'admin_3',
-          type: 'success',
-          title: 'System Backup Completed',
-          message: 'Daily backup completed successfully. Database size: 2.4GB',
-          time: '2h ago',
-        },
-        {
-          id: 'admin_4',
-          type: 'error',
-          title: 'Security Alert',
-          message: 'Multiple failed login attempts detected from unknown IP address.',
-          time: '4h ago',
-        },
-      ];
-    }
-
-    // Storekeeper-specific notifications
-    if (this.router.url.startsWith('/storekeeper')) {
-      return [
-        {
-          id: 'sk_1',
-          type: 'error',
-          title: 'Urgent: Stock Issuance Pending',
-          message: '3 urgent stock issuance requests need immediate attention.',
-          time: '5m ago',
-        },
-        {
-          id: 'sk_2',
-          type: 'success',
-          title: 'New GRN Received',
-          message: 'GRN-2024-0456 received from Tech Supplies Ltd. Ready for inspection.',
-          time: '15m ago',
-        },
-        {
-          id: 'sk_3',
-          type: 'error',
-          title: 'Low Stock Alert',
-          message: 'Laptop stock is critically low (5 units). Minimum threshold: 20 units.',
-          time: '45m ago',
-        },
-        {
-          id: 'sk_4',
-          type: 'success',
-          title: 'Warehouse Transfer Completed',
-          message: 'Transfer of 50 monitors from Warehouse A to Warehouse B completed.',
-          time: '2h ago',
-        },
-      ];
-    }
-
-    if (this.isManagerRoute()) {
-      return [];
-    }
-
-    if (this.isComplianceOfficerRoute()) {
-      return [];
-    }
-
-    if (this.isEmployeeRoute()) {
-      return [];
-    }
-
-    // Default notifications for other roles
-    return [
-      {
-        id: 'def_1',
-        type: 'approved',
-        title: 'Requisition updated',
-        message: 'REQ-1034 changed status to Approved.',
-        time: '2m ago',
-      },
-      {
-        id: 'def_2',
-        type: 'rejected',
-        title: 'Low stock alert',
-        message: 'Central warehouse: printer paper is below threshold.',
-        time: '14m ago',
-      },
-      {
-        id: 'def_3',
-        type: 'info',
-        title: 'Transfer received',
-        message: 'TRF-228 was received at North store.',
-        time: '1h ago',
-      },
-    ];
+    // Fallback: empty notifications (no hardcoded items)
+    return [];
   });
 
   protected readonly primaryOptions: ThemeOption[] = [
@@ -617,6 +515,9 @@ export class MainLayoutComponent implements OnInit {
     }
     if (this.router.url.startsWith('/admin')) {
       return 'Admin';
+    }
+    if (this.router.url.startsWith('/storekeeper')) {
+      return 'Manager';
     }
     return null;
   }

@@ -1,7 +1,13 @@
 ﻿import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
+import { CommonModule, CurrencyPipe } from '@angular/common';
 import { Router } from '@angular/router';
 
 import { DashboardService, DashboardStatistics } from '../../../../core/services/dashboard.service';
+import {
+  WorkflowService,
+  ServiceRequest,
+  NotificationMessage,
+} from '../../../../core/services/workflow.service';
 
 import { NgxEchartsDirective, provideEchartsCore } from 'ngx-echarts';
 import * as echarts from 'echarts/core';
@@ -82,7 +88,7 @@ interface WeeklyTrend {
 @Component({
   selector: 'app-storekeeper-dashboard',
   standalone: true,
-  imports: [NgxEchartsDirective],
+  imports: [NgxEchartsDirective, CommonModule, CurrencyPipe],
   providers: [provideEchartsCore({ echarts })],
   templateUrl: './storekeeper-dashboard.component.html',
   styleUrl: './storekeeper-dashboard.component.scss',
@@ -91,6 +97,7 @@ interface WeeklyTrend {
 export class StorekeeperDashboardComponent implements OnInit {
   readonly router = inject(Router);
   private readonly dashboardService = inject(DashboardService);
+  private readonly workflowService = inject(WorkflowService);
 
   readonly isLoading = signal(false);
   readonly statistics = signal<DashboardStatistics | null>(null);
@@ -103,6 +110,10 @@ export class StorekeeperDashboardComponent implements OnInit {
     { title: 'Low Stock Alerts', value: '0', secondary: 'Loading...', trend: '---', color: 'red', icon: 'bi bi-exclamation-triangle', route: '/storekeeper/inventory/low-stock' },
     { title: 'Issued This Week', value: '0', secondary: 'Loading...', trend: '---', color: 'green', icon: 'bi bi-check-circle', route: '/storekeeper/reports' },
   ];
+
+  // Workflow integration
+  readonly workflowRequests = signal<ServiceRequest[]>([]);
+  readonly workflowNotifications = signal<NotificationMessage[]>([]);
 
   readonly weeklyTrends: WeeklyTrend[] = [
     { label: 'W1', total: 4200, electronics: 1800, furniture: 1200 },
@@ -170,6 +181,33 @@ export class StorekeeperDashboardComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadDashboardData();
+    this.setupWorkflowSubscriptions();
+    this.loadWorkflowData();
+  }
+
+  private setupWorkflowSubscriptions(): void {
+    this.workflowService.getRequestUpdates().subscribe(() => {
+      this.loadWorkflowData();
+    });
+
+    this.workflowService.getNotificationUpdates().subscribe(() => {
+      this.loadWorkflowData();
+    });
+  }
+
+  private loadWorkflowData(): void {
+    const requests = this.workflowService.getRequestsForManagerAll('storekeeper_queue');
+    this.workflowRequests.set(requests);
+
+    const notifications = this.workflowService.getNotificationsForUser(
+      'storekeeper_001',
+      'Manager'
+    );
+    this.workflowNotifications.set(notifications);
+  }
+
+  refreshWorkflowData(): void {
+    this.loadWorkflowData();
   }
 
   loadDashboardData(): void {

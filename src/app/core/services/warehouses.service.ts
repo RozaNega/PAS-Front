@@ -4,43 +4,60 @@ import { ApiService } from './api.service';
 import { ApiResponse } from '../../types/api-response.type';
 import { normalizePasListResponse, toCamelCaseDeep, unwrapPasEnvelope } from '../utils/pas-api-json.util';
 
-/** Warehouse from GET /api/Warehouses */
+/**
+ * Warehouse shape returned by the backend (GET /api/Warehouses)
+ * Mirrors PAS.Application/Features/Storage/Warehouses/Dtos/WarehouseDto.cs
+ *
+ * NOTE: backend uses `Guid` for `Id`. Mock-data uses real Guid strings
+ * so any code path that falls back to mock data still sends a value the
+ * backend can parse and look up in the database.
+ */
 export interface WarehouseDto {
   id: string;
   warehouseName: string;
-  warehouseCode: string;
-  location: string;
-  description?: string;
+  locationCode: string;
+  address: string;
+  city: string;
+  country: string;
+  contactPerson: string;
+  contactPhone: string;
+  contactEmail: string;
   isActive: boolean;
-  capacity?: number;
-  currentUtilization?: number;
-  managerName?: string;
-  contactNumber?: string;
+  totalShelves?: number;
+  occupiedShelves?: number;
+  totalItems?: number;
   createdAt: string;
   updatedAt?: string;
 }
 
-/** POST /api/Warehouses — CreateWarehouseCommand */
+/**
+ * POST /api/Warehouses — matches PAS.Application CreateWarehouseCommand exactly
+ * (the only fields accepted by the backend on create).
+ */
 export interface CreateWarehouseRequest {
   warehouseName: string;
-  warehouseCode: string;
-  location: string;
-  description?: string;
-  capacity?: number;
-  managerName?: string;
-  contactNumber?: string;
+  locationCode: string;
+  address: string;
+  city: string;
+  country: string;
+  contactPerson: string;
+  contactPhone: string;
+  contactEmail: string;
 }
 
-/** PUT /api/Warehouses/{id} — UpdateWarehouseCommand */
+/**
+ * PUT /api/Warehouses/{id} — matches UpdateWarehouseCommand
+ */
 export interface UpdateWarehouseRequest {
   id: string;
   warehouseName?: string;
-  warehouseCode?: string;
-  location?: string;
-  description?: string;
-  capacity?: number;
-  managerName?: string;
-  contactNumber?: string;
+  locationCode?: string;
+  address?: string;
+  city?: string;
+  country?: string;
+  contactPerson?: string;
+  contactPhone?: string;
+  contactEmail?: string;
   isActive: boolean;
 }
 
@@ -51,42 +68,51 @@ export class WarehousesService {
   private createMockWarehouses(): WarehouseDto[] {
     return [
       {
-        id: 'wh-001',
+        id: '11111111-1111-1111-1111-111111111111',
         warehouseName: 'Main Warehouse',
-        warehouseCode: 'MW-001',
-        location: 'Addis Ababa, Main District',
-        description: 'Primary storage facility',
+        locationCode: 'MW-001',
+        address: 'Bole Road, Main District',
+        city: 'Addis Ababa',
+        country: 'Ethiopia',
+        contactPerson: 'Ahmed Hassan',
+        contactPhone: '+251 911 000 001',
+        contactEmail: 'main.wh@example.com',
         isActive: true,
-        capacity: 5000,
-        currentUtilization: 65,
-        managerName: 'Ahmed Hassan',
-        contactNumber: '+251 911 000 001',
+        totalShelves: 0,
+        occupiedShelves: 0,
+        totalItems: 0,
         createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
       },
       {
-        id: 'wh-002',
+        id: '22222222-2222-2222-2222-222222222222',
         warehouseName: 'Branch Warehouse A',
-        warehouseCode: 'BW-A-001',
-        location: 'Addis Ababa, Branch Zone',
-        description: 'Secondary storage facility',
+        locationCode: 'BW-A-001',
+        address: 'CMC Branch Zone',
+        city: 'Addis Ababa',
+        country: 'Ethiopia',
+        contactPerson: 'Fatima Ali',
+        contactPhone: '+251 911 000 002',
+        contactEmail: 'branch.a@example.com',
         isActive: true,
-        capacity: 3000,
-        currentUtilization: 45,
-        managerName: 'Fatima Ali',
-        contactNumber: '+251 911 000 002',
+        totalShelves: 0,
+        occupiedShelves: 0,
+        totalItems: 0,
         createdAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(),
       },
       {
-        id: 'wh-003',
+        id: '33333333-3333-3333-3333-333333333333',
         warehouseName: 'Cold Storage Facility',
-        warehouseCode: 'CS-001',
-        location: 'Addis Ababa, Industrial Area',
-        description: 'Temperature controlled storage',
+        locationCode: 'CS-001',
+        address: 'Akaki Industrial Area',
+        city: 'Addis Ababa',
+        country: 'Ethiopia',
+        contactPerson: 'Mohammed Seid',
+        contactPhone: '+251 911 000 003',
+        contactEmail: 'cold.storage@example.com',
         isActive: true,
-        capacity: 1500,
-        currentUtilization: 80,
-        managerName: 'Mohammed Seid',
-        contactNumber: '+251 911 000 003',
+        totalShelves: 0,
+        occupiedShelves: 0,
+        totalItems: 0,
         createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
       },
     ];
@@ -100,13 +126,13 @@ export class WarehousesService {
   }): Observable<ApiResponse<WarehouseDto[]>> {
     return this.apiService.get<unknown>('Warehouses', params).pipe(
       map((raw) => normalizePasListResponse<WarehouseDto>(raw)),
-      catchError(() => {
-        console.warn('Warehouses API unavailable, using mock data');
+      catchError((err) => {
+        console.error('[WarehousesService] GET /api/Warehouses failed:', err?.status, err?.statusText, err?.message);
         return of({
-          success: true,
-          message: 'Mock data (API unavailable)',
-          data: this.createMockWarehouses(),
-          statusCode: 200,
+          success: false,
+          message: err?.message || 'Warehouses API unavailable',
+          data: [],
+          statusCode: err?.status ?? 0,
         } as ApiResponse<WarehouseDto[]>);
       }),
     );
@@ -119,21 +145,16 @@ export class WarehousesService {
   }
 
   create(data: CreateWarehouseRequest): Observable<ApiResponse<string>> {
-    return this.apiService.post<unknown>('Warehouses', data).pipe(
-      map((raw) => this.normalizeEnvelope<string>(raw)),
-    );
+    console.log('[WarehousesService] create called with:', JSON.stringify(data));
+    return this.apiService.post<string>('Warehouses', data);
   }
 
   update(data: UpdateWarehouseRequest): Observable<ApiResponse<unknown>> {
-    return this.apiService.put<unknown>(`Warehouses/${data.id}`, data).pipe(
-      map((raw) => this.normalizeEnvelope(raw)),
-    );
+    return this.apiService.put<unknown>(`Warehouses/${data.id}`, data);
   }
 
   delete(id: string): Observable<ApiResponse<unknown>> {
-    return this.apiService.delete<unknown>(`Warehouses/${id}`).pipe(
-      map((raw) => this.normalizeEnvelope(raw)),
-    );
+    return this.apiService.delete<unknown>(`Warehouses/${id}`);
   }
 
   private normalizeEnvelope<T>(raw: unknown): ApiResponse<T> {

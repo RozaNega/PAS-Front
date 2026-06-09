@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse, HttpParams, HttpEvent } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
-import { ApiResponse } from '../../types/api-response.type';
+import { ApiResponseModel } from '../models/api-response.model';
 
 export interface PasSuccessResponse<T = unknown> {
   success: true;
@@ -20,30 +20,39 @@ export interface PasErrorResponse {
 
 export type PasResponse<T = unknown> = PasSuccessResponse<T> | PasErrorResponse;
 
-function toApiResponse<T>(res: PasResponse<T>): ApiResponse<T> {
+function toApiResponse<T>(res: PasResponse<T>): ApiResponseModel<T> {
   const r = res as unknown as Record<string, unknown>;
-  const success = r['success'];
+  const success = r['success'] ?? r['Success'];
+  const message = (r['message'] ?? r['Message'] ?? r['title'] ?? r['Title']) as string | undefined;
+  const statusCode = (r['statusCode'] ?? r['StatusCode']) as number | undefined;
+  const data = r['data'] ?? r['Data'];
+  const errors = r['errors'] ?? r['Errors'];
+
   if (success === true) {
     return {
       success: true,
-      message: (r['message'] as string) ?? '',
-      data: r['data'] as T,
-      statusCode: (r['statusCode'] as number) ?? 200,
+      message: message ?? '',
+      data: data as T,
+      statusCode: statusCode ?? 200,
     };
   }
   if (success === false) {
+    let errorMsg = message ?? '';
+    if (!errorMsg && errors) {
+      errorMsg = Array.isArray(errors) ? errors.join('; ') : typeof errors === 'string' ? errors : Object.values(errors).flat().join('; ');
+    }
     return {
       success: false,
-      message: (r['message'] as string) ?? (r['title'] as string) ?? '',
+      message: errorMsg,
       data: undefined as unknown as T,
-      statusCode: (r['statusCode'] as number) ?? 500,
+      statusCode: statusCode ?? 500,
     };
   }
   return {
-    success: true,
-    message: '',
-    data: res as unknown as T,
-    statusCode: 200,
+    success: false,
+    message: 'Unrecognized response format from server',
+    data: undefined as unknown as T,
+    statusCode: 500,
   };
 }
 
@@ -60,7 +69,7 @@ export class ApiService {
     return `${this.baseUrl}${normalized}`;
   }
 
-  get<T>(path: string, params?: HttpParams | Record<string, unknown>): Observable<ApiResponse<T>> {
+  get<T>(path: string, params?: HttpParams | Record<string, unknown>): Observable<ApiResponseModel<T>> {
     const url = this.buildUrl(path);
     return this.http.get<PasResponse<T>>(url, { params: params as Record<string, string | number | boolean | readonly (string | number | boolean)[]> | HttpParams | undefined }).pipe(
       map(res => toApiResponse<T>(res)),
@@ -75,15 +84,25 @@ export class ApiService {
     );
   }
 
-  post<T>(path: string, body?: unknown): Observable<ApiResponse<T>> {
+  post<T>(path: string, body?: unknown): Observable<ApiResponseModel<T>> {
     const url = this.buildUrl(path);
+    console.log('[ApiService] POST', url, 'body:', JSON.stringify(body));
     return this.http.post<PasResponse<T>>(url, body ?? {}).pipe(
-      map(res => toApiResponse<T>(res)),
-      catchError((err: HttpErrorResponse) => throwError(() => err))
+      map(res => {
+        console.log('[ApiService] POST raw response:', JSON.stringify(res));
+        return toApiResponse<T>(res);
+      }),
+      catchError((err: HttpErrorResponse) => {
+        console.error('[ApiService] POST error:', err.status, err.statusText, err.message);
+        try {
+          console.error('[ApiService] POST error body:', JSON.stringify(err.error));
+        } catch { /* non-JSON */ }
+        return throwError(() => err);
+      })
     );
   }
 
-  put<T>(path: string, body?: unknown): Observable<ApiResponse<T>> {
+  put<T>(path: string, body?: unknown): Observable<ApiResponseModel<T>> {
     const url = this.buildUrl(path);
     return this.http.put<PasResponse<T>>(url, body ?? {}).pipe(
       map(res => toApiResponse<T>(res)),
@@ -91,7 +110,7 @@ export class ApiService {
     );
   }
 
-  delete<T>(path: string): Observable<ApiResponse<T>> {
+  delete<T>(path: string): Observable<ApiResponseModel<T>> {
     const url = this.buildUrl(path);
     return this.http.delete<PasResponse<T>>(url).pipe(
       map(res => toApiResponse<T>(res)),
@@ -99,11 +118,11 @@ export class ApiService {
     );
   }
 
-  deleteProfilePhoto(id: string): Observable<ApiResponse<void>> {
+  deleteProfilePhoto(id: string): Observable<ApiResponseModel<void>> {
     return this.delete<void>(`User/delete-profile-photo/${id}`);
   }
 
-  uploadProfilePhoto(userId: string, file: File): Observable<ApiResponse<{ photoUrl: string }>> {
+  uploadProfilePhoto(userId: string, file: File): Observable<ApiResponseModel<{ photoUrl: string }>> {
     const formData = new FormData();
     formData.append('file', file, file.name);
     const url = this.buildUrl(`/User/upload-profile-photo/${userId}`);

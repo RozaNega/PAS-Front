@@ -1,16 +1,193 @@
-.feature-card {
-  border: 1px solid #d6dde8;
-  border-radius: 12px;
-  background: #ffffff;
-  padding: 1rem;
+/* ── Page layout ────────────────────────────────────────────────────────── */
+.warehouse-create-page {
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 3rem;
+  color: #0f172a;
+  font-family: inherit;
 }
 
-h2 {
-  margin: 0 0 0.5rem;
-  font-size: 1.1rem;
+.page-header {
+  margin-bottom: 1.5rem;
 }
 
-p {
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: #6d28d9;
+  text-decoration: none;
+  font-size: 0.875rem;
+  margin-bottom: 0.75rem;
+}
+.back-link:hover { text-decoration: underline; }
+
+.page-header h1 {
+  font-size: 1.6rem;
+  font-weight: 600;
+  margin: 0 0 0.35rem;
+  color: #0f172a;
+}
+
+.subtitle {
+  font-size: 0.9rem;
+  color: #475569;
   margin: 0;
+  line-height: 1.45;
+}
+.subtitle code {
+  background: #f1f5f9;
+  padding: 0.05rem 0.35rem;
+  border-radius: 4px;
+  font-size: 0.85em;
+  color: #4338ca;
+}
+
+/* ── Form card ─────────────────────────────────────────────────────────── */
+.warehouse-form {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 1.25rem 1.5rem 1.5rem;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.form-section {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 1rem 1.1rem 1.1rem;
+  margin: 0;
+}
+
+.form-section legend {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #1e293b;
+  padding: 0 0.4rem;
+}
+
+/* ── Grid & fields ──────────────────────────────────────────────────────── */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.9rem 1rem;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin-top: 0.6rem;
+}
+.form-field.full { grid-column: 1 / -1; margin-top: 0.6rem; }
+
+.form-field label {
+  font-size: 0.8rem;
+  font-weight: 600;
   color: #334155;
+}
+
+.required { color: #dc2626; margin-left: 0.1rem; }
+
+.form-field input {
+  height: 40px;
+  padding: 0 0.75rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  color: #0f172a;
+  background: #ffffff;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+  width: 100%;
+  box-sizing: border-box;
+}
+.form-field input::placeholder { color: #94a3b8; }
+
+.form-field input:focus {
+  outline: none;
+  border-color: #7c3aed;
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15);
+}
+
+.form-field input.is-invalid {
+  border-color: #dc2626;
+}
+.form-field input.is-invalid:focus {
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15);
+}
+
+.error {
+  color: #dc2626;
+  font-size: 0.75rem;
+  line-height: 1.2;
+}
+
+/* ── Alert banners ──────────────────────────────────────────────────────── */
+.alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.7rem 0.9rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  border: 1px solid transparent;
+}
+.alert-error {
+  background: #fef2f2;
+  color: #991b1b;
+  border-color: #fecaca;
+}
+.alert-success {
+  background: #f0fdf4;
+  color: #166534;
+  border-color: #bbf7d0;
+}
+
+/* ── Action footer ──────────────────────────────────────────────────────── */
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  margin-top: 0.25rem;
+}
+
+.btn {
+  height: 40px;
+  padding: 0 1.1rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+  border: 1px solid transparent;
+}
+
+.btn-primary {
+  background: #7c3aed;
+  color: #ffffff;
+}
+.btn-primary:hover:not(:disabled) { background: #6d28d9; }
+.btn-primary:disabled {
+  background: #c4b5fd;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background: #ffffff;
+  color: #334155;
+  border-color: #cbd5e1;
+}
+.btn-secondary:hover:not(:disabled) { background: #f1f5f9; }
+.btn-secondary:disabled { color: #94a3b8; cursor: not-allowed; }
+
+/* ── Responsive ─────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .form-grid { grid-template-columns: 1fr; }
+  .warehouse-form { padding: 1rem; }
 }

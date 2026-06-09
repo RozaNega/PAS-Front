@@ -1,8 +1,10 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { ApiService } from '../../../../core/services/api.service';
 import { API_ENDPOINTS } from '../../../../config/api.config';
 import { ApiResponse, PaginatedResult } from '../../../../types/api-response.type';
+import { unwrapPasEnvelope } from '../../../../core/utils/pas-api-json.util';
 import {
   StoreIssueVoucher,
   StoreIssueVoucherDetail,
@@ -10,6 +12,40 @@ import {
   UpdateStoreIssueVoucherRequest,
   ApproveSIVRequest
 } from '../models/siv.model';
+
+function isGuidString(value: string | undefined | null): boolean {
+  if (!value || typeof value !== 'string') return false;
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value.trim());
+}
+
+function buildCreateSIVCommand(data: CreateStoreIssueVoucherRequest): Record<string, unknown> {
+  const cmd: Record<string, unknown> = {
+    department: data.department || 'General',
+    notes: data.notes ?? '',
+    items: data.items.map((i) => {
+      const row: Record<string, unknown> = {
+        itemId: i.itemId,
+        issuedQty: i.issuedQty,
+      };
+      if (i.srDetailId) {
+        row['srDetailId'] = i.srDetailId;
+      }
+      if (i.shelfId && isGuidString(i.shelfId)) {
+        row['shelfId'] = i.shelfId;
+      }
+      return row;
+    }),
+  };
+
+  if (data.serviceRequestId && isGuidString(data.serviceRequestId)) {
+    cmd['serviceRequestId'] = data.serviceRequestId;
+  }
+  if (data.issuedToId) {
+    cmd['issuedToId'] = data.issuedToId;
+  }
+
+  return cmd;
+}
 
 @Injectable()
 export class SIVService {
@@ -24,7 +60,18 @@ export class SIVService {
   }
 
   createStoreIssueVoucher(request: CreateStoreIssueVoucherRequest): Observable<ApiResponse<string>> {
-    return this.apiService.post<string>(API_ENDPOINTS.STORE_ISSUE_VOUCHERS.CREATE, request);
+    const body = { command: buildCreateSIVCommand(request) };
+    return this.apiService.post<unknown>(API_ENDPOINTS.STORE_ISSUE_VOUCHERS.CREATE, body).pipe(
+      map((raw) => {
+        const env = unwrapPasEnvelope<unknown>(raw);
+        return {
+          success: env.success !== false,
+          message: env.message ?? '',
+          data: env.data as string,
+          statusCode: env.statusCode ?? 0,
+        };
+      }),
+    );
   }
 
   updateStoreIssueVoucher(request: UpdateStoreIssueVoucherRequest): Observable<ApiResponse<object>> {

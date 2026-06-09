@@ -42,16 +42,16 @@ export interface SIVItem {
 }
 
 export interface CreateStoreIssueVoucherRequest {
-  srId: string;
-  recipientSignature: string;
-  recipientName?: string;
-  recipientDepartment?: string;
-  remarks?: string;
+  serviceRequestId?: string;
+  issuedToId?: string;
+  department: string;
+  notes?: string;
   items: CreateSIVItemRequest[];
 }
 
 export interface CreateSIVItemRequest {
-  srDetailId: string;
+  itemId?: string;
+  srDetailId?: string;
   issuedQty: number;
   shelfId?: string;
 }

@@ -58,14 +58,16 @@ export class ShelfManagementComponent implements OnInit {
   saving = signal(false);
 
   addForm = {
-    shelfCode: '',
-    shelfName: '',
     aisle: '',
-    section: '',
-    level: '',
-    position: '',
-    capacity: 500,
-    description: '',
+    rack: '',
+    shelfNumber: '',
+    zone: '',
+    binType: '',
+    length: 0,
+    width: 0,
+    height: 0,
+    maxWeight: 0,
+    capacity: 0,
   };
 
   aisles = ['All Aisles', 'A-01', 'A-02', 'B-01', 'B-02', 'C-01'];
@@ -318,9 +320,10 @@ export class ShelfManagementComponent implements OnInit {
     this.shelvesService.getAll({ warehouseId }).subscribe({
       next: (res) => {
         const dtoList = Array.isArray(res.data) ? res.data : [];
-        if (res.success === false && dtoList.length === 0) {
+        if (res.success === false) {
           this.loading.set(false);
-          this.error.set(res.message || 'Could not load shelves.');
+          this.shelfRows.set([]);
+          this.error.set(res.message || 'Could not load shelves from the server.');
           return;
         }
         const rows = dtoList.map((d) => this.toRow(d));
@@ -362,19 +365,19 @@ export class ShelfManagementComponent implements OnInit {
   }
 
   private toRow(d: ShelfLocationDto): ShelfRow {
-    const parts = [d.aisle, d.section, d.level, d.position].filter(Boolean).join(' · ');
+    const parts = [d.aisle, d.rack, d.shelfNumber].filter(Boolean).join(' · ');
     const location = [d.warehouseName, parts || d.description || '—'].filter(Boolean).join(' — ');
     const cap = d.capacity && d.capacity > 0 ? d.capacity : 0;
     const util = d.currentUtilization ?? 0;
     const occupancy = cap ? Math.min(100, Math.round((util / cap) * 100)) : util;
     return {
       id: d.id,
-      code: d.shelfCode || d.shelfName || d.id,
+      code: d.shelfNumber || d.id,
       location,
       items: 0,
       value: 0,
       occupancy,
-      category: d.description?.slice(0, 40) || '—',
+      category: d.binType?.slice(0, 40) || '—',
       isActive: d.isActive,
       raw: d,
     };
@@ -386,14 +389,16 @@ export class ShelfManagementComponent implements OnInit {
       return;
     }
     this.addForm = {
-      shelfCode: '',
-      shelfName: '',
       aisle: '',
-      section: '',
-      level: '',
-      position: '',
-      capacity: 500,
-      description: '',
+      rack: '',
+      shelfNumber: '',
+      zone: '',
+      binType: '',
+      length: 0,
+      width: 0,
+      height: 0,
+      maxWeight: 0,
+      capacity: 0,
     };
     this.error.set(null);
     this.showAddShelfModal.set(true);
@@ -405,31 +410,31 @@ export class ShelfManagementComponent implements OnInit {
 
   createShelf(): void {
     const wid = this.selectedWarehouseId();
-    const code = this.addForm.shelfCode.trim();
-    const name = this.addForm.shelfName.trim() || code;
     if (!wid) {
       this.error.set('Warehouse is required.');
       return;
     }
-    if (!code) {
-      this.error.set('Shelf code is required.');
-      return;
-    }
+    const warehouse = this.warehouses().find(w => w.id === wid);
     const payload: CreateShelfLocationRequest = {
-      shelfCode: code,
-      shelfName: name,
       warehouseId: wid,
+      warehouseName: warehouse?.warehouseName || '',
       aisle: this.addForm.aisle.trim() || undefined,
-      section: this.addForm.section.trim() || undefined,
-      level: this.addForm.level.trim() || undefined,
-      position: this.addForm.position.trim() || undefined,
+      rack: this.addForm.rack.trim() || undefined,
+      shelfNumber: this.addForm.shelfNumber.trim() || undefined,
+      zone: this.addForm.zone.trim() || undefined,
+      binType: this.addForm.binType.trim() || undefined,
+      length: this.addForm.length > 0 ? this.addForm.length : undefined,
+      width: this.addForm.width > 0 ? this.addForm.width : undefined,
+      height: this.addForm.height > 0 ? this.addForm.height : undefined,
+      maxWeight: this.addForm.maxWeight > 0 ? this.addForm.maxWeight : undefined,
       capacity: this.addForm.capacity > 0 ? this.addForm.capacity : undefined,
-      description: this.addForm.description.trim() || undefined,
     };
     this.saving.set(true);
     this.error.set(null);
+    console.log('[Shelf] CREATE payload:', JSON.stringify(payload));
     this.shelvesService.create(payload).subscribe({
       next: (res) => {
+        console.log('[Shelf] CREATE response:', JSON.stringify(res));
         this.saving.set(false);
         if (res.success !== false) {
           this.closeAddShelfModal();

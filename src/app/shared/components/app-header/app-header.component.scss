@@ -256,6 +256,30 @@
   transform: translateY(-1px);
 }
 
+.notifications-footer {
+  padding: 0.75rem 1.25rem;
+  border-top: 1px solid var(--surface-border);
+  text-align: center;
+}
+
+.view-all-btn {
+  width: 100%;
+  padding: 0.5rem 1rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: transparent;
+  color: var(--primary-color);
+  border: 1px solid var(--primary-color);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s;
+
+  &:hover {
+    background: var(--primary-color);
+    color: white;
+  }
+}
+
 .notifications-list {
   max-height: 400px;
   overflow-y: auto;
@@ -648,6 +672,20 @@
 
         p {
           color: #d1d5db;
+        }
+      }
+
+      .notifications-footer {
+        border-top-color: #4b5563;
+      }
+
+      .view-all-btn {
+        border-color: #60a5fa;
+        color: #60a5fa;
+
+        &:hover {
+          background: #60a5fa;
+          color: #1f2937;
         }
       }
     }

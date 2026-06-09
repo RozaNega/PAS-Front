@@ -245,27 +245,6 @@
                           <i class="bi bi-arrow-repeat spin"></i>
                           Looking up stock locations…
                         </div>
-                      } @else if (item.shelfOptions.length === 0) {
-                        <div class="shelf-none">
-                          @if (shelfLoadError) {
-                            <span>{{ shelfLoadError }}</span>
-                          } @else {
-                            <span>
-                              No stock locations found for this item — the storekeeper can assign a
-                              location.
-                            </span>
-                          }
-                          @if (isDev) {
-                            <button
-                              type="button"
-                              class="btn-seed"
-                              (click)="seedSampleShelfLocation(item)"
-                              [disabled]="isSeedingShelfLocation"
-                            >
-                              Add sample shelf location
-                            </button>
-                          }
-                        </div>
                       } @else {
                         <select
                           [id]="'shelf-' + item.itemId"
@@ -278,6 +257,9 @@
                             <option [value]="opt.shelfId">{{ opt.label }}</option>
                           }
                         </select>
+                        @if (item.shelfOptions.length === 0 && !shelfLoadError) {
+                          <span class="shelf-hint">No stock locations for this item — assign from all available locations below.</span>
+                        }
                       }
                     </div>
 

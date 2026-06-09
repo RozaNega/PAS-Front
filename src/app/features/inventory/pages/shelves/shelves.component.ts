@@ -5,6 +5,15 @@ import { Router, RouterLink } from '@angular/router';
 import { ShelvesService, ShelfLocationDto, CreateShelfLocationRequest, UpdateShelfLocationRequest } from '../../../../core/services/shelves.service';
 import { WarehousesService, WarehouseDto } from '../../../../core/services/warehouses.service';
 
+/**
+ * Strict Guid (8-4-4-4-12) pattern.
+ * The backend's WarehouseId is a `System.Guid`; sending an empty string or
+ * a non-Guid value makes ASP.NET Core's model binder default to `Guid.Empty`,
+ * which is then reported by the handler as
+ * "Warehouse with ID 00000000-0000-0000-0000-000000000000 not found.".
+ */
+const GUID_PATTERN = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+
 @Component({
   selector: 'app-shelves',
   standalone: true,
@@ -32,6 +41,12 @@ export class ShelvesComponent implements OnInit {
   warehouses = signal<WarehouseDto[]>([]);
   totalShelves = signal(0);
 
+  // Track whether the warehouse list came from the live API (success=true)
+  // or the in-memory mock fallback. We use this to warn the user and gate
+  // the Save button on the modal.
+  warehousesLoadedFromApi = signal(false);
+  warehousesLoadError = signal<string | null>(null);
+
   // Modal states
   showCreateModal = signal(false);
   showEditModal = signal(false);
@@ -51,7 +66,7 @@ export class ShelvesComponent implements OnInit {
       const warehouse = this.warehouseFilter();
       const status = this.statusFilter();
       const page = this.currentPage();
-      
+
       this.loadShelves();
     });
   }
@@ -69,11 +84,11 @@ export class ShelvesComponent implements OnInit {
     if (this.searchTerm()) {
       const q = this.searchTerm().toLowerCase();
       result = result.filter(shelf =>
-        shelf.shelfCode?.toLowerCase().includes(q) ||
-        shelf.shelfName?.toLowerCase().includes(q) ||
+        shelf.rack?.toLowerCase().includes(q) ||
+        shelf.shelfNumber?.toLowerCase().includes(q) ||
         shelf.warehouseName?.toLowerCase().includes(q) ||
         shelf.aisle?.toLowerCase().includes(q) ||
-        shelf.section?.toLowerCase().includes(q)
+        shelf.zone?.toLowerCase().includes(q)
       );
     }
 
@@ -106,28 +121,36 @@ export class ShelvesComponent implements OnInit {
   // Form initialization
   initializeForms(): void {
     this.createForm = this.fb.group({
-      shelfCode: ['', [Validators.required, Validators.maxLength(20)]],
-      shelfName: ['', [Validators.required, Validators.maxLength(100)]],
-      warehouseId: ['', Validators.required],
+      // Send the warehouseId (Guid) directly. Looking the warehouse up by name
+      // was fragile — if the list hadn't loaded yet, the request went out with
+      // an empty warehouseId which the backend parsed as Guid.Empty and then
+      // reported "Warehouse with ID 00000000-... not found.".
+      warehouseId: ['', [Validators.required, Validators.pattern(GUID_PATTERN)]],
       aisle: ['', Validators.maxLength(10)],
-      section: ['', Validators.maxLength(10)],
-      level: ['', Validators.maxLength(10)],
-      position: ['', Validators.maxLength(10)],
-      capacity: [null, [Validators.min(0)]],
-      description: ['', Validators.maxLength(500)]
+      rack: ['', [Validators.required, Validators.maxLength(20)]],
+      shelfNumber: ['', [Validators.required, Validators.maxLength(100)]],
+      zone: ['', Validators.maxLength(10)],
+      binType: ['', Validators.maxLength(10)],
+      length: [null, [Validators.min(0)]],
+      width: [null, [Validators.min(0)]],
+      height: [null, [Validators.min(0)]],
+      maxWeight: [null, [Validators.min(0)]],
+      capacity: [null, [Validators.min(0)]]
     });
 
     this.editForm = this.fb.group({
       id: ['', Validators.required],
-      shelfCode: ['', [Validators.required, Validators.maxLength(20)]],
-      shelfName: ['', [Validators.required, Validators.maxLength(100)]],
-      warehouseId: ['', Validators.required],
+      warehouseId: ['', [Validators.required, Validators.pattern(GUID_PATTERN)]],
       aisle: ['', Validators.maxLength(10)],
-      section: ['', Validators.maxLength(10)],
-      level: ['', Validators.maxLength(10)],
-      position: ['', Validators.maxLength(10)],
+      rack: ['', [Validators.required, Validators.maxLength(20)]],
+      shelfNumber: ['', [Validators.required, Validators.maxLength(100)]],
+      zone: ['', Validators.maxLength(10)],
+      binType: ['', Validators.maxLength(10)],
+      length: [null, [Validators.min(0)]],
+      width: [null, [Validators.min(0)]],
+      height: [null, [Validators.min(0)]],
+      maxWeight: [null, [Validators.min(0)]],
       capacity: [null, [Validators.min(0)]],
-      description: ['', Validators.maxLength(500)],
       isActive: [true]
     });
   }
@@ -136,12 +159,29 @@ export class ShelvesComponent implements OnInit {
   loadWarehouses(): void {
     this.warehousesService.getAll({ isActive: true }).subscribe({
       next: (response) => {
-        if (response.success !== false && Array.isArray(response.data)) {
+        if (response.success && Array.isArray(response.data) && response.data.length > 0) {
           this.warehouses.set(response.data);
+          this.warehousesLoadedFromApi.set(true);
+          this.warehousesLoadError.set(null);
+        } else if (response.success && Array.isArray(response.data) && response.data.length === 0) {
+          this.warehouses.set([]);
+          this.warehousesLoadedFromApi.set(true);
+          this.warehousesLoadError.set('No warehouses exist yet. Please create a warehouse first.');
+        } else {
+          // service fell back to mock data
+          this.warehouses.set(response.data ?? []);
+          this.warehousesLoadedFromApi.set(false);
+          this.warehousesLoadError.set(
+            response.message ||
+            'Warehouses API is unavailable. Sample warehouses are shown but cannot be used to create real shelf locations.'
+          );
         }
       },
       error: (err) => {
-        console.error('Error loading warehouses:', err);
+        this.warehousesLoadedFromApi.set(false);
+        this.warehousesLoadError.set(
+          `Failed to load warehouses (${err?.status || 'network error'}). You cannot create a shelf location until the warehouses API is reachable.`
+        );
       }
     });
   }
@@ -164,33 +204,19 @@ export class ShelvesComponent implements OnInit {
       params.isActive = this.statusFilter() === 'Active';
     }
 
-    console.log('=== SHELVES LIST DEBUG ===');
-    console.log('Loading shelves with params:', params);
-    console.log('=========================');
-
     this.shelvesService.getAll(params).subscribe({
       next: (response) => {
-        console.log('=== SHELVES API RESPONSE ===');
-        console.log('Response:', JSON.stringify(response, null, 2));
-        console.log('============================');
-        
         if (response.success !== false && Array.isArray(response.data)) {
           this.shelves.set(response.data);
           this.totalShelves.set(response.data.length);
-          console.log('Shelves loaded:', response.data.length);
         } else {
-          console.error('API response unsuccessful or no data:', response);
           this.error.set(response.message || 'No shelf data received from server');
         }
         this.loading.set(false);
       },
       error: (err) => {
-        console.error('=== SHELVES LOAD ERROR ===');
-        console.error('Full error object:', err);
-        console.error('==========================');
-        
         let errorMessage = 'Failed to load shelves. Please try again.';
-        
+
         if (err.error) {
           if (err.error.message) {
             errorMessage = err.error.message;
@@ -200,11 +226,11 @@ export class ShelvesComponent implements OnInit {
             errorMessage = err.error;
           }
         }
-        
+
         if (err.status) {
           errorMessage = `[${err.status} ${err.statusText}] ${errorMessage}`;
         }
-        
+
         this.error.set(errorMessage);
         this.loading.set(false);
       }
@@ -236,7 +262,6 @@ export class ShelvesComponent implements OnInit {
     this.searchTerm.set('');
     this.warehouseFilter.set('All');
     this.statusFilter.set('All');
-    this.currentPage.set(1);
   }
 
   goToPage(page: number): void {
@@ -245,6 +270,9 @@ export class ShelvesComponent implements OnInit {
 
   // Modal handlers
   openCreateModal(): void {
+    // Always re-attempt to load warehouses so the dropdown reflects the
+    // current state of the database when the user opens the modal.
+    this.loadWarehouses();
     this.createForm.reset();
     this.showCreateModal.set(true);
   }
@@ -255,18 +283,21 @@ export class ShelvesComponent implements OnInit {
   }
 
   openEditModal(shelf: ShelfLocationDto): void {
+    this.loadWarehouses();
     this.editingShelf.set(shelf);
     this.editForm.patchValue({
       id: shelf.id,
-      shelfCode: shelf.shelfCode,
-      shelfName: shelf.shelfName,
-      warehouseId: shelf.warehouseId,
+      warehouseId: shelf.warehouseId || '',
       aisle: shelf.aisle || '',
-      section: shelf.section || '',
-      level: shelf.level || '',
-      position: shelf.position || '',
+      rack: shelf.rack || '',
+      shelfNumber: shelf.shelfNumber || '',
+      zone: shelf.zone || '',
+      binType: shelf.binType || '',
+      length: shelf.length || null,
+      width: shelf.width || null,
+      height: shelf.height || null,
+      maxWeight: shelf.maxWeight || null,
       capacity: shelf.capacity || null,
-      description: shelf.description || '',
       isActive: shelf.isActive
     });
     this.showEditModal.set(true);
@@ -285,53 +316,54 @@ export class ShelvesComponent implements OnInit {
       return;
     }
 
+    // Guard: refuse to submit unless we have real warehouse data from the API.
+    if (!this.warehousesLoadedFromApi() || this.warehouses().length === 0) {
+      this.error.set(
+        'Cannot create a shelf location: the warehouse list could not be loaded from the server. ' +
+        'Click "Retry" to try again, or create a warehouse first.'
+      );
+      return;
+    }
+
     this.loading.set(true);
 
     const formValue = this.createForm.value;
+
     const createRequest: CreateShelfLocationRequest = {
-      shelfCode: formValue.shelfCode.trim(),
-      shelfName: formValue.shelfName.trim(),
+      // Send the warehouseId straight from the form. No name lookup, no
+      // empty-string fallback, no risk of Guid.Empty.
       warehouseId: formValue.warehouseId,
       aisle: formValue.aisle?.trim() || undefined,
-      section: formValue.section?.trim() || undefined,
-      level: formValue.level?.trim() || undefined,
-      position: formValue.position?.trim() || undefined,
-      capacity: formValue.capacity || undefined,
-      description: formValue.description?.trim() || undefined
+      rack: formValue.rack.trim(),
+      shelfNumber: formValue.shelfNumber.trim(),
+      zone: formValue.zone?.trim() || undefined,
+      binType: formValue.binType?.trim() || undefined,
+      length: formValue.length || undefined,
+      width: formValue.width || undefined,
+      height: formValue.height || undefined,
+      maxWeight: formValue.maxWeight || undefined,
+      capacity: formValue.capacity || undefined
     };
-
-    console.log('=== SHELF CREATION DEBUG ===');
-    console.log('Create request payload:', JSON.stringify(createRequest, null, 2));
-    console.log('============================');
 
     this.shelvesService.create(createRequest).subscribe({
       next: (response) => {
-        console.log('=== SHELF CREATION SUCCESS ===');
-        console.log('Response:', JSON.stringify(response, null, 2));
-        console.log('==============================');
-        
         if (response.success) {
-          alert('Shelf created successfully!');
           this.closeCreateModal();
           this.loadShelves();
         } else {
-          alert('Failed to create shelf: ' + response.message);
+          this.error.set('Failed to create shelf: ' + response.message);
         }
         this.loading.set(false);
       },
       error: (err) => {
-        console.error('=== SHELF CREATION ERROR ===');
-        console.error('Full error object:', err);
-        console.error('============================');
-        
         let errorMessage = 'Failed to create shelf. Please try again.';
-        
+
         if (err.error) {
           if (err.error.errors && typeof err.error.errors === 'object') {
             const validationErrors = err.error.errors;
             const errorDetails = Object.keys(validationErrors).map(key => {
-              const messages = Array.isArray(validationErrors[key]) 
-                ? validationErrors[key].join(', ') 
+              const messages = Array.isArray(validationErrors[key])
+                ? validationErrors[key].join(', ')
                 : validationErrors[key];
               return `• ${key}: ${messages}`;
             });
@@ -342,12 +374,12 @@ export class ShelvesComponent implements OnInit {
             errorMessage = err.error.title;
           }
         }
-        
+
         if (err.status) {
           errorMessage = `[${err.status} ${err.statusText}]\n${errorMessage}`;
         }
-        
-        alert(errorMessage);
+
+        this.error.set(errorMessage);
         this.loading.set(false);
       }
     });
@@ -364,54 +396,53 @@ export class ShelvesComponent implements OnInit {
     const formValue = this.editForm.value;
     const updateRequest: UpdateShelfLocationRequest = {
       id: formValue.id,
-      shelfCode: formValue.shelfCode?.trim(),
-      shelfName: formValue.shelfName?.trim(),
       warehouseId: formValue.warehouseId,
       aisle: formValue.aisle?.trim() || undefined,
-      section: formValue.section?.trim() || undefined,
-      level: formValue.level?.trim() || undefined,
-      position: formValue.position?.trim() || undefined,
+      rack: formValue.rack?.trim(),
+      shelfNumber: formValue.shelfNumber?.trim(),
+      zone: formValue.zone?.trim() || undefined,
+      binType: formValue.binType?.trim() || undefined,
+      length: formValue.length || undefined,
+      width: formValue.width || undefined,
+      height: formValue.height || undefined,
+      maxWeight: formValue.maxWeight || undefined,
       capacity: formValue.capacity || undefined,
-      description: formValue.description?.trim() || undefined,
       isActive: formValue.isActive
     };
 
     this.shelvesService.update(updateRequest).subscribe({
       next: (response) => {
         if (response.success) {
-          alert('Shelf updated successfully!');
           this.closeEditModal();
           this.loadShelves();
         } else {
-          alert('Failed to update shelf: ' + response.message);
+          this.error.set('Failed to update shelf: ' + response.message);
         }
         this.loading.set(false);
       },
       error: (err) => {
-        console.error('Error updating shelf:', err);
-        alert('Failed to update shelf. Please try again.');
+        this.error.set('Failed to update shelf. ' + (err?.error?.message || err?.message || ''));
         this.loading.set(false);
       }
     });
   }
 
   deleteShelf(shelf: ShelfLocationDto): void {
-    if (confirm(`Are you sure you want to delete shelf "${shelf.shelfName}"? This action cannot be undone.`)) {
-      this.shelvesService.delete(shelf.id).subscribe({
-        next: (response) => {
-          if (response.success) {
-            alert('Shelf deleted successfully');
-            this.loadShelves();
-          } else {
-            alert('Failed to delete shelf: ' + response.message);
-          }
-        },
-        error: (err) => {
-          console.error('Error deleting shelf:', err);
-          alert('Failed to delete shelf. Please try again.');
-        }
-      });
+    if (!confirm(`Are you sure you want to delete shelf "${shelf.rack} - ${shelf.shelfNumber}"? This action cannot be undone.`)) {
+      return;
     }
+    this.shelvesService.delete(shelf.id).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.loadShelves();
+        } else {
+          this.error.set('Failed to delete shelf: ' + response.message);
+        }
+      },
+      error: (err) => {
+        this.error.set('Failed to delete shelf. ' + (err?.error?.message || err?.message || ''));
+      }
+    });
   }
 
   // Utility methods
@@ -443,10 +474,10 @@ export class ShelvesComponent implements OnInit {
 
   formatDate(date: string | Date): string {
     if (!date) return 'N/A';
-    return new Date(date).toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric', 
-      year: 'numeric' 
+    return new Date(date).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
     });
   }
 

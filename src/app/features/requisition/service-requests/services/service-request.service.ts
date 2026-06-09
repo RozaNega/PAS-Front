@@ -149,14 +149,14 @@ export class ServiceRequestService {
   }
 
   approve(data: ApproveServiceRequestRequest): Observable<ApiResponse<unknown>> {
-    const body = { command: { id: data.id, remarks: data.remarks ?? '' } };
+    const body = { Id: data.id, remarks: data.remarks ?? '' };
     return this.apiService.post<unknown>(`ServiceRequests/${data.id}/approve`, body).pipe(
       map((raw) => this.normalizeEnvelope(raw)),
     );
   }
 
   reject(data: RejectServiceRequestRequest): Observable<ApiResponse<unknown>> {
-    const body = { command: { id: data.id, reason: data.reason } };
+    const body = { Id: data.id, reason: data.reason };
     return this.apiService.post<unknown>(`ServiceRequests/${data.id}/reject`, body).pipe(
       map((raw) => this.normalizeEnvelope(raw)),
     );
@@ -173,7 +173,7 @@ export class ServiceRequestService {
       }
       return row;
     });
-    const body = { command: { id: data.id, items } };
+    const body = { Id: data.id, items };
     return this.apiService.post<unknown>(`ServiceRequests/${data.id}/issue`, body).pipe(
       map((raw) => this.normalizeEnvelope<string>(raw)),
     );
@@ -181,12 +181,10 @@ export class ServiceRequestService {
 
   cancel(data: CancelServiceRequestRequest): Observable<ApiResponse<unknown>> {
     const body = {
-      command: {
-        id: data.id,
-        reason: data.reason,
-        notifyApprover: data.notifyApprover,
-        sendEmailConfirmation: data.sendEmailConfirmation,
-      },
+      Id: data.id,
+      reason: data.reason,
+      notifyApprover: data.notifyApprover,
+      sendEmailConfirmation: data.sendEmailConfirmation,
     };
     return this.apiService.post<unknown>(`ServiceRequests/${data.id}/cancel`, body).pipe(
       map((raw) => this.normalizeEnvelope(raw)),
@@ -200,7 +198,7 @@ export class ServiceRequestService {
   }
 
   addComment(id: string, comment: string): Observable<ApiResponse<unknown>> {
-    const body = { command: { id, comment } };
+    const body = { Id: id, comment };
     return this.apiService.post<unknown>(`ServiceRequests/${id}/comments`, body).pipe(
       map((raw) => this.normalizeEnvelope(raw)),
     );

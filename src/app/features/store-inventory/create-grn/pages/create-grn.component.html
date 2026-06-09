@@ -6,6 +6,13 @@
     </div>
   </div>
 
+  @if (notification(); as n) {
+    <div class="notification-banner" [class.success]="n.type === 'success'" [class.error]="n.type === 'error'">
+      <i [class]="n.type === 'success' ? 'bi bi-check-circle-fill' : 'bi bi-exclamation-circle-fill'"></i>
+      {{ n.message }}
+    </div>
+  }
+
   <!-- Step Indicator -->
   <div class="step-indicator">
     <div class="step-progress">

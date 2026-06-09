@@ -1,4 +1,207 @@
-<section class="feature-card">
-  <h2>{{ title }}</h2>
-  <p>{{ description }}</p>
+<section class="warehouse-create-page" *ngIf="form">
+  <header class="page-header">
+    <a routerLink="/storage/warehouses" class="back-link">
+      <i class="bi bi-arrow-left"></i>
+      <span>Back to warehouses</span>
+    </a>
+    <h1>Add Warehouse</h1>
+    <p class="subtitle">
+      Create a new storage facility. The fields below are sent to
+      <code>POST /api/Warehouses</code> and must match the backend's
+      <code>CreateWarehouseCommand</code>.
+    </p>
+  </header>
+
+  <form
+    class="warehouse-form"
+    [formGroup]="form"
+    (ngSubmit)="submit()"
+    novalidate
+  >
+    <!-- Required section: identity -->
+    <fieldset class="form-section">
+      <legend>Identification</legend>
+
+      <div class="form-grid">
+        <div class="form-field">
+          <label for="warehouseName">
+            Warehouse Name <span class="required">*</span>
+          </label>
+          <input
+            id="warehouseName"
+            type="text"
+            formControlName="warehouseName"
+            placeholder="Main Warehouse"
+            [class.is-invalid]="isInvalid('warehouseName')"
+            [maxlength]="maxLengths.warehouseName"
+          />
+          <small class="error" *ngIf="hasError('warehouseName', 'required')">
+            Warehouse name is required.
+          </small>
+          <small class="error" *ngIf="hasError('warehouseName', 'maxlength')">
+            Must not exceed {{ maxLengths.warehouseName }} characters.
+          </small>
+        </div>
+
+        <div class="form-field">
+          <label for="locationCode">
+            Location Code <span class="required">*</span>
+          </label>
+          <input
+            id="locationCode"
+            type="text"
+            formControlName="locationCode"
+            placeholder="WH-001"
+            [class.is-invalid]="isInvalid('locationCode')"
+            [maxlength]="maxLengths.locationCode"
+          />
+          <small class="error" *ngIf="hasError('locationCode', 'required')">
+            Location code is required.
+          </small>
+          <small class="error" *ngIf="hasError('locationCode', 'maxlength')">
+            Must not exceed {{ maxLengths.locationCode }} characters.
+          </small>
+        </div>
+      </div>
+    </fieldset>
+
+    <!-- Optional section: address -->
+    <fieldset class="form-section">
+      <legend>Address</legend>
+
+      <div class="form-field full">
+        <label for="address">Street Address</label>
+        <input
+          id="address"
+          type="text"
+          formControlName="address"
+          placeholder="123 Bole Road, Main District"
+          [class.is-invalid]="isInvalid('address')"
+          [maxlength]="maxLengths.address"
+        />
+        <small class="error" *ngIf="hasError('address', 'maxlength')">
+          Must not exceed {{ maxLengths.address }} characters.
+        </small>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-field">
+          <label for="city">City</label>
+          <input
+            id="city"
+            type="text"
+            formControlName="city"
+            placeholder="Addis Ababa"
+            [class.is-invalid]="isInvalid('city')"
+            [maxlength]="maxLengths.city"
+          />
+          <small class="error" *ngIf="hasError('city', 'maxlength')">
+            Must not exceed {{ maxLengths.city }} characters.
+          </small>
+        </div>
+
+        <div class="form-field">
+          <label for="country">Country</label>
+          <input
+            id="country"
+            type="text"
+            formControlName="country"
+            placeholder="Ethiopia"
+            [class.is-invalid]="isInvalid('country')"
+            [maxlength]="maxLengths.country"
+          />
+          <small class="error" *ngIf="hasError('country', 'maxlength')">
+            Must not exceed {{ maxLengths.country }} characters.
+          </small>
+        </div>
+      </div>
+    </fieldset>
+
+    <!-- Optional section: contact -->
+    <fieldset class="form-section">
+      <legend>Contact</legend>
+
+      <div class="form-grid">
+        <div class="form-field">
+          <label for="contactPerson">Contact Person</label>
+          <input
+            id="contactPerson"
+            type="text"
+            formControlName="contactPerson"
+            placeholder="John Doe"
+            [class.is-invalid]="isInvalid('contactPerson')"
+            [maxlength]="maxLengths.contactPerson"
+          />
+          <small class="error" *ngIf="hasError('contactPerson', 'maxlength')">
+            Must not exceed {{ maxLengths.contactPerson }} characters.
+          </small>
+        </div>
+
+        <div class="form-field">
+          <label for="contactPhone">Contact Phone</label>
+          <input
+            id="contactPhone"
+            type="tel"
+            formControlName="contactPhone"
+            placeholder="+251 911 000 000"
+            [class.is-invalid]="isInvalid('contactPhone')"
+            [maxlength]="maxLengths.contactPhone"
+          />
+          <small class="error" *ngIf="hasError('contactPhone', 'maxlength')">
+            Must not exceed {{ maxLengths.contactPhone }} characters.
+          </small>
+        </div>
+      </div>
+
+      <div class="form-field full">
+        <label for="contactEmail">Contact Email</label>
+        <input
+          id="contactEmail"
+          type="email"
+          formControlName="contactEmail"
+          placeholder="contact@example.com"
+          [class.is-invalid]="isInvalid('contactEmail')"
+          [maxlength]="maxLengths.contactEmail"
+        />
+        <small class="error" *ngIf="hasError('contactEmail', 'email')">
+          Please enter a valid email address.
+        </small>
+        <small class="error" *ngIf="hasError('contactEmail', 'maxlength')">
+          Must not exceed {{ maxLengths.contactEmail }} characters.
+        </small>
+      </div>
+    </fieldset>
+
+    <!-- Status banner -->
+    <div class="alert alert-error" *ngIf="submitError" role="alert">
+      <i class="bi bi-exclamation-triangle-fill"></i>
+      <span>{{ submitError }}</span>
+    </div>
+    <div class="alert alert-success" *ngIf="submitSuccess" role="status">
+      <i class="bi bi-check-circle-fill"></i>
+      <span>{{ submitSuccess }}</span>
+    </div>
+
+    <!-- Actions -->
+    <footer class="form-actions">
+      <button
+        type="button"
+        class="btn btn-secondary"
+        (click)="cancel()"
+        [disabled]="isSubmitting"
+      >
+        Cancel
+      </button>
+      <button
+        type="submit"
+        class="btn btn-primary"
+        [disabled]="isSubmitting || form.invalid"
+      >
+        <span *ngIf="!isSubmitting">
+          <i class="bi bi-check2"></i> Create
+        </span>
+        <span *ngIf="isSubmitting">Creating…</span>
+      </button>
+    </footer>
+  </form>
 </section>

@@ -161,16 +161,12 @@ export class InventoryService {
     return this.apiService.get<unknown>('InventoryStock', params).pipe(
       map((raw) => normalizePasListResponse<InventoryStockDto>(raw)),
       catchError(() => {
-        console.warn('InventoryStock API unavailable, using mock data');
-        let mockData = this.createMockInventoryStock();
-        if (params?.warehouseId) {
-          mockData = mockData.filter(s => s.warehouseId === params.warehouseId);
-        }
+        console.warn('InventoryStock API unavailable');
         return of({
-          success: true,
-          message: 'Mock data (API unavailable)',
-          data: mockData,
-          statusCode: 200,
+          success: false,
+          message: 'InventoryStock API unavailable',
+          data: [],
+          statusCode: 0,
         } as ApiResponse<InventoryStockDto[]>);
       }),
     );

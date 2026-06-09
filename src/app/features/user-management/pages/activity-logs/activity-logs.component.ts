@@ -178,7 +178,55 @@ export class ActivityLogsComponent implements OnInit {
     return `${Math.floor(diff / 86400000)}d ago`;
   }
 
-  exportLogs(format: string): void { this.showExportDropdown.set(false); }
+  exportLogs(format: string): void {
+    this.showExportDropdown.set(false);
+    const logs = this.filteredLogs();
+    if (!logs.length) return;
+
+    const headers = ['Timestamp', 'User', 'Action', 'Action Type', 'Entity Type', 'Entity ID', 'Details', 'IP Address', 'Status'];
+    const rows = logs.map(l => [
+      this.formatTimestamp(l.timestamp),
+      l.user,
+      l.action,
+      l.actionType,
+      l.entityType,
+      l.entityId,
+      l.details,
+      l.ipAddress,
+      l.status,
+    ]);
+
+    if (format === 'CSV') {
+      const csv = [headers, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+      this.downloadFile(csv, 'activity-logs.csv', 'text/csv');
+    } else if (format === 'Excel') {
+      const tsv = [headers, ...rows].map(r => r.map(c => String(c).replace(/\t/g, ' ')).join('\t')).join('\n');
+      this.downloadFile(tsv, 'activity-logs.xls', 'application/vnd.ms-excel');
+    } else if (format === 'JSON') {
+      const json = JSON.stringify(logs.map(l => ({
+        timestamp: l.timestamp,
+        user: l.user,
+        action: l.action,
+        actionType: l.actionType,
+        entityType: l.entityType,
+        entityId: l.entityId,
+        details: l.details,
+        ipAddress: l.ipAddress,
+        status: l.status,
+      })), null, 2);
+      this.downloadFile(json, 'activity-logs.json', 'application/json');
+    }
+  }
+
+  private downloadFile(content: string, filename: string, mimeType: string): void {
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
 
   openDetailsModal(log: LogEntry): void {
     this.selectedLog.set(log);

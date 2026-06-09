@@ -101,7 +101,7 @@
               <option value="">Select shelf</option>
               @for (shelf of shelves(); track shelf.id) {
                 <option [value]="shelf.id">
-                  {{ shelf.position }} - {{ shelf.aisle }}/{{ shelf.section }}/{{ shelf.level }}
+                  {{ shelf.rack }} - {{ shelf.aisle }}/{{ shelf.shelfNumber }}/{{ shelf.zone }}
                 </option>
               }
             </select>

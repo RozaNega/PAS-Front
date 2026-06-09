@@ -1,4 +1,12 @@
 <section class="user-page">
+  @if (notification(); as n) {
+    <div class="notification-banner" [class.success]="n.type === 'success'" [class.error]="n.type === 'error'">
+      <i class="bi" [class.bi-check-circle-fill]="n.type === 'success'" [class.bi-exclamation-triangle-fill]="n.type === 'error'"></i>
+      <span>{{ n.message }}</span>
+      <button type="button" class="dismiss-btn" (click)="dismissNotification()"><i class="bi bi-x"></i></button>
+    </div>
+  }
+
   <header class="page-header">
     <div class="header-content">
       <div class="header-icon">
@@ -20,32 +28,8 @@
           <button type="button" (click)="exportUsers('CSV')"><i class="bi bi-file-earmark-csv"></i> CSV</button>
           <button type="button" (click)="exportUsers('Excel')"><i class="bi bi-file-earmark-excel"></i> Excel</button>
           <button type="button" (click)="exportUsers('PDF')"><i class="bi bi-file-earmark-pdf"></i> PDF</button>
-  </div>
-}
-
-<!-- Reset Password Confirmation Modal -->
-@if (showResetConfirmModal() && resetTargetUser(); as user) {
-  <div class="modal-overlay" (click)="closeResetConfirmModal()">
-    <div class="modal-card modal-sm" (click)="$event.stopPropagation()">
-      <div class="modal-header">
-        <h3><i class="bi bi-key"></i> Reset Password</h3>
-        <button type="button" class="modal-close" (click)="closeResetConfirmModal()"><i class="bi bi-x-lg"></i></button>
-      </div>
-      <div class="modal-body">
-        <div class="confirm-content">
-          <div class="confirm-icon"><i class="bi bi-envelope"></i></div>
-          <p>Send password reset instructions to:</p>
-          <strong class="confirm-email">{{ user.email }}</strong>
-          <p class="confirm-user">for <strong>{{ user.name }}</strong> ({{ user.username }})</p>
         </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="action-btn secondary" (click)="closeResetConfirmModal()">Cancel</button>
-        <button type="button" class="action-btn primary" (click)="executeResetPassword()"><i class="bi bi-send"></i> Send Instructions</button>
-      </div>
-    </div>
-  </div>
-}
+      }
       <button type="button" class="action-btn secondary" (click)="importUsers()"><i class="bi bi-upload"></i> Import</button>
       <a class="action-btn primary" [routerLink]="['/admin/users/add']"><i class="bi bi-plus-lg"></i> Add User</a>
     </div>
@@ -98,14 +82,6 @@
         <button type="button" class="btn-filter" (click)="resetFilters()"><i class="bi bi-x-circle"></i> Clear</button>
       </div>
     </div>
-
-    @if (notification(); as n) {
-      <div class="notification-banner" [class.success]="n.type === 'success'" [class.error]="n.type === 'error'">
-        <i class="bi" [class.bi-check-circle-fill]="n.type === 'success'" [class.bi-exclamation-triangle-fill]="n.type === 'error'"></i>
-        <span>{{ n.message }}</span>
-        <button type="button" class="dismiss-btn" (click)="dismissNotification()"><i class="bi bi-x"></i></button>
-      </div>
-    }
 
     <div class="panel">
       <div class="panel-header">
@@ -258,6 +234,30 @@
       <div class="modal-footer">
         <button type="button" class="action-btn secondary" (click)="closeEditModal()">Cancel</button>
         <button type="button" class="action-btn primary" (click)="saveEdit()"><i class="bi bi-check-lg"></i> Save Changes</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Reset Password Confirmation Modal -->
+@if (showResetConfirmModal() && resetTargetUser(); as user) {
+  <div class="modal-overlay" (click)="closeResetConfirmModal()">
+    <div class="modal-card modal-sm" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3><i class="bi bi-key"></i> Reset Password</h3>
+        <button type="button" class="modal-close" (click)="closeResetConfirmModal()"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="confirm-content">
+          <div class="confirm-icon"><i class="bi bi-envelope"></i></div>
+          <p>Send password reset instructions to:</p>
+          <strong class="confirm-email">{{ user.email }}</strong>
+          <p class="confirm-user">for <strong>{{ user.name }}</strong> ({{ user.username }})</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="action-btn secondary" (click)="closeResetConfirmModal()">Cancel</button>
+        <button type="button" class="action-btn primary" (click)="executeResetPassword()"><i class="bi bi-send"></i> Send Instructions</button>
       </div>
     </div>
   </div>

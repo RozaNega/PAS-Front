@@ -1,7 +1,12 @@
-import { ChangeDetectionStrategy, Component, signal, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { PasApiService } from '../../services/pas-api.service';
+import {
+  WorkflowService,
+  NotificationMessage,
+} from '../../../core/services/workflow.service';
+import { CurrentUserService } from '../../../core/services/current-user.service';
 
 interface NotificationItem {
   id: string;
@@ -131,6 +136,9 @@ interface NotificationItem {
               </div>
             }
           </div>
+          <div class="notifications-footer" *ngIf="notifications().length > 0">
+            <button class="view-all-btn" (click)="viewAllNotifications()">View All Notifications →</button>
+          </div>
         </div>
 
         <div class="user-dropdown" [class.show]="showUserMenu()" [class.dark-theme]="isDarkTheme()">
@@ -157,25 +165,23 @@ interface NotificationItem {
   styleUrls: ['./app-header.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class AppHeaderComponent {
+export class AppHeaderComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly pasApi = inject(PasApiService);
+  private readonly workflowService = inject(WorkflowService);
+  private readonly currentUserService = inject(CurrentUserService);
 
   isDarkTheme = signal(false);
   showNotifications = signal(false);
   showUserMenu = signal(false);
   notifications = signal<NotificationItem[]>([]);
 
-  private adminNotifications: NotificationItem[] = [];
-
-  private storekeeperNotifications: NotificationItem[] = [];
-
-  constructor() {
+  ngOnInit(): void {
     const savedTheme = localStorage.getItem('theme');
     this.isDarkTheme.set(savedTheme === 'dark');
     this.updateTheme();
-    this.updateNotificationsBasedOnRole();
-    this.router.events.subscribe(() => this.updateNotificationsBasedOnRole());
+    this.loadWorkflowNotifications();
+    this.router.events.subscribe(() => this.loadWorkflowNotifications());
     document.addEventListener('click', (e: Event) => {
       const target = e.target as HTMLElement;
       if (!target.closest('.notification-wrapper') && !target.closest('.notifications-dropdown'))
@@ -185,12 +191,22 @@ export class AppHeaderComponent {
     });
   }
 
-  private updateNotificationsBasedOnRole(): void {
-    const currentUrl = this.router.url;
-    if (currentUrl.includes('/admin')) this.notifications.set(this.adminNotifications);
-    else if (currentUrl.includes('/storekeeper'))
-      this.notifications.set(this.storekeeperNotifications);
-    else this.notifications.set(this.adminNotifications);
+  private loadWorkflowNotifications(): void {
+    const currentUser = this.currentUserService.getCurrentUserValue();
+    const userId = currentUser?.id || 'admin_001';
+    const role = (currentUser?.roles?.[0] || 'Admin') as 'Employee' | 'Manager' | 'Admin' | 'Compliance';
+
+    const workflowNotifications = this.workflowService.getNotificationsForUser(userId, role);
+    const notificationItems: NotificationItem[] = workflowNotifications.map((n) => ({
+      id: n.id,
+      title: n.title,
+      message: n.message,
+      type: n.type,
+      timestamp: new Date(n.createdDate),
+      read: n.isRead,
+      requestId: n.requestId,
+    }));
+    this.notifications.set(notificationItems);
   }
 
   toggleTheme() {
@@ -214,16 +230,32 @@ export class AppHeaderComponent {
     return this.notifications().filter((n) => !n.read).length;
   }
   markAllAsRead() {
-    const updated = this.notifications().map((n) => ({ ...n, read: true }));
-    this.notifications.set(updated);
+    const currentUser = this.currentUserService.getCurrentUserValue();
+    const userId = currentUser?.id || 'admin_001';
+    const role = (currentUser?.roles?.[0] || 'Admin') as 'Employee' | 'Manager' | 'Admin' | 'Compliance';
+
+    this.workflowService.markAllNotificationsAsRead(userId, role);
+    this.loadWorkflowNotifications();
   }
 
-  // Dismiss: call API then remove locally
   dismissNotification(id: string) {
-    this.pasApi.markNotificationAsRead(id).subscribe({
-      next: () => this.notifications.set(this.notifications().filter((n) => n.id !== id)),
-      error: () => this.notifications.set(this.notifications().filter((n) => n.id !== id)),
-    });
+    this.workflowService.dismissNotification(id);
+    this.notifications.set(this.notifications().filter((n) => n.id !== id));
+  }
+
+  viewAllNotifications() {
+    this.showNotifications.set(false);
+    const currentUrl = this.router.url;
+    if (currentUrl.startsWith('/employee') || currentUrl.includes('/employee'))
+      this.router.navigate(['/employee/dashboard'], { fragment: 'notifications' });
+    else if (currentUrl.startsWith('/admin') || currentUrl.includes('/admin'))
+      this.router.navigate(['/admin/dashboard'], { fragment: 'notifications' });
+    else if (currentUrl.startsWith('/storekeeper') || currentUrl.includes('/storekeeper'))
+      this.router.navigate(['/storekeeper/dashboard'], { fragment: 'notifications' });
+    else if (currentUrl.startsWith('/compliance') || currentUrl.includes('/compliance'))
+      this.router.navigate(['/compliance/dashboard'], { fragment: 'notifications' });
+    else
+      this.router.navigate(['/admin/dashboard'], { fragment: 'notifications' });
   }
 
   viewRequest(srNumber: string) {

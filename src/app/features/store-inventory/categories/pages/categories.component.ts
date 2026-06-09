@@ -78,6 +78,35 @@ export class CategoriesComponent {
   showCategoryItemsModal = signal(false);
   selectedCategory = signal<Category | null>(null);
 
+  constructor() {
+    this.loadCategories();
+  }
+
+  loadCategories(): void {
+    this.categoriesService.getAll(1, 100).subscribe({
+      next: (res: any) => {
+        const data = res?.data;
+        let items: any[] = [];
+        if (Array.isArray(data)) {
+          items = data;
+        } else if (data?.items) {
+          items = data.items;
+        }
+        if (items.length) {
+          this.categories.set(items.map((c: any) => ({
+            id: String(c.id),
+            name: c.name || c.categoryName || '',
+            parentCategory: c.parentCategoryName || '-',
+            itemsCount: c.itemsCount ?? 0,
+            subcategories: c.subCategoriesCount ?? 0,
+            status: c.isActive !== false ? 'Active' : 'Inactive'
+          })));
+        }
+      },
+      error: () => {}
+    });
+  }
+
   readonly categoryForm = this.formBuilder.nonNullable.group({
     name: ['', [Validators.required, Validators.minLength(2)]],
     description: [''],
@@ -203,15 +232,17 @@ export class CategoriesComponent {
     const formValue = this.categoryForm.getRawValue();
 
     this.categoriesService.createCategory({
+      name: formValue.name,
       categoryName: formValue.name,
       description: formValue.description,
-      parentCategoryId: formValue.parentCategoryId ? Number(formValue.parentCategoryId) : undefined
+      parentCategoryId: formValue.parentCategoryId ? formValue.parentCategoryId : undefined
     }).pipe(finalize(() => this.loading.set(false)))
     .subscribe({
       next: (response) => {
         if (response.success) {
           console.log('Category created successfully:', response.data);
           this.closeAddModal();
+          this.loadCategories();
         } else {
           console.error('Failed to create category:', response.message);
           alert('Failed to create category: ' + response.message);

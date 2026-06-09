@@ -5,6 +5,3 @@ export interface ApiResponseModel<T> {
   data?: T;
   statusCode: number;
 }
-
-
-

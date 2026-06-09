@@ -1,5 +1,5 @@
 import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, DatePipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { EMPTY, of } from 'rxjs';
@@ -8,12 +8,19 @@ import { DashboardService, DashboardStatistics } from '../../../../core/services
 import { ServiceRequestService } from '../../../requisition/service-requests/services/service-request.service';
 import { NotificationService as ToastService } from '../../../../core/services/notification.service';
 import { pasApiUrlHint } from '../../../../core/config/api-base';
+import {
+  WorkflowService,
+  ServiceRequest,
+  NotificationMessage,
+} from '../../../../core/services/workflow.service';
 
 type RequisitionStatus = 'Pending' | 'Approved' | 'Rejected' | 'Completed' | 'Issued';
 
 interface RequisitionRow {
   readonly id: string;
+  readonly srNumber: string;
   readonly requestor: string;
+  readonly department: string;
   readonly item: string;
   readonly quantity: number;
   readonly date: string;
@@ -73,7 +80,7 @@ interface DeptActivity {
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink, RouterLinkActive],
+  imports: [CommonModule, RouterLink, RouterLinkActive, DatePipe],
   templateUrl: './admin-dashboard.component.html',
   styleUrl: './admin-dashboard.component.scss',
 })
@@ -84,6 +91,7 @@ export class AdminDashboardComponent implements OnInit {
   private readonly dashboardService = inject(DashboardService);
   private readonly serviceRequests = inject(ServiceRequestService);
   private readonly toast = inject(ToastService);
+  private readonly workflowService = inject(WorkflowService);
 
   readonly currentDate = signal('');
   readonly currentTime = signal('');
@@ -128,6 +136,10 @@ export class AdminDashboardComponent implements OnInit {
   );
 
   readonly complianceScore = signal(94);
+
+  // Workflow integration
+  readonly workflowRequests = signal<ServiceRequest[]>([]);
+  readonly workflowNotifications = signal<NotificationMessage[]>([]);
   readonly monthlyMax = computed(() =>
     Math.max(1, ...this.monthlyTrend().flatMap(m => [m.requests, m.approved, m.completed]))
   );
@@ -192,6 +204,8 @@ export class AdminDashboardComponent implements OnInit {
 
   ngOnInit(): void {
     this.refreshData();
+    this.setupWorkflowSubscriptions();
+    this.loadWorkflowData();
   }
 
   apiConnectionHint(): string {
@@ -367,7 +381,9 @@ export class AdminDashboardComponent implements OnInit {
         }
         const rows: RequisitionRow[] = list.map((sr) => ({
           id: sr.id,
+          srNumber: sr.srNumber || '—',
           requestor: sr.requesterName || '—',
+          department: sr.department || '—',
           item: sr.purpose?.trim() || (sr.totalItems > 1 ? `${sr.totalItems} line items` : 'Service request'),
           quantity: this.num(sr.totalQuantity),
           date: this.formatShortDate(sr.requestDate),
@@ -379,14 +395,14 @@ export class AdminDashboardComponent implements OnInit {
 
   private fallbackSampleRequisitions(): RequisitionRow[] {
     return [
-      { id: 'REQ-2024-042', requestor: 'Abebe Kebede', item: 'Dell Latitude Laptop', quantity: 2, date: '28 Apr 2024', status: 'Pending' },
-      { id: 'REQ-2024-041', requestor: 'Meron Alemu', item: 'Office Chairs (Ergonomic)', quantity: 5, date: '27 Apr 2024', status: 'Approved' },
-      { id: 'REQ-2024-040', requestor: 'Getachew Tadesse', item: 'HP LaserJet Printer', quantity: 1, date: '26 Apr 2024', status: 'Rejected' },
-      { id: 'REQ-2024-039', requestor: 'Sara Tilahun', item: 'A4 Printer Paper (10 boxes)', quantity: 10, date: '25 Apr 2024', status: 'Completed' },
-      { id: 'REQ-2024-038', requestor: 'Biruk Desta', item: 'Conference Table', quantity: 1, date: '24 Apr 2024', status: 'Issued' },
-      { id: 'REQ-2024-037', requestor: 'Tsion Girma', item: 'Network Switch Cisco', quantity: 3, date: '23 Apr 2024', status: 'Pending' },
-      { id: 'REQ-2024-036', requestor: 'Hanna Solomon', item: 'Projector Epson', quantity: 2, date: '22 Apr 2024', status: 'Approved' },
-      { id: 'REQ-2024-035', requestor: 'Elias Worku', item: 'Air Conditioner 2 Ton', quantity: 4, date: '21 Apr 2024', status: 'Completed' },
+      { id: 'REQ-2024-042', srNumber: 'SR-2024-042', requestor: 'Abebe Kebede', department: 'IT', item: 'Dell Latitude Laptop', quantity: 2, date: '28 Apr 2024', status: 'Pending' },
+      { id: 'REQ-2024-041', srNumber: 'SR-2024-041', requestor: 'Meron Alemu', department: 'HR', item: 'Office Chairs (Ergonomic)', quantity: 5, date: '27 Apr 2024', status: 'Approved' },
+      { id: 'REQ-2024-040', srNumber: 'SR-2024-040', requestor: 'Getachew Tadesse', department: 'Finance', item: 'HP LaserJet Printer', quantity: 1, date: '26 Apr 2024', status: 'Rejected' },
+      { id: 'REQ-2024-039', srNumber: 'SR-2024-039', requestor: 'Sara Tilahun', department: 'Operations', item: 'A4 Printer Paper (10 boxes)', quantity: 10, date: '25 Apr 2024', status: 'Completed' },
+      { id: 'REQ-2024-038', srNumber: 'SR-2024-038', requestor: 'Biruk Desta', department: 'Marketing', item: 'Conference Table', quantity: 1, date: '24 Apr 2024', status: 'Issued' },
+      { id: 'REQ-2024-037', srNumber: 'SR-2024-037', requestor: 'Tsion Girma', department: 'IT', item: 'Network Switch Cisco', quantity: 3, date: '23 Apr 2024', status: 'Pending' },
+      { id: 'REQ-2024-036', srNumber: 'SR-2024-036', requestor: 'Hanna Solomon', department: 'Sales', item: 'Projector Epson', quantity: 2, date: '22 Apr 2024', status: 'Approved' },
+      { id: 'REQ-2024-035', srNumber: 'SR-2024-035', requestor: 'Elias Worku', department: 'Operations', item: 'Air Conditioner 2 Ton', quantity: 4, date: '21 Apr 2024', status: 'Completed' },
     ];
   }
 
@@ -506,6 +522,57 @@ export class AdminDashboardComponent implements OnInit {
     this.currentTime.set(now.toLocaleTimeString('en-US', { hour12: true }));
   }
 
+  private setupWorkflowSubscriptions(): void {
+    this.workflowService.getRequestUpdates().subscribe((request) => {
+      this.loadWorkflowData();
+    });
+
+    this.workflowService.getNotificationUpdates().subscribe(() => {
+      this.loadWorkflowData();
+    });
+  }
+
+  loadWorkflowData(): void {
+    const requests = this.workflowService.getRequestsForAdmin();
+    this.workflowRequests.set(requests);
+
+    const notifications = this.workflowService.getNotificationsForUser(
+      'admin_001',
+      'Admin'
+    );
+    this.workflowNotifications.set(notifications);
+  }
+
+  approveRequest(id: string): void {
+    const request = this.workflowRequests().find((r) => r.id === id);
+    if (request) {
+      this.workflowService.adminReviewRequest(
+        id,
+        'approve',
+        'Approved by admin',
+        'admin_001',
+        'Admin User'
+      );
+      this.toast.success(`Request ${request.srNumber} approved`);
+      this.loadWorkflowData();
+    }
+  }
+
+  rejectRequest(id: string): void {
+    const request = this.workflowRequests().find((r) => r.id === id);
+    if (request) {
+      this.workflowService.adminReviewRequest(
+        id,
+        'reject',
+        'Rejected by admin',
+        'admin_001',
+        'Admin User'
+      );
+      this.toast.error(`Request ${request.srNumber} rejected`);
+      this.loadWorkflowData();
+    }
+  }
+
   toggleAutoRefresh(): void {
     this.isAutoRefreshEnabled.update((enabled) => !enabled);
     if (this.isAutoRefreshEnabled()) {
@@ -522,7 +589,18 @@ export class AdminDashboardComponent implements OnInit {
   }
 
   openRequisition(id: string): void {
-    void this.router.navigate(['/admin/requisitions']);
+    void this.router.navigate(['/admin/requisitions', id]);
+  }
+
+  markAllNotificationsAsRead(): void {
+    this.workflowService.markAllNotificationsAsRead('admin_001', 'Admin');
+    this.loadWorkflowData();
+    this.toast.success('All notifications marked as read');
+  }
+
+  dismissNotification(id: string): void {
+    this.workflowService.dismissNotification(id);
+    this.loadWorkflowData();
   }
 
   getStatusClass(status: string): string {

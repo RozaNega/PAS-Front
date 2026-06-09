@@ -1,7 +1,8 @@
-import { Component, signal, computed, OnInit } from '@angular/core';
+import { Component, signal, computed, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { SupplierModel } from '../../models/supplier.model';
+import { SupplierModel, CreateSupplierRequest } from '../../models/supplier.model';
+import { SupplierService } from '../../services/supplier.service';
 
 const MOCK_SUPPLIERS: SupplierModel[] = [
   { id: 'SUP-001', name: 'Ethio Cement PLC', contactPerson: 'Abebe Kebede', email: 'abebe@ethiociment.com', phone: '+251-911-123456', address: 'Addis Ababa, Bole Sub-city', tin: 'TIN-00012345', isActive: true },
@@ -29,6 +30,8 @@ const MOCK_SUPPLIERS: SupplierModel[] = [
   styleUrls: ['./supplier-list.component.scss']
 })
 export class SupplierListComponent implements OnInit {
+  private readonly supplierService = inject(SupplierService);
+
   suppliers = signal<SupplierModel[]>([]);
   useMockData = signal(false);
   loading = signal(false);
@@ -115,7 +118,26 @@ export class SupplierListComponent implements OnInit {
   });
 
   ngOnInit(): void {
-    this.fallbackToMock();
+    this.loadSuppliers();
+  }
+
+  loadSuppliers(): void {
+    this.loading.set(true);
+    this.supplierService.getAll().subscribe({
+      next: (res) => {
+        if (res.success && res.data?.length) {
+          this.suppliers.set(res.data);
+          this.useMockData.set(false);
+        } else {
+          this.fallbackToMock();
+        }
+        this.loading.set(false);
+      },
+      error: () => {
+        this.fallbackToMock();
+        this.loading.set(false);
+      }
+    });
   }
 
   private fallbackToMock(): void {
@@ -207,28 +229,58 @@ export class SupplierListComponent implements OnInit {
       this.autoDismissNotification();
       return;
     }
+
+    const request: CreateSupplierRequest = {
+      name: data.name!.trim(),
+      contactPerson: data.contactPerson?.trim() || undefined,
+      email: data.email?.trim() || undefined,
+      phone: data.phone?.trim() || undefined,
+      address: data.address?.trim() || undefined,
+      tin: data.tin?.trim() || undefined,
+    };
+
     if (this.formMode() === 'add') {
-      const newId = `SUP-${String(this.suppliers().length + 1).padStart(3, '0')}`;
-      const newSupplier: SupplierModel = {
-        id: newId,
-        name: data.name!.trim(),
-        contactPerson: data.contactPerson?.trim() || undefined,
-        email: data.email?.trim() || undefined,
-        phone: data.phone?.trim() || undefined,
-        address: data.address?.trim() || undefined,
-        tin: data.tin?.trim() || undefined,
-        isActive: data.isActive ?? true,
-      };
-      this.suppliers.update(list => [...list, newSupplier]);
-      this.notification.set({ type: 'success', message: `Supplier "${newSupplier.name}" created successfully!` });
+      this.loading.set(true);
+      this.supplierService.create(request).subscribe({
+        next: (res) => {
+          this.loading.set(false);
+          if (res.success) {
+            this.notification.set({ type: 'success', message: `Supplier "${request.name}" created successfully!` });
+            this.closeFormModal();
+            this.loadSuppliers();
+          } else {
+            this.notification.set({ type: 'error', message: 'Failed to create supplier: ' + (res.message || 'Unknown error') });
+          }
+          this.autoDismissNotification();
+        },
+        error: (err) => {
+          this.loading.set(false);
+          const msg = err?.status === 0 ? 'Cannot connect to server.' : err?.error?.message || 'Error creating supplier.';
+          this.notification.set({ type: 'error', message: msg });
+          this.autoDismissNotification();
+        }
+      });
     } else {
-      this.suppliers.update(list =>
-        list.map(s => s.id === data.id ? { ...s, ...data } as SupplierModel : s)
-      );
-      this.notification.set({ type: 'success', message: `Supplier "${data.name}" updated successfully!` });
+      this.loading.set(true);
+      this.supplierService.update(data.id!, request).subscribe({
+        next: (res) => {
+          this.loading.set(false);
+          if (res.success) {
+            this.notification.set({ type: 'success', message: `Supplier "${request.name}" updated successfully!` });
+            this.closeFormModal();
+            this.loadSuppliers();
+          } else {
+            this.notification.set({ type: 'error', message: 'Failed to update supplier: ' + (res.message || 'Unknown error') });
+          }
+          this.autoDismissNotification();
+        },
+        error: (err) => {
+          this.loading.set(false);
+          this.notification.set({ type: 'error', message: 'Error updating supplier. Please try again.' });
+          this.autoDismissNotification();
+        }
+      });
     }
-    this.closeFormModal();
-    this.autoDismissNotification();
   }
 
   updateFormName(e: Event): void {
@@ -272,10 +324,26 @@ export class SupplierListComponent implements OnInit {
   executeDelete(): void {
     const target = this.deleteTarget();
     if (!target) return;
-    this.suppliers.update(list => list.filter(s => s.id !== target.id));
-    this.notification.set({ type: 'success', message: `Supplier "${target.name}" deleted successfully!` });
-    this.cancelDelete();
-    this.autoDismissNotification();
+    this.loading.set(true);
+    this.supplierService.delete(target.id).subscribe({
+      next: (res) => {
+        this.loading.set(false);
+        if (res.success) {
+          this.notification.set({ type: 'success', message: `Supplier "${target.name}" deleted successfully!` });
+          this.cancelDelete();
+          this.loadSuppliers();
+        } else {
+          this.notification.set({ type: 'error', message: 'Failed to delete supplier: ' + (res.message || 'Unknown error') });
+        }
+        this.autoDismissNotification();
+      },
+      error: (err) => {
+        this.loading.set(false);
+        this.notification.set({ type: 'error', message: 'Error deleting supplier. Please try again.' });
+        this.cancelDelete();
+        this.autoDismissNotification();
+      }
+    });
   }
 
   exportCsv(): void {

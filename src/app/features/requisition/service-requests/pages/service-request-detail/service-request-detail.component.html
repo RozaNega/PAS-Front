@@ -1,382 +1,475 @@
-﻿<div class="service-request-detail">
+﻿<div class="sr-detail">
+  <!-- Notification -->
+  @if (notification(); as n) {
+    <div class="notification" [class.success]="n.type === 'success'" [class.error]="n.type === 'error'">
+      <i [class]="n.type === 'success' ? 'bi bi-check-circle-fill' : 'bi bi-exclamation-circle-fill'"></i>
+      <span>{{ n.message }}</span>
+      <button class="notif-close" (click)="notification.set(null)"><i class="bi bi-x"></i></button>
+    </div>
+  }
+
   <!-- Header -->
-  <div class="page-header">
-    <div class="header-content">
-      <div class="header-left">
-        <button type="button" class="btn btn-outline-secondary" (click)="goBack()">
-          <i class="bi bi-arrow-left"></i> Back to Requests
-        </button>
-        <div class="header-info" *ngIf="serviceRequest()">
-          <h1>{{ serviceRequest()?.srNumber || 'Service Request' }}</h1>
-          <div class="header-badges">
-            <span class="badge" [ngClass]="getStatusClass(serviceRequest()?.status || '')">
-              {{ serviceRequest()?.status }}
-            </span>
-            <span class="badge" [ngClass]="getUrgencyClass(serviceRequest()?.urgency || '')">
-              {{ serviceRequest()?.urgency }}
-            </span>
+  <header class="sr-header">
+    <div class="header-top">
+      <button class="back-btn" (click)="goBack()">
+        <i class="bi bi-arrow-left"></i>
+        <span>Back to Requests</span>
+      </button>
+    </div>
+
+    @if (serviceRequest(); as sr) {
+      <div class="header-main">
+        <div class="header-left">
+          <div class="sr-title-row">
+            <h1 class="sr-number">{{ sr.srNumber }}</h1>
+            <span class="status-chip" [attr.data-status]="sr.status?.toLowerCase()">{{ sr.status }}</span>
+            @if (sr.urgency) {
+              <span class="urgency-chip" [attr.data-urgency]="sr.urgency?.toLowerCase()">{{ sr.urgency }}</span>
+            }
+          </div>
+          <div class="sr-meta">
+            <span><i class="bi bi-person"></i> {{ sr.requesterName }}</span>
+            <span><i class="bi bi-building"></i> {{ sr.department || '—' }}</span>
+            <span><i class="bi bi-calendar3"></i> {{ formatDate(sr.requestDate) }}</span>
           </div>
         </div>
-      </div>
-      <div class="header-actions" *ngIf="serviceRequest()">
-        <div class="btn-group">
-          <button type="button" class="btn btn-success" *ngIf="canApprove()" (click)="openApprovalModal()">
-            <i class="bi bi-check-circle"></i> Approve
-          </button>
-          <button type="button" class="btn btn-danger" *ngIf="canReject()" (click)="openRejectionModal()">
-            <i class="bi bi-x-circle"></i> Reject
-          </button>
-          <button type="button" class="btn btn-primary" *ngIf="canIssue()" (click)="openIssueModal()">
-            <i class="bi bi-box-arrow-right"></i> Issue Items
-          </button>
-          <button type="button" class="btn btn-outline-primary" *ngIf="canEdit()" (click)="editRequest()">
-            <i class="bi bi-pencil"></i> Edit
-          </button>
-          <button type="button" class="btn btn-outline-info" (click)="openCommentModal()">
-            <i class="bi bi-chat-dots"></i> Add Comment
-          </button>
-          <div class="btn-group">
-            <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
-              <i class="bi bi-three-dots"></i> More
+
+        <div class="header-actions">
+          <!-- Primary Actions -->
+          <div class="action-group primary-actions">
+            @if (canApprove()) {
+              <button class="action-btn approve" (click)="openApprovalModal()">
+                <i class="bi bi-check-circle"></i> Approve
+              </button>
+            }
+            @if (canReject()) {
+              <button class="action-btn reject" (click)="openRejectionModal()">
+                <i class="bi bi-x-circle"></i> Reject
+              </button>
+            }
+            @if (canIssue()) {
+              <button class="action-btn issue" (click)="openIssueModal()">
+                <i class="bi bi-box-arrow-right"></i> Issue Items
+              </button>
+            }
+          </div>
+
+          <!-- Secondary Actions -->
+          <div class="action-group secondary-actions">
+            @if (canEdit()) {
+              <button class="action-btn-sm outline" (click)="editRequest()">
+                <i class="bi bi-pencil"></i> Edit
+              </button>
+            }
+            <button class="action-btn-sm outline" (click)="openCommentModal()">
+              <i class="bi bi-chat-dots"></i> Comment
             </button>
-            <ul class="dropdown-menu">
-              <li><a class="dropdown-item" href="#" (click)="printRequest()"><i class="bi bi-printer"></i> Print</a></li>
-              <li><a class="dropdown-item" href="#" (click)="exportRequest('pdf')"><i class="bi bi-file-pdf"></i> Export PDF</a></li>
-              <li><a class="dropdown-item" href="#" (click)="exportRequest('excel')"><i class="bi bi-file-excel"></i> Export Excel</a></li>
-              <li><hr class="dropdown-divider"></li>
-              <li><a class="dropdown-item" href="#" (click)="viewTimeline()"><i class="bi bi-clock-history"></i> View Timeline</a></li>
-              <li><a class="dropdown-item" href="#" (click)="viewActivity()"><i class="bi bi-activity"></i> View Activity</a></li>
-              <li><hr class="dropdown-divider" *ngIf="canDelete()"></li>
-              <li *ngIf="canDelete()"><a class="dropdown-item text-danger" href="#" (click)="deleteRequest()"><i class="bi bi-trash"></i> Delete</a></li>
-            </ul>
+
+            <!-- More Dropdown -->
+            <div class="dropdown-wrapper" #moreDropdown>
+              <button class="action-btn-sm outline" (click)="toggleMoreMenu()">
+                <i class="bi bi-three-dots"></i> More
+              </button>
+              @if (showMoreMenu()) {
+                <div class="dropdown-panel">
+                  <button class="dropdown-item" (click)="printRequest()"><i class="bi bi-printer"></i> Print</button>
+                  <button class="dropdown-item" (click)="exportRequest('pdf')"><i class="bi bi-file-pdf"></i> Export PDF</button>
+                  <button class="dropdown-item" (click)="exportRequest('excel')"><i class="bi bi-file-excel"></i> Export Excel</button>
+                  <div class="dropdown-divider"></div>
+                  <button class="dropdown-item" (click)="viewTimeline()"><i class="bi bi-clock-history"></i> View Timeline</button>
+                  <button class="dropdown-item" (click)="viewActivity()"><i class="bi bi-activity"></i> View Activity</button>
+                  @if (canDelete()) {
+                    <div class="dropdown-divider"></div>
+                    <button class="dropdown-item danger" (click)="deleteRequest()"><i class="bi bi-trash3"></i> Delete</button>
+                  }
+                </div>
+              }
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  </div>
+    }
+  </header>
 
-  <!-- Loading State -->
-  <div class="loading-container" *ngIf="loading()">
-    <div class="spinner-border text-primary" role="status">
-      <span class="visually-hidden">Loading...</span>
+  <!-- Loading -->
+  @if (loading()) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading service request details...</p>
     </div>
-    <p>Loading service request details...</p>
-  </div>
+  }
 
-  <!-- Error State -->
-  <div class="alert alert-danger" *ngIf="error()">
-    <i class="bi bi-exclamation-triangle"></i>
-    {{ error() }}
-    <button type="button" class="btn btn-outline-danger btn-sm ms-2" (click)="loadServiceRequest()">
-      <i class="bi bi-arrow-clockwise"></i> Retry
-    </button>
-  </div>
+  <!-- Error -->
+  @if (error()) {
+    <div class="error-state">
+      <i class="bi bi-exclamation-triangle"></i>
+      <p>{{ error() }}</p>
+      <button class="action-btn-sm outline" (click)="loadServiceRequest()"><i class="bi bi-arrow-clockwise"></i> Retry</button>
+    </div>
+  }
 
   <!-- Content -->
-  <div class="content" *ngIf="serviceRequest() && !loading()">
-    <div class="row">
-      <!-- Main Details -->
-      <div class="col-lg-8">
-        <div class="card">
-          <div class="card-header">
-            <h5 class="card-title mb-0">Request Details</h5>
-          </div>
-          <div class="card-body">
-            <div class="row">
-              <div class="col-md-6">
-                <div class="detail-group">
-                  <label>Request Number</label>
-                  <p>{{ serviceRequest()?.srNumber }}</p>
+  @if (serviceRequest(); as sr) {
+    @if (!loading()) {
+      <div class="sr-content">
+        <div class="content-main">
+          <!-- Request Details Card -->
+          <div class="card">
+            <div class="card-head">
+              <h3><i class="bi bi-info-circle"></i> Request Details</h3>
+            </div>
+            <div class="card-body">
+              <div class="detail-grid">
+                <div class="detail-item">
+                  <span class="detail-label">Request Number</span>
+                  <span class="detail-value mono">{{ sr.srNumber }}</span>
                 </div>
-                <div class="detail-group">
-                  <label>Requester</label>
-                  <p>{{ serviceRequest()?.requesterName }}</p>
+                <div class="detail-item">
+                  <span class="detail-label">Requester</span>
+                  <span class="detail-value">{{ sr.requesterName }}</span>
                 </div>
-                <div class="detail-group">
-                  <label>Department</label>
-                  <p>{{ serviceRequest()?.department }}</p>
+                <div class="detail-item">
+                  <span class="detail-label">Department</span>
+                  <span class="detail-value">{{ sr.department || '—' }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Request Date</span>
+                  <span class="detail-value">{{ formatDate(sr.requestDate) }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Status</span>
+                  <span class="detail-value"><span class="status-chip" [attr.data-status]="sr.status?.toLowerCase()">{{ sr.status }}</span></span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Urgency</span>
+                  <span class="detail-value"><span class="urgency-chip" [attr.data-urgency]="sr.urgency?.toLowerCase()">{{ sr.urgency || '—' }}</span></span>
                 </div>
               </div>
-              <div class="col-md-6">
-                <div class="detail-group">
-                  <label>Request Date</label>
-                  <p>{{ formatDate(serviceRequest()?.requestDate || '') }}</p>
+              @if (sr.purpose) {
+                <div class="detail-block">
+                  <span class="detail-label">Purpose</span>
+                  <p class="detail-text">{{ sr.purpose }}</p>
                 </div>
-                <div class="detail-group">
-                  <label>Status</label>
-                  <p>
-                    <span class="badge" [ngClass]="getStatusClass(serviceRequest()?.status || '')">
-                      {{ serviceRequest()?.status }}
-                    </span>
-                  </p>
+              }
+              @if (sr.notes) {
+                <div class="detail-block">
+                  <span class="detail-label">Notes</span>
+                  <p class="detail-text">{{ sr.notes }}</p>
                 </div>
-                <div class="detail-group">
-                  <label>Urgency</label>
-                  <p>
-                    <span class="badge" [ngClass]="getUrgencyClass(serviceRequest()?.urgency || '')">
-                      {{ serviceRequest()?.urgency }}
-                    </span>
-                  </p>
-                </div>
-              </div>
-            </div>
-            <div class="detail-group" *ngIf="serviceRequest()?.purpose">
-              <label>Purpose</label>
-              <p>{{ serviceRequest()?.purpose }}</p>
-            </div>
-            <div class="detail-group" *ngIf="serviceRequest()?.notes">
-              <label>Notes</label>
-              <p>{{ serviceRequest()?.notes }}</p>
+              }
             </div>
           </div>
-        </div>
 
-        <!-- Items List -->
-        <div class="card mt-4">
-          <div class="card-header">
-            <h5 class="card-title mb-0">Requested Items</h5>
-          </div>
-          <div class="card-body">
-            <div class="table-responsive">
-              <table class="table table-hover">
+          <!-- Items Table -->
+          <div class="card">
+            <div class="card-head">
+              <h3><i class="bi bi-box-seam"></i> Requested Items</h3>
+              <span class="count-badge">{{ sr.items?.length || 0 }} items</span>
+            </div>
+            <div class="card-body no-padding">
+              <table class="data-table">
                 <thead>
                   <tr>
                     <th>Item</th>
                     <th>SKU</th>
                     <th>Unit</th>
-                    <th>Requested</th>
-                    <th>Issued</th>
-                    <th>Pending</th>
+                    <th class="num">Requested</th>
+                    <th class="num">Issued</th>
+                    <th class="num">Pending</th>
                     <th>Shelf</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr *ngFor="let item of serviceRequest()?.items">
-                    <td>
-                      <div class="item-info">
-                        <strong>{{ item.itemName }}</strong>
-                      </div>
-                    </td>
-                    <td>{{ item.sku }}</td>
-                    <td>{{ item.unitOfMeasure }}</td>
-                    <td>{{ item.requestedQty }}</td>
-                    <td>{{ item.issuedQty || 0 }}</td>
-                    <td>{{ item.pendingQty || item.requestedQty }}</td>
-                    <td>{{ item.shelfLocation || 'N/A' }}</td>
-                  </tr>
+                  @for (item of sr.items; track item.id) {
+                    <tr>
+                      <td><span class="item-name">{{ item.itemName }}</span></td>
+                      <td><code>{{ item.sku }}</code></td>
+                      <td>{{ item.unitOfMeasure }}</td>
+                      <td class="num">{{ item.requestedQty }}</td>
+                      <td class="num">{{ item.issuedQty || 0 }}</td>
+                      <td class="num">{{ item.pendingQty || item.requestedQty }}</td>
+                      <td>{{ item.shelfLocation || '—' }}</td>
+                    </tr>
+                  } @empty {
+                    <tr><td colspan="7" class="empty-row"><i class="bi bi-inbox"></i> No items</td></tr>
+                  }
                 </tbody>
                 <tfoot>
-                  <tr class="table-light">
-                    <th colspan="3">Total</th>
-                    <th>{{ serviceRequest()?.totalQuantity }}</th>
-                    <th>{{ serviceRequest()?.issuedQuantity || 0 }}</th>
-                    <th>{{ (serviceRequest()?.totalQuantity || 0) - (serviceRequest()?.issuedQuantity || 0) }}</th>
-                    <th></th>
+                  <tr class="total-row">
+                    <td colspan="3">Total</td>
+                    <td class="num">{{ sr.totalQuantity }}</td>
+                    <td class="num">{{ sr.issuedQuantity || 0 }}</td>
+                    <td class="num">{{ (sr.totalQuantity || 0) - (sr.issuedQuantity || 0) }}</td>
+                    <td></td>
                   </tr>
                 </tfoot>
               </table>
             </div>
           </div>
         </div>
+
+        <!-- Sidebar -->
+        <div class="content-sidebar">
+          <!-- Summary -->
+          <div class="card">
+            <div class="card-head">
+              <h3><i class="bi bi-clipboard-data"></i> Summary</h3>
+            </div>
+            <div class="card-body">
+              <div class="stat-row">
+                <span class="stat-label">Total Items</span>
+                <span class="stat-value">{{ sr.totalItems }}</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-label">Total Quantity</span>
+                <span class="stat-value">{{ sr.totalQuantity }}</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-label">Issued</span>
+                <span class="stat-value green">{{ sr.issuedQuantity || 0 }}</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-label">Pending</span>
+                <span class="stat-value orange">{{ (sr.totalQuantity || 0) - (sr.issuedQuantity || 0) }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Approval Info -->
+          @if (sr.approvedByName) {
+            <div class="card">
+              <div class="card-head">
+                <h3><i class="bi bi-person-check"></i> Approval</h3>
+              </div>
+              <div class="card-body">
+                <div class="stat-row">
+                  <span class="stat-label">Approved By</span>
+                  <span class="stat-value">{{ sr.approvedByName }}</span>
+                </div>
+              </div>
+            </div>
+          }
+
+          <!-- Timestamps -->
+          <div class="card">
+            <div class="card-head">
+              <h3><i class="bi bi-clock"></i> Timestamps</h3>
+            </div>
+            <div class="card-body">
+              <div class="stat-row">
+                <span class="stat-label">Created</span>
+                <span class="stat-value small">{{ formatDate(sr.createdAt) }}</span>
+              </div>
+              @if (sr.updatedAt) {
+                <div class="stat-row">
+                  <span class="stat-label">Updated</span>
+                  <span class="stat-value small">{{ formatDate(sr.updatedAt) }}</span>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
       </div>
+    }
+  }
 
-      <!-- Sidebar -->
-      <div class="col-lg-4">
-        <!-- Summary Card -->
-        <div class="card">
-          <div class="card-header">
-            <h5 class="card-title mb-0">Summary</h5>
-          </div>
-          <div class="card-body">
-            <div class="summary-item">
-              <span class="label">Total Items:</span>
-              <span class="value">{{ serviceRequest()?.totalItems }}</span>
-            </div>
-            <div class="summary-item">
-              <span class="label">Total Quantity:</span>
-              <span class="value">{{ serviceRequest()?.totalQuantity }}</span>
-            </div>
-            <div class="summary-item">
-              <span class="label">Issued Quantity:</span>
-              <span class="value">{{ serviceRequest()?.issuedQuantity || 0 }}</span>
-            </div>
-            <div class="summary-item">
-              <span class="label">Pending Quantity:</span>
-              <span class="value">{{ (serviceRequest()?.totalQuantity || 0) - (serviceRequest()?.issuedQuantity || 0) }}</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Approval Info -->
-        <div class="card mt-4" *ngIf="serviceRequest()?.approvedByName">
-          <div class="card-header">
-            <h5 class="card-title mb-0">Approval Information</h5>
-          </div>
-          <div class="card-body">
-            <div class="detail-group">
-              <label>Approved By</label>
-              <p>{{ serviceRequest()?.approvedByName }}</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Timestamps -->
-        <div class="card mt-4">
-          <div class="card-header">
-            <h5 class="card-title mb-0">Timestamps</h5>
-          </div>
-          <div class="card-body">
-            <div class="detail-group">
-              <label>Created</label>
-              <p>{{ formatDate(serviceRequest()?.createdAt || '') }}</p>
-            </div>
-            <div class="detail-group" *ngIf="serviceRequest()?.updatedAt">
-              <label>Last Updated</label>
-              <p>{{ formatDate(serviceRequest()?.updatedAt || '') }}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+  <!-- ═══════════════ MODALS ═══════════════ -->
 
   <!-- Approval Modal -->
-  <div class="modal fade" [class.show]="showApprovalModal()" [style.display]="showApprovalModal() ? 'block' : 'none'" *ngIf="showApprovalModal()">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">Approve Service Request</h5>
-          <button type="button" class="btn-close" (click)="closeApprovalModal()"></button>
+  @if (showApprovalModal()) {
+    <div class="modal-overlay" (click)="closeApprovalModal()">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header success">
+          <div class="modal-icon"><i class="bi bi-check-circle"></i></div>
+          <div>
+            <h3>Approve Request</h3>
+            <p>{{ serviceRequest()?.srNumber }}</p>
+          </div>
+          <button class="modal-close" (click)="closeApprovalModal()"><i class="bi bi-x-lg"></i></button>
         </div>
         <div class="modal-body">
-          <p>Are you sure you want to approve this service request?</p>
-          <div class="mb-3">
-            <label for="approvalRemarks" class="form-label">Remarks (Optional)</label>
-            <textarea 
-              id="approvalRemarks" 
-              class="form-control" 
-              rows="3" 
-              [(ngModel)]="approvalRemarks"
-              placeholder="Add any remarks or comments...">
-            </textarea>
+          <p class="modal-desc">Are you sure you want to approve this service request?</p>
+          <div class="form-group">
+            <label>Remarks (optional)</label>
+            <textarea class="form-input" rows="3" [(ngModel)]="approvalRemarks" placeholder="Add any remarks..."></textarea>
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" (click)="closeApprovalModal()">Cancel</button>
-          <button type="button" class="btn btn-success" (click)="approveRequest()">
-            <i class="bi bi-check-circle"></i> Approve
-          </button>
+          <button class="btn-cancel" (click)="closeApprovalModal()">Cancel</button>
+          <button class="btn-approve" (click)="approveRequest()"><i class="bi bi-check-lg"></i> Approve</button>
         </div>
       </div>
     </div>
-  </div>
+  }
 
   <!-- Rejection Modal -->
-  <div class="modal fade" [class.show]="showRejectionModal()" [style.display]="showRejectionModal() ? 'block' : 'none'" *ngIf="showRejectionModal()">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">Reject Service Request</h5>
-          <button type="button" class="btn-close" (click)="closeRejectionModal()"></button>
+  @if (showRejectionModal()) {
+    <div class="modal-overlay" (click)="closeRejectionModal()">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header danger">
+          <div class="modal-icon"><i class="bi bi-x-circle"></i></div>
+          <div>
+            <h3>Reject Request</h3>
+            <p>{{ serviceRequest()?.srNumber }}</p>
+          </div>
+          <button class="modal-close" (click)="closeRejectionModal()"><i class="bi bi-x-lg"></i></button>
         </div>
         <div class="modal-body">
-          <p>Please provide a reason for rejecting this service request:</p>
-          <div class="mb-3">
-            <label for="rejectionReason" class="form-label">Reason for Rejection *</label>
-            <textarea 
-              id="rejectionReason" 
-              class="form-control" 
-              rows="3" 
-              [(ngModel)]="rejectionReason"
-              placeholder="Enter the reason for rejection..."
-              required>
-            </textarea>
+          <p class="modal-desc">Please provide a reason for rejecting this service request.</p>
+          <div class="form-group">
+            <label>Reason *</label>
+            <textarea class="form-input" rows="3" [(ngModel)]="rejectionReason" placeholder="Enter rejection reason..." required></textarea>
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" (click)="closeRejectionModal()">Cancel</button>
-          <button type="button" class="btn btn-danger" (click)="rejectRequest()">
-            <i class="bi bi-x-circle"></i> Reject
-          </button>
+          <button class="btn-cancel" (click)="closeRejectionModal()">Cancel</button>
+          <button class="btn-reject" (click)="rejectRequest()"><i class="bi bi-x-lg"></i> Reject</button>
         </div>
       </div>
     </div>
-  </div>
+  }
 
   <!-- Comment Modal -->
-  <div class="modal fade" [class.show]="showCommentModal()" [style.display]="showCommentModal() ? 'block' : 'none'" *ngIf="showCommentModal()">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">Add Comment</h5>
-          <button type="button" class="btn-close" (click)="closeCommentModal()"></button>
+  @if (showCommentModal()) {
+    <div class="modal-overlay" (click)="closeCommentModal()">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header info">
+          <div class="modal-icon"><i class="bi bi-chat-dots"></i></div>
+          <div>
+            <h3>Add Comment</h3>
+            <p>{{ serviceRequest()?.srNumber }}</p>
+          </div>
+          <button class="modal-close" (click)="closeCommentModal()"><i class="bi bi-x-lg"></i></button>
         </div>
         <div class="modal-body">
-          <div class="mb-3">
-            <label for="newComment" class="form-label">Comment *</label>
-            <textarea 
-              id="newComment" 
-              class="form-control" 
-              rows="4" 
-              [(ngModel)]="newComment"
-              placeholder="Enter your comment..."
-              required>
-            </textarea>
+          <div class="form-group">
+            <label>Comment *</label>
+            <textarea class="form-input" rows="4" [(ngModel)]="newComment" placeholder="Enter your comment..." required></textarea>
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" (click)="closeCommentModal()">Cancel</button>
-          <button type="button" class="btn btn-primary" (click)="addComment()">
-            <i class="bi bi-chat-dots"></i> Add Comment
-          </button>
+          <button class="btn-cancel" (click)="closeCommentModal()">Cancel</button>
+          <button class="btn-primary" (click)="addComment()"><i class="bi bi-send"></i> Add Comment</button>
         </div>
       </div>
     </div>
-  </div>
+  }
 
   <!-- Issue Modal -->
-  <div class="modal fade" [class.show]="showIssueModal()" [style.display]="showIssueModal() ? 'block' : 'none'" *ngIf="showIssueModal()">
-    <div class="modal-dialog modal-lg">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">Issue Items</h5>
-          <button type="button" class="btn-close" (click)="closeIssueModal()"></button>
+  @if (showIssueModal()) {
+    <div class="modal-overlay" (click)="closeIssueModal()">
+      <div class="modal-card modal-lg" (click)="$event.stopPropagation()">
+        <div class="modal-header primary">
+          <div class="modal-icon"><i class="bi bi-box-arrow-right"></i></div>
+          <div>
+            <h3>Issue Items</h3>
+            <p>{{ serviceRequest()?.srNumber }}</p>
+          </div>
+          <button class="modal-close" (click)="closeIssueModal()"><i class="bi bi-x-lg"></i></button>
         </div>
         <div class="modal-body">
-          <p>This will create a Store Issue Voucher (SIV) and issue all requested items.</p>
-          <div class="table-responsive">
-            <table class="table table-sm">
-              <thead>
+          <p class="modal-desc">This will create a Store Issue Voucher (SIV) and issue all requested items.</p>
+          <table class="data-table compact">
+            <thead>
+              <tr><th>Item</th><th class="num">Requested</th><th class="num">To Issue</th></tr>
+            </thead>
+            <tbody>
+              @for (item of serviceRequest()?.items; track item.id) {
                 <tr>
-                  <th>Item</th>
-                  <th>Requested Qty</th>
-                  <th>To Issue</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let item of serviceRequest()?.items">
                   <td>{{ item.itemName }}</td>
-                  <td>{{ item.requestedQty }}</td>
-                  <td>{{ item.requestedQty }}</td>
+                  <td class="num">{{ item.requestedQty }}</td>
+                  <td class="num">{{ item.requestedQty }}</td>
                 </tr>
-              </tbody>
-            </table>
-          </div>
-          <div class="alert alert-info">
+              }
+            </tbody>
+          </table>
+          <div class="info-box">
             <i class="bi bi-info-circle"></i>
             A Store Issue Voucher (SIV) will be automatically created for this issuance.
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" (click)="closeIssueModal()">Cancel</button>
-          <button type="button" class="btn btn-primary" (click)="issueRequest()">
-            <i class="bi bi-box-arrow-right"></i> Issue Items
-          </button>
+          <button class="btn-cancel" (click)="closeIssueModal()">Cancel</button>
+          <button class="btn-primary" (click)="issueRequest()"><i class="bi bi-check-lg"></i> Issue Items</button>
         </div>
       </div>
     </div>
-  </div>
+  }
+
+  <!-- Timeline Modal -->
+  @if (showTimelineModal()) {
+    <div class="modal-overlay" (click)="closeTimelineModal()">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header info">
+          <div class="modal-icon"><i class="bi bi-clock-history"></i></div>
+          <div>
+            <h3>Timeline</h3>
+            <p>{{ serviceRequest()?.srNumber }}</p>
+          </div>
+          <button class="modal-close" (click)="closeTimelineModal()"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <div class="modal-body">
+          @if (timelineData().length) {
+            <div class="timeline">
+              @for (entry of timelineData(); track $index) {
+                <div class="timeline-item">
+                  <div class="timeline-dot"></div>
+                  <div class="timeline-content">
+                    <p class="timeline-text">{{ entry.description || entry.action || entry }}</p>
+                    <span class="timeline-time">{{ formatDate(entry.timestamp || entry.createdAt || entry.date) }}</span>
+                  </div>
+                </div>
+              }
+            </div>
+          } @else {
+            <div class="empty-modal"><i class="bi bi-clock-history"></i><p>No timeline data available</p></div>
+          }
+        </div>
+        <div class="modal-footer">
+          <button class="btn-cancel" (click)="closeTimelineModal()">Close</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Activity Modal -->
+  @if (showActivityModal()) {
+    <div class="modal-overlay" (click)="closeActivityModal()">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header purple">
+          <div class="modal-icon"><i class="bi bi-activity"></i></div>
+          <div>
+            <h3>Activity Log</h3>
+            <p>{{ serviceRequest()?.srNumber }}</p>
+          </div>
+          <button class="modal-close" (click)="closeActivityModal()"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <div class="modal-body">
+          @if (activityData().length) {
+            <div class="activity-list">
+              @for (entry of activityData(); track $index) {
+                <div class="activity-item">
+                  <div class="activity-icon"><i class="bi bi-circle-fill"></i></div>
+                  <div class="activity-content">
+                    <p class="activity-text">{{ entry.description || entry.action || entry }}</p>
+                    <span class="activity-time">{{ formatDate(entry.timestamp || entry.createdAt || entry.date) }}</span>
+                  </div>
+                </div>
+              }
+            </div>
+          } @else {
+            <div class="empty-modal"><i class="bi bi-activity"></i><p>No activity data available</p></div>
+          }
+        </div>
+        <div class="modal-footer">
+          <button class="btn-cancel" (click)="closeActivityModal()">Close</button>
+        </div>
+      </div>
+    </div>
+  }
 
   <!-- Modal Backdrop -->
-  <div class="modal-backdrop fade show" *ngIf="showApprovalModal() || showRejectionModal() || showCommentModal() || showIssueModal()"></div>
+  @if (showApprovalModal() || showRejectionModal() || showCommentModal() || showIssueModal() || showTimelineModal() || showActivityModal()) {
+    <div class="modal-backdrop"></div>
+  }
 </div>

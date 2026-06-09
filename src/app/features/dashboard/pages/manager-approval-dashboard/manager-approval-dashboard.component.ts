@@ -326,10 +326,10 @@ export class ManagerApprovalDashboardComponent implements OnInit, OnDestroy {
       .subscribe({ error: () => {} });
   }
   viewRequestDetails(requestId: string): void {
-    void this.router.navigate(['/manager/approvals/pending']);
+    void this.router.navigate(['/manager/requests/all']);
   }
 
   viewAllRequests(): void {
-    void this.router.navigate(['/manager/approvals/pending']);
+    void this.router.navigate(['/manager/requests/all']);
   }
 }

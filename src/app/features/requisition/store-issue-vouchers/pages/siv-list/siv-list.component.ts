@@ -273,11 +273,10 @@ export class SIVListComponent implements OnInit, OnDestroy {
     }
 
     const requestData = {
-      srId: this.createForm.get('srId')?.value,
-      recipientSignature: this.createForm.get('recipientSignature')?.value,
-      recipientName: this.createForm.get('recipientName')?.value,
-      recipientDepartment: this.createForm.get('recipientDepartment')?.value,
-      remarks: this.createForm.get('remarks')?.value,
+      serviceRequestId: this.createForm.get('srId')?.value,
+      issuedToId: this.selectedSR?.requesterId || '',
+      department: this.selectedSR?.department || this.createForm.get('recipientDepartment')?.value || 'General',
+      notes: this.createForm.get('remarks')?.value || '',
       items: items
     };
 

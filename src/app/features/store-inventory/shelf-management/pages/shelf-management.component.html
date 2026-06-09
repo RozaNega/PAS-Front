@@ -54,7 +54,7 @@
         (ngModelChange)="onWarehouseChange($event)"
         [disabled]="loadingWarehouses() || !warehouses().length">
         @for (wh of warehouses(); track wh.id) {
-          <option [value]="wh.id">{{ wh.warehouseName }} ({{ wh.warehouseCode }})</option>
+          <option [value]="wh.id">{{ wh.warehouseName }} ({{ wh.locationCode }})</option>
         }
       </select>
     </div>
@@ -327,7 +327,7 @@
       <span>Bulk Actions</span>
     </div>
     <div class="bulk-actions">
-      <button type="button" class="bulk-btn bulk-add" (click)="openAddShelfModal()" [disabled]="saving() || !selectedWarehouseId()">
+      <button type="button" class="bulk-btn bulk-add" (click)="openAddShelfModal()" [disabled]="saving()">
         <i class="bi bi-plus-lg"></i> Add New Shelf
       </button>
       <button class="bulk-btn bulk-rearrange" (click)="openRearrangeModal()">
@@ -368,41 +368,49 @@
           <h4><i class="bi bi-geo-alt"></i> SHELF LOCATION DETAILS</h4>
           <div class="form-grid">
             <div class="form-field">
-              <label>Shelf code <span class="required">*</span></label>
-              <input type="text" name="shelfCode" [(ngModel)]="addForm.shelfCode" placeholder="e.g. A-01-R-01-S-01" />
-            </div>
-            <div class="form-field">
-              <label>Shelf name</label>
-              <input type="text" name="shelfName" [(ngModel)]="addForm.shelfName" placeholder="Display name" />
-            </div>
-            <div class="form-field">
               <label>Aisle</label>
-              <input type="text" name="aisle" [(ngModel)]="addForm.aisle" placeholder="e.g. A-01" />
+              <input type="text" name="aisle" [(ngModel)]="addForm.aisle" placeholder="e.g. A" />
             </div>
             <div class="form-field">
-              <label>Section</label>
-              <input type="text" name="section" [(ngModel)]="addForm.section" placeholder="e.g. R-01" />
+              <label>Rack</label>
+              <input type="text" name="rack" [(ngModel)]="addForm.rack" placeholder="e.g. R1" />
             </div>
             <div class="form-field">
-              <label>Level</label>
-              <input type="text" name="level" [(ngModel)]="addForm.level" placeholder="e.g. L-01" />
+              <label>Shelf Number</label>
+              <input type="text" name="shelfNumber" [(ngModel)]="addForm.shelfNumber" placeholder="e.g. S1" />
             </div>
             <div class="form-field">
-              <label>Position</label>
-              <input type="text" name="position" [(ngModel)]="addForm.position" placeholder="e.g. P-01" />
+              <label>Zone</label>
+              <input type="text" name="zone" [(ngModel)]="addForm.zone" placeholder="e.g. Zone-A" />
             </div>
-          </div>
-          <div class="form-field form-field-full">
-            <label>Description</label>
-            <input type="text" name="description" [(ngModel)]="addForm.description" placeholder="Optional description" />
+            <div class="form-field">
+              <label>Bin Type</label>
+              <input type="text" name="binType" [(ngModel)]="addForm.binType" placeholder="e.g. Standard" />
+            </div>
+            <div class="form-field">
+              <label>Capacity (units)</label>
+              <input type="number" name="capacity" [(ngModel)]="addForm.capacity" min="0" placeholder="0" />
+            </div>
           </div>
         </div>
         <div class="form-section">
-          <h4><i class="bi bi-speedometer2"></i> CAPACITY</h4>
+          <h4><i class="bi bi-rulers"></i> DIMENSIONS & WEIGHT</h4>
           <div class="form-grid">
             <div class="form-field">
-              <label>Max capacity (units)</label>
-              <input type="number" name="capacity" [(ngModel)]="addForm.capacity" min="1" />
+              <label>Length (cm)</label>
+              <input type="number" name="length" [(ngModel)]="addForm.length" min="0" placeholder="0" />
+            </div>
+            <div class="form-field">
+              <label>Width (cm)</label>
+              <input type="number" name="width" [(ngModel)]="addForm.width" min="0" placeholder="0" />
+            </div>
+            <div class="form-field">
+              <label>Height (cm)</label>
+              <input type="number" name="height" [(ngModel)]="addForm.height" min="0" placeholder="0" />
+            </div>
+            <div class="form-field">
+              <label>Max Weight (kg)</label>
+              <input type="number" name="maxWeight" [(ngModel)]="addForm.maxWeight" min="0" placeholder="0" />
             </div>
           </div>
         </div>
@@ -448,7 +456,7 @@
           </div>
           <div class="detail-item">
             <label><i class="bi bi-speedometer2"></i> Capacity</label>
-            <span>{{ selectedShelf()!.raw.capacity ?? '—' }}</span>
+            <span>{{ selectedShelf()!.raw.capacity ?? '—' }} units</span>
           </div>
           <div class="detail-item">
             <label><i class="bi bi-percent"></i> Occupancy</label>
@@ -459,12 +467,24 @@
               {{ selectedShelf()!.occupancy }}%
             </span>
           </div>
-          <div class="detail-item detail-item-full">
-            <label><i class="bi bi-info-circle"></i> Description</label>
-            <span>{{ selectedShelf()!.raw.description || '—' }}</span>
+          <div class="detail-item">
+            <label><i class="bi bi-tag"></i> Bin Type</label>
+            <span>{{ selectedShelf()!.raw.binType || '—' }}</span>
           </div>
           <div class="detail-item">
-            <label><i class="bi bi-upc-scan"></i> Shelf Code</label>
+            <label><i class="bi bi-geo"></i> Zone</label>
+            <span>{{ selectedShelf()!.raw.zone || '—' }}</span>
+          </div>
+          <div class="detail-item">
+            <label><i class="bi bi-rulers"></i> Dimensions</label>
+            <span>{{ selectedShelf()!.raw.length || '—' }} × {{ selectedShelf()!.raw.width || '—' }} × {{ selectedShelf()!.raw.height || '—' }} cm</span>
+          </div>
+          <div class="detail-item">
+            <label><i class="bi bi-speedometer"></i> Max Weight</label>
+            <span>{{ selectedShelf()!.raw.maxWeight ? (selectedShelf()!.raw.maxWeight! + ' kg') : '—' }}</span>
+          </div>
+          <div class="detail-item">
+            <label><i class="bi bi-upc-scan"></i> Shelf Number</label>
             <span class="detail-mono">{{ selectedShelf()!.code }}</span>
           </div>
         </div>

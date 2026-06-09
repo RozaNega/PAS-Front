@@ -263,6 +263,11 @@ export const employeeMenuConfig: MenuItem[] = [
       },
     ],
   },
+  {
+    label: 'Notifications',
+    icon: 'bi bi-bell',
+    route: '/employee/dashboard/notifications',
+  },
 ];
 
 export const managerMenuConfig: MenuItem[] = [
@@ -306,6 +311,15 @@ export const managerMenuConfig: MenuItem[] = [
     ],
   },
   {
+    label: 'Workflows',
+    icon: 'bi bi-diagram-3',
+    children: [
+      { label: 'All Workflows', route: '/manager/workflows/all', icon: 'bi bi-list-check' },
+      { label: 'Create Workflow', route: '/manager/workflows/create', icon: 'bi bi-plus-circle' },
+      { label: 'Approver Matrix', route: '/manager/workflows/approvers', icon: 'bi bi-people' },
+    ],
+  },
+  {
     label: 'Reports',
     icon: 'bi bi-bar-chart-fill',
     children: [
@@ -318,6 +332,11 @@ export const managerMenuConfig: MenuItem[] = [
       { label: 'Issuance Report', route: '/manager/reports/sivs', icon: 'bi bi-file-text' },
       { label: 'Stock Reports', route: '/manager/reports/inventory', icon: 'bi bi-boxes' },
     ],
+  },
+  {
+    label: 'Audit Trail',
+    icon: 'bi bi-clock-history',
+    route: '/manager/audit-trail',
   },
 ];
 

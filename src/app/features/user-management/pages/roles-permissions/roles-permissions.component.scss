@@ -4,6 +4,35 @@
   overflow-x: hidden;
 }
 
+.notification-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.875rem 1.25rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  animation: slideDown 0.3s ease-out;
+
+  &.success {
+    background: #d1fae5;
+    color: #065f46;
+    border: 1px solid #6ee7b7;
+  }
+
+  &.error {
+    background: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fca5a5;
+  }
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 .page-header {
   display: flex;
   justify-content: space-between;
@@ -131,6 +160,32 @@
     background: var(--surface-section);
     border-color: var(--primary-color);
   }
+}
+
+.btn-icon {
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-color-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  flex-shrink: 0;
+
+  &:hover {
+    background: var(--surface-hover);
+  }
+
+  &.danger:hover {
+    background: #fee2e2;
+    color: #dc2626;
+  }
+
+  i { font-size: 0.875rem; }
 }
 
 .role-indicator {
@@ -431,6 +486,11 @@
     transform: scale(1.1);
   }
 
+  &.active {
+    border-color: var(--text-color);
+    box-shadow: 0 0 0 2px var(--surface-card), 0 0 0 4px var(--text-color);
+  }
+
   &.red { background: #ef4444; }
   &.green { background: #10b981; }
   &.blue { background: #3b82f6; }
@@ -469,6 +529,27 @@
   gap: 0.75rem;
   padding: 1.5rem;
   border-top: 2px solid var(--surface-border);
+}
+
+.spinner-border {
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 @media (max-width: 1024px) {

@@ -16,6 +16,9 @@ interface Warehouse {
   name: string;
   code: string;
   location: string;
+  address: string;
+  city: string;
+  country: string;
   items: number;
   value: number;
   capacity: number;
@@ -24,6 +27,7 @@ interface Warehouse {
   status: 'Active' | 'Limited' | 'Inactive';
   managerName: string;
   contactNumber: string;
+  contactEmail: string;
   createdAt: string;
   description: string;
 }
@@ -64,11 +68,13 @@ export class WarehousesComponent {
 
   modalForm = {
     warehouseName: '',
-    warehouseCode: '',
-    location: '',
-    capacity: 10000,
-    managerName: '',
-    contactNumber: '',
+    locationCode: '',
+    address: '',
+    city: '',
+    country: '',
+    contactPerson: '',
+    contactPhone: '',
+    contactEmail: '',
     isActive: true,
   };
 
@@ -233,16 +239,16 @@ export class WarehousesComponent {
 
   private createMockWarehouses(): Warehouse[] {
     return [
-      { id: 'wh-001', name: 'Main Warehouse', code: 'MW-001', location: 'Addis Ababa, Main District', items: 3250, value: 4875000, capacity: 5000, occupancy: 65, shelfCount: 24, status: 'Active', managerName: 'Ahmed Hassan', contactNumber: '+251 911 000 001', createdAt: '2025-01-15T08:00:00.000Z', description: 'Primary storage facility for general merchandise' },
-      { id: 'wh-002', name: 'Branch Warehouse A', code: 'BW-A-001', location: 'Addis Ababa, Branch Zone', items: 1350, value: 2025000, capacity: 3000, occupancy: 45, shelfCount: 16, status: 'Active', managerName: 'Fatima Ali', contactNumber: '+251 911 000 002', createdAt: '2025-02-10T08:00:00.000Z', description: 'Secondary storage for regional distribution' },
-      { id: 'wh-003', name: 'Cold Storage Facility', code: 'CS-001', location: 'Addis Ababa, Industrial Area', items: 1200, value: 3600000, capacity: 1500, occupancy: 80, shelfCount: 12, status: 'Active', managerName: 'Mohammed Seid', contactNumber: '+251 911 000 003', createdAt: '2025-03-05T08:00:00.000Z', description: 'Temperature controlled storage for perishables' },
-      { id: 'wh-004', name: 'Bole Logistics Hub', code: 'BLH-001', location: 'Addis Ababa, Bole', items: 2800, value: 4200000, capacity: 4000, occupancy: 70, shelfCount: 20, status: 'Active', managerName: 'Sara Tekle', contactNumber: '+251 911 000 004', createdAt: '2025-01-20T08:00:00.000Z', description: 'Central logistics hub near Bole International Airport' },
-      { id: 'wh-005', name: 'Eastern Distribution Center', code: 'EDC-002', location: 'Dire Dawa, Industrial Zone', items: 900, value: 1350000, capacity: 2500, occupancy: 36, shelfCount: 10, status: 'Limited', managerName: 'Kebede Assefa', contactNumber: '+251 911 000 005', createdAt: '2025-04-01T08:00:00.000Z', description: 'Regional distribution for eastern Ethiopia' },
-      { id: 'wh-006', name: 'Northern Regional WH', code: 'NRW-001', location: 'Mekelle, Quiha District', items: 450, value: 675000, capacity: 2000, occupancy: 23, shelfCount: 8, status: 'Limited', managerName: 'Tigist Hailu', contactNumber: '+251 911 000 006', createdAt: '2025-04-15T08:00:00.000Z', description: 'Regional warehouse serving Tigray region' },
-      { id: 'wh-007', name: 'Hawassa Textile Storage', code: 'HTS-001', location: 'Hawassa, Industrial Park', items: 1800, value: 2700000, capacity: 2200, occupancy: 82, shelfCount: 14, status: 'Active', managerName: 'Dawit Eshetu', contactNumber: '+251 911 000 007', createdAt: '2025-02-20T08:00:00.000Z', description: 'Specialized storage for textile and garment industry' },
-      { id: 'wh-008', name: 'Jimma Agricultural WH', code: 'JAW-001', location: 'Jimma, Coffee Zone', items: 600, value: 900000, capacity: 1800, occupancy: 33, shelfCount: 9, status: 'Inactive', managerName: 'Lemlem Berhanu', contactNumber: '+251 911 000 008', createdAt: '2025-05-01T08:00:00.000Z', description: 'Agricultural product storage, currently under renovation' },
-      { id: 'wh-009', name: 'Gondar Historic Depot', code: 'GHD-003', location: 'Gondar, City Center', items: 300, value: 450000, capacity: 1200, occupancy: 25, shelfCount: 6, status: 'Inactive', managerName: 'Tesfaye Ayele', contactNumber: '+251 911 000 009', createdAt: '2025-03-20T08:00:00.000Z', description: 'Heritage storage facility, pending structural upgrades' },
-      { id: 'wh-010', name: 'Adama Industrial Park WH', code: 'AIPW-002', location: 'Adama, Oromia Special Zone', items: 2200, value: 3300000, capacity: 3500, occupancy: 63, shelfCount: 18, status: 'Active', managerName: 'Meron Tadesse', contactNumber: '+251 911 000 010', createdAt: '2025-01-10T08:00:00.000Z', description: 'Industrial park warehouse for manufacturing inputs' },
+      { id: 'wh-001', name: 'Main Warehouse', code: 'MW-001', location: 'Addis Ababa, Main District', address: 'Bole Road, Main District', city: 'Addis Ababa', country: 'Ethiopia', items: 3250, value: 4875000, capacity: 5000, occupancy: 65, shelfCount: 24, status: 'Active', managerName: 'Ahmed Hassan', contactNumber: '+251 911 000 001', contactEmail: 'main.wh@example.com', createdAt: '2025-01-15T08:00:00.000Z', description: 'Primary storage facility for general merchandise' },
+      { id: 'wh-002', name: 'Branch Warehouse A', code: 'BW-A-001', location: 'Addis Ababa, Branch Zone', address: 'CMC Branch Zone', city: 'Addis Ababa', country: 'Ethiopia', items: 1350, value: 2025000, capacity: 3000, occupancy: 45, shelfCount: 16, status: 'Active', managerName: 'Fatima Ali', contactNumber: '+251 911 000 002', contactEmail: 'branch.a@example.com', createdAt: '2025-02-10T08:00:00.000Z', description: 'Secondary storage for regional distribution' },
+      { id: 'wh-003', name: 'Cold Storage Facility', code: 'CS-001', location: 'Addis Ababa, Industrial Area', address: 'Akaki Industrial Area', city: 'Addis Ababa', country: 'Ethiopia', items: 1200, value: 3600000, capacity: 1500, occupancy: 80, shelfCount: 12, status: 'Active', managerName: 'Mohammed Seid', contactNumber: '+251 911 000 003', contactEmail: 'cold.storage@example.com', createdAt: '2025-03-05T08:00:00.000Z', description: 'Temperature controlled storage for perishables' },
+      { id: 'wh-004', name: 'Bole Logistics Hub', code: 'BLH-001', location: 'Addis Ababa, Bole', address: 'Bole Road', city: 'Addis Ababa', country: 'Ethiopia', items: 2800, value: 4200000, capacity: 4000, occupancy: 70, shelfCount: 20, status: 'Active', managerName: 'Sara Tekle', contactNumber: '+251 911 000 004', contactEmail: 'bole.log@example.com', createdAt: '2025-01-20T08:00:00.000Z', description: 'Central logistics hub near Bole International Airport' },
+      { id: 'wh-005', name: 'Eastern Distribution Center', code: 'EDC-002', location: 'Dire Dawa, Industrial Zone', address: 'Industrial Zone', city: 'Dire Dawa', country: 'Ethiopia', items: 900, value: 1350000, capacity: 2500, occupancy: 36, shelfCount: 10, status: 'Limited', managerName: 'Kebede Assefa', contactNumber: '+251 911 000 005', contactEmail: 'eastern.dc@example.com', createdAt: '2025-04-01T08:00:00.000Z', description: 'Regional distribution for eastern Ethiopia' },
+      { id: 'wh-006', name: 'Northern Regional WH', code: 'NRW-001', location: 'Mekelle, Quiha District', address: 'Quiha District', city: 'Mekelle', country: 'Ethiopia', items: 450, value: 675000, capacity: 2000, occupancy: 23, shelfCount: 8, status: 'Limited', managerName: 'Tigist Hailu', contactNumber: '+251 911 000 006', contactEmail: 'northern.wh@example.com', createdAt: '2025-04-15T08:00:00.000Z', description: 'Regional warehouse serving Tigray region' },
+      { id: 'wh-007', name: 'Hawassa Textile Storage', code: 'HTS-001', location: 'Hawassa, Industrial Park', address: 'Industrial Park', city: 'Hawassa', country: 'Ethiopia', items: 1800, value: 2700000, capacity: 2200, occupancy: 82, shelfCount: 14, status: 'Active', managerName: 'Dawit Eshetu', contactNumber: '+251 911 000 007', contactEmail: 'hawassa.ts@example.com', createdAt: '2025-02-20T08:00:00.000Z', description: 'Specialized storage for textile and garment industry' },
+      { id: 'wh-008', name: 'Jimma Agricultural WH', code: 'JAW-001', location: 'Jimma, Coffee Zone', address: 'Coffee Zone', city: 'Jimma', country: 'Ethiopia', items: 600, value: 900000, capacity: 1800, occupancy: 33, shelfCount: 9, status: 'Inactive', managerName: 'Lemlem Berhanu', contactNumber: '+251 911 000 008', contactEmail: 'jimma.ag@example.com', createdAt: '2025-05-01T08:00:00.000Z', description: 'Agricultural product storage, currently under renovation' },
+      { id: 'wh-009', name: 'Gondar Historic Depot', code: 'GHD-003', location: 'Gondar, City Center', address: 'City Center', city: 'Gondar', country: 'Ethiopia', items: 300, value: 450000, capacity: 1200, occupancy: 25, shelfCount: 6, status: 'Inactive', managerName: 'Tesfaye Ayele', contactNumber: '+251 911 000 009', contactEmail: 'gondar.hd@example.com', createdAt: '2025-03-20T08:00:00.000Z', description: 'Heritage storage facility, pending structural upgrades' },
+      { id: 'wh-010', name: 'Adama Industrial Park WH', code: 'AIPW-002', location: 'Adama, Oromia Special Zone', address: 'Oromia Special Zone', city: 'Adama', country: 'Ethiopia', items: 2200, value: 3300000, capacity: 3500, occupancy: 63, shelfCount: 18, status: 'Active', managerName: 'Meron Tadesse', contactNumber: '+251 911 000 010', contactEmail: 'adama.ipwh@example.com', createdAt: '2025-01-10T08:00:00.000Z', description: 'Industrial park warehouse for manufacturing inputs' },
     ];
   }
 
@@ -252,36 +258,38 @@ export class WarehousesComponent {
     this.bulkSelection.set(new Set());
     this.warehousesService.getAll().subscribe({
       next: (response) => {
+        console.log('[Warehouse] GET response:', JSON.stringify({ success: response.success, message: response.message, dataCount: Array.isArray(response.data) ? response.data.length : 'not-array' }));
         const rows = Array.isArray(response.data) ? response.data : [];
         this.warehouses.set(
-          rows.map((wh: WarehouseDto) => ({
-            id: wh.id,
-            name: wh.warehouseName,
-            code: wh.warehouseCode,
-            location: wh.location || '',
-            items: wh.currentUtilization ?? 0,
-            value: (wh.currentUtilization ?? 0) * 1500,
-            capacity: wh.capacity ?? 10000,
-            occupancy: wh.capacity ? Math.round(((wh.currentUtilization ?? 0) / wh.capacity) * 100) : 0,
-            shelfCount: Math.max(1, Math.round((wh.currentUtilization ?? 0) / 100)),
-            status: wh.isActive ? 'Active' : 'Inactive' as 'Active' | 'Inactive',
-            managerName: wh.managerName || '',
-            contactNumber: wh.contactNumber || '',
-            createdAt: wh.createdAt || new Date().toISOString(),
-            description: wh.description || '',
-          })),
+          rows.map((wh: WarehouseDto) => {
+            const totalShelves = wh.totalShelves ?? 0;
+            const totalItems = wh.totalItems ?? 0;
+            const computedCapacity = totalShelves * 100; // backend has no capacity field; derive a value for the UI
+            const computedUtilization = totalItems;
+            return {
+              id: wh.id,
+              name: wh.warehouseName,
+              code: wh.locationCode,
+              location: [wh.address, wh.city, wh.country].filter(Boolean).join(', '),
+              address: wh.address || '',
+              city: wh.city || '',
+              country: wh.country || '',
+              items: computedUtilization,
+              value: computedUtilization * 1500,
+              capacity: computedCapacity,
+              occupancy: computedCapacity ? Math.round((computedUtilization / computedCapacity) * 100) : 0,
+              shelfCount: Math.max(1, totalShelves),
+              status: (wh.isActive ? 'Active' : 'Inactive') as 'Active' | 'Inactive',
+              managerName: wh.contactPerson || '',
+              contactNumber: wh.contactPhone || '',
+              contactEmail: wh.contactEmail || '',
+              createdAt: wh.createdAt || new Date().toISOString(),
+              description: '',
+            };
+          })
         );
-        if (rows.length === 0) {
-          this.loadError.set(
-            response.success === false
-              ? response.message || 'No warehouses returned from the API.'
-              : 'No warehouses in the database yet.',
-          );
-        } else {
-          this.loadError.set(null);
-        }
-        if (this.warehouses().length < 5) {
-          this.useMockFallback();
+        if (this.warehouses().length === 0) {
+          this.loadError.set('No warehouses found. Create a warehouse first.');
         }
         this.page.set(1);
         this.isLoading.set(false);
@@ -296,8 +304,7 @@ export class WarehousesComponent {
             msg = `HTTP ${error.status}: ${error.message || 'request failed'}.`;
           }
         }
-        this.useMockFallback();
-        this.notification.set({ type: 'warning', message: msg + ' Showing mock data.' });
+        this.loadError.set(msg);
         this.isLoading.set(false);
       },
     });
@@ -369,22 +376,52 @@ export class WarehousesComponent {
   deleteSelected(): void {
     const selected = this.bulkSelection();
     if (selected.size === 0) return;
-    const count = selected.size;
-    this.warehouses.update(whs => whs.filter(w => !selected.has(w.id)));
-    this.notification.set({ type: 'success', message: `${count} warehouse${count !== 1 ? 's' : ''} deleted successfully.` });
-    this.bulkSelection.set(new Set());
-    this.page.set(1);
+    const ids = Array.from(selected);
+    let completed = 0;
+    let failed = 0;
+    ids.forEach(id => {
+      this.warehousesService.delete(id).subscribe({
+        next: () => {
+          completed++;
+          if (completed + failed === ids.length) {
+            this.notification.set({
+              type: failed > 0 ? 'warning' : 'success',
+              message: failed > 0
+                ? `${completed} deleted, ${failed} failed.`
+                : `${ids.length} warehouse${ids.length !== 1 ? 's' : ''} deleted successfully.`
+            });
+            this.bulkSelection.set(new Set());
+            this.loadWarehouses();
+          }
+        },
+        error: () => {
+          failed++;
+          if (completed + failed === ids.length) {
+            this.notification.set({
+              type: failed > 0 ? 'warning' : 'success',
+              message: failed > 0
+                ? `${completed} deleted, ${failed} failed.`
+                : `${ids.length} warehouse${ids.length !== 1 ? 's' : ''} deleted successfully.`
+            });
+            this.bulkSelection.set(new Set());
+            this.loadWarehouses();
+          }
+        },
+      });
+    });
   }
 
   openAddModal(): void {
     this.selectedWarehouse.set(null);
     this.modalForm = {
       warehouseName: '',
-      warehouseCode: '',
-      location: '',
-      capacity: 10000,
-      managerName: '',
-      contactNumber: '',
+      locationCode: '',
+      address: '',
+      city: '',
+      country: '',
+      contactPerson: '',
+      contactPhone: '',
+      contactEmail: '',
       isActive: true,
     };
     this.formErrors.set({});
@@ -396,11 +433,13 @@ export class WarehousesComponent {
     this.selectedWarehouse.set(warehouse);
     this.modalForm = {
       warehouseName: warehouse.name,
-      warehouseCode: warehouse.code,
-      location: warehouse.location,
-      capacity: warehouse.capacity,
-      managerName: warehouse.managerName,
-      contactNumber: warehouse.contactNumber,
+      locationCode: warehouse.code,
+      address: warehouse.address,
+      city: warehouse.city,
+      country: warehouse.country,
+      contactPerson: warehouse.managerName,
+      contactPhone: warehouse.contactNumber,
+      contactEmail: warehouse.contactEmail || '',
       isActive: warehouse.status === 'Active',
     };
     this.formErrors.set({});
@@ -445,58 +484,106 @@ export class WarehousesComponent {
   validateForm(): boolean {
     const errors: Record<string, string> = {};
     if (!this.modalForm.warehouseName.trim()) errors['warehouseName'] = 'Warehouse name is required';
-    if (!this.modalForm.warehouseCode.trim()) errors['warehouseCode'] = 'Warehouse code is required';
-    if (!this.modalForm.location.trim()) errors['location'] = 'Location is required';
-    if (this.modalForm.capacity <= 0) errors['capacity'] = 'Capacity must be greater than 0';
+    if (!this.modalForm.locationCode.trim()) errors['locationCode'] = 'Location code is required';
+    if (!this.modalForm.address.trim()) errors['address'] = 'Address is required';
+    if (!this.modalForm.city.trim()) errors['city'] = 'City is required';
+    if (!this.modalForm.country.trim()) errors['country'] = 'Country is required';
     this.formErrors.set(errors);
     return Object.keys(errors).length === 0;
+  }
+
+  private extractErrorMessage(err: unknown): string {
+    if (err && typeof err === 'object') {
+      const e = err as Record<string, unknown>;
+      if (e['error'] && typeof e['error'] === 'object') {
+        const body = e['error'] as Record<string, unknown>;
+        if (body['message']) return String(body['message']);
+        if (body['title']) return String(body['title']);
+        if (body['errors']) {
+          const vals = Object.values(body['errors']).flat();
+          return vals.join('; ');
+        }
+      }
+      if (e['message']) return String(e['message']);
+    }
+    return 'Unknown error';
   }
 
   saveWarehouse(): void {
     if (!this.validateForm()) return;
     const editing = this.selectedWarehouse();
     if (editing) {
-      const updated: Warehouse = {
-        ...editing,
-        name: this.modalForm.warehouseName,
-        code: this.modalForm.warehouseCode,
-        location: this.modalForm.location,
-        capacity: this.modalForm.capacity,
-        managerName: this.modalForm.managerName,
-        contactNumber: this.modalForm.contactNumber,
-        status: this.modalForm.isActive ? 'Active' : 'Inactive',
-        occupancy: this.modalForm.isActive ? Math.max(10, editing.occupancy) : Math.min(10, editing.occupancy),
-      };
-      this.warehouses.update(whs => whs.map(w => w.id === editing.id ? updated : w));
-      this.notification.set({ type: 'success', message: `Warehouse "${updated.name}" updated successfully.` });
+      this.warehousesService.update({
+        id: editing.id,
+        warehouseName: this.modalForm.warehouseName,
+        locationCode: this.modalForm.locationCode,
+        address: this.modalForm.address,
+        city: this.modalForm.city,
+        country: this.modalForm.country,
+        contactPerson: this.modalForm.contactPerson,
+        contactPhone: this.modalForm.contactPhone,
+        contactEmail: this.modalForm.contactEmail,
+        isActive: this.modalForm.isActive,
+      }).subscribe({
+        next: () => {
+          this.notification.set({ type: 'success', message: `Warehouse "${this.modalForm.warehouseName}" updated successfully.` });
+          this.closeModal();
+          this.loadWarehouses();
+        },
+        error: (err: unknown) => {
+          console.error('Update warehouse error:', err);
+          this.notification.set({ type: 'error', message: `Failed to update warehouse: ${this.extractErrorMessage(err)}` });
+        },
+      });
     } else {
-      const newWh: Warehouse = {
-        id: 'wh-' + String(Date.now()).slice(-6),
-        name: this.modalForm.warehouseName,
-        code: this.modalForm.warehouseCode,
-        location: this.modalForm.location,
-        items: 0, value: 0,
-        capacity: this.modalForm.capacity,
-        occupancy: 0, shelfCount: 0,
-        status: this.modalForm.isActive ? 'Active' : 'Inactive',
-        managerName: this.modalForm.managerName,
-        contactNumber: this.modalForm.contactNumber,
-        createdAt: new Date().toISOString(),
-        description: '',
+      const payload = {
+        warehouseName: this.modalForm.warehouseName,
+        locationCode: this.modalForm.locationCode,
+        address: this.modalForm.address,
+        city: this.modalForm.city,
+        country: this.modalForm.country,
+        contactPerson: this.modalForm.contactPerson,
+        contactPhone: this.modalForm.contactPhone,
+        contactEmail: this.modalForm.contactEmail,
       };
-      this.warehouses.update(whs => [...whs, newWh]);
-      this.notification.set({ type: 'success', message: `Warehouse "${newWh.name}" created successfully.` });
+      console.log('[Warehouse] CREATE payload:', JSON.stringify(payload));
+      this.warehousesService.create(payload).subscribe({
+        next: (res) => {
+          console.log('[Warehouse] CREATE response:', JSON.stringify(res));
+          if (res.success) {
+            this.notification.set({ type: 'success', message: `Warehouse "${this.modalForm.warehouseName}" created successfully.` });
+            this.closeModal();
+            this.loadWarehouses();
+          } else {
+            this.notification.set({ type: 'error', message: `Failed to create warehouse: ${res.message || 'Server returned failure'}` });
+          }
+        },
+        error: (err: unknown) => {
+          console.error('[Warehouse] CREATE error:', err);
+          this.notification.set({ type: 'error', message: `Failed to create warehouse: ${this.extractErrorMessage(err)}` });
+        },
+      });
     }
-    this.closeModal();
   }
 
   confirmDelete(): void {
     const wh = this.warehouseToDelete();
     if (!wh) return;
-    this.warehouses.update(whs => whs.filter(w => w.id !== wh.id));
-    this.notification.set({ type: 'success', message: `Warehouse "${wh.name}" deleted successfully.` });
-    this.closeModal();
-    this.page.set(1);
+    this.warehousesService.delete(wh.id).subscribe({
+      next: (res) => {
+        if (res.success) {
+          this.notification.set({ type: 'success', message: `Warehouse "${wh.name}" deleted successfully.` });
+          this.closeModal();
+          this.loadWarehouses();
+        } else {
+          this.notification.set({ type: 'error', message: `Failed to delete warehouse: ${res.message || 'Server returned failure'}` });
+        }
+      },
+      error: (err: unknown) => {
+        console.error('Delete warehouse error:', err);
+        this.notification.set({ type: 'error', message: `Failed to delete warehouse: ${this.extractErrorMessage(err)}` });
+      },
+    });
   }
 
   exportCSV(): void {

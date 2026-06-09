@@ -2,7 +2,8 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { ApiService, PasResponse } from './api.service';
+import { ApiService } from './api.service';
+import { ApiResponseModel } from '../models/api-response.model';
 import { RequisitionsService } from './requisitions.service';
 
 export interface ServiceRequest {
@@ -52,7 +53,7 @@ export class ServiceRequestService {
     private api: ApiService,
   ) {}
 
-  getRequests(pageNumber: number = 1, pageSize: number = 10): Observable<PasResponse<PaginatedResponse<ServiceRequest>>> {
+  getRequests(pageNumber: number = 1, pageSize: number = 10): Observable<ApiResponseModel<PaginatedResponse<ServiceRequest>>> {
     return this.api.get<PaginatedResponse<ServiceRequest>>(`/ServiceRequest?pageNumber=${pageNumber}&pageSize=${pageSize}`);
   }
 

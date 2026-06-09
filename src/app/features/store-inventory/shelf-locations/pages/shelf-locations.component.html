@@ -171,15 +171,15 @@
       <div class="filter-row">
         <div class="search-box">
           <i class="bi bi-search"></i>
-          <input type="text" placeholder="Search by shelf code or name..."
+          <input type="text" placeholder="Search by rack, shelf number, or zone..."
             [ngModel]="searchTerm()" (ngModelChange)="onSearchChange($event)">
         </div>
         <div class="filter-group">
           <label>Warehouse</label>
-          <select class="filter-select" [ngModel]="selectedWarehouseId()" (ngModelChange)="onWarehouseChange($event)">
+          <select class="filter-select" [ngModel]="selectedWarehouseName()" (ngModelChange)="onWarehouseChange($event)">
             <option value="">All Warehouses</option>
             @for (wh of warehouseOptions(); track wh.id) {
-              <option [value]="wh.id">{{ wh.warehouseName }}</option>
+              <option [value]="wh.warehouseName">{{ wh.warehouseName }}</option>
             }
           </select>
         </div>
@@ -203,7 +203,7 @@
           <i class="bi bi-x-circle"></i>
         </button>
       </div>
-      @if (searchTerm() || selectedWarehouseId() || aisleFilter() !== 'All' || occupancyFilter() !== 'All') {
+                  @if (searchTerm() || selectedWarehouseName() || aisleFilter() !== 'All' || occupancyFilter() !== 'All') {
         <div class="active-filters">
           <span class="filter-chip">{{ filteredShelves().length }} result{{ filteredShelves().length !== 1 ? 's' : '' }}</span>
         </div>
@@ -215,8 +215,8 @@
         <table>
           <thead>
             <tr>
-              <th>Shelf Code</th>
-              <th>Name</th>
+              <th>Rack/Shelf</th>
+              <th>Zone</th>
               <th>Warehouse</th>
               <th>Aisle/Rack/Shelf</th>
               <th>Items</th>
@@ -233,14 +233,14 @@
                   <div class="cell-name" (click)="openDetailModal(shelf)" style="cursor:pointer">
                     <div class="cell-icon"><i class="bi bi-grid-3x3"></i></div>
                     <div>
-                      <span class="name">{{ shelf.shelfCode }}</span>
-                      <span class="meta">{{ shelf.shelfName }}</span>
+                      <span class="name">{{ shelf.rack }}-{{ shelf.shelfNumber }}</span>
+                      <span class="meta">{{ shelf.zone }}</span>
                     </div>
                   </div>
                 </td>
-                <td>{{ shelf.shelfName }}</td>
+                <td>{{ shelf.zone }}</td>
                 <td>{{ shelf.warehouseName }}</td>
-                <td><code>{{ shelf.aisle }}/{{ shelf.section }}/{{ shelf.level }}</code></td>
+                <td><code>{{ shelf.aisle }}/{{ shelf.rack }}/{{ shelf.shelfNumber }}</code></td>
                 <td>{{ formatNumber(shelf.items) }}</td>
                 <td>{{ formatNumber(shelf.capacity) }}</td>
                 <td>
@@ -269,7 +269,7 @@
                 <td colspan="9" class="empty-state">
                   <i class="bi bi-inbox"></i>
                   <p>No shelf locations found</p>
-                  @if (searchTerm() || selectedWarehouseId() || aisleFilter() !== 'All' || occupancyFilter() !== 'All') {
+      @if (searchTerm() || selectedWarehouseName() || aisleFilter() !== 'All' || occupancyFilter() !== 'All') {
                     <button class="action-btn secondary" (click)="clearFilters()">Clear Filters</button>
                   }
                 </td>
@@ -325,31 +325,91 @@
         <div class="modal-body">
           <div class="form-grid">
             <div class="form-group">
-              <label>Shelf Code <span class="required">*</span></label>
-              <input type="text" [(ngModel)]="modalForm.shelfCode" placeholder="A-R01-S01">
-              @if (fieldError('shelfCode')) {
-                <span class="form-error">{{ fieldError('shelfCode') }}</span>
+              <label>Rack <span class="required">*</span></label>
+              <input type="text" [(ngModel)]="modalForm.rack" placeholder="R01">
+              @if (fieldError('rack')) {
+                <span class="form-error">{{ fieldError('rack') }}</span>
               }
             </div>
             <div class="form-group">
-              <label>Shelf Name <span class="required">*</span></label>
-              <input type="text" [(ngModel)]="modalForm.shelfName" placeholder="Aisle A Rack 01 Shelf 01">
-              @if (fieldError('shelfName')) {
-                <span class="form-error">{{ fieldError('shelfName') }}</span>
+              <label>Shelf Number <span class="required">*</span></label>
+              <input type="text" [(ngModel)]="modalForm.shelfNumber" placeholder="S01">
+              @if (fieldError('shelfNumber')) {
+                <span class="form-error">{{ fieldError('shelfNumber') }}</span>
               }
             </div>
             <div class="form-group">
               <label>Warehouse <span class="required">*</span></label>
-              <select [(ngModel)]="modalForm.warehouseId">
+              <select [(ngModel)]="modalForm.warehouseName">
                 <option value="">Select warehouse</option>
                 @for (wh of warehouseOptions(); track wh.id) {
-                  <option [value]="wh.id">{{ wh.warehouseName }}</option>
+                  <option [value]="wh.warehouseName">{{ wh.warehouseName }}</option>
                 }
               </select>
-              @if (fieldError('warehouseId')) {
-                <span class="form-error">{{ fieldError('warehouseId') }}</span>
+              @if (fieldError('warehouseName')) {
+                <span class="form-error">{{ fieldError('warehouseName') }}</span>
               }
+              @if (warehouseOptions().length === 0) {
+                <span class="form-hint">No warehouses found. Create one below.</span>
+              }
+              <button type="button" class="link-btn" (click)="toggleWarehouseForm()">
+                <i class="bi {{ showWarehouseForm() ? 'bi-chevron-up' : 'bi-plus-circle' }}"></i>
+                {{ showWarehouseForm() ? 'Cancel' : 'Create New Warehouse' }}
+              </button>
             </div>
+            @if (showWarehouseForm()) {
+              <div class="inline-warehouse-form full-width">
+                <div class="inline-form-header">
+                  <h4><i class="bi bi-building"></i> New Warehouse</h4>
+                </div>
+                <div class="inline-form-grid">
+                  <div class="form-group">
+                    <label>Warehouse Name <span class="required">*</span></label>
+                    <input type="text" [(ngModel)]="warehouseForm.warehouseName" placeholder="e.g. Main Warehouse">
+                    @if (warehouseFormErrors()['warehouseName']) {
+                      <span class="form-error">{{ warehouseFormErrors()['warehouseName'] }}</span>
+                    }
+                  </div>
+                  <div class="form-group">
+                    <label>Location Code <span class="required">*</span></label>
+                    <input type="text" [(ngModel)]="warehouseForm.locationCode" placeholder="e.g. WH-001">
+                    @if (warehouseFormErrors()['locationCode']) {
+                      <span class="form-error">{{ warehouseFormErrors()['locationCode'] }}</span>
+                    }
+                  </div>
+                  <div class="form-group">
+                    <label>City</label>
+                    <input type="text" [(ngModel)]="warehouseForm.city" placeholder="e.g. Addis Ababa">
+                  </div>
+                  <div class="form-group">
+                    <label>Country</label>
+                    <input type="text" [(ngModel)]="warehouseForm.country" placeholder="e.g. Ethiopia">
+                  </div>
+                  <div class="form-group full-width">
+                    <label>Address</label>
+                    <input type="text" [(ngModel)]="warehouseForm.address" placeholder="Full address">
+                  </div>
+                  <div class="form-group">
+                    <label>Contact Person</label>
+                    <input type="text" [(ngModel)]="warehouseForm.contactPerson" placeholder="Name">
+                  </div>
+                  <div class="form-group">
+                    <label>Contact Phone</label>
+                    <input type="text" [(ngModel)]="warehouseForm.contactPhone" placeholder="+251...">
+                  </div>
+                </div>
+                <div class="inline-form-actions">
+                  <button type="button" class="action-btn secondary small" (click)="toggleWarehouseForm()">Cancel</button>
+                  <button type="button" class="action-btn primary small" (click)="createWarehouse()" [disabled]="isCreatingWarehouse()">
+                    @if (isCreatingWarehouse()) {
+                      <span class="spinner-small"></span> Creating...
+                    } @else {
+                      <i class="bi bi-check-lg"></i> Create Warehouse
+                    }
+                  </button>
+                </div>
+              </div>
+            }
             <div class="form-group">
               <label>Aisle <span class="required">*</span></label>
               <input type="text" [(ngModel)]="modalForm.aisle" placeholder="A">
@@ -358,22 +418,28 @@
               }
             </div>
             <div class="form-group">
-              <label>Section <span class="required">*</span></label>
-              <input type="text" [(ngModel)]="modalForm.section" placeholder="R01">
-              @if (fieldError('section')) {
-                <span class="form-error">{{ fieldError('section') }}</span>
-              }
+              <label>Zone</label>
+              <input type="text" [(ngModel)]="modalForm.zone" placeholder="Zone-A">
             </div>
             <div class="form-group">
-              <label>Level <span class="required">*</span></label>
-              <input type="text" [(ngModel)]="modalForm.level" placeholder="S01">
-              @if (fieldError('level')) {
-                <span class="form-error">{{ fieldError('level') }}</span>
-              }
+              <label>Bin Type</label>
+              <input type="text" [(ngModel)]="modalForm.binType" placeholder="Standard">
             </div>
             <div class="form-group">
-              <label>Position</label>
-              <input type="text" [(ngModel)]="modalForm.position" placeholder="1">
+              <label>Length (cm)</label>
+              <input type="number" [(ngModel)]="modalForm.length" placeholder="120" min="0">
+            </div>
+            <div class="form-group">
+              <label>Width (cm)</label>
+              <input type="number" [(ngModel)]="modalForm.width" placeholder="60" min="0">
+            </div>
+            <div class="form-group">
+              <label>Height (cm)</label>
+              <input type="number" [(ngModel)]="modalForm.height" placeholder="40" min="0">
+            </div>
+            <div class="form-group">
+              <label>Max Weight (kg)</label>
+              <input type="number" [(ngModel)]="modalForm.maxWeight" placeholder="500" min="0">
             </div>
             <div class="form-group">
               <label>Capacity <span class="required">*</span></label>
@@ -411,18 +477,18 @@
         @let shelf = selectedShelf();
         @if (shelf) {
           <div class="modal-header">
-            <h2><i class="bi bi-grid-3x3"></i> {{ shelf.shelfCode }}</h2>
+            <h2><i class="bi bi-grid-3x3"></i> {{ shelf.rack }}-{{ shelf.shelfNumber }}</h2>
             <button class="icon-btn" (click)="closeModal()"><i class="bi bi-x-lg"></i></button>
           </div>
           <div class="modal-body">
             <div class="detail-grid">
               <div class="detail-field">
-                <span class="detail-label">Shelf Code</span>
-                <span class="detail-value"><code>{{ shelf.shelfCode }}</code></span>
+                <span class="detail-label">Rack</span>
+                <span class="detail-value"><code>{{ shelf.rack }}</code></span>
               </div>
               <div class="detail-field">
-                <span class="detail-label">Name</span>
-                <span class="detail-value">{{ shelf.shelfName }}</span>
+                <span class="detail-label">Shelf Number</span>
+                <span class="detail-value">{{ shelf.shelfNumber }}</span>
               </div>
               <div class="detail-field">
                 <span class="detail-label">Warehouse</span>
@@ -430,11 +496,11 @@
               </div>
               <div class="detail-field">
                 <span class="detail-label">Location</span>
-                <span class="detail-value">{{ shelf.aisle }}/{{ shelf.section }}/{{ shelf.level }}</span>
+                <span class="detail-value">{{ shelf.aisle }}/{{ shelf.rack }}/{{ shelf.shelfNumber }}</span>
               </div>
               <div class="detail-field">
-                <span class="detail-label">Position</span>
-                <span class="detail-value">{{ shelf.position || '—' }}</span>
+                <span class="detail-label">Zone</span>
+                <span class="detail-value">{{ shelf.zone || '—' }}</span>
               </div>
               <div class="detail-field">
                 <span class="detail-label">Status</span>
@@ -526,7 +592,7 @@
           </div>
           <div class="modal-body delete-body">
             <div class="delete-icon"><i class="bi bi-trash3-fill"></i></div>
-            <p class="delete-warning">Are you sure you want to delete <strong>"{{ shelf.shelfCode }}"</strong>?</p>
+            <p class="delete-warning">Are you sure you want to delete <strong>"{{ shelf.rack }}-{{ shelf.shelfNumber }}"</strong>?</p>
             <p class="delete-hint">This action cannot be undone. All items on this shelf will be unassigned.</p>
           </div>
           <div class="modal-footer">
