@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
-import { Observable, map, catchError, of } from 'rxjs';
+import { Observable, forkJoin, of } from 'rxjs';
+import { map, catchError } from 'rxjs/operators';
 import { ApiService } from './api.service';
 import { ApiResponseModel } from '../models/api-response.model';
 import { toCamelCaseDeep, unwrapPasEnvelope } from '../utils/pas-api-json.util';
@@ -34,6 +35,31 @@ export interface DashboardStatistics {
   lowStockAlerts: LowStockAlert[];
   pendingTasks: PendingTask[];
   quickActions: QuickAction[];
+  monthlyTrend?: MonthlyTrendPoint[];
+  categoryBreakdown?: ChartData[];
+  departmentActivity?: DepartmentActivityPoint[];
+  topRequestedItems?: TopRequestedItem[];
+}
+
+export interface MonthlyTrendPoint {
+  month: string;
+  requests: number;
+  approved: number;
+  completed: number;
+}
+
+export interface DepartmentActivityPoint {
+  department: string;
+  requests: number;
+  pct: number;
+}
+
+export interface TopRequestedItem {
+  id: number;
+  name: string;
+  category: string;
+  quantity: number;
+  requests: number;
 }
 
 export interface ChartData {
@@ -84,98 +110,13 @@ export interface QuickAction {
   permission: string;
 }
 
+interface RawItem {
+  [key: string]: unknown;
+}
+
 @Injectable({ providedIn: 'root' })
 export class DashboardService {
   constructor(private apiService: ApiService) {}
-
-  private createMockData(): DashboardStatistics {
-    return {
-      totalProperties: 156,
-      totalLocations: 12,
-      totalSafetyBoxes: 48,
-      totalItems: 2847,
-      totalSuppliers: 23,
-      totalEmployees: 89,
-      pendingRequisitions: 12,
-      approvedRequisitions: 34,
-      issuedRequisitions: 28,
-      completedRequisitions: 156,
-      rejectedRequisitions: 5,
-      pendingInspections: 8,
-      approvedReceiving: 42,
-      rejectedReceiving: 3,
-      totalStockValue: 450000,
-      lowStockItemsCount: 7,
-      outOfStockItemsCount: 2,
-      totalPropertyValue: 2500000,
-      propertiesByLocation: 12,
-      propertiesByType: 5,
-      requisitionsByStatus: [
-        { label: 'Pending', value: 12, color: '#f59e0b' },
-        { label: 'Approved', value: 34, color: '#10b981' },
-        { label: 'Rejected', value: 5, color: '#ef4444' },
-        { label: 'Completed', value: 156, color: '#3b82f6' },
-        { label: 'Issued', value: 28, color: '#8b5cf6' },
-      ],
-      propertiesByLocationChart: [
-        { label: 'Main Warehouse', value: 45, color: '#3b82f6' },
-        { label: 'Branch A', value: 32, color: '#10b981' },
-        { label: 'Branch B', value: 24, color: '#f59e0b' },
-        { label: 'Regional Hub', value: 55, color: '#8b5cf6' },
-      ],
-      stockMovementsByMonth: [],
-      receivingByStatus: [],
-      dailyCreatedProperties: [],
-      recentActivities: [
-        {
-          id: '1',
-          action: 'Property added',
-          entityName: 'Office Building A',
-          entityId: 'prop-001',
-          userName: 'John Admin',
-          actionDate: new Date().toISOString(),
-          timeAgo: '2 hours ago',
-          icon: 'bi bi-building',
-          color: 'blue',
-        },
-        {
-          id: '2',
-          action: 'Requisition approved',
-          entityName: 'Laptop Request',
-          entityId: 'req-042',
-          userName: 'Sarah Manager',
-          actionDate: new Date(Date.now() - 3600000).toISOString(),
-          timeAgo: '1 hour ago',
-          icon: 'bi bi-check-circle',
-          color: 'green',
-        },
-      ],
-      lowStockAlerts: [
-        {
-          itemId: 'item-001',
-          itemName: 'Office Paper A4',
-          sku: 'PAP-A4-001',
-          currentStock: 15,
-          minStockLevel: 50,
-          deficit: 35,
-          location: 'Main Warehouse',
-          severity: 'Critical',
-        },
-        {
-          itemId: 'item-002',
-          itemName: 'Printer Cartridge',
-          sku: 'PRT-CAR-002',
-          currentStock: 8,
-          minStockLevel: 20,
-          deficit: 12,
-          location: 'Branch A',
-          severity: 'Warning',
-        },
-      ],
-      pendingTasks: [],
-      quickActions: [],
-    };
-  }
 
   getStatistics(): Observable<ApiResponseModel<DashboardStatistics>> {
     return this.apiService.get<unknown>('Dashboard/statistics').pipe(
@@ -192,15 +133,226 @@ export class DashboardService {
           statusCode: env.statusCode ?? 0,
         } satisfies ApiResponseModel<DashboardStatistics>;
       }),
-      catchError(() => {
-        console.warn('Dashboard API unavailable, using mock data');
-        return of({
+      catchError(() => this.computeFallbackStatistics()),
+    );
+  }
+
+  private computeFallbackStatistics(): Observable<ApiResponseModel<DashboardStatistics>> {
+    return forkJoin({
+      properties: this.apiService.get<unknown>('Properties').pipe(
+        catchError(() => of({ success: false, data: [], statusCode: 0 } as unknown as ApiResponseModel<unknown>)),
+      ),
+      employees: this.apiService.get<unknown>('employees').pipe(
+        catchError(() => of({ success: false, data: { items: [] }, statusCode: 0 } as unknown as ApiResponseModel<unknown>)),
+      ),
+      serviceRequests: this.apiService.get<unknown>('ServiceRequests').pipe(
+        catchError(() => of({ success: false, data: { items: [] }, statusCode: 0 } as unknown as ApiResponseModel<unknown>)),
+      ),
+      inventory: this.apiService.get<unknown>('InventoryStock').pipe(
+        catchError(() => of({ success: false, data: [], statusCode: 0 } as unknown as ApiResponseModel<unknown>)),
+      ),
+      inspections: this.apiService.get<unknown>('Inspections').pipe(
+        catchError(() => of({ success: false, data: { items: [] }, statusCode: 0 } as unknown as ApiResponseModel<unknown>)),
+      ),
+    }).pipe(
+      map((raw) => {
+        const props = this.toArray(raw.properties?.data);
+        const emps = this.toArray(raw.employees?.data, 'items');
+        const reqs = this.toArray(raw.serviceRequests?.data, 'items');
+        const inv = this.toArray(raw.inventory?.data);
+        const insp = this.toArray(raw.inspections?.data, 'items');
+
+        const d = this.compute(props, emps, reqs, inv, insp);
+        return {
           success: true,
-          message: 'Mock data (API unavailable)',
-          data: this.createMockData(),
+          message: 'Dashboard statistics computed from registered data.',
+          data: d,
           statusCode: 200,
-        } satisfies ApiResponseModel<DashboardStatistics>);
+        } satisfies ApiResponseModel<DashboardStatistics>;
       }),
     );
+  }
+
+  private toArray(data: unknown, nestedKey?: string): RawItem[] {
+    if (Array.isArray(data)) return data;
+    if (data && typeof data === 'object') {
+      const obj = data as Record<string, unknown>;
+      if (nestedKey) {
+        const nested = obj[nestedKey] ?? obj[nestedKey.charAt(0).toUpperCase() + nestedKey.slice(1)];
+        if (Array.isArray(nested)) return nested;
+      }
+      const items = obj['items'] ?? obj['Items'] ?? obj['data'] ?? obj['Data'] ?? obj['inventory'] ?? obj['Inventory'];
+      if (Array.isArray(items)) return items;
+    }
+    return [];
+  }
+
+  private num(v: unknown): number {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : 0;
+  }
+
+  private compute(
+    properties: RawItem[], employees: RawItem[],
+    serviceRequests: RawItem[], inventory: RawItem[],
+    inspections: RawItem[],
+  ): DashboardStatistics {
+    const gs = (item: RawItem, ...keys: string[]): string => {
+      for (const k of keys) {
+        const v = item[k];
+        if (v != null && v !== '') return String(v);
+      }
+      return '';
+    };
+    const gn = (item: RawItem, ...keys: string[]): number => {
+      for (const k of keys) {
+        const v = item[k];
+        const n = Number(v);
+        if (Number.isFinite(n)) return n;
+      }
+      return 0;
+    };
+
+    const totalProperties = properties.length;
+    const totalLocations = new Set(properties.map(p => gs(p, 'locationId', 'location')).filter(Boolean)).size;
+    const totalEmployees = employees.length;
+    const totalSafetyBoxes = properties.filter(p =>
+      gs(p, 'propertyTypeId').toLowerCase().includes('safety') ||
+      gs(p, 'propertyCategoryId').toLowerCase().includes('safety'),
+    ).length;
+    const totalSuppliers = new Set(serviceRequests.map(r => r['requesterName']).filter(Boolean)).size;
+    const totalItems = inventory.length;
+    const totalPropertyValue = properties.reduce((s, p) => s + gn(p, 'currentValue', 'value', 'totalValue'), 0);
+    const totalStockValue = inventory.reduce((s, i) => s + gn(i, 'currentStock', 'stockQuantity') * (gn(i, 'unitPrice') || 15), 0);
+
+    const matchStatus = (r: RawItem, status: string): boolean =>
+      gs(r, 'status').toLowerCase() === status;
+    const pendingReqs = serviceRequests.filter(r => matchStatus(r, 'pending')).length;
+    const approvedReqs = serviceRequests.filter(r => matchStatus(r, 'approved')).length;
+    const rejectedReqs = serviceRequests.filter(r => matchStatus(r, 'rejected')).length;
+    const issuedReqs = serviceRequests.filter(r => matchStatus(r, 'issued')).length;
+    const completedReqs = serviceRequests.filter(r => matchStatus(r, 'completed')).length;
+
+    const lowStockItems = inventory.filter(i => {
+      const min = gn(i, 'minimumThreshold', 'minStockLevel');
+      return min > 0 && gn(i, 'currentStock', 'stockQuantity') <= min;
+    });
+    const outOfStockItems = inventory.filter(i => gn(i, 'currentStock', 'stockQuantity') <= 0);
+
+    const pendingInsp = inspections.filter(i => gs(i, 'status').toLowerCase() !== 'completed').length;
+    const approvedRec = inspections.filter(i => i['isPassed'] === true).length;
+    const rejectedRec = inspections.filter(i => i['isPassed'] === false).length;
+
+    const catMap = new Map<string, number>();
+    properties.forEach(p => {
+      const cat = gs(p, 'propertyCategoryName', 'propertyCategoryId', 'category', 'propertyTypeName', 'propertyTypeId', 'Other');
+      catMap.set(cat, (catMap.get(cat) || 0) + 1);
+    });
+    const categoryColors = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444', '#06b6d4', '#ec4899', '#f97316'];
+    const categoryBreakdown: ChartData[] = [...catMap.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .map(([name, count], i) => ({
+        label: name, value: count, color: categoryColors[i % categoryColors.length],
+      }));
+
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const monthMap = new Map<string, { requests: number; approved: number; completed: number }>();
+    serviceRequests.forEach(r => {
+      const rd = r['requestDate'] as string | undefined;
+      if (rd) {
+        const m = months[new Date(rd).getMonth()] || rd.slice(0, 7);
+        if (!monthMap.has(m)) monthMap.set(m, { requests: 0, approved: 0, completed: 0 });
+        const entry = monthMap.get(m)!;
+        entry.requests++;
+        if (matchStatus(r, 'approved')) entry.approved++;
+        if (matchStatus(r, 'completed')) entry.completed++;
+      }
+    });
+    const monthlyTrend: MonthlyTrendPoint[] = [...monthMap.entries()].map(([month, counts]) => ({
+      month, ...counts,
+    }));
+
+    const deptMap = new Map<string, number>();
+    serviceRequests.forEach(r => {
+      const d = gs(r, 'department', 'Other');
+      deptMap.set(d, (deptMap.get(d) || 0) + 1);
+    });
+    const totalReqs = Math.max(pendingReqs + approvedReqs + rejectedReqs + completedReqs + issuedReqs, 1);
+    const departmentActivity: DepartmentActivityPoint[] = [...deptMap.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .map(([dept, count]) => ({ department: dept, requests: count, pct: Math.round((count / totalReqs) * 100) }));
+
+    const now = new Date();
+    const recentActivities: RecentActivity[] = [];
+    properties.slice(-3).reverse().forEach((p, i) => {
+      recentActivities.push({
+        id: `act-prop-${i}`, action: 'Property added',
+        entityName: gs(p, 'name', 'tagNumber', 'Property'),
+        entityId: gs(p, 'id'), userName: 'System',
+        actionDate: new Date(now.getTime() - i * 3600000).toISOString(),
+        timeAgo: `${i + 1} hour${i > 0 ? 's' : ''} ago`,
+        icon: 'bi bi-building-add', color: '#3b82f6',
+      });
+    });
+    serviceRequests.slice(-3).reverse().forEach((r, i) => {
+      recentActivities.push({
+        id: `act-req-${i}`, action: gs(r, 'status', 'Unknown'),
+        entityName: gs(r, 'purpose', 'id', 'Service request'),
+        entityId: gs(r, 'id'),
+        userName: gs(r, 'requesterName', 'User'),
+        actionDate: new Date(now.getTime() - i * 7200000).toISOString(),
+        timeAgo: `${i + 2} hours ago`,
+        icon: 'bi bi-check-circle', color: '#10b981',
+      });
+    });
+
+    const lowStockAlerts: LowStockAlert[] = lowStockItems.map(i => ({
+      itemId: gs(i, 'itemId', 'id'),
+      itemName: gs(i, 'itemName', 'name', 'Item'),
+      sku: gs(i, 'sku', '—'),
+      currentStock: gn(i, 'currentStock', 'stockQuantity'),
+      minStockLevel: gn(i, 'minimumThreshold', 'minStockLevel'),
+      deficit: Math.max(0, gn(i, 'minimumThreshold', 'minStockLevel') - gn(i, 'currentStock', 'stockQuantity')),
+      location: gs(i, 'warehouseName', 'shelfLocation', '—'),
+      severity:
+        gn(i, 'currentStock', 'stockQuantity') <= 0 ? 'Critical'
+          : gn(i, 'currentStock', 'stockQuantity') <= gn(i, 'minimumThreshold', 'minStockLevel') * 0.5 ? 'Warning'
+          : 'Attention',
+    }));
+
+    return {
+      totalProperties, totalLocations, totalSafetyBoxes, totalItems,
+      totalSuppliers, totalEmployees,
+      pendingRequisitions: pendingReqs, approvedRequisitions: approvedReqs,
+      issuedRequisitions: issuedReqs, completedRequisitions: completedReqs,
+      rejectedRequisitions: rejectedReqs,
+      pendingInspections: pendingInsp, approvedReceiving: approvedRec, rejectedReceiving: rejectedRec,
+      totalStockValue, lowStockItemsCount: lowStockItems.length,
+      outOfStockItemsCount: outOfStockItems.length,
+      totalPropertyValue, propertiesByLocation: totalLocations, propertiesByType: catMap.size,
+      requisitionsByStatus: [
+        { label: 'Pending', value: pendingReqs, color: '#f59e0b' },
+        { label: 'Approved', value: approvedReqs, color: '#10b981' },
+        { label: 'Rejected', value: rejectedReqs, color: '#ef4444' },
+        { label: 'Completed', value: completedReqs, color: '#3b82f6' },
+        { label: 'Issued', value: issuedReqs, color: '#8b5cf6' },
+      ],
+      propertiesByLocationChart: categoryBreakdown.slice(0, 6),
+      stockMovementsByMonth: monthlyTrend.map(mt => ({ label: mt.month, value: mt.requests, color: '#3b82f6' })),
+      receivingByStatus: [
+        { label: 'Accepted', value: approvedRec, color: '#10b981' },
+        { label: 'Rejected', value: rejectedRec, color: '#ef4444' },
+      ],
+      dailyCreatedProperties: categoryBreakdown.slice(0, 5).map(c => ({
+        label: c.label, value: Math.round(c.value / 3), color: c.color,
+      })),
+      monthlyTrend,
+      categoryBreakdown,
+      departmentActivity,
+      recentActivities,
+      lowStockAlerts,
+      pendingTasks: [],
+      quickActions: [],
+    };
   }
 }

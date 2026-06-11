@@ -40,27 +40,7 @@ interface DayActivity {
 const BAR_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
 const TYPE_COLORS: Record<NotificationType, string> = { Info: '#3b82f6', Success: '#10b981', Warning: '#f59e0b', Error: '#ef4444' };
 
-const MOCK_NOTIFICATIONS: NotificationItem[] = [
-  { id: 1, title: 'Requisition Approved', message: 'REQ-2026-041 was approved by workflow manager and is now processing.', type: 'Success', createdAt: getISO(-1), read: false },
-  { id: 2, title: 'Low Stock Alert', message: 'Stock for item ECX-BOX-101 is below minimum threshold of 50 units. Current: 12 units.', type: 'Warning', createdAt: getISO(-2), read: false },
-  { id: 3, title: 'System Backup Complete', message: 'Daily synchronization and backup completed successfully. Duration: 4.2 min.', type: 'Info', createdAt: getISO(-3), read: true },
-  { id: 4, title: 'Payment Reconciliation Failed', message: 'Monthly reconciliation for June 2026 failed due to account mismatch in ledger #ACC-045.', type: 'Error', createdAt: getISO(-4), read: false },
-  { id: 5, title: 'New User Registration', message: 'User "Abebe Kebede" registered with role Storekeeper. Pending admin approval.', type: 'Info', createdAt: getISO(-5), read: false },
-  { id: 6, title: 'Asset Transfer Completed', message: 'Asset TAG-010 (Toyota Hilux) transferred from Parking to Field Office. Confirmed by logistics.', type: 'Success', createdAt: getISO(-6), read: true },
-  { id: 7, title: 'Budget Threshold Warning', message: 'IT department budget utilization has reached 87%. Threshold set at 85%.', type: 'Warning', createdAt: getISO(-24), read: false },
-  { id: 8, title: 'Database Connection Error', message: 'Connection to primary database timed out 3 times in the last hour. Failover activated.', type: 'Error', createdAt: getISO(-25), read: false },
-  { id: 9, title: 'Quarterly Report Ready', message: 'Q2 2026 financial report is generated and available for review in Reports section.', type: 'Info', createdAt: getISO(-26), read: true },
-  { id: 10, title: 'Vendor Invoice Approved', message: 'Invoice INV-2026-0789 from Tech Supplies PLC for ETB 12,500 approved for payment.', type: 'Success', createdAt: getISO(-48), read: false },
-  { id: 11, title: 'Server Maintenance Scheduled', message: 'Server maintenance window scheduled for July 15, 2026 02:00-04:00 AM. Expect downtime.', type: 'Info', createdAt: getISO(-72), read: true },
-  { id: 12, title: 'Password Expiry Notice', message: 'Your password will expire in 7 days. Please update to maintain account security.', type: 'Warning', createdAt: getISO(-96), read: true },
-  { id: 13, title: 'Audit Trail Alert', message: 'Unauthorized access attempt detected on module "Asset Disposal" from IP 192.168.1.105.', type: 'Error', createdAt: getISO(-120), read: false },
-  { id: 14, title: 'Procurement PO Issued', message: 'Purchase Order PO-2026-0456 issued to EthioMotors PLC for ETB 350,000.', type: 'Success', createdAt: getISO(-168), read: true },
-  { id: 15, title: 'System Update Available', message: 'Version 3.2.1 is available. Release notes include 12 bug fixes and 4 feature enhancements.', type: 'Info', createdAt: getISO(-336), read: true },
-];
 
-function getISO(hoursAgo: number): string {
-  return new Date(Date.now() - hoursAgo * 60 * 60 * 1000).toISOString();
-}
 
 function formatTime(timestamp: string): string {
   const date = new Date(timestamp);
@@ -117,7 +97,9 @@ export class NotificationsPage {
   readonly Math = Math;
   readonly TYPE_COLORS = TYPE_COLORS;
 
-  readonly allNotifications = signal<NotificationItem[]>(MOCK_NOTIFICATIONS);
+  readonly loadError = signal<string | null>('Notifications API not available');
+
+  readonly allNotifications = signal<NotificationItem[]>([]);
 
   searchTerm = signal('');
   typeFilter = signal<NotificationType | 'All'>('All');

@@ -20,9 +20,10 @@ export class RiskAlertsPageComponent implements OnInit {
   searchQuery = '';
   filterType = signal<'All' | 'unread' | 'info' | 'warning' | 'error' | 'success'>('All');
 
-  // Load all notifications
+  // Load notifications for Compliance role
   protected readonly allNotifications = computed<NotificationMessage[]>(() => {
-    return this.workflowService.getAllNotifications();
+    const user = this.currentUserService.getCurrentUserValue();
+    return this.workflowService.getNotificationsForUser(user?.id || '', 'Compliance');
   });
 
   // Filtered notifications list
@@ -91,17 +92,17 @@ export class RiskAlertsPageComponent implements OnInit {
 
   takeAction(notif: NotificationMessage): void {
     this.markAsRead(notif.id);
-    // Prefer the actual request id — open the admin service-request detail page
-    // (which the admin dashboard itself uses) so the SR can be opened/viewed in one place.
-    if (notif.requestId) {
-      void this.router.navigate(['/admin/requisitions', notif.requestId]);
-      return;
-    }
-    if (notif.actionUrl) {
-      void this.router.navigate([notif.actionUrl]);
-      return;
-    }
-    void this.router.navigate(['/compliance-officer/dashboard']);
+    this.workflowService.createNotification({
+      recipientId: '',
+      recipientRole: 'Manager',
+      type: 'warning',
+      title: 'Compliance Flag - Manager Review Required',
+      message: `Compliance flagged: ${notif.title}: ${notif.message} - Please review and take action`,
+      requestId: notif.requestId,
+      actionRequired: true,
+      actionUrl: `/manager/dashboard`,
+    });
+    alert('Manager notified of compliance flag. Compliance will be updated when manager takes action.');
   }
 
   refreshAlerts(): void {

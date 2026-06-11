@@ -389,6 +389,15 @@ export class ServiceRequestDetailComponent implements OnInit {
     return 'badge-secondary';
   }
 
+  getStockVerificationCssClass(status: string): string {
+    switch (status?.toLowerCase()) {
+      case 'verified': return 'approved';
+      case 'insufficient': return 'rejected';
+      case 'pending': return 'pending';
+      default: return 'pending';
+    }
+  }
+
   formatDate(date: string | Date): string {
     if (!date) return 'N/A';
     return new Date(date).toLocaleDateString('en-US', {
@@ -397,7 +406,15 @@ export class ServiceRequestDetailComponent implements OnInit {
     });
   }
 
-  canApprove(): boolean { return this.serviceRequest()?.status?.toLowerCase() === 'pending'; }
+  canApprove(): boolean {
+    const sr = this.serviceRequest();
+    if (!sr || sr.status?.toLowerCase() !== 'pending') return false;
+    return sr.stockVerificationStatus === 'Verified';
+  }
+  showStockPendingHint(): boolean {
+    const sr = this.serviceRequest();
+    return !!sr && sr.status?.toLowerCase() === 'pending' && sr.stockVerificationStatus !== 'Verified';
+  }
   canReject(): boolean { return this.serviceRequest()?.status?.toLowerCase() === 'pending'; }
   canIssue(): boolean { return this.serviceRequest()?.status?.toLowerCase() === 'approved'; }
   canEdit(): boolean { return this.serviceRequest()?.status?.toLowerCase() === 'pending'; }

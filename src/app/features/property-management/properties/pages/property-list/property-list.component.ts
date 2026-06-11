@@ -1,7 +1,8 @@
-﻿import { Component, signal, computed, inject } from '@angular/core';
+﻿import { Component, signal, computed, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { PropertiesService, PropertyDto } from '../../../../../core/services/properties.service';
 
 interface Property {
   id: string;
@@ -43,24 +44,6 @@ interface BarItem {
   color: string;
 }
 
-const MOCK_PROPERTIES: Property[] = [
-  { id: '1', tagNumber: 'TAG-001', name: 'Dell XPS Laptop', type: 'Computer', location: 'IT Dept', value: 2499, status: 'Active', serialNumber: 'C02XK2L8Q6PJ', purchaseDate: '2024-11-15T00:00:00.000Z', poNumber: 'PO-2024-1234', supplier: 'Tech Supplies PLC', assignedTo: 'John Doe', warrantyEnd: '2026-11-14T00:00:00.000Z' },
-  { id: '2', tagNumber: 'TAG-002', name: 'HP Monitor 27"', type: 'Monitor', location: 'IT Dept', value: 350, status: 'Active', serialNumber: 'HP27-MN-8932', purchaseDate: '2024-10-01T00:00:00.000Z', poNumber: 'PO-2024-0892', supplier: 'OfficeTech Trading', assignedTo: 'Sarah Smith', warrantyEnd: '2026-10-01T00:00:00.000Z' },
-  { id: '3', tagNumber: 'TAG-003', name: 'Executive Office Chair', type: 'Furniture', location: 'HR Dept', value: 450, status: 'Maintenance', serialNumber: 'CHR-EXEC-4521', purchaseDate: '2023-06-20T00:00:00.000Z', poNumber: 'PO-2023-0456', supplier: 'Furniture World PLC', assignedTo: 'HR Team', warrantyEnd: '2025-06-20T00:00:00.000Z' },
-  { id: '4', tagNumber: 'TAG-004', name: 'Dell PowerEdge R740', type: 'Equipment', location: 'ServerRm', value: 2800, status: 'Active', serialNumber: 'R740-SRV-001', purchaseDate: '2024-08-15T00:00:00.000Z', poNumber: 'PO-2024-0567', supplier: 'Server Solutions Inc', assignedTo: 'IT Admin', warrantyEnd: '2027-08-15T00:00:00.000Z' },
-  { id: '5', tagNumber: 'TAG-005', name: 'Ford Transit Van', type: 'Vehicle', location: 'Parking', value: 35000, status: 'Active', serialNumber: 'FTV-2024-789', purchaseDate: '2024-03-10T00:00:00.000Z', poNumber: 'PO-2024-0123', supplier: 'EthioMotors PLC', assignedTo: 'Logistics Team', warrantyEnd: '2028-03-10T00:00:00.000Z' },
-  { id: '6', tagNumber: 'TAG-006', name: 'Cisco Catalyst 9300', type: 'Network', location: 'IT Dept', value: 1200, status: 'Disposed', serialNumber: 'C9300-NET-456', purchaseDate: '2020-01-15T00:00:00.000Z', poNumber: 'PO-2020-0011', supplier: 'Network Systems Ltd', assignedTo: null, warrantyEnd: '2023-01-15T00:00:00.000Z' },
-  { id: '7', tagNumber: 'TAG-007', name: 'MacBook Pro 16"', type: 'Computer', location: 'Finance', value: 3200, status: 'Active', serialNumber: 'MBP16-2024-001', purchaseDate: '2024-09-01T00:00:00.000Z', poNumber: 'PO-2024-0789', supplier: 'Tech Supplies PLC', assignedTo: 'Finance Director', warrantyEnd: '2026-09-01T00:00:00.000Z' },
-  { id: '8', tagNumber: 'TAG-008', name: 'L-Shaped Desk', type: 'Furniture', location: 'Admin', value: 680, status: 'Active', serialNumber: 'DSK-LSH-012', purchaseDate: '2024-07-15T00:00:00.000Z', poNumber: 'PO-2024-0450', supplier: 'Furniture World PLC', assignedTo: 'Admin Team', warrantyEnd: '2027-07-15T00:00:00.000Z' },
-  { id: '9', tagNumber: 'TAG-009', name: 'Epson L15150 Printer', type: 'Equipment', location: 'HR Dept', value: 890, status: 'Maintenance', serialNumber: 'L15150-PRN-003', purchaseDate: '2023-11-20T00:00:00.000Z', poNumber: 'PO-2023-0891', supplier: 'OfficeTech Trading', assignedTo: 'HR Admin', warrantyEnd: '2025-11-20T00:00:00.000Z' },
-  { id: '10', tagNumber: 'TAG-010', name: 'Toyota Hilux', type: 'Vehicle', location: 'Parking', value: 45000, status: 'Active', serialNumber: 'HLX-2024-456', purchaseDate: '2024-05-10T00:00:00.000Z', poNumber: 'PO-2024-0345', supplier: 'EthioMotors PLC', assignedTo: 'Field Team', warrantyEnd: '2029-05-10T00:00:00.000Z' },
-  { id: '11', tagNumber: 'TAG-011', name: 'Ubiquiti Access Points', type: 'Network', location: 'ServerRm', value: 560, status: 'Active', serialNumber: 'UAP-AC-789', purchaseDate: '2024-10-01T00:00:00.000Z', poNumber: 'PO-2024-0912', supplier: 'Network Systems Ltd', assignedTo: 'IT Admin', warrantyEnd: '2026-10-01T00:00:00.000Z' },
-  { id: '12', tagNumber: 'TAG-012', name: 'Samsung 49" Monitor', type: 'Monitor', location: 'IT Dept', value: 1200, status: 'Active', serialNumber: 'S49-CR-001', purchaseDate: '2024-12-01T00:00:00.000Z', poNumber: 'PO-2024-1123', supplier: 'Tech Supplies PLC', assignedTo: 'John Doe', warrantyEnd: '2027-12-01T00:00:00.000Z' },
-  { id: '13', tagNumber: 'TAG-013', name: 'Conference Table', type: 'Furniture', location: 'Admin', value: 2100, status: 'Active', serialNumber: 'CNF-TBL-002', purchaseDate: '2024-04-20T00:00:00.000Z', poNumber: 'PO-2024-0290', supplier: 'Furniture World PLC', assignedTo: null, warrantyEnd: '2027-04-20T00:00:00.000Z' },
-  { id: '14', tagNumber: 'TAG-014', name: 'HP LaserJet M404', type: 'Equipment', location: 'Finance', value: 420, status: 'Disposed', serialNumber: 'M404-PRN-007', purchaseDate: '2019-08-15T00:00:00.000Z', poNumber: 'PO-2019-0056', supplier: 'OfficeTech Trading', assignedTo: null, warrantyEnd: '2022-08-15T00:00:00.000Z' },
-  { id: '15', tagNumber: 'TAG-015', name: 'UPS Backup System', type: 'Equipment', location: 'ServerRm', value: 1800, status: 'Active', serialNumber: 'UPS-SRV-002', purchaseDate: '2024-11-01T00:00:00.000Z', poNumber: 'PO-2024-1011', supplier: 'Server Solutions Inc', assignedTo: 'IT Admin', warrantyEnd: '2027-11-01T00:00:00.000Z' }
-];
-
 const BAR_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
 
 @Component({
@@ -70,7 +53,8 @@ const BAR_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4
   templateUrl: './property-list.component.html',
   styleUrls: ['./property-list.component.scss']
 })
-export class PropertyListComponent {
+export class PropertyListComponent implements OnInit {
+  private readonly propertiesService = inject(PropertiesService);
   readonly router = inject(Router);
   readonly Math = Math;
 
@@ -85,7 +69,7 @@ export class PropertyListComponent {
   statuses = ['All Status', 'Active', 'Maintenance', 'Disposed'];
   purchaseDates = ['All Dates', 'This Week', 'This Month', 'This Year'];
 
-  allProperties = signal<Property[]>(MOCK_PROPERTIES);
+  allProperties = signal<Property[]>([]);
 
   filteredProperties = computed(() => {
     const search = this.searchTerm().toLowerCase();
@@ -180,6 +164,32 @@ export class PropertyListComponent {
   propertyToDelete = signal<Property | null>(null);
   showBulkActionsDropdown = signal(false);
   notification = signal<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+
+  ngOnInit(): void {
+    this.propertiesService.getAll().subscribe({
+      next: (response) => {
+        if (response.success && response.data) {
+          this.allProperties.set(response.data.map(dto => this.mapToProperty(dto)));
+        }
+      },
+      error: () => {
+        this.showNotification('Failed to load properties', 'error');
+      }
+    });
+  }
+
+  private mapToProperty(dto: PropertyDto): Property {
+    return {
+      id: dto.id,
+      tagNumber: dto.id,
+      name: dto.name,
+      type: dto.propertyTypeId || 'Equipment',
+      location: dto.locationId || 'Unassigned',
+      value: dto.currentValue,
+      status: dto.isActive ? 'Active' : 'Disposed',
+      serialNumber: dto.description,
+    };
+  }
 
   onSearchChange(event: Event): void {
     const input = event.target as HTMLInputElement;

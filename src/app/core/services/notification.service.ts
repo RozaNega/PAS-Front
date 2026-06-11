@@ -43,8 +43,7 @@ export class NotificationService {
 
   /**
    * Create a notification for a specific user.
-   * Used by admins to send password-reset instructions
-   * or any other message that should appear in the user's dashboard.
+   * The backend expects { userId: Guid, message: string }.
    */
   create(payload: { userId: string; message: string }): Observable<ApiResponseModel<string>> {
     return this.apiService.post<string>('Notifications', {

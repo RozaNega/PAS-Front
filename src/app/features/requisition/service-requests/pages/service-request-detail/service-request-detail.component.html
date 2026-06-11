@@ -22,9 +22,9 @@
         <div class="header-left">
           <div class="sr-title-row">
             <h1 class="sr-number">{{ sr.srNumber }}</h1>
-            <span class="status-chip" [attr.data-status]="sr.status?.toLowerCase()">{{ sr.status }}</span>
+            <span class="status-chip" [attr.data-status]="sr.status.toLowerCase()">{{ sr.status }}</span>
             @if (sr.urgency) {
-              <span class="urgency-chip" [attr.data-urgency]="sr.urgency?.toLowerCase()">{{ sr.urgency }}</span>
+              <span class="urgency-chip" [attr.data-urgency]="sr.urgency.toLowerCase()">{{ sr.urgency }}</span>
             }
           </div>
           <div class="sr-meta">
@@ -41,6 +41,11 @@
               <button class="action-btn approve" (click)="openApprovalModal()">
                 <i class="bi bi-check-circle"></i> Approve
               </button>
+            }
+            @if (showStockPendingHint()) {
+              <div class="stock-pending-hint">
+                <i class="bi bi-hourglass-split"></i> Awaiting stock verification
+              </div>
             }
             @if (canReject()) {
               <button class="action-btn reject" (click)="openRejectionModal()">
@@ -138,7 +143,13 @@
                 </div>
                 <div class="detail-item">
                   <span class="detail-label">Status</span>
-                  <span class="detail-value"><span class="status-chip" [attr.data-status]="sr.status?.toLowerCase()">{{ sr.status }}</span></span>
+                  <span class="detail-value"><span class="status-chip" [attr.data-status]="sr.status.toLowerCase()">{{ sr.status }}</span></span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Stock Verification</span>
+                  <span class="detail-value">
+                    <span class="status-chip" [attr.data-status]="getStockVerificationCssClass(sr.stockVerificationStatus)">{{ sr.stockVerificationStatus }}</span>
+                  </span>
                 </div>
                 <div class="detail-item">
                   <span class="detail-label">Urgency</span>
@@ -164,7 +175,7 @@
           <div class="card">
             <div class="card-head">
               <h3><i class="bi bi-box-seam"></i> Requested Items</h3>
-              <span class="count-badge">{{ sr.items?.length || 0 }} items</span>
+              <span class="count-badge">{{ sr.items.length }}</span>
             </div>
             <div class="card-body no-padding">
               <table class="data-table">
@@ -234,6 +245,39 @@
               </div>
             </div>
           </div>
+
+          <!-- Stock Verification Info -->
+          @if (sr.stockVerificationStatus && sr.stockVerificationStatus !== 'Pending') {
+            <div class="card">
+              <div class="card-head">
+                <h3><i class="bi bi-shield-check"></i> Stock Verification</h3>
+              </div>
+              <div class="card-body">
+                <div class="stat-row">
+                  <span class="stat-label">Status</span>
+                  <span class="stat-value" [class.green]="sr.stockVerificationStatus === 'Verified'" [class.red]="sr.stockVerificationStatus === 'Insufficient'">{{ sr.stockVerificationStatus }}</span>
+                </div>
+                @if (sr.stockVerifiedByName) {
+                  <div class="stat-row">
+                    <span class="stat-label">Verified By</span>
+                    <span class="stat-value">{{ sr.stockVerifiedByName }}</span>
+                  </div>
+                }
+                @if (sr.stockVerificationDate) {
+                  <div class="stat-row">
+                    <span class="stat-label">Verified On</span>
+                    <span class="stat-value small">{{ formatDate(sr.stockVerificationDate) }}</span>
+                  </div>
+                }
+                @if (sr.stockVerificationNotes) {
+                  <div class="stat-row">
+                    <span class="stat-label">Notes</span>
+                    <span class="stat-value small">{{ sr.stockVerificationNotes }}</span>
+                  </div>
+                }
+              </div>
+            </div>
+          }
 
           <!-- Approval Info -->
           @if (sr.approvedByName) {

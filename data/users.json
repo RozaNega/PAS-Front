@@ -1,0 +1,8 @@
+[
+  {"id":1,"userId":"u-001","username":"admin","email":"admin@afrocom.com","fullName":"Admin User","firstName":"Admin","lastName":"User","role":"admin","roles":["admin"],"isActive":true,"phoneNumber":"+251911000100","lastLogin":"2026-06-10T08:30:00.000Z"},
+  {"id":2,"userId":"u-002","username":"abebe.k","email":"abebe.kebede@afrocom.com","fullName":"Abebe Kebede","firstName":"Abebe","lastName":"Kebede","role":"manager","roles":["manager"],"isActive":true,"phoneNumber":"+251911000001","lastLogin":"2026-06-09T14:00:00.000Z"},
+  {"id":3,"userId":"u-003","username":"sara.m","email":"sara.mohammed@afrocom.com","fullName":"Sara Mohammed","firstName":"Sara","lastName":"Mohammed","role":"manager","roles":["manager"],"isActive":true,"phoneNumber":"+251911000002","lastLogin":"2026-06-10T09:15:00.000Z"},
+  {"id":4,"userId":"u-004","username":"getachew.t","email":"getachew.tesfaye@afrocom.com","fullName":"Getachew Tesfaye","firstName":"Getachew","lastName":"Tesfaye","role":"employee","roles":["employee"],"isActive":true,"phoneNumber":"+251911000003","lastLogin":"2026-06-08T11:30:00.000Z"},
+  {"id":5,"userId":"u-005","username":"mekdes.a","email":"mekdes.alemayehu@afrocom.com","fullName":"Mekdes Alemayehu","firstName":"Mekdes","lastName":"Alemayehu","role":"manager","roles":["manager"],"isActive":true,"phoneNumber":"+251911000004","lastLogin":"2026-06-10T07:45:00.000Z"},
+  {"id":6,"userId":"u-006","username":"storekeeper","email":"storekeeper@afrocom.com","fullName":"Store Keeper","firstName":"Store","lastName":"Keeper","role":"storekeeper","roles":["storekeeper"],"isActive":true,"phoneNumber":"+251911000200","lastLogin":"2026-06-10T08:00:00.000Z"}
+]

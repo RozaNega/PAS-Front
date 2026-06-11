@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Observable, map, catchError, of } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { ApiService } from '../../../../core/services/api.service';
 import { ApiResponse } from '../../../../types/api-response.type';
 
@@ -16,16 +16,6 @@ export interface IssuanceReportItem {
 @Injectable({ providedIn: 'root' })
 export class IssuanceReportService {
   constructor(private apiService: ApiService) {}
-
-  private createMockIssuances(): IssuanceReportItem[] {
-    return [
-      { date: 'Dec 15', sivNumber: 'SIV-045', requester: 'John Doe', department: 'IT', item: 'Dell Laptop', quantity: 2, value: 4998 },
-      { date: 'Dec 15', sivNumber: 'SIV-044', requester: 'Sarah Smith', department: 'HR', item: 'Office Chair', quantity: 3, value: 1350 },
-      { date: 'Dec 14', sivNumber: 'SIV-043', requester: 'Mike Wilson', department: 'Operations', item: 'USB Cables', quantity: 50, value: 250 },
-      { date: 'Dec 14', sivNumber: 'SIV-042', requester: 'Lisa Wong', department: 'Finance', item: 'Monitor', quantity: 2, value: 700 },
-      { date: 'Dec 13', sivNumber: 'SIV-041', requester: 'Peter Chen', department: 'Marketing', item: 'A4 Paper', quantity: 10, value: 250 }
-    ];
-  }
 
   getIssuanceReport(filters?: {
     warehouseId?: string;
@@ -50,14 +40,6 @@ export class IssuanceReportService {
         }
         return { ...res, data: [] } as ApiResponse<IssuanceReportItem[]>;
       }),
-      catchError(() => {
-        return of({
-          success: true,
-          message: 'Using mock issuance report data',
-          data: this.createMockIssuances(),
-          statusCode: 200
-        } as ApiResponse<IssuanceReportItem[]>);
-      })
     );
   }
 }

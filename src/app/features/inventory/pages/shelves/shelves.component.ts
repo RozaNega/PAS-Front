@@ -472,7 +472,7 @@ export class ShelvesComponent implements OnInit {
     return 'text-success';
   }
 
-  formatDate(date: string | Date): string {
+  formatDate(date: string | Date | undefined): string {
     if (!date) return 'N/A';
     return new Date(date).toLocaleDateString('en-US', {
       month: 'short',

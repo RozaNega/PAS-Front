@@ -4,23 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { SupplierModel, CreateSupplierRequest } from '../../models/supplier.model';
 import { SupplierService } from '../../services/supplier.service';
 
-const MOCK_SUPPLIERS: SupplierModel[] = [
-  { id: 'SUP-001', name: 'Ethio Cement PLC', contactPerson: 'Abebe Kebede', email: 'abebe@ethiociment.com', phone: '+251-911-123456', address: 'Addis Ababa, Bole Sub-city', tin: 'TIN-00012345', isActive: true },
-  { id: 'SUP-002', name: 'Blue Nile Logistics SC', contactPerson: 'Sara Hailu', email: 'sara@bluenilelog.com', phone: '+251-922-234567', address: 'Bahir Dar, Tana Sub-city', tin: 'TIN-00023456', isActive: true },
-  { id: 'SUP-003', name: 'Dashen Breweries SC', contactPerson: 'Mekonnen Wondimu', email: 'mekonnen@dashenbeer.com', phone: '+251-933-345678', address: 'Gondar, Arada', tin: 'TIN-00034567', isActive: true },
-  { id: 'SUP-004', name: 'Habesha Metal Works', contactPerson: 'Tigist Alemu', email: 'tigist@habeshametal.com', phone: '+251-944-456789', address: 'Addis Ababa, Nifas Silk', tin: 'TIN-00045678', isActive: true },
-  { id: 'SUP-005', name: 'Tana Trading House', contactPerson: 'Dawit Eshetu', email: 'dawit@tanatrading.com', phone: '+251-955-567890', address: 'Bahir Dar, Tana Sub-city', tin: 'TIN-00056789', isActive: true },
-  { id: 'SUP-006', name: 'Awash Agro-Industry', contactPerson: 'Lemlem Hailu', email: 'lemlem@awashagro.com', phone: '+251-966-678901', address: 'Adama, Oromia', tin: 'TIN-00067890', isActive: true },
-  { id: 'SUP-007', name: 'Lalibela Construction PLC', contactPerson: 'Henok Tesfaye', email: 'henok@lalibela.com', phone: '+251-977-789012', address: 'Addis Ababa, Kirkos', tin: 'TIN-00078901', isActive: false },
-  { id: 'SUP-008', name: 'Oromia Coffee Export', contactPerson: 'Amina Mohammed', email: 'amina@oromiacoffee.com', phone: '+251-988-890123', address: 'Jimma, Oromia', tin: 'TIN-00089012', isActive: true },
-  { id: 'SUP-009', name: 'Axum Transport & Logistics', contactPerson: 'Yonas Gebre', email: 'yonas@axumtrans.com', phone: '+251-999-901234', address: 'Mekele, Tigray', tin: 'TIN-00090123', isActive: true },
-  { id: 'SUP-010', name: 'Harar Industrial Supply', contactPerson: 'Fatima Ahmed', email: 'fatima@hararind.com', phone: '+251-910-012345', address: 'Dire Dawa, Industrial Zone', tin: 'TIN-00001234', isActive: false },
-  { id: 'SUP-011', name: 'Semien Pharmaceuticals', contactPerson: 'Berhanu Ayele', email: 'berhanu@semienpharma.com', phone: '+251-921-123457', address: 'Gondar, Fasil', tin: 'TIN-00011223', isActive: true },
-  { id: 'SUP-012', name: 'Bale Agricultural Products', contactPerson: 'Mulugeta Tadesse', email: 'mulugeta@baleagri.com', phone: '+251-932-234568', address: 'Adama, Oromia', tin: 'TIN-00022334', isActive: true },
-  { id: 'SUP-013', name: 'Gambella Timber Works', contactPerson: 'Opiew Gatluak', email: 'opiew@gambellatimber.com', phone: '+251-943-345679', address: 'Addis Ababa, Akaki', tin: 'TIN-00033445', isActive: false },
-  { id: 'SUP-014', name: 'Sidama Food Processing', contactPerson: 'Asnakech Wondimu', email: 'asnakech@sidamafood.com', phone: '+251-954-456780', address: 'Hawassa, Sidama', tin: 'TIN-00044556', isActive: true },
-  { id: 'SUP-015', name: 'Tigray Engineering Corp', contactPerson: 'Gebremedhin Kahsay', email: 'gebremedhin@tigrayeng.com', phone: '+251-965-567891', address: 'Mekele, Tigray', tin: 'TIN-00055667', isActive: false },
-];
+
 
 @Component({
   selector: 'app-supplier-list',
@@ -33,7 +17,6 @@ export class SupplierListComponent implements OnInit {
   private readonly supplierService = inject(SupplierService);
 
   suppliers = signal<SupplierModel[]>([]);
-  useMockData = signal(false);
   loading = signal(false);
   error = signal<string | null>(null);
 
@@ -127,22 +110,13 @@ export class SupplierListComponent implements OnInit {
       next: (res) => {
         if (res.success && res.data?.length) {
           this.suppliers.set(res.data);
-          this.useMockData.set(false);
-        } else {
-          this.fallbackToMock();
         }
         this.loading.set(false);
       },
       error: () => {
-        this.fallbackToMock();
         this.loading.set(false);
       }
     });
-  }
-
-  private fallbackToMock(): void {
-    this.suppliers.set(MOCK_SUPPLIERS);
-    this.useMockData.set(true);
   }
 
   getInitials(name: string): string {

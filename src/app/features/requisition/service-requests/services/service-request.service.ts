@@ -18,14 +18,22 @@ export interface ServiceRequestDto {
   approvedByName?: string;
   requestDate: string;
   status: string;
+  stockVerificationStatus: string;
   totalItems: number;
   totalQuantity: number;
   issuedQuantity: number;
+
+  createdAt: string;
+  updatedAt?: string;
 }
 
 /** Service Request Detail from GET /api/ServiceRequests/{id} */
 export interface ServiceRequestDetailDto extends ServiceRequestDto {
   items: ServiceRequestItemDto[];
+  stockVerifiedById?: string;
+  stockVerifiedByName?: string;
+  stockVerificationDate?: string;
+  stockVerificationNotes?: string;
   createdAt: string;
   updatedAt?: string;
   pendingQty: number;
@@ -84,6 +92,13 @@ export interface IssueItemRequest {
   srDetailId: string;
   issuedQty: number;
   shelfId?: string;
+}
+
+/** POST /api/ServiceRequests/{id}/verify-stock — VerifyStockCommand */
+export interface VerifyStockRequest {
+  id: string;
+  isAvailable: boolean;
+  notes?: string;
 }
 
 /** POST /api/ServiceRequests/{id}/cancel — CancelServiceRequestCommand */
@@ -176,6 +191,13 @@ export class ServiceRequestService {
     const body = { Id: data.id, items };
     return this.apiService.post<unknown>(`ServiceRequests/${data.id}/issue`, body).pipe(
       map((raw) => this.normalizeEnvelope<string>(raw)),
+    );
+  }
+
+  verifyStock(data: VerifyStockRequest): Observable<ApiResponse<unknown>> {
+    const body = { Id: data.id, isAvailable: data.isAvailable, notes: data.notes ?? '' };
+    return this.apiService.post<unknown>(`ServiceRequests/${data.id}/verify-stock`, body).pipe(
+      map((raw) => this.normalizeEnvelope(raw)),
     );
   }
 

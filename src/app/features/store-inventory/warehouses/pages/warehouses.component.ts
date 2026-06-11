@@ -64,7 +64,6 @@ export class WarehousesComponent {
   warehouseToDelete = signal<Warehouse | null>(null);
 
   statuses = ['All', 'Active', 'Limited', 'Inactive'];
-  mockUsed = false;
 
   modalForm = {
     warehouseName: '',
@@ -237,21 +236,6 @@ export class WarehousesComponent {
     this.loadWarehouses();
   }
 
-  private createMockWarehouses(): Warehouse[] {
-    return [
-      { id: 'wh-001', name: 'Main Warehouse', code: 'MW-001', location: 'Addis Ababa, Main District', address: 'Bole Road, Main District', city: 'Addis Ababa', country: 'Ethiopia', items: 3250, value: 4875000, capacity: 5000, occupancy: 65, shelfCount: 24, status: 'Active', managerName: 'Ahmed Hassan', contactNumber: '+251 911 000 001', contactEmail: 'main.wh@example.com', createdAt: '2025-01-15T08:00:00.000Z', description: 'Primary storage facility for general merchandise' },
-      { id: 'wh-002', name: 'Branch Warehouse A', code: 'BW-A-001', location: 'Addis Ababa, Branch Zone', address: 'CMC Branch Zone', city: 'Addis Ababa', country: 'Ethiopia', items: 1350, value: 2025000, capacity: 3000, occupancy: 45, shelfCount: 16, status: 'Active', managerName: 'Fatima Ali', contactNumber: '+251 911 000 002', contactEmail: 'branch.a@example.com', createdAt: '2025-02-10T08:00:00.000Z', description: 'Secondary storage for regional distribution' },
-      { id: 'wh-003', name: 'Cold Storage Facility', code: 'CS-001', location: 'Addis Ababa, Industrial Area', address: 'Akaki Industrial Area', city: 'Addis Ababa', country: 'Ethiopia', items: 1200, value: 3600000, capacity: 1500, occupancy: 80, shelfCount: 12, status: 'Active', managerName: 'Mohammed Seid', contactNumber: '+251 911 000 003', contactEmail: 'cold.storage@example.com', createdAt: '2025-03-05T08:00:00.000Z', description: 'Temperature controlled storage for perishables' },
-      { id: 'wh-004', name: 'Bole Logistics Hub', code: 'BLH-001', location: 'Addis Ababa, Bole', address: 'Bole Road', city: 'Addis Ababa', country: 'Ethiopia', items: 2800, value: 4200000, capacity: 4000, occupancy: 70, shelfCount: 20, status: 'Active', managerName: 'Sara Tekle', contactNumber: '+251 911 000 004', contactEmail: 'bole.log@example.com', createdAt: '2025-01-20T08:00:00.000Z', description: 'Central logistics hub near Bole International Airport' },
-      { id: 'wh-005', name: 'Eastern Distribution Center', code: 'EDC-002', location: 'Dire Dawa, Industrial Zone', address: 'Industrial Zone', city: 'Dire Dawa', country: 'Ethiopia', items: 900, value: 1350000, capacity: 2500, occupancy: 36, shelfCount: 10, status: 'Limited', managerName: 'Kebede Assefa', contactNumber: '+251 911 000 005', contactEmail: 'eastern.dc@example.com', createdAt: '2025-04-01T08:00:00.000Z', description: 'Regional distribution for eastern Ethiopia' },
-      { id: 'wh-006', name: 'Northern Regional WH', code: 'NRW-001', location: 'Mekelle, Quiha District', address: 'Quiha District', city: 'Mekelle', country: 'Ethiopia', items: 450, value: 675000, capacity: 2000, occupancy: 23, shelfCount: 8, status: 'Limited', managerName: 'Tigist Hailu', contactNumber: '+251 911 000 006', contactEmail: 'northern.wh@example.com', createdAt: '2025-04-15T08:00:00.000Z', description: 'Regional warehouse serving Tigray region' },
-      { id: 'wh-007', name: 'Hawassa Textile Storage', code: 'HTS-001', location: 'Hawassa, Industrial Park', address: 'Industrial Park', city: 'Hawassa', country: 'Ethiopia', items: 1800, value: 2700000, capacity: 2200, occupancy: 82, shelfCount: 14, status: 'Active', managerName: 'Dawit Eshetu', contactNumber: '+251 911 000 007', contactEmail: 'hawassa.ts@example.com', createdAt: '2025-02-20T08:00:00.000Z', description: 'Specialized storage for textile and garment industry' },
-      { id: 'wh-008', name: 'Jimma Agricultural WH', code: 'JAW-001', location: 'Jimma, Coffee Zone', address: 'Coffee Zone', city: 'Jimma', country: 'Ethiopia', items: 600, value: 900000, capacity: 1800, occupancy: 33, shelfCount: 9, status: 'Inactive', managerName: 'Lemlem Berhanu', contactNumber: '+251 911 000 008', contactEmail: 'jimma.ag@example.com', createdAt: '2025-05-01T08:00:00.000Z', description: 'Agricultural product storage, currently under renovation' },
-      { id: 'wh-009', name: 'Gondar Historic Depot', code: 'GHD-003', location: 'Gondar, City Center', address: 'City Center', city: 'Gondar', country: 'Ethiopia', items: 300, value: 450000, capacity: 1200, occupancy: 25, shelfCount: 6, status: 'Inactive', managerName: 'Tesfaye Ayele', contactNumber: '+251 911 000 009', contactEmail: 'gondar.hd@example.com', createdAt: '2025-03-20T08:00:00.000Z', description: 'Heritage storage facility, pending structural upgrades' },
-      { id: 'wh-010', name: 'Adama Industrial Park WH', code: 'AIPW-002', location: 'Adama, Oromia Special Zone', address: 'Oromia Special Zone', city: 'Adama', country: 'Ethiopia', items: 2200, value: 3300000, capacity: 3500, occupancy: 63, shelfCount: 18, status: 'Active', managerName: 'Meron Tadesse', contactNumber: '+251 911 000 010', contactEmail: 'adama.ipwh@example.com', createdAt: '2025-01-10T08:00:00.000Z', description: 'Industrial park warehouse for manufacturing inputs' },
-    ];
-  }
-
   loadWarehouses(): void {
     this.isLoading.set(true);
     this.loadError.set(null);
@@ -308,19 +292,6 @@ export class WarehousesComponent {
         this.isLoading.set(false);
       },
     });
-  }
-
-  private useMockFallback(): void {
-    if (this.mockUsed) return;
-    this.mockUsed = true;
-    const existing = this.warehouses();
-    const mock = this.createMockWarehouses();
-    if (existing.length < 5) {
-      const existingIds = new Set(existing.map(w => w.id));
-      const merged = [...existing, ...mock.filter(w => !existingIds.has(w.id))];
-      this.warehouses.set(merged);
-      this.page.set(1);
-    }
   }
 
   onSearchChange(value: string): void {

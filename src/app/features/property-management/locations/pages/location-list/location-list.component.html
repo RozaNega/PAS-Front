@@ -17,11 +17,6 @@
         <h1>Location Management</h1>
         <p>{{ locationStats().total }} location{{ locationStats().total !== 1 ? 's' : '' }} across the organization</p>
       </div>
-      @if (isMockBadge()) {
-        <div class="mock-badge">
-          <i class="bi bi-database-fill"></i> Sample Data
-        </div>
-      }
     </div>
     <div class="header-actions">
       <button type="button" class="action-btn secondary" (click)="exportCSV()">

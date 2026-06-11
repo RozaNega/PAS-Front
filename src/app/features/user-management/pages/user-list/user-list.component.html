@@ -132,7 +132,6 @@
                 <td>
                   <div class="action-buttons">
                     <button type="button" class="icon-btn" title="View" (click)="viewUserDetails(user)"><i class="bi bi-eye"></i></button>
-                    <button type="button" class="icon-btn" title="Edit" (click)="openEditModal(user)"><i class="bi bi-pencil"></i></button>
                     <button type="button" class="icon-btn" title="Reset Password" (click)="confirmResetPassword(user)"><i class="bi bi-key"></i></button>
                     <button type="button" class="icon-btn" title="Toggle Status" (click)="toggleStatus(user)"><i class="bi bi-arrow-repeat"></i></button>
                     <button type="button" class="icon-btn danger" title="Delete" (click)="deleteUser(user)"><i class="bi bi-trash"></i></button>
@@ -202,7 +201,6 @@
       </div>
       <div class="modal-footer">
         <button type="button" class="action-btn secondary" (click)="closeDetailModal()">Close</button>
-        <button type="button" class="action-btn primary" (click)="closeDetailModal(); openEditModal(user)"><i class="bi bi-pencil"></i> Edit User</button>
       </div>
     </div>
   </div>

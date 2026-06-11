@@ -349,6 +349,11 @@ export const routes: Routes = [
         path: 'issuing',
         loadComponent: () => import('./features/store-inventory/issuance/pages/issuance.component').then(m => m.IssuanceComponent),
       },
+      // Disposal
+      {
+        path: 'disposal',
+        loadComponent: () => import('./features/store-inventory/disposal/pages/disposal.component').then(m => m.DisposalComponent),
+      },
       // Item Catalog
       {
         path: 'catalog',

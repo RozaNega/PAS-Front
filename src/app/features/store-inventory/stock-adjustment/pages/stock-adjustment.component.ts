@@ -65,70 +65,7 @@ function addDays(d: Date, n: number): Date {
   return x;
 }
 
-function createMockItems(): PickRow[] {
-  return [
-    { itemId: 'item-001', shelfId: 'shelf-001', name: 'Office Laptop', sku: 'LAP-HP-001', current: 25, low: false, warehouse: 'Main Warehouse', shelf: 'A-R1-S1' },
-    { itemId: 'item-002', shelfId: 'shelf-002', name: 'Office Chair', sku: 'CHR-STD-001', current: 45, low: false, warehouse: 'Main Warehouse', shelf: 'A-R1-S2' },
-    { itemId: 'item-003', shelfId: 'shelf-003', name: 'Desk Printer', sku: 'PRT-JET-001', current: 12, low: false, warehouse: 'Main Warehouse', shelf: 'B-R2-S1' },
-    { itemId: 'item-004', shelfId: 'shelf-004', name: 'Printer Paper', sku: 'PAP-A4-001', current: 500, low: false, warehouse: 'Branch Warehouse A', shelf: 'A-R1-S1-BW' },
-    { itemId: 'item-005', shelfId: 'shelf-005', name: 'Wireless Mouse', sku: 'MOU-WL-001', current: 30, low: false, warehouse: 'Main Warehouse', shelf: 'C-R3-S2' },
-    { itemId: 'item-006', shelfId: 'shelf-006', name: 'Mechanical Keyboard', sku: 'KEY-MC-001', current: 18, low: true, warehouse: 'Main Warehouse', shelf: 'C-R3-S3' },
-    { itemId: 'item-007', shelfId: 'shelf-007', name: 'Monitor 24"', sku: 'MON-24-001', current: 8, low: true, warehouse: 'Main Warehouse', shelf: 'A-R2-S1' },
-    { itemId: 'item-008', shelfId: 'shelf-008', name: 'Desk Lamp', sku: 'LMP-DK-001', current: 22, low: false, warehouse: 'Branch Warehouse A', shelf: 'B-R1-S1' },
-    { itemId: 'item-009', shelfId: 'shelf-009', name: 'USB-C Hub', sku: 'USB-HB-001', current: 40, low: false, warehouse: 'Main Warehouse', shelf: 'C-R3-S4' },
-    { itemId: 'item-010', shelfId: 'shelf-010', name: 'Headset', sku: 'HDS-BT-001', current: 15, low: true, warehouse: 'Main Warehouse', shelf: 'C-R4-S1' },
-    { itemId: 'item-011', shelfId: 'shelf-011', name: 'External Hard Drive', sku: 'HDD-EXT-001', current: 10, low: false, warehouse: 'Branch Warehouse B', shelf: 'D-R1-S1' },
-    { itemId: 'item-012', shelfId: 'shelf-012', name: 'Webcam HD', sku: 'CAM-WEB-001', current: 6, low: true, warehouse: 'Main Warehouse', shelf: 'A-R2-S2' },
-    { itemId: 'item-013', shelfId: 'shelf-013', name: 'Network Switch', sku: 'NET-SW-001', current: 3, low: true, warehouse: 'Branch Warehouse A', shelf: 'B-R2-S2' },
-    { itemId: 'item-014', shelfId: 'shelf-014', name: 'Surge Protector', sku: 'SURGE-001', current: 35, low: false, warehouse: 'Main Warehouse', shelf: 'C-R4-S2' },
-    { itemId: 'item-015', shelfId: 'shelf-015', name: 'Cable Ties (Pack)', sku: 'CBL-TIE-001', current: 100, low: false, warehouse: 'Branch Warehouse B', shelf: 'D-R2-S1' },
-  ];
-}
 
-function createMockHistory(): AdjustmentRecord[] {
-  const now = new Date();
-  const reasons = ['Damaged Goods', 'Lost/Missing', 'Inventory Count Correction', 'Quality Issue', 'Expired', 'Return to Supplier', 'Other'];
-  const users = ['John Doe', 'Jane Smith', 'Mike Johnson', 'Sarah Wilson'];
-
-  const records: Array<{
-    itemIdx: number;
-    type: 'Increase' | 'Decrease' | 'Set';
-    qty: number;
-    stockBefore: number;
-    reasonIdx: number;
-    userIdx: number;
-    status: 'Approved' | 'Pending' | 'Rejected';
-    daysAgo: number;
-    notes: string;
-  }> = [
-    { itemIdx: 0, type: 'Decrease', qty: 2, stockBefore: 27, reasonIdx: 0, userIdx: 0, status: 'Approved', daysAgo: 1, notes: 'Damaged during transit' },
-    { itemIdx: 4, type: 'Increase', qty: 10, stockBefore: 20, reasonIdx: 2, userIdx: 1, status: 'Approved', daysAgo: 3, notes: 'Physical count correction' },
-    { itemIdx: 2, type: 'Decrease', qty: 1, stockBefore: 13, reasonIdx: 3, userIdx: 2, status: 'Pending', daysAgo: 5, notes: 'Quality check failed' },
-    { itemIdx: 7, type: 'Increase', qty: 5, stockBefore: 17, reasonIdx: 6, userIdx: 3, status: 'Approved', daysAgo: 7, notes: 'Return from customer processed' },
-    { itemIdx: 1, type: 'Decrease', qty: 3, stockBefore: 48, reasonIdx: 1, userIdx: 0, status: 'Approved', daysAgo: 10, notes: 'Missing from shelf count' },
-    { itemIdx: 5, type: 'Set', qty: 20, stockBefore: 15, reasonIdx: 2, userIdx: 1, status: 'Approved', daysAgo: 14, notes: 'System reset to physical count' },
-    { itemIdx: 9, type: 'Decrease', qty: 2, stockBefore: 17, reasonIdx: 4, userIdx: 2, status: 'Rejected', daysAgo: 18, notes: 'Expired stock disposal rejected' },
-    { itemIdx: 3, type: 'Increase', qty: 50, stockBefore: 450, reasonIdx: 6, userIdx: 3, status: 'Approved', daysAgo: 21, notes: 'Supplier return processed' },
-    { itemIdx: 6, type: 'Decrease', qty: 1, stockBefore: 9, reasonIdx: 0, userIdx: 0, status: 'Pending', daysAgo: 25, notes: 'Screen crack damage reported' },
-    { itemIdx: 8, type: 'Increase', qty: 5, stockBefore: 35, reasonIdx: 2, userIdx: 1, status: 'Approved', daysAgo: 30, notes: 'Cycle count variance resolved' },
-  ];
-
-  const items = createMockItems();
-  return records.map((r, i) => ({
-    id: `adj-${String(i + 1).padStart(3, '0')}`,
-    dateTime: addDays(now, -r.daysAgo).toISOString(),
-    item: items[r.itemIdx].name,
-    sku: items[r.itemIdx].sku,
-    type: r.type,
-    quantity: r.qty,
-    stockBefore: r.stockBefore,
-    stockAfter: r.type === 'Increase' ? r.stockBefore + r.qty : r.type === 'Decrease' ? r.stockBefore - r.qty : r.qty,
-    reason: reasons[r.reasonIdx],
-    performedBy: users[r.userIdx],
-    status: r.status,
-    notes: r.notes,
-  }));
-}
 
 type SortField = 'dateTime' | 'item' | 'type' | 'quantity' | 'reason' | 'performedBy' | 'status';
 
@@ -152,7 +89,6 @@ export class StockAdjustmentComponent implements OnInit, OnDestroy {
   loading = signal(false);
   loadError = signal<string | null>(null);
   submitMessage = signal<string | null>(null);
-  isUsingMock = signal(false);
 
   allItemsRaw = signal<PickRow[]>([]);
   allAdjustments = signal<AdjustmentRecord[]>([]);
@@ -349,7 +285,6 @@ export class StockAdjustmentComponent implements OnInit, OnDestroy {
   loadData(): void {
     this.loading.set(true);
     this.loadError.set(null);
-    this.isUsingMock.set(false);
 
     this.inventory.getStockOverview({ pageSize: 500 }).subscribe({
       next: (res) => {
@@ -357,18 +292,13 @@ export class StockAdjustmentComponent implements OnInit, OnDestroy {
         if (res.success !== false && Array.isArray(res.data) && res.data.length > 0) {
           this.allItemsRaw.set(res.data.map((r) => this.mapPick(r)));
         } else {
-          this.allItemsRaw.set(createMockItems());
-          this.isUsingMock.set(true);
-          this.showNotification('Using sample data - API unavailable', 'info');
+          this.showNotification('No stock items available from server', 'error');
         }
         this.loadHistory();
       },
       error: () => {
         this.loading.set(false);
-        this.allItemsRaw.set(createMockItems());
-        this.isUsingMock.set(true);
-        this.showNotification('Using sample data - API unavailable', 'info');
-        this.loadHistory();
+        this.loadError.set('Failed to load stock data from server.');
       },
     });
   }
@@ -386,13 +316,14 @@ export class StockAdjustmentComponent implements OnInit, OnDestroy {
             const adj = res.data
               .filter((m) => this.isAdjustmentLike(m))
               .map((m) => this.mapAdjustment(m));
-            this.allAdjustments.set(adj.length > 0 ? adj : createMockHistory());
+            this.allAdjustments.set(adj);
           } else {
-            this.allAdjustments.set(createMockHistory());
+            this.allAdjustments.set([]);
           }
         },
         error: () => {
-          this.allAdjustments.set(createMockHistory());
+          this.allAdjustments.set([]);
+          this.showNotification('Failed to load adjustment history', 'error');
         },
       });
   }
@@ -514,37 +445,12 @@ export class StockAdjustmentComponent implements OnInit, OnDestroy {
             return;
           }
           this.showNotification('Adjustment submitted successfully.', 'success');
-          this.addMockRecord(row, quantity, r);
           this.resetForm();
         },
         error: () => {
-          this.showNotification('Request failed. Record saved locally.', 'error');
-          this.addMockRecord(row, quantity, r);
-          this.resetForm();
+          this.showNotification('Adjustment request failed. Please try again.', 'error');
         },
       });
-  }
-
-  private addMockRecord(row: PickRow, quantity: number, reason: string): void {
-    const type = this.adjustmentType();
-    const before = row.current;
-    const after = type === 'Increase' ? before + quantity : type === 'Decrease' ? Math.max(0, before - quantity) : quantity;
-    const record: AdjustmentRecord = {
-      id: `adj-mock-${Date.now()}`,
-      dateTime: new Date().toISOString(),
-      item: row.name,
-      sku: row.sku,
-      type,
-      quantity,
-      stockBefore: before,
-      stockAfter: after,
-      reason,
-      performedBy: 'You',
-      status: 'Pending',
-      notes: this.notes() || '',
-    };
-    this.allAdjustments.update((prev) => [record, ...prev]);
-    this.loadData();
   }
 
   resetForm(): void {

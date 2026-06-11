@@ -519,8 +519,6 @@ export class ReportsPageComponent implements OnInit {
 
         this.movementReport.set(movement);
         this.warehouses.set(warehouses);
-        this.buildMockIssuances();
-        this.buildMockReceivings();
         this.reportGenerated.set(true);
         this.lastRunTime.set(new Date());
         this.isLoading.set(false);
@@ -532,38 +530,13 @@ export class ReportsPageComponent implements OnInit {
         this.valuationItems.set([]);
         this.movementReport.set(null);
         this.warehouses.set([]);
-        this.buildMockIssuances();
-        this.buildMockReceivings();
-        this.reportGenerated.set(true);
-        this.lastRunTime.set(new Date());
         this.isLoading.set(false);
-        this.loadError.set('Backend unavailable. Showing sample data.');
+        this.loadError.set('Backend unavailable. Could not load report data.');
       },
     });
   }
 
-  private buildMockIssuances(): void {
-    this.issuances.set([
-      { date: '2026-05-15', sivNumber: 'SIV-045', requester: 'John Doe', department: 'IT', item: 'Dell Laptop', quantity: 2, value: 4998 },
-      { date: '2026-05-15', sivNumber: 'SIV-044', requester: 'Sarah Smith', department: 'HR', item: 'Office Chair', quantity: 3, value: 1350 },
-      { date: '2026-05-14', sivNumber: 'SIV-043', requester: 'Mike Wilson', department: 'Operations', item: 'USB Cables', quantity: 50, value: 250 },
-      { date: '2026-05-14', sivNumber: 'SIV-042', requester: 'Lisa Wong', department: 'Finance', item: 'Monitor', quantity: 2, value: 700 },
-      { date: '2026-05-13', sivNumber: 'SIV-041', requester: 'Peter Chen', department: 'Marketing', item: 'A4 Paper', quantity: 10, value: 250 },
-      { date: '2026-05-12', sivNumber: 'SIV-040', requester: 'John Doe', department: 'IT', item: 'Keyboard', quantity: 5, value: 375 },
-      { date: '2026-05-11', sivNumber: 'SIV-039', requester: 'Sarah Smith', department: 'HR', item: 'Desk Lamp', quantity: 2, value: 160 },
-    ]);
-  }
 
-  private buildMockReceivings(): void {
-    this.receivings.set([
-      { date: '2026-05-15', grnNumber: 'GRN-045', supplier: 'Tech Supplies Ltd', items: 3, quantity: 125, value: 30740, status: 'Pending' },
-      { date: '2026-05-14', grnNumber: 'GRN-044', supplier: 'Office Depot', items: 2, quantity: 50, value: 12500, status: 'Passed' },
-      { date: '2026-05-14', grnNumber: 'GRN-043', supplier: 'Global Suppliers', items: 1, quantity: 100, value: 500, status: 'Failed' },
-      { date: '2026-05-13', grnNumber: 'GRN-042', supplier: 'Paper Co', items: 2, quantity: 200, value: 5000, status: 'Passed' },
-      { date: '2026-05-12', grnNumber: 'GRN-041', supplier: 'Tech Supplies Ltd', items: 3, quantity: 75, value: 18750, status: 'Passed' },
-      { date: '2026-05-11', grnNumber: 'GRN-040', supplier: 'Office Depot', items: 1, quantity: 30, value: 9000, status: 'Pending' },
-    ]);
-  }
 
   private toStockItem(item: InventoryValuationItemDto): StockItem {
     const warehouseNames = this.uniqueSorted(

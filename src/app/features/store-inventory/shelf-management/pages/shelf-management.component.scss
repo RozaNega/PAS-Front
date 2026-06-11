@@ -1738,6 +1738,71 @@
   flex-wrap: wrap;
 }
 
+/* ── Shelf Items List ── */
+.shelf-items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.shelf-item-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.625rem;
+  background: var(--surface-section);
+  border-radius: 8px;
+  font-size: 0.8125rem;
+
+  .item-name {
+    flex: 1;
+    font-weight: 600;
+    color: var(--text-color);
+  }
+
+  .item-sku {
+    color: var(--text-color-muted);
+    font-size: 0.75rem;
+    font-family: 'Courier New', 'SF Mono', 'Fira Code', monospace;
+  }
+
+  .item-qty {
+    font-weight: 700;
+    color: #6366f1;
+    white-space: nowrap;
+  }
+}
+
+.no-items-found {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  color: var(--text-color-muted);
+  font-size: 0.875rem;
+  justify-content: center;
+
+  i {
+    font-size: 1.25rem;
+    opacity: 0.5;
+  }
+}
+
+.items-loading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  color: var(--text-color-muted);
+  font-size: 0.8125rem;
+
+  i {
+    animation: spin 1s linear infinite;
+  }
+}
+
 /* ── Animations ── */
 @keyframes fadeIn {
   from { opacity: 0; }

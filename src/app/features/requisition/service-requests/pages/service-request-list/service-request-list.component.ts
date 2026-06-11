@@ -363,6 +363,7 @@ export class ServiceRequestListComponent implements OnInit {
       'Department',
       'Purpose',
       'Status',
+      'Stock Verification',
       'Urgency',
       'Items',
       'Quantity',
@@ -382,6 +383,7 @@ export class ServiceRequestListComponent implements OnInit {
           escape(this.departmentDisplay(r)),
           escape(this.purposeFull(r) || '—'),
           escape(r.status),
+          escape(r.stockVerificationStatus || 'Pending'),
           escape(r.urgency),
           escape(r.totalItems),
           escape(r.totalQuantity),
@@ -402,6 +404,15 @@ export class ServiceRequestListComponent implements OnInit {
     }
   }
   
+  getStockVerificationClass(status: string | undefined): string {
+    switch ((status || 'pending').toLowerCase()) {
+      case 'verified': return 'req-badge--success';
+      case 'insufficient': return 'req-badge--danger';
+      case 'pending': return 'req-badge--warning';
+      default: return 'req-badge--neutral';
+    }
+  }
+
   getStatusClass(status: string): string {
     switch (status?.toLowerCase()) {
       case 'pending':

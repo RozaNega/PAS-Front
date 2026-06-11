@@ -21,6 +21,7 @@ export interface InventoryStockDto {
   lastUpdated: string;
   minimumThreshold: number;
   maximumThreshold: number;
+  unitPrice?: number;
 }
 
 /** Stock Movement from GET /api/StockLedger */
@@ -76,78 +77,7 @@ export interface ReleaseStockRequest {
 export class InventoryService {
   constructor(private apiService: ApiService) {}
 
-  private createMockInventoryStock(): InventoryStockDto[] {
-    return [
-      {
-        id: 'inv-001',
-        itemId: 'item-001',
-        itemName: 'Office Laptop',
-        sku: 'LAP-HP-001',
-        shelfId: 'shelf-001',
-        shelfLocation: 'A-R1-S1',
-        warehouseId: 'wh-001',
-        warehouseName: 'Main Warehouse',
-        currentStock: 25,
-        reservedStock: 5,
-        availableStock: 20,
-        unitOfMeasure: 'Units',
-        lastUpdated: new Date().toISOString(),
-        minimumThreshold: 10,
-        maximumThreshold: 50,
-      },
-      {
-        id: 'inv-002',
-        itemId: 'item-002',
-        itemName: 'Office Chair',
-        sku: 'CHR-STD-001',
-        shelfId: 'shelf-002',
-        shelfLocation: 'A-R1-S2',
-        warehouseId: 'wh-001',
-        warehouseName: 'Main Warehouse',
-        currentStock: 45,
-        reservedStock: 10,
-        availableStock: 35,
-        unitOfMeasure: 'Units',
-        lastUpdated: new Date().toISOString(),
-        minimumThreshold: 20,
-        maximumThreshold: 100,
-      },
-      {
-        id: 'inv-003',
-        itemId: 'item-003',
-        itemName: 'Desk Printer',
-        sku: 'PRT-JET-001',
-        shelfId: 'shelf-003',
-        shelfLocation: 'B-R2-S1',
-        warehouseId: 'wh-001',
-        warehouseName: 'Main Warehouse',
-        currentStock: 12,
-        reservedStock: 2,
-        availableStock: 10,
-        unitOfMeasure: 'Units',
-        lastUpdated: new Date().toISOString(),
-        minimumThreshold: 5,
-        maximumThreshold: 20,
-      },
-      {
-        id: 'inv-004',
-        itemId: 'item-004',
-        itemName: 'Printer Paper',
-        sku: 'PAP-A4-001',
-        shelfId: 'shelf-004',
-        shelfLocation: 'A-R1-S1-BW',
-        warehouseId: 'wh-002',
-        warehouseName: 'Branch Warehouse A',
-        currentStock: 500,
-        reservedStock: 100,
-        availableStock: 400,
-        unitOfMeasure: 'Boxes',
-        lastUpdated: new Date().toISOString(),
-        minimumThreshold: 200,
-        maximumThreshold: 1000,
-      },
-    ];
-  }
+
 
   // Stock Overview
   getStockOverview(params?: {
@@ -270,6 +200,7 @@ export class InventoryService {
   }): Observable<ApiResponse<any[]>> {
     return this.apiService.get<unknown>('ShelfLocations', params).pipe(
       map((raw) => normalizePasListResponse<any>(raw)),
+      catchError(() => of({ success: false, message: 'ShelfLocations unavailable', data: [], statusCode: 0 } as ApiResponse<any[]>)),
     );
   }
 

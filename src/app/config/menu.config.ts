@@ -25,7 +25,6 @@ export const adminMenuConfig: MenuItem[] = [
       { label: 'Current Stock', route: '/admin/inventory/current-stock' },
       { label: 'Stock Movements', route: '/admin/inventory/movements' },
       { label: 'Low Stock', route: '/admin/inventory/low-stock' },
-      { label: 'Stock Adjustment', route: '/admin/inventory/adjustment' },
       { label: 'Stock Transfer', route: '/admin/inventory/transfer' },
       { label: 'Warehouses', route: '/admin/warehouses' },
       { label: 'Shelf Locations', route: '/admin/shelf-locations' },
@@ -57,14 +56,12 @@ export const adminMenuConfig: MenuItem[] = [
     icon: 'bi bi-file-earmark-text',
     children: [
       { label: 'Dashboard', route: '/admin/requisitions' },
-      { label: 'Create Requisition', route: '/admin/requisitions/create' },
     ],
   },
   {
     label: 'Receiving',
     icon: 'bi bi-truck',
     children: [
-      { label: 'GRN', route: '/admin/receiving/grn' },
       { label: 'Inspection', route: '/admin/receiving/inspection' },
       { label: 'Inspection Logs', route: '/admin/receiving/logs' },
       { label: 'Suppliers', route: '/admin/receiving/suppliers' },
@@ -76,7 +73,6 @@ export const adminMenuConfig: MenuItem[] = [
     children: [
       { label: 'Locations', route: '/admin/locations' },
       { label: 'Safety Boxes', route: '/admin/safety-boxes' },
-      { label: 'Shelves', route: '/admin/shelves' },
     ],
   },
   {
@@ -147,6 +143,11 @@ export const storekeeperMenuConfig: MenuItem[] = [
     label: 'Issuance',
     icon: 'bi bi-box-arrow-right',
     route: '/storekeeper/issuing',
+  },
+  {
+    label: 'Disposal',
+    icon: 'bi bi-trash3',
+    route: '/storekeeper/disposal',
   },
   {
     label: 'Reports',

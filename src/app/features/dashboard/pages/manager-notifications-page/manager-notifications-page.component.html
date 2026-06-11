@@ -10,12 +10,6 @@
       <input type="text" [(ngModel)]="searchQuery" placeholder="Search notifications..." />
     </div>
     <div class="filter-controls">
-      <select [(ngModel)]="filterType">
-        <option value="all">All Types</option>
-        <option value="approval">Approval Requests</option>
-        <option value="department">Department Alerts</option>
-        <option value="budget">Budget Alerts</option>
-      </select>
       <button class="btn btn-secondary" (click)="markAllAsRead()">Mark Read</button>
     </div>
   </div>
@@ -27,13 +21,16 @@
       @for (notification of filteredNotifications; track notification.id) {
         <div class="notification-card" [class.unread]="!notification.isRead">
           <div class="notification-header">
-            <span class="notification-icon">{{ getNotificationIcon(notification.message) }}</span>
-            <span class="notification-title">{{ notification.message.substring(0, 50) }}...</span>
+            <span class="notification-icon">{{ getNotificationIcon(notification) }}</span>
+            <span class="notification-title">{{ notification.message }}</span>
             <span class="notification-time">{{ formatDate(notification.sentDate) }}</span>
           </div>
-          <p class="notification-message">{{ notification.message }}</p>
           <div class="notification-actions">
-            <button class="btn btn-sm btn-primary" (click)="viewRequestDetails()">View Details</button>
+            @if (hasAction(notification.id)) {
+              <button class="btn btn-sm btn-success" (click)="approveFlaggedRequest(notification.id)">Approve</button>
+              <button class="btn btn-sm btn-danger" (click)="rejectFlaggedRequest(notification.id)">Reject</button>
+            }
+            <button class="btn btn-sm btn-primary" (click)="viewRequestDetails(notification.id)">View Details</button>
             <button class="btn btn-sm btn-outline" (click)="dismiss(notification.id)">Dismiss</button>
           </div>
         </div>
@@ -46,41 +43,7 @@
 
   <!-- Approval Requests -->
   <div class="approval-requests-section">
-    <h2>✅ APPROVAL REQUESTS ({{ approvalRequests.length }}) <button class="btn btn-link" (click)="viewAllApprovalRequests()">View All Approval Requests →</button></h2>
-    <div class="approval-requests-list">
-      @for (request of approvalRequests; track request.srNumber) {
-        <div class="approval-request-item">
-          <span class="priority-icon">{{ getPriorityIcon(request.priority) }}</span>
-          <span class="sr-number">{{ request.srNumber }}</span>
-          <span class="requester">{{ request.requester }}</span>
-          <span class="priority">{{ request.priority }}</span>
-          <span class="value">{{ request.value }}</span>
-        </div>
-      }
-    </div>
-  </div>
-
-  <!-- Department Alerts -->
-  <div class="department-alerts-section">
-    <h2>🏢 DEPARTMENT ALERTS ({{ departmentAlerts.length }})</h2>
-    <div class="department-alerts-list">
-      @for (alert of departmentAlerts; track alert.message) {
-        <div class="department-alert-item">
-          <span>• {{ alert.message }}</span>
-        </div>
-      }
-    </div>
-  </div>
-
-  <!-- Budget Alerts -->
-  <div class="budget-alerts-section">
-    <h2>💰 BUDGET ALERTS ({{ budgetAlerts.length }})</h2>
-    <div class="budget-alerts-list">
-      @for (alert of budgetAlerts; track alert.message) {
-        <div class="budget-alert-item">
-          <span>• {{ alert.message }}</span>
-        </div>
-      }
-    </div>
+    <h2>✅ APPROVAL REQUESTS <button class="btn btn-link" (click)="viewAllApprovalRequests()">View All Approval Requests →</button></h2>
+    <div class="approval-requests-list"></div>
   </div>
 </div>

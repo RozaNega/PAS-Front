@@ -24,24 +24,6 @@ interface DraftData {
   currentStep: number;
 }
 
-const MOCK_CATALOG_ITEMS = [
-  { id: 'a1b2c3d4-0001-4000-8000-000000000001', itemName: 'Teff (White)', sku: 'TEFF-WHT-001', unitOfMeasure: 'kg', stockQuantity: 500, description: 'Premium quality white teff grain' },
-  { id: 'a1b2c3d4-0002-4000-8000-000000000002', itemName: 'Coffee Arabica', sku: 'COF-ARB-002', unitOfMeasure: 'kg', stockQuantity: 200, description: 'Ethiopian Arabica coffee beans' },
-  { id: 'a1b2c3d4-0003-4000-8000-000000000003', itemName: 'Maize (Yellow)', sku: 'MAZ-YEL-003', unitOfMeasure: 'kg', stockQuantity: 800, description: 'Yellow maize grain for processing' },
-  { id: 'a1b2c3d4-0004-4000-8000-000000000004', itemName: 'Sesame Seeds', sku: 'SES-SED-004', unitOfMeasure: 'kg', stockQuantity: 350, description: 'Ethiopian white sesame seeds' },
-  { id: 'a1b2c3d4-0005-4000-8000-000000000005', itemName: 'Wheat (Hard Red)', sku: 'WHT-HRD-005', unitOfMeasure: 'kg', stockQuantity: 600, description: 'Hard red winter wheat' },
-  { id: 'a1b2c3d4-0006-4000-8000-000000000006', itemName: 'Barley (Food Grade)', sku: 'BAR-FOD-006', unitOfMeasure: 'kg', stockQuantity: 400, description: 'Food grade barley for human consumption' },
-  { id: 'a1b2c3d4-0007-4000-8000-000000000007', itemName: 'Honey (White)', sku: 'HON-WHT-007', unitOfMeasure: 'kg', stockQuantity: 120, description: 'Pure Ethiopian white honey' },
-  { id: 'a1b2c3d4-0008-4000-8000-000000000008', itemName: 'Cotton (Raw)', sku: 'COT-RAW-008', unitOfMeasure: 'kg', stockQuantity: 900, description: 'Raw cotton fiber for textile industry' },
-  { id: 'a1b2c3d4-0009-4000-8000-000000000009', itemName: 'Sugar Cane', sku: 'SGR-CAN-009', unitOfMeasure: 'ton', stockQuantity: 50, description: 'Fresh sugar cane for processing' },
-  { id: 'a1b2c3d4-0010-4000-8000-000000000010', itemName: 'Haricot Beans', sku: 'HRC-BNS-010', unitOfMeasure: 'kg', stockQuantity: 280, description: 'Dried haricot beans for export' },
-  { id: 'a1b2c3d4-0011-4000-8000-000000000011', itemName: 'Sunflower Oil', sku: 'SUN-OIL-011', unitOfMeasure: 'liter', stockQuantity: 150, description: 'Refined sunflower cooking oil' },
-  { id: 'a1b2c3d4-0012-4000-8000-000000000012', itemName: 'Salt (Iodized)', sku: 'SLT-IOD-012', unitOfMeasure: 'kg', stockQuantity: 1000, description: 'Iodized table salt' },
-  { id: 'a1b2c3d4-0013-4000-8000-000000000013', itemName: 'Black Pepper', sku: 'BLK-PPR-013', unitOfMeasure: 'kg', stockQuantity: 75, description: 'Ground black pepper spice' },
-  { id: 'a1b2c3d4-0014-4000-8000-000000000014', itemName: 'Sorghum (Red)', sku: 'SRG-RED-014', unitOfMeasure: 'kg', stockQuantity: 450, description: 'Red sorghum grain' },
-  { id: 'a1b2c3d4-0015-4000-8000-000000000015', itemName: 'Fertilizer (UREA 46%)', sku: 'FRT-URE-015', unitOfMeasure: 'bag', stockQuantity: 200, description: 'UREA nitrogen fertilizer 46%' },
-];
-
 @Component({
   selector: 'app-service-request-form',
   standalone: true,
@@ -59,8 +41,6 @@ export class ServiceRequestFormComponent implements OnInit {
   totalSteps = 3;
   loading = signal(false);
   error = signal<string | null>(null);
-  isUsingMock = signal(false);
-
   requestForm!: FormGroup;
 
   availableItems = signal<any[]>([]);
@@ -164,23 +144,14 @@ export class ServiceRequestFormComponent implements OnInit {
           .filter((row) => this.isGuid(row.id));
         this.availableItems.set(rows);
         this.availableItemsCount.set(rows.length);
-        if (rows.length === 0) {
-          this.useMockFallback();
-        }
         this.loading.set(false);
       },
       error: () => {
-        this.useMockFallback();
+        this.availableItems.set([]);
+        this.availableItemsCount.set(0);
         this.loading.set(false);
       },
     });
-  }
-
-  private useMockFallback(): void {
-    this.availableItems.set(MOCK_CATALOG_ITEMS);
-    this.availableItemsCount.set(MOCK_CATALOG_ITEMS.length);
-    this.isUsingMock.set(true);
-    this.showNotification('info', 'Using sample catalog data — API items unavailable');
   }
 
   nextStep(): void {

@@ -1,0 +1,185 @@
+<section class="disposal-page">
+  <header class="page-header">
+    <div class="header-content">
+      <div class="header-icon"><i class="bi bi-trash3"></i></div>
+      <div class="header-text">
+        <h1>Material Disposal</h1>
+        <p>Remove damaged, expired, or obsolete materials from inventory</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button type="button" class="action-btn secondary" (click)="loadData()">
+        <i class="bi bi-arrow-clockwise"></i> Refresh
+      </button>
+    </div>
+  </header>
+
+  @if (notification(); as n) {
+    <div class="notification-banner" [class.success]="n.type === 'success'" [class.error]="n.type === 'error'">
+      <i class="bi" [class.bi-check-circle-fill]="n.type === 'success'" [class.bi-exclamation-triangle-fill]="n.type === 'error'"></i>
+      <span>{{ n.message }}</span>
+      <button type="button" class="dismiss-btn" (click)="notification.set(null)"><i class="bi bi-x"></i></button>
+    </div>
+  }
+
+  @if (loading()) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <span>Loading stock data...</span>
+    </div>
+  }
+
+  @if (!loading()) {
+    <div class="disposal-layout">
+      <div class="panel select-panel">
+        <h2><i class="bi bi-box-seam"></i> Select Items for Disposal</h2>
+        <div class="search-bar">
+          <i class="bi bi-search"></i>
+          <input type="text" [ngModel]="searchTerm()" (ngModelChange)="searchTerm.set($event)" placeholder="Search by item name or SKU..." />
+        </div>
+        <div class="stock-list">
+          @if (filteredStock().length === 0) {
+            <div class="empty-state">No items found</div>
+          }
+          @for (item of filteredStock(); track item.id) {
+            <div class="stock-item" [class.selected]="isSelected(item)" (click)="toggleItem(item)">
+              <div class="item-check">
+                <i class="bi" [class.bi-square]="!isSelected(item)" [class.bi-check-square-fill]="isSelected(item)"></i>
+              </div>
+              <div class="item-info">
+                <span class="item-name">{{ item.itemName || 'Unnamed' }}</span>
+                <span class="item-sku">{{ item.sku || '—' }}</span>
+                <span class="item-location">{{ item.warehouseName || '' }}{{ item.shelfLocation ? ' — ' + item.shelfLocation : '' }}</span>
+              </div>
+              <div class="item-stock">
+                <span class="stock-qty">{{ item.currentStock }}</span>
+                <span class="stock-label">in stock</span>
+              </div>
+              @if (item.unitPrice) {
+                <div class="item-price">
+                  <span class="price-value">{{ item.unitPrice }}</span>
+                  <span class="price-label">per unit</span>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+
+      <div class="panel form-panel">
+        <h2><i class="bi bi-pencil-square"></i> Disposal Details</h2>
+
+        @if (selectedItems().length === 0) {
+          <div class="empty-selection">
+            <i class="bi bi-hand-index-thumb"></i>
+            <p>Select items from the list to begin</p>
+          </div>
+        }
+
+        @if (selectedItems().length > 0) {
+          <div class="selected-items">
+            <h3>Selected Items ({{ selectedItems().length }})</h3>
+            @for (item of selectedItems(); track item.itemId) {
+              <div class="selected-item">
+                <div class="sel-item-info">
+                  <span class="sel-item-name">{{ item.itemName }}</span>
+                  <span class="sel-item-sku">{{ item.sku }}</span>
+                </div>
+                <div class="sel-item-qty">
+                  <label>Qty to dispose</label>
+                  <input type="number" [value]="item.quantity" min="1" [max]="item.availableStock"
+                    (input)="updateQuantity(item.itemId, +$any($event.target).value)" />
+                  <span class="avail">Max: {{ item.availableStock }}</span>
+                </div>
+                <div class="sel-item-value">
+                  <span class="value-label">Value</span>
+                  <span class="value-amount">{{ item.quantity * (item.unitCost || 0) }}</span>
+                </div>
+                <button type="button" class="remove-btn" (click)="removeItem(item.itemId)">
+                  <i class="bi bi-x-lg"></i>
+                </button>
+              </div>
+            }
+          </div>
+
+          <div class="form-group">
+            <label for="reason">Reason for Disposal <span class="required">*</span></label>
+            <select id="reason" [value]="reason()" (change)="reason.set($any($event.target).value)">
+              <option value="">Select reason...</option>
+              <option value="Damaged Goods">Damaged Goods</option>
+              <option value="Expired">Expired / Shelf Life Exceeded</option>
+              <option value="Obsolete">Obsolete / No Longer Used</option>
+              <option value="Quality Issue">Quality Issue / Defective</option>
+              <option value="Lost or Missing">Lost or Missing</option>
+              <option value="Theft">Theft / Security Incident</option>
+              <option value="Regulatory Disposal">Regulatory / Compliance Disposal</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+
+          <div class="summary-bar">
+            <div class="summary-item">
+              <span class="summary-label">Total Items</span>
+              <span class="summary-value">{{ selectedItems().length }}</span>
+            </div>
+            <div class="summary-item">
+              <span class="summary-label">Total Quantity</span>
+              <span class="summary-value">{{ totalQuantity() }}</span>
+            </div>
+            <div class="summary-item">
+              <span class="summary-label">Estimated Value</span>
+              <span class="summary-value">{{ totalValue() }}</span>
+            </div>
+          </div>
+
+          <button type="button" class="action-btn primary submit-btn" [disabled]="submitting()" (click)="submitDisposal()">
+            @if (submitting()) {
+              <span class="spinner-sm"></span> Submitting...
+            } @else {
+              <i class="bi bi-check-lg"></i> Submit for Disposal
+            }
+          </button>
+          <p class="form-note">
+            <i class="bi bi-info-circle"></i>
+            This will notify the admin. Once approved, stock will be permanently deducted.
+          </p>
+        }
+      </div>
+    </div>
+
+    <div class="panel history-panel">
+      <h2><i class="bi bi-clock-history"></i> Disposal History</h2>
+      @if (disposalHistory().length === 0) {
+        <div class="empty-state">No disposal records yet</div>
+      }
+      @if (disposalHistory().length > 0) {
+        <div class="history-table-wrapper">
+          <table class="history-table">
+            <thead>
+              <tr>
+                <th>Disposal #</th>
+                <th>Date</th>
+                <th>Items</th>
+                <th>Quantity</th>
+                <th>Reason</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (record of disposalHistory(); track record.id) {
+                <tr>
+                  <td class="cell-id">{{ record.disposalNumber || record.id }}</td>
+                  <td>{{ (record.disposalDate || record.createdAt || '') | date:'mediumDate' }}</td>
+                  <td>{{ record.totalItems || record.items?.length || 0 }}</td>
+                  <td>{{ record.totalQuantity || record.quantity || 0 }}</td>
+                  <td class="cell-reason">{{ record.reason || '—' }}</td>
+                  <td><span class="status-badge" [class]="statusClass(record.status || '')">{{ record.status }}</span></td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  }
+</section>

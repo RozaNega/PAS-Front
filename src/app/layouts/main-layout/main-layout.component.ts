@@ -517,7 +517,7 @@ export class MainLayoutComponent implements OnInit {
       return 'Admin';
     }
     if (this.router.url.startsWith('/storekeeper')) {
-      return 'Manager';
+      return 'Storekeeper';
     }
     return null;
   }

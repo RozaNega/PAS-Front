@@ -2,6 +2,7 @@ import { Component, signal, computed, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { InspectionsService, InspectionDto } from '../../../../core/services/inspections.service';
 
 export interface InspectionChecklist {
   packaging: boolean;
@@ -43,20 +44,7 @@ export interface InspectForm {
   generalComments: string;
 }
 
-const MOCK_PENDING: PendingInspection[] = [
-  { id: '1', grnNumber: 'GRN-2024-001', supplierName: 'Acme Corporation', receivedDate: '2024-12-10T08:30:00Z', priority: 'High', itemsToInspect: 4, items: [{ itemName: 'Industrial Bearings', quantity: 50, batchNumber: 'B-4521', status: 'Pending' }, { itemName: 'Steel Rods 12mm', quantity: 200, batchNumber: 'SR-8890', status: 'Pending' }, { itemName: 'Hydraulic Seals', quantity: 30, batchNumber: 'HS-3341', status: 'Pending' }, { itemName: 'Pressure Gauges', quantity: 15, batchNumber: 'PG-7723', status: 'Pending' }], status: 'Pending' },
-  { id: '2', grnNumber: 'GRN-2024-002', supplierName: 'GlobalTech Industries', receivedDate: '2024-12-11T10:15:00Z', priority: 'Medium', itemsToInspect: 2, items: [{ itemName: 'Circuit Boards v3', quantity: 100, batchNumber: 'CB-X220', status: 'Pending' }, { itemName: 'Power Supply Units', quantity: 50, batchNumber: 'PS-4412', status: 'Pending' }], status: 'Pending' },
-  { id: '3', grnNumber: 'GRN-2024-003', supplierName: 'Prime Supplies Inc', receivedDate: '2024-12-12T14:45:00Z', priority: 'Low', itemsToInspect: 1, items: [{ itemName: 'Office Stationery Pack', quantity: 500, batchNumber: 'OS-1001', status: 'Pending' }], status: 'Pending' },
-  { id: '4', grnNumber: 'GRN-2024-004', supplierName: 'Allied Parts Co', receivedDate: '2024-12-13T06:00:00Z', priority: 'High', itemsToInspect: 5, items: [{ itemName: 'Fuel Injectors', quantity: 40, batchNumber: 'FI-9012', status: 'Pending' }, { itemName: 'Air Filters', quantity: 80, batchNumber: 'AF-5530', status: 'Pending' }, { itemName: 'Oil Pumps', quantity: 25, batchNumber: 'OP-6789', status: 'Pending' }, { itemName: 'Gasket Sets', quantity: 60, batchNumber: 'GS-2345', status: 'Pending' }, { itemName: 'Timing Belts', quantity: 35, batchNumber: 'TB-7890', status: 'Pending' }], status: 'Pending' },
-  { id: '5', grnNumber: 'GRN-2024-005', supplierName: 'Northern Distributors Ltd', receivedDate: '2024-12-14T09:20:00Z', priority: 'Medium', itemsToInspect: 3, items: [{ itemName: 'Safety Helmets', quantity: 150, batchNumber: 'SH-6650', status: 'Pending' }, { itemName: 'Protective Gloves', quantity: 300, batchNumber: 'PG-1123', status: 'Pending' }, { itemName: 'Safety Goggles', quantity: 100, batchNumber: 'SG-9987', status: 'Pending' }], status: 'Pending' },
-  { id: '6', grnNumber: 'GRN-2024-006', supplierName: 'QuickShip Logistics', receivedDate: '2024-12-15T11:00:00Z', priority: 'Low', itemsToInspect: 2, items: [{ itemName: 'Packing Materials', quantity: 1000, batchNumber: 'PM-4432', status: 'Pending' }, { itemName: 'Label Rolls', quantity: 50, batchNumber: 'LR-7765', status: 'Pending' }], status: 'Pending' },
-  { id: '7', grnNumber: 'GRN-2024-007', supplierName: 'Precision Tools Ltd', receivedDate: '2024-12-16T07:45:00Z', priority: 'High', itemsToInspect: 6, items: [{ itemName: 'Digital Calipers', quantity: 20, batchNumber: 'DC-3344', status: 'Pending' }, { itemName: 'Micrometer Sets', quantity: 15, batchNumber: 'MS-5566', status: 'Pending' }, { itemName: 'Torque Wrenches', quantity: 10, batchNumber: 'TW-7788', status: 'Pending' }, { itemName: 'Dial Gauges', quantity: 12, batchNumber: 'DG-9900', status: 'Pending' }, { itemName: 'Vernier Scales', quantity: 25, batchNumber: 'VS-2233', status: 'Pending' }, { itemName: 'Test Indicators', quantity: 8, batchNumber: 'TI-4455', status: 'Pending' }], status: 'In Progress' },
-  { id: '8', grnNumber: 'GRN-2024-008', supplierName: 'Eastern Traders Corp', receivedDate: '2024-12-17T13:30:00Z', priority: 'Medium', itemsToInspect: 3, items: [{ itemName: 'Copper Wire Spools', quantity: 40, batchNumber: 'CW-6677', status: 'Pending' }, { itemName: 'Aluminum Sheets', quantity: 60, batchNumber: 'AS-8899', status: 'Pending' }, { itemName: 'Brass Fittings', quantity: 200, batchNumber: 'BF-0011', status: 'Pending' }], status: 'Pending' },
-  { id: '9', grnNumber: 'GRN-2024-009', supplierName: 'Western Wholesale', receivedDate: '2024-12-18T15:10:00Z', priority: 'Low', itemsToInspect: 1, items: [{ itemName: 'Cleaning Chemicals', quantity: 75, batchNumber: 'CC-3322', status: 'Pending' }], status: 'Pending' },
-  { id: '10', grnNumber: 'GRN-2024-010', supplierName: 'City Materials Corp', receivedDate: '2024-12-19T08:00:00Z', priority: 'High', itemsToInspect: 4, items: [{ itemName: 'Cement Bags 50kg', quantity: 500, batchNumber: 'CB-5544', status: 'Pending' }, { itemName: 'Steel Rebars 16mm', quantity: 300, batchNumber: 'SR-6677', status: 'Pending' }, { itemName: 'Clay Bricks', quantity: 2000, batchNumber: 'BR-8890', status: 'Pending' }, { itemName: 'Construction Sand', quantity: 10000, batchNumber: 'CS-9901', status: 'Pending' }], status: 'Pending' },
-  { id: '11', grnNumber: 'GRN-2024-011', supplierName: 'BlueLine Supply Co', receivedDate: '2024-12-20T10:30:00Z', priority: 'Medium', itemsToInspect: 2, items: [{ itemName: 'LED Panel Lights', quantity: 60, batchNumber: 'LP-1122', status: 'Pending' }, { itemName: 'Electrical Cables', quantity: 500, batchNumber: 'EC-3344', status: 'Pending' }], status: 'Pending' },
-  { id: '12', grnNumber: 'GRN-2024-012', supplierName: 'Apex Industrial Parts', receivedDate: '2024-12-21T09:15:00Z', priority: 'Medium', itemsToInspect: 3, items: [{ itemName: 'Conveyor Rollers', quantity: 30, batchNumber: 'CR-5566', status: 'Pending' }, { itemName: 'Drive Chains', quantity: 20, batchNumber: 'DC-7788', status: 'Pending' }, { itemName: 'Motor Mounts', quantity: 45, batchNumber: 'MM-9900', status: 'Pending' }], status: 'Pending' },
-];
+
 
 @Component({
   selector: 'app-pending-inspection',
@@ -67,6 +55,7 @@ const MOCK_PENDING: PendingInspection[] = [
 })
 export class PendingInspectionComponent implements OnInit {
   private readonly router = inject(Router);
+  private readonly inspectionsService = inject(InspectionsService);
 
   searchTerm = signal('');
   priorityFilter = signal('All');
@@ -88,8 +77,6 @@ export class PendingInspectionComponent implements OnInit {
   deleteTarget = signal<PendingInspection | null>(null);
 
   notification = signal<{ type: 'success' | 'error'; message: string } | null>(null);
-
-  useMockData = signal(true);
 
   summaryStats = computed(() => {
     const all = this.pendingInspections();
@@ -139,14 +126,43 @@ export class PendingInspectionComponent implements OnInit {
   loadData(): void {
     this.loading.set(true);
     this.error.set(null);
-    try {
-      this.pendingInspections.set(MOCK_PENDING);
-      this.totalItems.set(MOCK_PENDING.length);
-      this.loading.set(false);
-    } catch {
-      this.error.set('Failed to load pending inspections');
-      this.loading.set(false);
-    }
+    this.inspectionsService.getAll().subscribe({
+      next: (res) => {
+        if (res.success !== false && Array.isArray(res.data?.items) && res.data.items.length > 0) {
+          this.pendingInspections.set(this.mapToPendingInspections(res.data.items));
+          this.totalItems.set(res.data.totalCount);
+        }
+        this.loading.set(false);
+      },
+      error: () => {
+        this.loading.set(false);
+      },
+    });
+  }
+
+  private mapToPendingInspections(dtos: InspectionDto[]): PendingInspection[] {
+    return dtos.map(dto => ({
+      id: dto.id,
+      grnNumber: dto.grnNumber ?? '',
+      supplierName: dto.inspectorName ?? 'Unknown Supplier',
+      receivedDate: dto.inspectionDate,
+      priority: 'Medium' as const,
+      itemsToInspect: dto.items.length,
+      items: dto.items.map(item => ({
+        itemName: item.itemName ?? 'Unknown Item',
+        quantity: item.receivedQuantity,
+        batchNumber: item.sku ?? '',
+        status: item.isPassed ? 'Passed' : 'Pending',
+      })),
+      status: this.mapInspectionStatus(dto.status),
+    }));
+  }
+
+  private mapInspectionStatus(status?: string): 'Pending' | 'In Progress' {
+    if (!status) return 'Pending';
+    const s = status.toLowerCase();
+    if (s.includes('in progress') || s.includes('ongoing')) return 'In Progress';
+    return 'Pending';
   }
 
   onSearch(e: Event): void {

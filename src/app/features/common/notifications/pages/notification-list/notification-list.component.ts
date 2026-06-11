@@ -19,7 +19,7 @@ import {
 import { NotificationService as ToastService } from '../../../../../core/services/notification.service';
 import { WorkflowService } from '../../../../../core/services/workflow.service';
 import { CurrentUserService } from '../../../../../core/services/current-user.service';
-import { pasApiUrlHint } from '../../../../../core/config/api-base';
+
 
 @Component({
   selector: 'app-notification-list',
@@ -110,17 +110,13 @@ export class NotificationListComponent {
     this.loadNotifications();
   }
 
-  apiConnectionHint(): string {
-    return pasApiUrlHint();
-  }
-
   loadNotifications(): void {
     this.loading.set(true);
     this.loadError.set(null);
 
     // Determine user role from URL to get the right workflow notifications
     const url = this.router.url;
-    let workflowRole: 'Admin' | 'Manager' | 'Employee' | null = null;
+    let workflowRole: 'Admin' | 'Manager' | 'Employee' | 'Storekeeper' | null = null;
     let workflowUserId = '';
     if (url.startsWith('/admin')) {
       workflowRole = 'Admin';
@@ -133,7 +129,7 @@ export class NotificationListComponent {
       const user = this.currentUserService.getCurrentUserValue();
       workflowUserId = user?.id || 'employee_001';
     } else if (url.startsWith('/storekeeper')) {
-      workflowRole = 'Manager';
+      workflowRole = 'Storekeeper';
       workflowUserId = 'storekeeper_001';
     }
 
@@ -174,9 +170,7 @@ export class NotificationListComponent {
           this.notifications.set(combined);
 
           if (combined.length === 0 && this.loadError) {
-            this.loadError.set(
-              `Could not load notifications. ${pasApiUrlHint()}`,
-            );
+            this.loadError.set(`Could not load notifications. Ensure the backend is running on port 5028.`);
           }
           this.cdr.markForCheck();
         },
@@ -199,11 +193,10 @@ export class NotificationListComponent {
             this.loadError.set(null);
           } else {
             this.notifications.set([]);
-            const hint = pasApiUrlHint();
             const msg =
               err instanceof HttpErrorResponse && err.status === 0
-                ? `Could not reach the notifications API. ${hint}`
-                : `Could not load notifications. ${hint}`;
+                ? `Could not reach the notifications API. Ensure the backend is running on port 5028.`
+                : `Could not load notifications.`;
             this.loadError.set(msg);
           }
           this.cdr.markForCheck();

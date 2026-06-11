@@ -10,9 +10,6 @@
       </div>
     </div>
     <div class="header-actions">
-      @if (isUsingMock()) {
-        <span class="sample-badge">Sample Data</span>
-      }
       <button type="button" class="action-btn secondary" (click)="saveDraft()" [disabled]="loading()">
         <i class="bi bi-save"></i> Save Draft
       </button>

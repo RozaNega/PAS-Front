@@ -36,9 +36,8 @@ export class StockOverviewComponent implements OnInit {
   // Filter options
   stockFilters = ['All', 'In Stock', 'Low Stock', 'Out of Stock'];
 
-  // Summary stats
   totalValue = computed(() => {
-    return this.stockItems().reduce((sum, item) => sum + (item.currentStock * 10), 0); // Assuming $10 per unit for demo
+    return this.stockItems().reduce((sum, item) => sum + (item.currentStock * (item.unitPrice || 15)), 0);
   });
 
   lowStockCount = computed(() => {

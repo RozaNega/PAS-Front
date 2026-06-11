@@ -122,16 +122,16 @@
                 {{ notif.message }}
               </p>
               
-              @if (notif.actionRequired) {
-                <div class="action-alert-box mt-3 p-2 bg-light border-radius-sm d-flex justify-content-between align-items-center">
-                  <span class="text-warning-dark font-weight-semibold">
-                    <i class="bi bi-shield-fill-exclamation"></i> Immediate review or manager nudge required
-                  </span>
-                  <button class="btn btn-sm btn-primary-gradient" (click)="takeAction(notif)">
-                    <i class="bi bi-lightning-charge-fill"></i> Take Action
-                  </button>
-                </div>
-              }
+                @if (notif.actionRequired) {
+                  <div class="action-alert-box mt-3 p-2 bg-light border-radius-sm d-flex justify-content-between align-items-center">
+                    <span class="text-warning-dark font-weight-semibold">
+                      <i class="bi bi-shield-fill-exclamation"></i> Immediate review or manager nudge required
+                    </span>
+                    <button class="btn btn-sm btn-primary-gradient" (click)="takeAction(notif)" title="Send to Manager">
+                      <i class="bi bi-bell-fill"></i> Send to Manager
+                    </button>
+                  </div>
+                }
             </div>
 
             <!-- Side Action Controls -->

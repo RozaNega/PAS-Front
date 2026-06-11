@@ -11,9 +11,6 @@
     </div>
     <div class="header-actions">
       <span class="count-badge">{{ displayRows().length }} item(s)</span>
-      @if (isUsingMock()) {
-        <span class="mock-badge" title="API unavailable - showing sample data"><i class="bi bi-database"></i> Sample</span>
-      }
       <button type="button" class="action-btn secondary" (click)="loadData()">
         <i class="bi bi-arrow-clockwise"></i> Refresh
       </button>

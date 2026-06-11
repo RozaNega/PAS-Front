@@ -38,23 +38,7 @@ interface CreateForm {
   notes: string;
 }
 
-const MOCK_GRNS: GrnRecord[] = [
-  { id: 'GRN-001', grnNumber: 'GRN-2026-0001', grnDate: new Date('2026-05-28').toISOString(), supplierName: 'TechWorld Supplies', supplierId: 'SUP-001', poNumber: 'PO-2026-1201', deliveryNoteNumber: 'DN-8876', receivedBy: 'John Doe', items: [{ itemName: 'Dell XPS Laptop', quantity: 10, unit: 'pcs', received: 10 }, { itemName: 'HP Monitor 24"', quantity: 15, unit: 'pcs', received: 15 }], status: 'Passed', totalValue: 45250, notes: 'All items in good condition', createdAt: new Date('2026-05-28').toISOString() },
-  { id: 'GRN-002', grnNumber: 'GRN-2026-0002', grnDate: new Date('2026-05-28').toISOString(), supplierName: 'Global Logistics Co', supplierId: 'SUP-002', poNumber: 'PO-2026-1202', deliveryNoteNumber: 'DN-8877', receivedBy: 'Sarah Smith', items: [{ itemName: 'Office Chairs', quantity: 25, unit: 'pcs', received: 20 }, { itemName: 'Standing Desks', quantity: 10, unit: 'pcs', received: 10 }], status: 'Partially Received', totalValue: 18750, notes: '5 chairs damaged, awaiting replacement', createdAt: new Date('2026-05-28').toISOString() },
-  { id: 'GRN-003', grnNumber: 'GRN-2026-0003', grnDate: new Date('2026-05-27').toISOString(), supplierName: 'OfficeMart Inc', supplierId: 'SUP-003', poNumber: 'PO-2026-1199', deliveryNoteNumber: 'DN-8865', receivedBy: 'Mike Wilson', items: [{ itemName: 'A4 Paper Box', quantity: 50, unit: 'boxes', received: 50 }, { itemName: 'Stapler', quantity: 30, unit: 'pcs', received: 0 }], status: 'Pending Inspection', totalValue: 3200, notes: 'Pending quality inspection', createdAt: new Date('2026-05-27').toISOString() },
-  { id: 'GRN-004', grnNumber: 'GRN-2026-0004', grnDate: new Date('2026-05-27').toISOString(), supplierName: 'TechWorld Supplies', supplierId: 'SUP-001', poNumber: 'PO-2026-1198', deliveryNoteNumber: 'DN-8864', receivedBy: 'John Doe', items: [{ itemName: 'Network Switch 48-port', quantity: 5, unit: 'pcs', received: 5 }], status: 'Passed', totalValue: 12500, notes: '', createdAt: new Date('2026-05-27').toISOString() },
-  { id: 'GRN-005', grnNumber: 'GRN-2026-0005', grnDate: new Date('2026-05-26').toISOString(), supplierName: 'Fresh Foods Ltd', supplierId: 'SUP-004', poNumber: 'PO-2026-1195', deliveryNoteNumber: 'DN-8859', receivedBy: 'Lisa Wong', items: [{ itemName: 'Catering Supplies Pack', quantity: 20, unit: 'pcs', received: 18 }], status: 'Failed', totalValue: 4800, notes: 'Items expired, returned to supplier', createdAt: new Date('2026-05-26').toISOString() },
-  { id: 'GRN-006', grnNumber: 'GRN-2026-0006', grnDate: new Date('2026-05-26').toISOString(), supplierName: 'BuildRight Materials', supplierId: 'SUP-005', poNumber: 'PO-2026-1194', deliveryNoteNumber: 'DN-8858', receivedBy: 'Robert Brown', items: [{ itemName: 'Cement 50kg Bags', quantity: 100, unit: 'bags', received: 100 }, { itemName: 'Steel Rebars 12mm', quantity: 50, unit: 'pcs', received: 45 }], status: 'Partially Received', totalValue: 28500, notes: '5 rebars missing', createdAt: new Date('2026-05-26').toISOString() },
-  { id: 'GRN-007', grnNumber: 'GRN-2026-0007', grnDate: new Date('2026-05-25').toISOString(), supplierName: 'Global Logistics Co', supplierId: 'SUP-002', poNumber: 'PO-2026-1192', deliveryNoteNumber: 'DN-8855', receivedBy: 'Alice Johnson', items: [{ itemName: 'Industrial Shelving', quantity: 8, unit: 'pcs', received: 8 }], status: 'Passed', totalValue: 9600, notes: '', createdAt: new Date('2026-05-25').toISOString() },
-  { id: 'GRN-008', grnNumber: 'GRN-2026-0008', grnDate: new Date('2026-05-25').toISOString(), supplierName: 'OfficeMart Inc', supplierId: 'SUP-003', poNumber: 'PO-2026-1190', deliveryNoteNumber: 'DN-8852', receivedBy: 'Mike Wilson', items: [{ itemName: 'Whiteboard Markers', quantity: 60, unit: 'boxes', received: 60 }, { itemName: 'Printer Toner', quantity: 12, unit: 'pcs', received: 12 }], status: 'Pending Inspection', totalValue: 2400, notes: 'Awaiting QA sign-off', createdAt: new Date('2026-05-25').toISOString() },
-  { id: 'GRN-009', grnNumber: 'GRN-2026-0009', grnDate: new Date('2026-05-24').toISOString(), supplierName: 'TechWorld Supplies', supplierId: 'SUP-001', poNumber: 'PO-2026-1188', deliveryNoteNumber: 'DN-8849', receivedBy: 'John Doe', items: [{ itemName: 'Server Rack 42U', quantity: 2, unit: 'pcs', received: 2 }, { itemName: 'UPS Battery Backup', quantity: 4, unit: 'pcs', received: 4 }], status: 'Passed', totalValue: 15800, notes: '', createdAt: new Date('2026-05-24').toISOString() },
-  { id: 'GRN-010', grnNumber: 'GRN-2026-0010', grnDate: new Date('2026-05-24').toISOString(), supplierName: 'Fresh Foods Ltd', supplierId: 'SUP-004', poNumber: 'PO-2026-1186', deliveryNoteNumber: 'DN-8847', receivedBy: 'Elena Garcia', items: [{ itemName: 'Coffee Beans 5kg', quantity: 8, unit: 'bags', received: 0 }], status: 'Failed', totalValue: 1600, notes: 'Moisture damage, rejected', createdAt: new Date('2026-05-24').toISOString() },
-  { id: 'GRN-011', grnNumber: 'GRN-2026-0011', grnDate: new Date('2026-05-23').toISOString(), supplierName: 'BuildRight Materials', supplierId: 'SUP-005', poNumber: 'PO-2026-1184', deliveryNoteNumber: 'DN-8844', receivedBy: 'Kevin Martin', items: [{ itemName: 'Paint Bucket 20L', quantity: 15, unit: 'pcs', received: 15 }, { itemName: 'Paint Brushes', quantity: 30, unit: 'pcs', received: 30 }], status: 'Passed', totalValue: 6750, notes: 'Quality check passed', createdAt: new Date('2026-05-23').toISOString() },
-  { id: 'GRN-012', grnNumber: 'GRN-2026-0012', grnDate: new Date('2026-05-23').toISOString(), supplierName: 'OfficeMart Inc', supplierId: 'SUP-003', poNumber: 'PO-2026-1182', deliveryNoteNumber: 'DN-8841', receivedBy: 'Neha Patel', items: [{ itemName: 'Filing Cabinets', quantity: 6, unit: 'pcs', received: 4 }], status: 'Partially Received', totalValue: 4200, notes: '2 cabinets backordered', createdAt: new Date('2026-05-23').toISOString() },
-  { id: 'GRN-013', grnNumber: 'GRN-2026-0013', grnDate: new Date('2026-05-22').toISOString(), supplierName: 'Global Logistics Co', supplierId: 'SUP-002', poNumber: 'PO-2026-1180', deliveryNoteNumber: 'DN-8839', receivedBy: 'Tom Clark', items: [{ itemName: 'Safety Helmets', quantity: 40, unit: 'pcs', received: 40 }, { itemName: 'Safety Vest', quantity: 40, unit: 'pcs', received: 35 }], status: 'Pending Inspection', totalValue: 5600, notes: '', createdAt: new Date('2026-05-22').toISOString() },
-  { id: 'GRN-014', grnNumber: 'GRN-2026-0014', grnDate: new Date('2026-05-22').toISOString(), supplierName: 'TechWorld Supplies', supplierId: 'SUP-001', poNumber: 'PO-2026-1178', deliveryNoteNumber: 'DN-8836', receivedBy: 'Julia Rodriguez', items: [{ itemName: 'Keyboard Wireless', quantity: 25, unit: 'pcs', received: 25 }, { itemName: 'Mouse Optical', quantity: 30, unit: 'pcs', received: 30 }], status: 'Passed', totalValue: 3850, notes: 'Bulk order, all OK', createdAt: new Date('2026-05-22').toISOString() },
-  { id: 'GRN-015', grnNumber: 'GRN-2026-0015', grnDate: new Date('2026-05-21').toISOString(), supplierName: 'Fresh Foods Ltd', supplierId: 'SUP-004', poNumber: 'PO-2026-1176', deliveryNoteNumber: 'DN-8833', receivedBy: 'Henry Kim', items: [{ itemName: 'Bottled Water 500ml', quantity: 200, unit: 'bottles', received: 200 }], status: 'Passed', totalValue: 2400, notes: 'Delivered on time', createdAt: new Date('2026-05-21').toISOString() },
-];
+
 
 @Component({
   selector: 'app-grn',
@@ -73,7 +57,6 @@ export class GrnComponent implements OnInit {
   rowsPerPage = signal(10);
   loading = signal(false);
   error = signal<string | null>(null);
-  useMockData = signal(false);
 
   allNotes = signal<GrnRecord[]>([]);
 
@@ -170,22 +153,13 @@ export class GrnComponent implements OnInit {
         if (res.success !== false && Array.isArray(res.data) && res.data.length > 0) {
           const mapped = this.mapDtoToRecords(res.data);
           this.allNotes.set(mapped);
-          this.useMockData.set(false);
-        } else {
-          this.fallbackToMock();
         }
         this.loading.set(false);
       },
       error: () => {
-        this.fallbackToMock();
         this.loading.set(false);
       },
     });
-  }
-
-  private fallbackToMock(): void {
-    this.allNotes.set(MOCK_GRNS);
-    this.useMockData.set(true);
   }
 
   private mapDtoToRecords(dtos: ReceivingNoteDto[]): GrnRecord[] {
@@ -270,25 +244,44 @@ export class GrnComponent implements OnInit {
       this.autoDismissNotification();
       return;
     }
-    const newGrn: GrnRecord = {
-      id: `GRN-${Date.now()}`,
+    const payload = {
       grnNumber: form.grnNumber,
-      grnDate: form.grnDate ? new Date(form.grnDate).toISOString() : new Date().toISOString(),
+      grnDate: form.grnDate,
       supplierName: form.supplierName,
-      supplierId: form.supplierId || `SUP-${Date.now()}`,
+      supplierId: form.supplierId,
       poNumber: form.poNumber,
       deliveryNoteNumber: form.deliveryNoteNumber,
-      receivedBy: form.receivedBy || 'Receiving',
-      items: form.items.filter(i => i.itemName.trim()),
-      status: 'Pending Inspection',
-      totalValue: 0,
+      receivedBy: form.receivedBy,
+      items: form.items.filter(i => i.itemName.trim()).map(i => ({
+        itemName: i.itemName,
+        quantity: i.quantity,
+        unit: i.unit,
+        received: i.received,
+      })),
       notes: form.notes,
-      createdAt: new Date().toISOString(),
+      status: 'Pending Inspection',
     };
-    this.allNotes.update(list => [newGrn, ...list]);
-    this.showCreateModal.set(false);
-    this.notification.set({ type: 'success', message: `GRN ${newGrn.grnNumber} created successfully.` });
-    this.autoDismissNotification();
+
+    this.loading.set(true);
+    this.receivingNotes.create(payload).subscribe({
+      next: (res) => {
+        this.loading.set(false);
+        if (res.success) {
+          this.loadGrns();
+          this.showCreateModal.set(false);
+          this.notification.set({ type: 'success', message: `GRN ${form.grnNumber} created successfully.` });
+        } else {
+          this.notification.set({ type: 'error', message: 'Failed to create GRN: ' + (res.message || 'Unknown error') });
+        }
+        this.autoDismissNotification();
+      },
+      error: (err) => {
+        this.loading.set(false);
+        const msg = err?.status === 0 ? 'Cannot connect to server.' : err?.error?.message || 'Error creating GRN.';
+        this.notification.set({ type: 'error', message: msg });
+        this.autoDismissNotification();
+      },
+    });
   }
 
   confirmDelete(grn: GrnRecord): void {

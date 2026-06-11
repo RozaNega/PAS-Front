@@ -796,7 +796,8 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
       .pipe(take(1))
       .subscribe({
         next: (response) => {
-          const vouchers = response.data ?? [];
+          const vouchersRaw = response.data ?? [];
+          const vouchers: StoreIssueVoucherDto[] = Array.isArray(vouchersRaw) ? vouchersRaw : (vouchersRaw as any)?.items ?? [];
           const requestIndex = new Map(
             this.workflowRequests().map((request) => [request.id, request] as const),
           );

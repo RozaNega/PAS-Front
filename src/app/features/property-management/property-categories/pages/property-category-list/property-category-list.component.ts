@@ -66,65 +66,7 @@ export class PropertyCategoryListComponent implements OnInit {
   categoryToDelete = signal<string | null>(null);
   notification = signal<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
 
-  categories = signal<Category[]>([
-    {
-      id: '1',
-      name: 'Electronics',
-      icon: '💻',
-      parentId: null,
-      subcategories: [
-        { id: '1-1', name: 'Computers', icon: '💻', parentId: '1', subcategories: [], propertiesCount: 45, status: 'Active', color: 'blue', displayOrder: 1 },
-        { id: '1-2', name: 'Printers', icon: '🖨️', parentId: '1', subcategories: [], propertiesCount: 32, status: 'Active', color: 'blue', displayOrder: 2 },
-        { id: '1-3', name: 'Networking', icon: '🌐', parentId: '1', subcategories: [], propertiesCount: 28, status: 'Active', color: 'blue', displayOrder: 3 },
-        { id: '1-4', name: 'Audio/Visual', icon: '🔊', parentId: '1', subcategories: [], propertiesCount: 12, status: 'Active', color: 'blue', displayOrder: 4 },
-        { id: '1-5', name: 'Cables', icon: '🔌', parentId: '1', subcategories: [], propertiesCount: 8, status: 'Active', color: 'blue', displayOrder: 5 }
-      ],
-      propertiesCount: 125,
-      status: 'Active',
-      color: 'blue',
-      displayOrder: 1
-    },
-    {
-      id: '2',
-      name: 'Furniture',
-      icon: '🪑',
-      parentId: null,
-      subcategories: [
-        { id: '2-1', name: 'Chairs', icon: '🪑', parentId: '2', subcategories: [], propertiesCount: 145, status: 'Active', color: 'green', displayOrder: 1 },
-        { id: '2-2', name: 'Desks', icon: '🖥️', parentId: '2', subcategories: [], propertiesCount: 98, status: 'Active', color: 'green', displayOrder: 2 },
-        { id: '2-3', name: 'Cabinets', icon: '🗄️', parentId: '2', subcategories: [], propertiesCount: 69, status: 'Active', color: 'green', displayOrder: 3 }
-      ],
-      propertiesCount: 312,
-      status: 'Active',
-      color: 'green',
-      displayOrder: 2
-    },
-    {
-      id: '3',
-      name: 'Vehicles',
-      icon: '🚗',
-      parentId: null,
-      subcategories: [
-        { id: '3-1', name: 'Cars', icon: '🚗', parentId: '3', subcategories: [], propertiesCount: 23, status: 'Active', color: 'red', displayOrder: 1 },
-        { id: '3-2', name: 'Trucks', icon: '🚚', parentId: '3', subcategories: [], propertiesCount: 22, status: 'Active', color: 'red', displayOrder: 2 }
-      ],
-      propertiesCount: 45,
-      status: 'Active',
-      color: 'red',
-      displayOrder: 3
-    },
-    {
-      id: '4',
-      name: 'Machinery',
-      icon: '⚙️',
-      parentId: null,
-      subcategories: [],
-      propertiesCount: 89,
-      status: 'Active',
-      color: 'orange',
-      displayOrder: 4
-    }
-  ]);
+  categories = signal<Category[]>([]);
 
   flatCategories = computed(() => {
     const flat: { cat: Category; depth: number }[] = [];
@@ -247,7 +189,7 @@ export class PropertyCategoryListComponent implements OnInit {
           }
         },
         error: () => {
-          this.showNotification('Failed to load categories from server, using mock data', 'info');
+          this.showNotification('Failed to load categories from server', 'error');
         }
       });
   }

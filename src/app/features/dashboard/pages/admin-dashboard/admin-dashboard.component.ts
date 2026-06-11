@@ -15,6 +15,7 @@ import {
   NotificationMessage,
 } from '../../../../core/services/workflow.service';
 import { CrossRoleService } from '../../../../core/services/cross-role.service';
+import { DisposalRecordsService } from '../../../../core/services/disposal-records.service';
 import { Subscription } from 'rxjs';
 
 interface AdminSummaryCard {
@@ -180,6 +181,51 @@ interface AdminSummaryCard {
                 </div>
                 <h3>No Pending Requests</h3>
                 <p>All requests have been processed. Great job!</p>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Pending Disposals Panel -->
+        <div class="panel disposals-panel">
+          <header class="panel-header">
+            <div class="panel-title">
+              <h2>Pending Disposals</h2>
+              <span class="request-count">{{ pendingDisposals().length }} pending</span>
+            </div>
+          </header>
+
+          <div class="disposals-list">
+            @if (pendingDisposals().length > 0) {
+              @for (d of pendingDisposals(); track d.id) {
+                <div class="disposal-item">
+                  <div class="disposal-icon">
+                    <i class="bi bi-trash3"></i>
+                  </div>
+                  <div class="disposal-content">
+                    <div class="disposal-info">
+                      <strong>{{ d.disposalNumber || d.id }}</strong>
+                      <span class="disposal-reason">{{ d.reason || 'No reason' }}</span>
+                    </div>
+                    <div class="disposal-meta">
+                      <span>{{ d.totalQuantity || d.quantity || 0 }} items</span>
+                      <span>Value: {{ d.totalValue || 0 }}</span>
+                    </div>
+                  </div>
+                  <div class="disposal-actions">
+                    <button class="action-btn action-btn--approve" title="Approve disposal" (click)="approveDisposal(d.id)">
+                      <i class="bi bi-check-lg"></i>
+                    </button>
+                    <button class="action-btn action-btn--reject" title="Reject disposal" (click)="rejectDisposal(d.id)">
+                      <i class="bi bi-x-lg"></i>
+                    </button>
+                  </div>
+                </div>
+              }
+            } @else {
+              <div class="empty-notifications">
+                <i class="bi bi-check-circle"></i>
+                <p>No pending disposals</p>
               </div>
             }
           </div>
@@ -372,10 +418,15 @@ interface AdminSummaryCard {
         color: #059669;
       }
 
-      .summary-card--amber .card-icon {
-        background: #fef3c7;
-        color: #d97706;
-      }
+.summary-card--amber .card-icon {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.summary-card--red .card-icon {
+  background: #fee2e2;
+  color: #dc2626;
+}
 
       .card-content {
         flex: 1;
@@ -845,6 +896,62 @@ interface AdminSummaryCard {
           grid-template-columns: repeat(2, 1fr);
         }
       }
+
+      .disposals-panel {
+        grid-column: 1 / -1;
+      }
+      .disposals-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+      .disposal-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem;
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        border-radius: 8px;
+      }
+      .disposal-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        background: #fee2e2;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #dc2626;
+        font-size: 1rem;
+      }
+      .disposal-content {
+        flex: 1;
+      }
+      .disposal-info {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 0.15rem;
+      }
+      .disposal-info strong {
+        font-size: 0.85rem;
+        color: #1e293b;
+      }
+      .disposal-reason {
+        font-size: 0.75rem;
+        color: #64748b;
+      }
+      .disposal-meta {
+        display: flex;
+        gap: 1rem;
+        font-size: 0.7rem;
+        color: #94a3b8;
+      }
+      .disposal-actions {
+        display: flex;
+        gap: 0.35rem;
+      }
     `,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -853,6 +960,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly workflowService = inject(WorkflowService);
   private readonly crossRoleService = inject(CrossRoleService);
+  private readonly disposalService = inject(DisposalRecordsService);
 
   // Subscriptions for real-time updates
   private subscriptions: Subscription[] = [];
@@ -862,6 +970,9 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
   // Workflow-related signals
   readonly workflowRequests = signal<ServiceRequest[]>([]);
+
+  // Disposal signals
+  readonly pendingDisposals = signal<any[]>([]);
   readonly workflowNotifications = signal<NotificationMessage[]>([]);
   readonly currentTime = signal<string>(this.getCurrentTime());
   private clockInterval?: any;
@@ -894,6 +1005,13 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         description: 'Processed successfully',
       },
       {
+        title: 'Pending Disposals',
+        value: this.pendingDisposals().length,
+        icon: 'bi-trash3',
+        tone: 'red',
+        description: 'Awaiting approval',
+      },
+      {
         title: 'Total Requests',
         value: allRequests.length,
         icon: 'bi-file-earmark-text',
@@ -919,6 +1037,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     this.setupWorkflowSubscriptions();
     this.syncFromBackend();
     this.loadWorkflowData();
+    this.loadPendingDisposals();
     this.startClock();
   }
 
@@ -1031,6 +1150,49 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     } else if (notification.actionUrl) {
       this.router.navigate([notification.actionUrl]);
     }
+  }
+
+  private loadPendingDisposals(): void {
+    this.disposalService.getAll({ status: 'Pending', pageSize: 50 }).subscribe({
+      next: (res) => {
+        this.pendingDisposals.set((res.data as any)?.items || []);
+      },
+      error: () => {},
+    });
+  }
+
+  approveDisposal(id: string): void {
+    this.disposalService.approve(id, { id, isApproved: true, remarks: 'Approved by admin', approvedBy: 'Admin User' } as any).subscribe({
+      next: () => {
+        this.loadPendingDisposals();
+        this.showNotification('Disposal approved. Stock has been deducted.', 'success');
+      },
+      error: () => {
+        this.showNotification('Failed to approve disposal', 'error');
+      },
+    });
+  }
+
+  rejectDisposal(id: string): void {
+    this.disposalService.approve(id, { id, isApproved: false, remarks: 'Rejected by admin' } as any).subscribe({
+      next: () => {
+        this.loadPendingDisposals();
+        this.showNotification('Disposal rejected.', 'success');
+      },
+      error: () => {
+        this.showNotification('Failed to reject disposal', 'error');
+      },
+    });
+  }
+
+  private showNotification(message: string, type: 'success' | 'error'): void {
+    const banner = document.createElement('div');
+    banner.className = `notification-banner ${type}`;
+    banner.textContent = message;
+    banner.style.cssText = 'position:fixed;top:1rem;right:1rem;padding:0.75rem 1rem;border-radius:8px;z-index:9999;font-size:0.875rem;' +
+      (type === 'success' ? 'background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;' : 'background:#fef2f2;color:#991b1b;border:1px solid #fecaca;');
+    document.body.appendChild(banner);
+    setTimeout(() => banner.remove(), 4000);
   }
 
   getStatusBadgeClass(status: string): string {

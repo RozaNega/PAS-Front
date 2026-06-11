@@ -1,6 +1,7 @@
-import { Component, signal, computed, effect } from '@angular/core';
+import { Component, signal, computed, effect, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { TransferRecordsService, TransferListDto } from '../../../../../core/services/transfer-records.service';
 
 interface Transfer {
   id: string;
@@ -33,8 +34,9 @@ type ModalMode = 'detail' | 'approve' | 'delete' | null;
   styleUrls: ['./pending-transfers.component.scss']
 })
 export class PendingTransfersComponent {
+  private readonly transferRecordsService = inject(TransferRecordsService);
+
   transfers = signal<Transfer[]>([]);
-  mockUsed = false;
 
   searchTerm = signal('');
   statusFilter = signal('All');
@@ -106,127 +108,46 @@ export class PendingTransfersComponent {
     this.loadData();
   }
 
-  private createMockTransfers(): Transfer[] {
-    const ts = '2025-06-01T10:00:00.000Z';
-    const people = [
-      { name: 'Abebe Kebede', dept: 'IT Department' },
-      { name: 'Sara Tilahun', dept: 'Human Resources' },
-      { name: 'Getachew Tadesse', dept: 'Finance' },
-      { name: 'Meron Alemu', dept: 'Marketing' },
-      { name: 'Tadesse Hailu', dept: 'Operations' },
-      { name: 'Hanna Solomon', dept: 'Procurement' },
-      { name: 'Biruk Desta', dept: 'Logistics' },
-      { name: 'Tsion Girma', dept: 'IT Department' },
-      { name: 'Elias Worku', dept: 'Maintenance' },
-      { name: 'Selam Tesfaye', dept: 'Administration' },
-    ];
-    const fromLocs = [
-      { loc: 'HQ Bole, Floor 2', det: 'Room 201, IT Wing' },
-      { loc: 'HQ Bole, Floor 1', det: 'Room 105, HR Section' },
-      { loc: 'HQ Bole, Floor 3', det: 'Room 310, Finance Office' },
-      { loc: 'HQ Kazanchis', det: 'Building A, Procurement' },
-      { loc: 'Central Warehouse', det: 'Aisle 3, Shelf 14' },
-      { loc: 'Branch Office - Merkato', det: 'Ground Floor, Sales' },
-      { loc: 'Cargo Terminal - Bole', det: 'Sector 2, Bay 7' },
-      { loc: 'HQ Bole, Floor 4', det: 'Room 401, Executive Suite' },
-      { loc: 'Central Warehouse', det: 'Aisle 1, Shelf 08' },
-      { loc: 'Branch Office - Lideta', det: 'Room 12, Admin Block' },
-    ];
-    const toLocs = [
-      { loc: 'Central Warehouse', det: 'Aisle 5, Shelf 22' },
-      { loc: 'Branch Office - Merkato', det: 'Room 8, Storage' },
-      { loc: 'HQ Kazanchis', det: 'Building B, Records Room' },
-      { loc: 'HQ Bole, Floor 2', det: 'Room 204, IT Section' },
-      { loc: 'Cargo Terminal - Bole', det: 'Sector 1, Bay 3' },
-      { loc: 'Central Warehouse', det: 'Aisle 7, Shelf 31' },
-      { loc: 'Branch Office - Lideta', det: 'Floor 2, Office 6' },
-      { loc: 'HQ Bole, Floor 3', det: 'Room 305, Finance Wing' },
-      { loc: 'Branch Office - Piassa', det: 'Room 2, Sales Desk' },
-      { loc: 'HQ Kazanchis', det: 'Building C, Logistics' },
-    ];
-    const properties = [
-      { name: 'Dell Latitude 5540 Laptop', tag: 'TAG-001', cat: 'Electronics' },
-      { name: 'HP LaserJet Pro M404', tag: 'TAG-002', cat: 'Office Equipment' },
-      { name: 'Executive Office Desk', tag: 'TAG-003', cat: 'Furniture' },
-      { name: 'Cisco SG350 Switch', tag: 'TAG-004', cat: 'Networking' },
-      { name: 'Canon EOS 1500D Camera', tag: 'TAG-005', cat: 'Electronics' },
-      { name: 'Ergonomic Office Chair', tag: 'TAG-006', cat: 'Furniture' },
-      { name: 'Samsung 55" LED TV', tag: 'TAG-007', cat: 'Electronics' },
-      { name: 'Lenovo ThinkCentre M80', tag: 'TAG-008', cat: 'Electronics' },
-      { name: 'Steel Filing Cabinet', tag: 'TAG-009', cat: 'Furniture' },
-      { name: 'UPS APC Back-UPS 1500VA', tag: 'TAG-010', cat: 'Electronics' },
-      { name: 'Projector Epson EB-U50', tag: 'TAG-011', cat: 'Electronics' },
-      { name: 'Conference Table 8-Seater', tag: 'TAG-012', cat: 'Furniture' },
-      { name: 'MacBook Pro 14" M3', tag: 'TAG-013', cat: 'Electronics' },
-      { name: 'Server Rack 42U', tag: 'TAG-014', cat: 'Infrastructure' },
-      { name: 'Paper Shredder Fellowes', tag: 'TAG-015', cat: 'Office Equipment' },
-      { name: 'Air Conditioner 3 Ton', tag: 'TAG-016', cat: 'HVAC' },
-      { name: 'Fire Extinguisher 6kg', tag: 'TAG-017', cat: 'Safety' },
-      { name: 'Biometric Scanner', tag: 'TAG-018', cat: 'Security' },
-      { name: 'Water Dispenser', tag: 'TAG-019', cat: 'Appliances' },
-      { name: 'Whiteboard 4x6 ft', tag: 'TAG-020', cat: 'Office Supplies' },
-    ];
-    const reasons = [
-      'Staff relocation to new office',
-      'Equipment surplus reallocation',
-      'Department restructuring',
-      'New hire setup at branch',
-      'Asset consolidation initiative',
-      'Upgrade to newer model',
-      'End of lease at current location',
-      'Security upgrade requirement',
-      'Warehouse inventory rebalancing',
-      'Temporary loan to other department',
-    ];
-    const priorities: Transfer['priority'][] = ['urgent', 'medium', 'normal'];
-    const statuses: Transfer['status'][] = ['pending', 'approved', 'rejected', 'completed'];
-
-    const transfers: Transfer[] = [];
-    for (let i = 0; i < 20; i++) {
-      const person = people[i % people.length];
-      const from = fromLocs[i % fromLocs.length];
-      const to = toLocs[(i + 3) % toLocs.length];
-      const prop = properties[i % properties.length];
-      const prio = priorities[i % priorities.length];
-      const stat = i < 10 ? 'pending' : statuses[(i - 10) % statuses.length];
-      const daysAgo = 1 + (i % 14);
-      const requiredDays = 7 + (i % 21);
-      const d = new Date(Date.now() - daysAgo * 86400000);
-      const reqd = new Date(Date.now() + requiredDays * 86400000);
-      transfers.push({
-        id: `TRF-${String(2024 + Math.floor(i / 12)).slice(-2)}-${String(1001 + i).slice(-4)}`,
-        tagNumber: prop.tag,
-        propertyName: prop.name,
-        propertyCategory: prop.cat,
-        fromLocation: from.loc,
-        fromDetails: from.det,
-        toLocation: to.loc,
-        toDetails: to.det,
-        reason: reasons[i % reasons.length],
-        requestedBy: `${person.name} (${person.dept})`,
-        requesterDepartment: person.dept,
-        requestedDate: d.toISOString(),
-        requiredByDate: reqd.toISOString(),
-        priority: prio,
-        status: stat,
-        comments: '',
-        isActive: i % 7 !== 0,
-        createdAt: d.toISOString(),
-      });
-    }
-    return transfers;
-  }
-
   loadData(): void {
     this.isLoading.set(true);
     this.loadError.set(null);
-    setTimeout(() => {
-      this.transfers.set(this.createMockTransfers());
-      this.mockUsed = true;
-      this.page.set(1);
-      this.isLoading.set(false);
-      this.notification.set({ type: 'info', message: 'Showing sample data. Connect to the API for live data.' });
-    }, 500);
+    this.transferRecordsService.getAll().subscribe({
+      next: (res) => {
+        if (res.success && res.data?.items?.length) {
+          this.transfers.set(res.data.items.map(d => this.mapTransferDto(d)));
+        }
+        this.page.set(1);
+        this.isLoading.set(false);
+      },
+      error: () => {
+        this.page.set(1);
+        this.isLoading.set(false);
+        this.notification.set({ type: 'error', message: 'Failed to load transfer records.' });
+      }
+    });
+  }
+
+  private mapTransferDto(dto: TransferListDto): Transfer {
+    return {
+      id: dto.transferNumber || dto.id,
+      tagNumber: '',
+      propertyName: dto.itemName,
+      propertyCategory: '',
+      fromLocation: dto.fromLocation,
+      fromDetails: '',
+      toLocation: dto.toLocation,
+      toDetails: '',
+      reason: '',
+      requestedBy: dto.initiatedBy,
+      requesterDepartment: '',
+      requestedDate: dto.transferDate,
+      requiredByDate: '',
+      priority: 'normal',
+      status: (dto.status as Transfer['status']) || 'pending',
+      comments: '',
+      isActive: true,
+      createdAt: dto.transferDate,
+    };
   }
 
   goToPage(p: number): void {
@@ -383,10 +304,6 @@ export class PendingTransfersComponent {
 
   hasActiveFilters(): boolean {
     return this.searchTerm() !== '' || this.statusFilter() !== 'All' || this.priorityFilter() !== 'All' || this.fromLocationFilter() !== 'All';
-  }
-
-  isMockBadge(): boolean {
-    return this.mockUsed;
   }
 
   notificationIcon(type: string): string {

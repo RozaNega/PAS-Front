@@ -1,17 +1,40 @@
 <div class="disposal-records-container">
-  <div class="page-header"><h1>Disposal Records</h1><p class="subtitle">Asset disposal records</p></div>
-  <div class="records-list">
-    @for (record of records(); track record.id) {
-      <div class="record-card">
-        <div class="record-header"><div class="disposal-number">{{ record.disposalNumber }}</div><div class="status-badge" [class.pending]="record.status === 'Pending'" [class.approved]="record.status === 'Approved'" [class.rejected]="record.status === 'Rejected'">{{ record.status }}</div></div>
-        <div class="record-details">
-          <div class="detail-row"><span class="label">Property Code:</span><span class="value">{{ record.propertyCode }}</span></div>
-          <div class="detail-row"><span class="label">Disposal Date:</span><span class="value">{{ record.disposalDate }}</span></div>
-          <div class="detail-row"><span class="label">Reason:</span><span class="value">{{ record.disposalReason }}</span></div>
-          <div class="detail-row"><span class="label">Estimated Value:</span><span class="value">${{ record.estimatedValue.toLocaleString() }}</span></div>
-        </div>
-        <div class="record-actions"><button class="btn btn-secondary">View Details</button><button class="btn btn-primary">Approve</button></div>
-      </div>
-    }
+  <div class="page-header">
+    <h1>Disposal Records</h1>
+    <p class="subtitle">Asset disposal audit trail</p>
   </div>
+
+  @if (loading()) {
+    <div class="loading-state"><div class="spinner"></div><span>Loading...</span></div>
+  }
+
+  @if (!loading()) {
+    <div class="records-list">
+      @for (record of records(); track record.id) {
+        <div class="record-card">
+          <div class="record-header">
+            <div class="disposal-number">{{ record.disposalNumber || record.id }}</div>
+            <div class="status-badge" [class.pending]="record.status === 'Pending'" [class.approved]="record.status === 'Completed'" [class.rejected]="record.status === 'Rejected'">{{ record.status }}</div>
+          </div>
+          <div class="record-details">
+            <div class="detail-row"><span class="label">Items:</span><span class="value">{{ record.totalItems || record.items?.length || 0 }} items ({{ record.totalQuantity || record.quantity || 0 }} qty)</span></div>
+            <div class="detail-row"><span class="label">Date:</span><span class="value">{{ record.createdAt || record.disposalDate | date:'mediumDate' }}</span></div>
+            <div class="detail-row"><span class="label">Reason:</span><span class="value">{{ record.reason || '—' }}</span></div>
+            <div class="detail-row"><span class="label">Total Value:</span><span class="value">{{ record.totalValue || record.estimatedValue || 0 }}</span></div>
+          </div>
+          @if (record.approvedByName) {
+            <div class="approval-info">
+              <i class="bi bi-check-circle-fill"></i>
+              Approved by {{ record.approvedByName }} on {{ record.approvedDate | date:'mediumDate' }}
+            </div>
+          }
+        </div>
+      } @empty {
+        <div class="empty-state">
+          <i class="bi bi-inbox"></i>
+          <p>No disposal records found</p>
+        </div>
+      }
+    </div>
+  }
 </div>

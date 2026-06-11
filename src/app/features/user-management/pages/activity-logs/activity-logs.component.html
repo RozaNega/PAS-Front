@@ -180,17 +180,6 @@
           <h4>Description</h4>
           <p class="detail-description">{{ log.details }}</p>
         </div>
-        @if (useMockData() && log.details) {
-          <div class="detail-section">
-            <h4>Changes Made</h4>
-            <div class="changes-table">
-              <div class="changes-header"><span>Field</span><span>Old Value</span><span>New Value</span></div>
-              <div class="changes-row"><span>Status</span><span>—</span><span>Updated</span></div>
-              <div class="changes-row"><span>Modified By</span><span>—</span><span>{{ log.user }}</span></div>
-              <div class="changes-row"><span>Timestamp</span><span>—</span><span>{{ formatTimestamp(log.timestamp) }}</span></div>
-            </div>
-          </div>
-        }
         <div class="detail-section">
           <h4>Request Information</h4>
           <div class="detail-grid">

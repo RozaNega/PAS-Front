@@ -8,6 +8,8 @@ import {
   ServiceRequest,
   NotificationMessage,
 } from '../../../../core/services/workflow.service';
+import { ServiceRequestService, ServiceRequestDto } from '../../../requisition/service-requests/services/service-request.service';
+import { DisposalRecordsService, DisposalRecordDto } from '../../../../core/services/disposal-records.service';
 
 import { NgxEchartsDirective, provideEchartsCore } from 'ngx-echarts';
 import * as echarts from 'echarts/core';
@@ -98,6 +100,8 @@ export class StorekeeperDashboardComponent implements OnInit {
   readonly router = inject(Router);
   private readonly dashboardService = inject(DashboardService);
   private readonly workflowService = inject(WorkflowService);
+  private readonly srService = inject(ServiceRequestService);
+  private readonly disposalService = inject(DisposalRecordsService);
 
   readonly isLoading = signal(false);
   readonly statistics = signal<DashboardStatistics | null>(null);
@@ -114,6 +118,14 @@ export class StorekeeperDashboardComponent implements OnInit {
   // Workflow integration
   readonly workflowRequests = signal<ServiceRequest[]>([]);
   readonly workflowNotifications = signal<NotificationMessage[]>([]);
+
+  // Stock verification queue
+  readonly pendingVerifications = signal<ServiceRequestDto[]>([]);
+  readonly loadingVerifications = signal(false);
+
+  // Disposal
+  readonly recentDisposals = signal<DisposalRecordDto[]>([]);
+  readonly verificationNotifications = signal<{ type: string; message: string } | null>(null);
 
   readonly weeklyTrends: WeeklyTrend[] = [
     { label: 'W1', total: 4200, electronics: 1800, furniture: 1200 },
@@ -183,6 +195,8 @@ export class StorekeeperDashboardComponent implements OnInit {
     this.loadDashboardData();
     this.setupWorkflowSubscriptions();
     this.loadWorkflowData();
+    this.loadPendingVerifications();
+    this.loadDisposalData();
   }
 
   private setupWorkflowSubscriptions(): void {
@@ -201,13 +215,96 @@ export class StorekeeperDashboardComponent implements OnInit {
 
     const notifications = this.workflowService.getNotificationsForUser(
       'storekeeper_001',
-      'Manager'
+      'Storekeeper'
     );
     this.workflowNotifications.set(notifications);
   }
 
   refreshWorkflowData(): void {
     this.loadWorkflowData();
+  }
+
+  loadPendingVerifications(): void {
+    this.loadingVerifications.set(true);
+    this.srService.getAll({ status: 'Pending', pageSize: 50 }).subscribe({
+      next: (res) => {
+        if (res.success && Array.isArray(res.data)) {
+          const pending = res.data.filter(
+            (sr) => sr.stockVerificationStatus?.toLowerCase() === 'pending'
+          );
+          this.pendingVerifications.set(pending);
+        }
+        this.loadingVerifications.set(false);
+      },
+      error: () => {
+        this.loadingVerifications.set(false);
+      },
+    });
+  }
+
+  refreshPendingVerifications(): void {
+    this.loadPendingVerifications();
+  }
+
+  loadDisposalData(): void {
+    this.disposalService.getAll({ pageSize: 5 }).subscribe({
+      next: (res) => {
+        if (res.success !== false && res.data) {
+          const items = (res.data as any)?.items || (Array.isArray(res.data) ? res.data : []);
+          this.recentDisposals.set(items);
+        }
+      },
+    });
+  }
+
+  createDisposal(): void {
+    this.router.navigate(['/storekeeper/disposal']);
+  }
+
+  verifyStock(id: string): void {
+    if (!confirm('Confirm stock is available for this request?')) return;
+    this.srService.verifyStock({ id, isAvailable: true }).subscribe({
+      next: (res) => {
+        if (res.success) {
+          this.verificationNotifications.set({ type: 'success', message: 'Stock verified successfully' });
+          this.loadPendingVerifications();
+          this.loadWorkflowData();
+        } else {
+          this.verificationNotifications.set({ type: 'error', message: res.message || 'Verification failed' });
+        }
+      },
+      error: (err) => {
+        let msg = 'Failed to verify stock.';
+        if (err?.error?.message) msg = err.error.message;
+        else if (err?.error?.title) msg = err.error.title;
+        if (err?.status) msg = `[${err.status}] ${msg}`;
+        this.verificationNotifications.set({ type: 'error', message: msg });
+      },
+    });
+  }
+
+  markStockInsufficient(id: string): void {
+    const notes = prompt('Enter notes about the insufficient stock:');
+    if (notes === null) return;
+    if (!confirm('Mark stock as insufficient for this request?')) return;
+    this.srService.verifyStock({ id, isAvailable: false, notes: notes || undefined }).subscribe({
+      next: (res) => {
+        if (res.success) {
+          this.verificationNotifications.set({ type: 'success', message: 'Marked as insufficient' });
+          this.loadPendingVerifications();
+          this.loadWorkflowData();
+        } else {
+          this.verificationNotifications.set({ type: 'error', message: res.message || 'Operation failed' });
+        }
+      },
+      error: (err) => {
+        let msg = 'Failed to mark insufficient.';
+        if (err?.error?.message) msg = err.error.message;
+        else if (err?.error?.title) msg = err.error.title;
+        if (err?.status) msg = `[${err.status}] ${msg}`;
+        this.verificationNotifications.set({ type: 'error', message: msg });
+      },
+    });
   }
 
   loadDashboardData(): void {
@@ -366,5 +463,15 @@ export class StorekeeperDashboardComponent implements OnInit {
 
   formatNumber(n: number): string {
     return n.toLocaleString();
+  }
+
+  getVerificationUrgencyColor(urgency: string | undefined): string {
+    const u = (urgency || 'normal').toLowerCase();
+    switch (u) {
+      case 'critical': case 'urgent': return '#ef4444';
+      case 'high': return '#f59e0b';
+      case 'normal': case 'low': return '#10b981';
+      default: return '#10b981';
+    }
   }
 }

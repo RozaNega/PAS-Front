@@ -77,7 +77,6 @@ export class ShelfLocationsComponent {
   modalMode = signal<ModalMode>(null);
   selectedShelf = signal<ShelfDisplay | null>(null);
   shelfToDelete = signal<ShelfDisplay | null>(null);
-  mockUsed = false;
 
   occupancyOptions = ['All', 'Empty', 'Low', 'Medium', 'Full'];
   warehouseOptions = signal<WarehouseDto[]>([]);
@@ -201,33 +200,6 @@ export class ShelfLocationsComponent {
     this.loadData();
   }
 
-  private createMockShelves(): ShelfDisplay[] {
-    const now = Date.now();
-    const day = 86400000;
-    return [
-      { id: 'sl-001', warehouseId: 'wh-001', warehouseName: 'Main Warehouse', aisle: 'A', rack: 'R01', shelfNumber: 'S01', zone: 'Zone-A', binType: 'Standard', length: 120, width: 60, height: 40, maxWeight: 500, items: 65, value: 97500, capacity: 100, occupancy: 65, isActive: true, description: 'General storage', createdAt: new Date(now - 30 * day).toISOString(), updatedAt: new Date(now - 2 * day).toISOString() },
-      { id: 'sl-002', warehouseId: 'wh-001', warehouseName: 'Main Warehouse', aisle: 'A', rack: 'R01', shelfNumber: 'S02', zone: 'Zone-A', binType: 'Standard', length: 120, width: 60, height: 40, maxWeight: 500, items: 45, value: 67500, capacity: 100, occupancy: 45, isActive: true, description: 'General storage', createdAt: new Date(now - 28 * day).toISOString(), updatedAt: new Date(now - 3 * day).toISOString() },
-      { id: 'sl-003', warehouseId: 'wh-001', warehouseName: 'Main Warehouse', aisle: 'B', rack: 'R02', shelfNumber: 'S01', zone: 'Zone-B', binType: 'Heavy', length: 120, width: 60, height: 40, maxWeight: 800, items: 120, value: 180000, capacity: 150, occupancy: 80, isActive: true, description: 'Heavy duty storage', createdAt: new Date(now - 25 * day).toISOString(), updatedAt: new Date(now - 1 * day).toISOString() },
-      { id: 'sl-004', warehouseId: 'wh-001', warehouseName: 'Main Warehouse', aisle: 'B', rack: 'R02', shelfNumber: 'S02', zone: 'Zone-B', binType: 'Heavy', length: 120, width: 60, height: 40, maxWeight: 800, items: 140, value: 210000, capacity: 150, occupancy: 93, isActive: true, description: 'Heavy duty storage', createdAt: new Date(now - 22 * day).toISOString(), updatedAt: new Date(now - 4 * day).toISOString() },
-      { id: 'sl-005', warehouseId: 'wh-001', warehouseName: 'Main Warehouse', aisle: 'C', rack: 'R03', shelfNumber: 'S01', zone: 'Zone-C', binType: 'Light', length: 90, width: 50, height: 35, maxWeight: 300, items: 0, value: 0, capacity: 80, occupancy: 0, isActive: true, description: 'Available for allocation', createdAt: new Date(now - 20 * day).toISOString(), updatedAt: new Date(now - 5 * day).toISOString() },
-      { id: 'sl-006', warehouseId: 'wh-001', warehouseName: 'Main Warehouse', aisle: 'C', rack: 'R03', shelfNumber: 'S02', zone: 'Zone-C', binType: 'Light', length: 90, width: 50, height: 35, maxWeight: 300, items: 20, value: 30000, capacity: 80, occupancy: 25, isActive: true, description: 'Light storage', createdAt: new Date(now - 18 * day).toISOString(), updatedAt: new Date(now - 6 * day).toISOString() },
-      { id: 'sl-007', warehouseId: 'wh-002', warehouseName: 'Branch Warehouse A', aisle: 'A', rack: 'R01', shelfNumber: 'S01', zone: 'Zone-A', binType: 'Standard', length: 100, width: 50, height: 35, maxWeight: 400, items: 30, value: 45000, capacity: 75, occupancy: 40, isActive: true, description: 'General warehouse A', createdAt: new Date(now - 15 * day).toISOString(), updatedAt: new Date(now - 7 * day).toISOString() },
-      { id: 'sl-008', warehouseId: 'wh-002', warehouseName: 'Branch Warehouse A', aisle: 'A', rack: 'R01', shelfNumber: 'S02', zone: 'Zone-A', binType: 'Standard', length: 100, width: 50, height: 35, maxWeight: 400, items: 55, value: 82500, capacity: 75, occupancy: 73, isActive: true, description: 'General warehouse A', createdAt: new Date(now - 12 * day).toISOString(), updatedAt: new Date(now - 8 * day).toISOString() },
-      { id: 'sl-009', warehouseId: 'wh-002', warehouseName: 'Branch Warehouse A', aisle: 'B', rack: 'R02', shelfNumber: 'S01', zone: 'Zone-B', binType: 'Standard', length: 100, width: 50, height: 35, maxWeight: 400, items: 10, value: 15000, capacity: 75, occupancy: 13, isActive: true, description: 'Overflow storage', createdAt: new Date(now - 10 * day).toISOString(), updatedAt: new Date(now - 9 * day).toISOString() },
-      { id: 'sl-010', warehouseId: 'wh-003', warehouseName: 'Cold Storage Facility', aisle: 'A', rack: 'R01', shelfNumber: 'S01', zone: 'Zone-A', binType: 'Cold', length: 110, width: 55, height: 38, maxWeight: 450, items: 80, value: 240000, capacity: 100, occupancy: 80, isActive: true, description: 'Cold storage zone 1', createdAt: new Date(now - 8 * day).toISOString(), updatedAt: new Date(now - 1 * day).toISOString() },
-      { id: 'sl-011', warehouseId: 'wh-003', warehouseName: 'Cold Storage Facility', aisle: 'A', rack: 'R01', shelfNumber: 'S02', zone: 'Zone-A', binType: 'Cold', length: 110, width: 55, height: 38, maxWeight: 450, items: 95, value: 285000, capacity: 100, occupancy: 95, isActive: true, description: 'Cold storage zone 1', createdAt: new Date(now - 6 * day).toISOString(), updatedAt: new Date(now - 2 * day).toISOString() },
-      { id: 'sl-012', warehouseId: 'wh-003', warehouseName: 'Cold Storage Facility', aisle: 'B', rack: 'R02', shelfNumber: 'S01', zone: 'Zone-B', binType: 'Cold', length: 110, width: 55, height: 38, maxWeight: 450, items: 60, value: 180000, capacity: 100, occupancy: 60, isActive: true, description: 'Cold storage zone 2', createdAt: new Date(now - 5 * day).toISOString(), updatedAt: new Date(now - 3 * day).toISOString() },
-      { id: 'sl-013', warehouseId: 'wh-004', warehouseName: 'Bole Logistics Hub', aisle: 'A', rack: 'R01', shelfNumber: 'S01', zone: 'Zone-A', binType: 'Heavy', length: 130, width: 70, height: 45, maxWeight: 1000, items: 0, value: 0, capacity: 120, occupancy: 0, isActive: false, description: 'Undergoing maintenance', createdAt: new Date(now - 14 * day).toISOString(), updatedAt: new Date(now - 10 * day).toISOString() },
-      { id: 'sl-014', warehouseId: 'wh-004', warehouseName: 'Bole Logistics Hub', aisle: 'A', rack: 'R01', shelfNumber: 'S02', zone: 'Zone-A', binType: 'Heavy', length: 130, width: 70, height: 45, maxWeight: 1000, items: 88, value: 132000, capacity: 120, occupancy: 73, isActive: true, description: 'Logistics overflow', createdAt: new Date(now - 12 * day).toISOString(), updatedAt: new Date(now - 4 * day).toISOString() },
-      { id: 'sl-015', warehouseId: 'wh-004', warehouseName: 'Bole Logistics Hub', aisle: 'B', rack: 'R02', shelfNumber: 'S01', zone: 'Zone-B', binType: 'Heavy', length: 130, width: 70, height: 45, maxWeight: 1000, items: 40, value: 60000, capacity: 120, occupancy: 33, isActive: true, description: 'Logistics zone B', createdAt: new Date(now - 10 * day).toISOString(), updatedAt: new Date(now - 5 * day).toISOString() },
-      { id: 'sl-016', warehouseId: 'wh-005', warehouseName: 'Eastern Distribution Center', aisle: 'A', rack: 'R01', shelfNumber: 'S01', zone: 'Zone-A', binType: 'Standard', length: 100, width: 50, height: 35, maxWeight: 400, items: 35, value: 52500, capacity: 80, occupancy: 44, isActive: true, description: 'Distribution storage', createdAt: new Date(now - 20 * day).toISOString(), updatedAt: new Date(now - 6 * day).toISOString() },
-      { id: 'sl-017', warehouseId: 'wh-005', warehouseName: 'Eastern Distribution Center', aisle: 'A', rack: 'R01', shelfNumber: 'S02', zone: 'Zone-A', binType: 'Standard', length: 100, width: 50, height: 35, maxWeight: 400, items: 50, value: 75000, capacity: 80, occupancy: 63, isActive: true, description: 'Distribution storage', createdAt: new Date(now - 18 * day).toISOString(), updatedAt: new Date(now - 7 * day).toISOString() },
-      { id: 'sl-018', warehouseId: 'wh-005', warehouseName: 'Eastern Distribution Center', aisle: 'B', rack: 'R02', shelfNumber: 'S01', zone: 'Zone-B', binType: 'Standard', length: 100, width: 50, height: 35, maxWeight: 400, items: 10, value: 15000, capacity: 80, occupancy: 13, isActive: false, description: 'Inactive - under repair', createdAt: new Date(now - 16 * day).toISOString(), updatedAt: new Date(now - 8 * day).toISOString() },
-      { id: 'sl-019', warehouseId: 'wh-007', warehouseName: 'Hawassa Textile Storage', aisle: 'A', rack: 'R01', shelfNumber: 'S01', zone: 'Zone-A', binType: 'Light', length: 90, width: 45, height: 30, maxWeight: 300, items: 72, value: 108000, capacity: 90, occupancy: 80, isActive: true, description: 'Textile fabric storage', createdAt: new Date(now - 25 * day).toISOString(), updatedAt: new Date(now - 3 * day).toISOString() },
-      { id: 'sl-020', warehouseId: 'wh-007', warehouseName: 'Hawassa Textile Storage', aisle: 'A', rack: 'R01', shelfNumber: 'S02', zone: 'Zone-A', binType: 'Light', length: 90, width: 45, height: 30, maxWeight: 300, items: 85, value: 127500, capacity: 90, occupancy: 94, isActive: true, description: 'Textile fabric storage', createdAt: new Date(now - 22 * day).toISOString(), updatedAt: new Date(now - 2 * day).toISOString() },
-    ];
-  }
-
   loadData(): void {
     this.isLoading.set(true);
     this.loadError.set(null);
@@ -258,7 +230,7 @@ export class ShelfLocationsComponent {
   }
 
   loadShelves(): void {
-    this.shelvesService.getAll({ pageSize: 100 }).subscribe({
+    this.shelvesService.getAll({}).subscribe({
       next: (res) => {
         const dtoList = Array.isArray(res.data) ? res.data : [];
         if (res.success === false) {
@@ -293,35 +265,36 @@ export class ShelfLocationsComponent {
     });
   }
 
-  private useMockFallback(): void {
-    if (this.mockUsed) return;
-    this.mockUsed = true;
-    if (this.shelves().length < 5) {
-      this.shelves.set(this.createMockShelves());
-      this.page.set(1);
+  private parseAddress(d: ShelfLocationDto): { aisle: string; rack: string; shelfNumber: string } {
+    const fa = d.fullAddress || '';
+    if (fa.includes('-')) {
+      const parts = fa.split('-');
+      return { aisle: parts[0] || '—', rack: parts[1] || '—', shelfNumber: parts.slice(2).join('-') || '—' };
     }
+    return { aisle: d.aisle || '—', rack: d.rack || '—', shelfNumber: d.shelfNumber || '—' };
   }
 
   private mapDtoToDisplay(d: ShelfLocationDto): ShelfDisplay {
+    const addr = this.parseAddress(d);
     const cap = d.capacity && d.capacity > 0 ? d.capacity : 0;
-    const util = d.currentUtilization ?? 0;
-    const items = cap > 0 ? Math.round((util / 100) * cap) : Math.round(util);
-    const occupancy = cap > 0 ? Math.min(100, Math.round((util / cap) * 100)) : util;
-    const value = items * 1500;
+    const totalQty = d.totalQuantity || 0;
+    const itemCount = d.itemCount || 0;
+    const occupancy = cap > 0 ? Math.min(100, Math.round((totalQty / cap) * 100)) : 0;
+    const value = totalQty * 1500;
     return {
       id: d.id,
       warehouseId: d.warehouseId || '',
       warehouseName: d.warehouseName || '',
-      aisle: d.aisle || '—',
-      rack: d.rack || '—',
-      shelfNumber: d.shelfNumber || '—',
+      aisle: addr.aisle,
+      rack: addr.rack,
+      shelfNumber: addr.shelfNumber,
       zone: d.zone || '—',
       binType: d.binType || 'Standard',
       length: d.length || 0,
       width: d.width || 0,
       height: d.height || 0,
       maxWeight: d.maxWeight || 0,
-      items,
+      items: itemCount,
       value,
       capacity: cap,
       occupancy,

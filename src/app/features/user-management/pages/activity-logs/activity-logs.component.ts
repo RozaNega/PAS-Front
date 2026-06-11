@@ -16,23 +16,7 @@ interface LogEntry extends ActivityLogDto {
   status: string;
 }
 
-const MOCK_LOGS: LogEntry[] = [
-  { id: '1', timestamp: new Date(Date.now() - 1000 * 60 * 2).toISOString(), user: 'John Doe', action: 'Created property asset', actionType: 'Create', entityType: 'Property', entityId: 'PRP-2026-042', details: 'Added MacBook Pro M3 to IT inventory', ipAddress: '192.168.1.100', status: 'Success' },
-  { id: '2', timestamp: new Date(Date.now() - 1000 * 60 * 5).toISOString(), user: 'Sarah Smith', action: 'Approved requisition', actionType: 'Approve', entityType: 'Requisition', entityId: 'REQ-2026-891', details: 'Approved stationery request for HR department', ipAddress: '192.168.1.101', status: 'Success' },
-  { id: '3', timestamp: new Date(Date.now() - 1000 * 60 * 8).toISOString(), user: 'Mike Wilson', action: 'Updated stock levels', actionType: 'Update', entityType: 'Stock', entityId: 'STK-045', details: 'Adjusted laptop stock from 24 to 22 units', ipAddress: '192.168.1.102', status: 'Success' },
-  { id: '4', timestamp: new Date(Date.now() - 1000 * 60 * 12).toISOString(), user: 'Lisa Wong', action: 'Exported financial report', actionType: 'Export', entityType: 'Report', entityId: 'RPT-FIN-2026-Q2', details: 'Exported Q2 financial summary report', ipAddress: '192.168.1.103', status: 'Success' },
-  { id: '5', timestamp: new Date(Date.now() - 1000 * 60 * 15).toISOString(), user: 'Robert Brown', action: 'Login attempt failed', actionType: 'Login', entityType: 'User', entityId: 'EMP-006', details: 'Failed login attempt from unrecognized device', ipAddress: '203.0.113.45', status: 'Failure' },
-  { id: '6', timestamp: new Date(Date.now() - 1000 * 60 * 20).toISOString(), user: 'Alice Johnson', action: 'Transferred property', actionType: 'Update', entityType: 'Property', entityId: 'PRP-2025-128', details: 'Transferred office furniture to Warehouse B', ipAddress: '192.168.1.105', status: 'Success' },
-  { id: '7', timestamp: new Date(Date.now() - 1000 * 60 * 25).toISOString(), user: 'Kevin Martin', action: 'Deleted user account', actionType: 'Delete', entityType: 'User', entityId: 'EMP-016', details: 'Permanently deleted terminated employee account', ipAddress: '192.168.1.106', status: 'Success' },
-  { id: '8', timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(), user: 'System', action: 'Automated backup', actionType: 'Create', entityType: 'Backup', entityId: 'BAK-2026-06-01', details: 'Daily system backup completed successfully (2.4 GB)', ipAddress: '127.0.0.1', status: 'Success' },
-  { id: '9', timestamp: new Date(Date.now() - 1000 * 60 * 35).toISOString(), user: 'Elena Garcia', action: 'Created new request', actionType: 'Create', entityType: 'Requisition', entityId: 'REQ-2026-892', details: 'New purchase request for office supplies', ipAddress: '192.168.1.107', status: 'Success' },
-  { id: '10', timestamp: new Date(Date.now() - 1000 * 60 * 40).toISOString(), user: 'David Lee', action: 'Stock adjustment alert', actionType: 'Alert', entityType: 'Stock', entityId: 'STK-101', details: 'Low stock warning: Printer ink cartridges below threshold', ipAddress: '192.168.1.108', status: 'Warning' },
-  { id: '11', timestamp: new Date(Date.now() - 1000 * 60 * 45).toISOString(), user: 'Neha Patel', action: 'Updated system config', actionType: 'Update', entityType: 'Settings', entityId: 'CFG-001', details: 'Modified email notification settings', ipAddress: '192.168.1.109', status: 'Success' },
-  { id: '12', timestamp: new Date(Date.now() - 1000 * 60 * 50).toISOString(), user: 'Tom Clark', action: 'Rejected requisition', actionType: 'Reject', entityType: 'Requisition', entityId: 'REQ-2026-890', details: 'Rejected due to budget constraints', ipAddress: '192.168.1.110', status: 'Success' },
-  { id: '13', timestamp: new Date(Date.now() - 1000 * 60 * 55).toISOString(), user: 'Julia Rodriguez', action: 'Viewed employee records', actionType: 'View', entityType: 'Employee', entityId: 'EMP-012', details: 'Accessed personnel file for annual review', ipAddress: '192.168.1.111', status: 'Success' },
-  { id: '14', timestamp: new Date(Date.now() - 1000 * 60 * 60).toISOString(), user: 'Henry Kim', action: 'System error', actionType: 'Error', entityType: 'System', entityId: 'SYS-ERR-8912', details: 'Database connection timeout on warehouse module', ipAddress: '192.168.1.112', status: 'Failure' },
-  { id: '15', timestamp: new Date(Date.now() - 1000 * 60 * 65).toISOString(), user: 'Megan White', action: 'Imported vendor list', actionType: 'Import', entityType: 'Supplier', entityId: 'BULK-003', details: 'Bulk imported 45 vendor records from CSV', ipAddress: '192.168.1.113', status: 'Success' },
-];
+
 
 @Component({
   selector: 'app-activity-logs',
@@ -58,7 +42,6 @@ export class ActivityLogsComponent implements OnInit {
   loading = signal(false);
   activityLogs = signal<LogEntry[]>([]);
   totalLogs = signal(0);
-  useMockData = signal(false);
 
   ngOnInit(): void {
     this.loadLogs();
@@ -71,20 +54,11 @@ export class ActivityLogsComponent implements OnInit {
         if (logs.length) {
           this.activityLogs.set(logs as LogEntry[]);
           this.totalLogs.set(logs.length);
-          this.useMockData.set(false);
-        } else {
-          this.fallback();
         }
         this.loading.set(false);
       },
-      error: () => { this.fallback(); this.loading.set(false); }
+      error: () => { this.loading.set(false); }
     });
-  }
-
-  private fallback(): void {
-    this.activityLogs.set(MOCK_LOGS);
-    this.totalLogs.set(MOCK_LOGS.length);
-    this.useMockData.set(true);
   }
 
   filteredLogs = computed(() => {

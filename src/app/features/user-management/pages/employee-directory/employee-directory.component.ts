@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { EmployeesService } from '../../../../core/services/employees.service';
-import type { Employee as EmployeeDto } from '../../../../core/services/employees.service';
 
 interface Employee {
   id: string;
@@ -19,23 +18,7 @@ interface Employee {
   avatar: string;
 }
 
-const MOCK_EMPLOYEES: Employee[] = [
-  { id: '1', name: 'John Doe', employeeCode: 'EMP-001', email: 'john.doe@company.com', phone: '+1 555-0101', department: 'IT', position: 'Senior Developer', hasUserAccount: true, joinDate: new Date('2024-01-15'), status: 'Active', avatar: 'JD' },
-  { id: '2', name: 'Sarah Smith', employeeCode: 'EMP-002', email: 'sarah.smith@company.com', phone: '+1 555-0102', department: 'Operations', position: 'Operations Manager', hasUserAccount: true, joinDate: new Date('2024-02-20'), status: 'Active', avatar: 'SS' },
-  { id: '3', name: 'Mike Wilson', employeeCode: 'EMP-003', email: 'mike.wilson@company.com', phone: '+1 555-0103', department: 'Warehouse', position: 'Warehouse Supervisor', hasUserAccount: true, joinDate: new Date('2024-03-10'), status: 'Active', avatar: 'MW' },
-  { id: '4', name: 'Peter Chen', employeeCode: 'EMP-004', email: 'peter.chen@company.com', phone: '+1 555-0104', department: 'HR', position: 'HR Coordinator', hasUserAccount: false, joinDate: new Date('2024-04-05'), status: 'Inactive', avatar: 'PC' },
-  { id: '5', name: 'Lisa Wong', employeeCode: 'EMP-005', email: 'lisa.wong@company.com', phone: '+1 555-0105', department: 'Finance', position: 'Finance Manager', hasUserAccount: true, joinDate: new Date('2024-01-28'), status: 'Active', avatar: 'LW' },
-  { id: '6', name: 'Robert Brown', employeeCode: 'EMP-006', email: 'robert.brown@company.com', phone: '+1 555-0106', department: 'Compliance', position: 'Compliance Officer', hasUserAccount: true, joinDate: new Date('2024-05-12'), status: 'Active', avatar: 'RB' },
-  { id: '7', name: 'Alice Johnson', employeeCode: 'EMP-007', email: 'alice.johnson@company.com', phone: '+1 555-0107', department: 'Property', position: 'Property Officer', hasUserAccount: true, joinDate: new Date('2024-06-01'), status: 'Active', avatar: 'AJ' },
-  { id: '8', name: 'David Lee', employeeCode: 'EMP-008', email: 'david.lee@company.com', phone: '+1 555-0108', department: 'Warehouse', position: 'Store Assistant', hasUserAccount: false, joinDate: new Date('2024-03-22'), status: 'Inactive', avatar: 'DL' },
-  { id: '9', name: 'Elena Garcia', employeeCode: 'EMP-009', email: 'elena.garcia@company.com', phone: '+1 555-0109', department: 'Sales', position: 'Sales Representative', hasUserAccount: true, joinDate: new Date('2024-07-08'), status: 'Active', avatar: 'EG' },
-  { id: '10', name: 'Kevin Martin', employeeCode: 'EMP-010', email: 'kevin.martin@company.com', phone: '+1 555-0110', department: 'IT', position: 'IT Manager', hasUserAccount: true, joinDate: new Date('2024-02-14'), status: 'Active', avatar: 'KM' },
-  { id: '11', name: 'Neha Patel', employeeCode: 'EMP-011', email: 'neha.patel@company.com', phone: '+1 555-0111', department: 'IT', position: 'System Admin', hasUserAccount: true, joinDate: new Date('2024-01-10'), status: 'Active', avatar: 'NP' },
-  { id: '12', name: 'Tom Clark', employeeCode: 'EMP-012', email: 'tom.clark@company.com', phone: '+1 555-0112', department: 'Operations', position: 'Department Head', hasUserAccount: true, joinDate: new Date('2024-04-18'), status: 'Active', avatar: 'TC' },
-  { id: '13', name: 'Julia Rodriguez', employeeCode: 'EMP-013', email: 'julia.rodriguez@company.com', phone: '+1 555-0113', department: 'HR', position: 'HR Assistant', hasUserAccount: false, joinDate: new Date('2024-08-25'), status: 'Active', avatar: 'JR' },
-  { id: '14', name: 'Henry Kim', employeeCode: 'EMP-014', email: 'henry.kim@company.com', phone: '+1 555-0114', department: 'Warehouse', position: 'Store Officer', hasUserAccount: false, joinDate: new Date('2024-05-30'), status: 'Inactive', avatar: 'HK' },
-  { id: '15', name: 'Megan White', employeeCode: 'EMP-015', email: 'megan.white@company.com', phone: '+1 555-0115', department: 'Compliance', position: 'Internal Auditor', hasUserAccount: true, joinDate: new Date('2024-06-20'), status: 'Active', avatar: 'MW' },
-];
+
 
 @Component({
   selector: 'app-employee-directory',
@@ -58,7 +41,6 @@ export class EmployeeDirectoryComponent implements OnInit {
 
   employees = signal<Employee[]>([]);
   totalEmployees = signal(0);
-  useMockData = signal(false);
 
   showDetailModal = signal(false);
   showExportDropdown = signal(false);
@@ -67,7 +49,7 @@ export class EmployeeDirectoryComponent implements OnInit {
   constructor() {
     effect(() => {
       this.searchQuery(); this.departmentFilter(); this.statusFilter();
-      if (!this.useMockData()) this.loadEmployees();
+      this.loadEmployees();
     });
   }
 
@@ -76,34 +58,28 @@ export class EmployeeDirectoryComponent implements OnInit {
   loadEmployees(): void {
     this.loading.set(true);
     this.error.set(null);
-    const params: any = {};
-    if (this.searchQuery()) params.searchTerm = this.searchQuery();
-    if (this.departmentFilter() !== 'All') params.department = this.departmentFilter();
-    (this.employeesService as any).getAll(params).subscribe({
+    this.employeesService.getEmployees(this.currentPage(), this.rowsPerPage()).subscribe({
       next: (response: any) => {
-        if (response.success !== false && Array.isArray(response.data) && response.data.length) {
-          const mapped = response.data.map((emp: any) => ({
-            id: emp.id, name: emp.fullName || '', employeeCode: emp.employeeCode || '',
-            email: '', phone: '', department: emp.department || '', position: '',
-            hasUserAccount: false, status: 'Active' as const,
-            avatar: this.getInitials(emp.fullName || '?')
+        if (response.success && response.data?.items?.length) {
+          const mapped = response.data.items.map((emp: any) => ({
+            id: emp.id,
+            name: emp.fullName || emp.employeeName || '',
+            employeeCode: emp.employeeCode || '',
+            email: emp.email || '',
+            phone: emp.phoneNumber || '',
+            department: emp.department || '',
+            position: emp.designation || emp.position || '',
+            hasUserAccount: emp.isActive ?? true,
+            status: emp.isActive ? ('Active' as const) : ('Inactive' as const),
+            avatar: this.getInitials(emp.fullName || emp.employeeName || '?')
           }));
           this.employees.set(mapped);
           this.totalEmployees.set(mapped.length);
-          this.useMockData.set(false);
-        } else {
-          this.fallback();
         }
         this.loading.set(false);
       },
-      error: () => { this.fallback(); this.loading.set(false); }
+      error: () => { this.loading.set(false); }
     });
-  }
-
-  private fallback(): void {
-    this.employees.set(MOCK_EMPLOYEES);
-    this.totalEmployees.set(MOCK_EMPLOYEES.length);
-    this.useMockData.set(true);
   }
 
   getInitials(name: string): string {
@@ -169,9 +145,11 @@ export class EmployeeDirectoryComponent implements OnInit {
 
   deleteEmployee(emp: Employee): void {
     if (!confirm(`Delete ${emp.name}? This cannot be undone.`)) return;
-    (this.employeesService as any).delete(emp.id).subscribe({
-      next: (response: any) => { if (response.success) this.useMockData() ? this.employees.set(this.employees().filter(e => e.id !== emp.id)) : this.loadEmployees(); },
-      error: () => this.employees.set(this.employees().filter(e => e.id !== emp.id))
+    const numericId = Number(emp.id);
+    if (isNaN(numericId)) return;
+    this.employeesService.deleteEmployee(numericId).subscribe({
+      next: (response: any) => { if (response.success) this.loadEmployees(); },
+      error: () => {}
     });
   }
 

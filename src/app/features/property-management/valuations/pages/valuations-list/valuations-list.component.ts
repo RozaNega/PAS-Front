@@ -1,6 +1,7 @@
 import { Component, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { PropertiesService, PropertyDto } from '../../../../../core/services/properties.service';
 
 interface ValuationAsset {
   id: string;
@@ -43,24 +44,6 @@ interface TrendItem {
   pct: number;
 }
 
-const MOCK_VALUATION_ASSETS: ValuationAsset[] = [
-  { id: '1', name: 'Dell XPS 15 Laptop', category: 'Electronics', location: 'IT Dept', cost: 2499, depreciationRate: 20, accumulatedDepreciation: 1250, bookValue: 1249 },
-  { id: '2', name: 'HP LaserJet Printer', category: 'Electronics', location: 'HR Dept', cost: 899, depreciationRate: 20, accumulatedDepreciation: 450, bookValue: 449 },
-  { id: '3', name: 'Executive Office Chair', category: 'Furniture', location: 'Admin', cost: 450, depreciationRate: 10, accumulatedDepreciation: 135, bookValue: 315 },
-  { id: '4', name: 'Ford Transit 350', category: 'Vehicles', location: 'Parking', cost: 35000, depreciationRate: 15, accumulatedDepreciation: 15750, bookValue: 19250 },
-  { id: '5', name: 'Dell PowerEdge R740', category: 'Electronics', location: 'ServerRm', cost: 2800, depreciationRate: 20, accumulatedDepreciation: 1120, bookValue: 1680 },
-  { id: '6', name: 'Conference Table', category: 'Furniture', location: 'Admin', cost: 2100, depreciationRate: 10, accumulatedDepreciation: 420, bookValue: 1680 },
-  { id: '7', name: 'Toyota Hilux Double Cab', category: 'Vehicles', location: 'Parking', cost: 45000, depreciationRate: 15, accumulatedDepreciation: 13500, bookValue: 31500 },
-  { id: '8', name: 'Cisco Catalyst Switch', category: 'Electronics', location: 'ServerRm', cost: 1200, depreciationRate: 20, accumulatedDepreciation: 840, bookValue: 360 },
-  { id: '9', name: 'L-Shaped Standing Desk', category: 'Furniture', location: 'Finance', cost: 680, depreciationRate: 10, accumulatedDepreciation: 136, bookValue: 544 },
-  { id: '10', name: 'MacBook Pro 16"', category: 'Electronics', location: 'Finance', cost: 3200, depreciationRate: 20, accumulatedDepreciation: 960, bookValue: 2240 },
-  { id: '11', name: 'Epson L15150 Printer', category: 'Electronics', location: 'HR Dept', cost: 890, depreciationRate: 20, accumulatedDepreciation: 356, bookValue: 534 },
-  { id: '12', name: 'Server UPS Backup', category: 'Electronics', location: 'ServerRm', cost: 1800, depreciationRate: 20, accumulatedDepreciation: 540, bookValue: 1260 },
-  { id: '13', name: 'Samsung 49" Monitor', category: 'Electronics', location: 'IT Dept', cost: 1200, depreciationRate: 20, accumulatedDepreciation: 360, bookValue: 840 },
-  { id: '14', name: 'Storage Shelving Unit', category: 'Furniture', location: 'Warehouse', cost: 320, depreciationRate: 10, accumulatedDepreciation: 128, bookValue: 192 },
-  { id: '15', name: 'Ubiquiti Access Points', category: 'Electronics', location: 'ServerRm', cost: 560, depreciationRate: 20, accumulatedDepreciation: 168, bookValue: 392 }
-];
-
 const BAR_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
 const TREND_MAX = 100000;
 
@@ -73,6 +56,7 @@ const TREND_MAX = 100000;
 })
 export class ValuationsListComponent {
   readonly Math = Math;
+  private readonly propertiesService = inject(PropertiesService);
 
   dateRange = { start: '2024-01-01', end: '2024-12-31' };
   categoryFilter = signal('All');
@@ -81,7 +65,11 @@ export class ValuationsListComponent {
   categories = ['All', 'Electronics', 'Furniture', 'Vehicles'];
   locations = ['All', 'IT Dept', 'HR Dept', 'ServerRm', 'Parking', 'Finance', 'Admin', 'Warehouse'];
 
-  allAssets = signal<ValuationAsset[]>(MOCK_VALUATION_ASSETS);
+  allAssets = signal<ValuationAsset[]>([]);
+
+  constructor() {
+    this.loadData();
+  }
 
   filteredAssets = computed(() => {
     const cat = this.categoryFilter();
@@ -187,6 +175,37 @@ export class ValuationsListComponent {
   isLoading = signal(false);
   reportGenerated = signal(false);
   lastRunTime = signal<string | null>(null);
+
+  loadData(): void {
+    this.isLoading.set(true);
+    this.propertiesService.getAll().subscribe({
+      next: (res) => {
+        if (res.success && res.data?.length) {
+          this.allAssets.set(res.data.map(d => this.mapPropertyToAsset(d)));
+        }
+        this.isLoading.set(false);
+      },
+      error: () => {
+        this.isLoading.set(false);
+        this.showNotification('Failed to load valuation data', 'error');
+      }
+    });
+  }
+
+  private mapPropertyToAsset(dto: PropertyDto): ValuationAsset {
+    const dep = dto.purchasePrice - dto.currentValue;
+    const depRate = dto.purchasePrice > 0 ? Math.round((dep / dto.purchasePrice) * 100) : 0;
+    return {
+      id: dto.id,
+      name: dto.name,
+      category: dto.propertyCategoryId || '',
+      location: dto.locationId || '',
+      cost: dto.purchasePrice,
+      depreciationRate: depRate,
+      accumulatedDepreciation: dep,
+      bookValue: dto.currentValue,
+    };
+  }
 
   onFilterChange(): void {
     this.currentPage.set(1);
