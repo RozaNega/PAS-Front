@@ -20,6 +20,9 @@ export type RequestStatus =
   | 'Completed'
   | 'Cancelled';
 export type RequestPriority = 'Low' | 'Medium' | 'High' | 'Urgent';
+
+export type UserRole = 'Employee' | 'Manager' | 'Admin' | 'Compliance' | 'Storekeeper';
+
 export type UserRole = 'Employee' | 'Manager' | 'Admin' | 'Compliance' | 'Storekeeper' | 'Director';
 
 export const WORKFLOW_PENDING_STATUSES: readonly RequestStatus[] = [
@@ -777,31 +780,36 @@ export class WorkflowService {
   adminReviewRequest(
     requestId: string,
     action: 'approve' | 'reject',
-    comments: string,
-    reviewerId: string,
+    _comments: string,
+    _reviewerId: string,
+    reviewerName: string,
+  ): void {
+    if (action === 'approve') {
+      this.adminFulfillRequest(requestId, reviewerName);
+    }
+  }
+
+  adminFulfillRequest(
+    requestId: string,
     reviewerName: string,
   ): void {
     const request = this.requests().find((req) => req.id === requestId);
     if (!request) return;
 
-    const newStatus: RequestStatus = action === 'approve' ? 'Admin Approved' : 'Admin Rejected';
-
     const updatedRequest: ServiceRequest = {
       ...request,
-      status: newStatus,
+      status: 'Completed',
       adminReviewDate: new Date(),
-      adminComments: comments,
       workflowHistory: [
         ...request.workflowHistory,
         {
           id: this.generateId(),
-          action: action === 'approve' ? 'Admin Approved' : 'Admin Rejected',
+          action: 'Fulfilled by Admin',
           performedBy: reviewerName,
           performedByRole: 'Admin',
           timestamp: new Date(),
-          comments,
           previousStatus: request.status,
-          newStatus,
+          newStatus: 'Completed',
         },
       ],
     };
@@ -815,18 +823,14 @@ export class WorkflowService {
       this.createNotification({
         recipientId: recipient.id,
         recipientRole: recipient.role,
-        type: action === 'approve' ? 'success' : 'error',
-        title: `Request ${action === 'approve' ? 'approved' : 'rejected'} by admin`,
-        message: `Request ${request.srNumber} was ${action}d by administration.`,
+        type: 'success',
+        title: 'Request fulfilled',
+        message: `Request ${request.srNumber} has been fulfilled by administration.`,
         requestId: request.id,
         actionRequired: false,
         actionUrl: `/employee/dashboard`,
       });
     });
-
-    if (action === 'approve') {
-      this.completeRequest(requestId, reviewerName);
-    }
   }
 
   complianceReviewRequest(
@@ -884,11 +888,11 @@ export class WorkflowService {
         recipientId: '',
         recipientRole: 'Admin',
         type: 'info',
-        title: 'Request ready for processing',
-        message: `Request ${request.srNumber} is ready for admin processing after compliance approval.`,
+        title: 'Request ready for fulfillment',
+        message: `Request ${request.srNumber} passed compliance review and is ready for admin fulfillment.`,
         requestId: request.id,
         actionRequired: true,
-        actionUrl: `/admin/requisitions/pending`,
+        actionUrl: `/admin/sivs/new?serviceRequestId=${request.id}`,
       });
     }
   }
@@ -1323,7 +1327,7 @@ export class WorkflowService {
     this.requestUpdates$.next(request);
   }
 
-  private createNotification(
+  createNotification(
     notification: Omit<NotificationMessage, 'id' | 'isRead' | 'createdDate'>,
   ): void {
     const newNotification: NotificationMessage = {

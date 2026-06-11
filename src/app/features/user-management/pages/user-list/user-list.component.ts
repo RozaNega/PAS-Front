@@ -6,6 +6,7 @@ import { UsersService } from '../../../../core/services/users.service';
 import type { User as UserDto } from '../../../../core/services/users.service';
 import { RolesService } from '../../../../core/services/roles.service';
 import { NotificationService } from '../../../../core/services/notification.service';
+import { WorkflowService } from '../../../../core/services/workflow.service';
 
 interface User {
   id: string;
@@ -25,233 +26,7 @@ interface User {
   avatar: string;
 }
 
-const MOCK_USERS: User[] = [
-  {
-    id: '1',
-    username: 'jdoe',
-    name: 'John Doe',
-    employeeCode: 'EMP-001',
-    email: 'john.doe@company.com',
-    phone: '+1 555-0101',
-    roleId: '1',
-    role: 'Admin',
-    department: 'IT',
-    status: 'Active',
-    lastLogin: new Date(Date.now() - 1000 * 60 * 15),
-    created: new Date('2024-01-15'),
-    avatar: 'JD',
-  },
-  {
-    id: '2',
-    username: 'ssmith',
-    name: 'Sarah Smith',
-    employeeCode: 'EMP-002',
-    email: 'sarah.smith@company.com',
-    phone: '+1 555-0102',
-    roleId: '2',
-    role: 'Manager',
-    department: 'Operations',
-    status: 'Active',
-    lastLogin: new Date(Date.now() - 1000 * 60 * 120),
-    created: new Date('2024-02-20'),
-    avatar: 'SS',
-  },
-  {
-    id: '3',
-    username: 'mwilson',
-    name: 'Mike Wilson',
-    employeeCode: 'EMP-003',
-    email: 'mike.wilson@company.com',
-    phone: '+1 555-0103',
-    roleId: '3',
-    role: 'Store Officer',
-    department: 'Warehouse',
-    status: 'Active',
-    lastLogin: new Date(Date.now() - 1000 * 60 * 60 * 5),
-    created: new Date('2024-03-10'),
-    avatar: 'MW',
-  },
-  {
-    id: '4',
-    username: 'pchen',
-    name: 'Peter Chen',
-    employeeCode: 'EMP-004',
-    email: 'peter.chen@company.com',
-    phone: '+1 555-0104',
-    roleId: '4',
-    role: 'Staff',
-    department: 'HR',
-    status: 'Inactive',
-    lastLogin: new Date('2026-05-20'),
-    created: new Date('2024-04-05'),
-    avatar: 'PC',
-  },
-  {
-    id: '5',
-    username: 'lwong',
-    name: 'Lisa Wong',
-    employeeCode: 'EMP-005',
-    email: 'lisa.wong@company.com',
-    phone: '+1 555-0105',
-    roleId: '2',
-    role: 'Manager',
-    department: 'Finance',
-    status: 'Active',
-    lastLogin: new Date(Date.now() - 1000 * 60 * 30),
-    created: new Date('2024-01-28'),
-    avatar: 'LW',
-  },
-  {
-    id: '6',
-    username: 'rbrown',
-    name: 'Robert Brown',
-    employeeCode: 'EMP-006',
-    email: 'robert.brown@company.com',
-    phone: '+1 555-0106',
-    roleId: '5',
-    role: 'Auditor',
-    department: 'Compliance',
-    status: 'Active',
-    lastLogin: new Date(Date.now() - 1000 * 60 * 60 * 2),
-    created: new Date('2024-05-12'),
-    avatar: 'RB',
-  },
-  {
-    id: '7',
-    username: 'ajohnson',
-    name: 'Alice Johnson',
-    employeeCode: 'EMP-007',
-    email: 'alice.johnson@company.com',
-    phone: '+1 555-0107',
-    roleId: '6',
-    role: 'Property Officer',
-    department: 'Property',
-    status: 'Active',
-    lastLogin: new Date(Date.now() - 1000 * 60 * 45),
-    created: new Date('2024-06-01'),
-    avatar: 'AJ',
-  },
-  {
-    id: '8',
-    username: 'dlee',
-    name: 'David Lee',
-    employeeCode: 'EMP-008',
-    email: 'david.lee@company.com',
-    phone: '+1 555-0108',
-    roleId: '3',
-    role: 'Store Officer',
-    department: 'Warehouse',
-    status: 'Inactive',
-    lastLogin: new Date('2026-05-15'),
-    created: new Date('2024-03-22'),
-    avatar: 'DL',
-  },
-  {
-    id: '9',
-    username: 'egarcia',
-    name: 'Elena Garcia',
-    employeeCode: 'EMP-009',
-    email: 'elena.garcia@company.com',
-    phone: '+1 555-0109',
-    roleId: '4',
-    role: 'Staff',
-    department: 'Sales',
-    status: 'Active',
-    lastLogin: new Date(Date.now() - 1000 * 60 * 10),
-    created: new Date('2024-07-08'),
-    avatar: 'EG',
-  },
-  {
-    id: '10',
-    username: 'kmartin',
-    name: 'Kevin Martin',
-    employeeCode: 'EMP-010',
-    email: 'kevin.martin@company.com',
-    phone: '+1 555-0110',
-    roleId: '2',
-    role: 'Manager',
-    department: 'IT',
-    status: 'Active',
-    lastLogin: new Date(Date.now() - 1000 * 60 * 90),
-    created: new Date('2024-02-14'),
-    avatar: 'KM',
-  },
-  {
-    id: '11',
-    username: 'npatel',
-    name: 'Neha Patel',
-    employeeCode: 'EMP-011',
-    email: 'neha.patel@company.com',
-    phone: '+1 555-0111',
-    roleId: '1',
-    role: 'Admin',
-    department: 'IT',
-    status: 'Active',
-    lastLogin: new Date(Date.now() - 1000 * 60 * 5),
-    created: new Date('2024-01-10'),
-    avatar: 'NP',
-  },
-  {
-    id: '12',
-    username: 'tclark',
-    name: 'Tom Clark',
-    employeeCode: 'EMP-012',
-    email: 'tom.clark@company.com',
-    phone: '+1 555-0112',
-    roleId: '7',
-    role: 'Department Head',
-    department: 'Operations',
-    status: 'Active',
-    lastLogin: new Date(Date.now() - 1000 * 60 * 60 * 8),
-    created: new Date('2024-04-18'),
-    avatar: 'TC',
-  },
-  {
-    id: '13',
-    username: 'jrodriguez',
-    name: 'Julia Rodriguez',
-    employeeCode: 'EMP-013',
-    email: 'julia.rodriguez@company.com',
-    phone: '+1 555-0113',
-    roleId: '4',
-    role: 'Staff',
-    department: 'HR',
-    status: 'Active',
-    lastLogin: new Date(Date.now() - 1000 * 60 * 20),
-    created: new Date('2024-08-25'),
-    avatar: 'JR',
-  },
-  {
-    id: '14',
-    username: 'hkim',
-    name: 'Henry Kim',
-    employeeCode: 'EMP-014',
-    email: 'henry.kim@company.com',
-    phone: '+1 555-0114',
-    roleId: '3',
-    role: 'Store Officer',
-    department: 'Warehouse',
-    status: 'Inactive',
-    lastLogin: new Date('2026-04-30'),
-    created: new Date('2024-05-30'),
-    avatar: 'HK',
-  },
-  {
-    id: '15',
-    username: 'mwhite',
-    name: 'Megan White',
-    employeeCode: 'EMP-015',
-    email: 'megan.white@company.com',
-    phone: '+1 555-0115',
-    roleId: '5',
-    role: 'Auditor',
-    department: 'Compliance',
-    status: 'Active',
-    lastLogin: new Date(Date.now() - 1000 * 60 * 60),
-    created: new Date('2024-06-20'),
-    avatar: 'MW',
-  },
-];
+
 
 @Component({
   selector: 'app-user-list',
@@ -264,6 +39,7 @@ export class UserListComponent implements OnInit {
   private readonly usersService = inject(UsersService);
   private readonly rolesService = inject(RolesService);
   private readonly notificationsService = inject(NotificationService);
+  private readonly workflowService = inject(WorkflowService);
 
   showExportDropdown = signal(false);
   searchQuery = signal('');
@@ -289,8 +65,6 @@ export class UserListComponent implements OnInit {
   resetTargetUser = signal<User | null>(null);
 
   notification = signal<{ type: 'success' | 'error'; message: string } | null>(null);
-
-  useMockData = signal(false);
 
   filteredUsers = computed(() => {
     let result = [...this.users()];
@@ -355,9 +129,7 @@ export class UserListComponent implements OnInit {
       this.statusFilter();
       this.departmentFilter();
       this.currentPage();
-      if (!this.useMockData()) {
-        this.loadUsers();
-      }
+      this.loadUsers();
     });
   }
 
@@ -375,42 +147,28 @@ export class UserListComponent implements OnInit {
     this.usersService.getUsers(this.currentPage(), this.rowsPerPage()).subscribe({
       next: (response: any) => {
         if (response.success && response.data?.items?.length) {
-          const mapped = response.data.items.map((user: UserDto) => ({
-            id: user.id,
-            // Carry the Identity Guid (used for notifications, password
-            // reset, etc.). The backend Notifications table is keyed by
-            // this Guid, *not* by the numeric row id.
-            userId: user.userId,
-            username: user.username,
-            name: user.employeeName || user.username,
-            employeeCode: user.employeeCode || 'N/A',
-            email: user.email,
-            roleId: user.roleId,
-            role: user.roleName,
-            status: user.isActive ? ('Active' as const) : ('Inactive' as const),
-            avatar: this.getInitials(user.employeeName || user.username),
+          const mapped = response.data.items.map((rawUser: any) => ({
+            id: rawUser.id ?? rawUser.Id ?? 0,
+            userId: this.resolveUserGuid(rawUser),
+            username: rawUser.username || rawUser.UserName || '',
+            name: rawUser.employeeName || rawUser.EmployeeName || rawUser.username || rawUser.UserName || '',
+            employeeCode: rawUser.employeeCode || rawUser.EmployeeCode || 'N/A',
+            email: rawUser.email || rawUser.Email || '',
+            roleId: rawUser.roleId || rawUser.RoleId || '',
+            role: rawUser.roleName || rawUser.RoleName || '',
+            status: (rawUser.isActive !== false) ? ('Active' as const) : ('Inactive' as const),
+            avatar: this.getInitials(rawUser.employeeName || rawUser.EmployeeName || rawUser.username || rawUser.UserName || ''),
           }));
           this.users.set(mapped);
           this.totalUsers.set(response.data.totalCount);
           this.totalPages.set(response.data.totalPages);
-          this.useMockData.set(false);
-        } else {
-          this.fallbackToMock();
         }
         this.loading.set(false);
       },
       error: () => {
-        this.fallbackToMock();
         this.loading.set(false);
       },
     });
-  }
-
-  private fallbackToMock(): void {
-    this.users.set(MOCK_USERS);
-    this.totalUsers.set(MOCK_USERS.length);
-    this.totalPages.set(Math.ceil(MOCK_USERS.length / this.rowsPerPage()));
-    this.useMockData.set(true);
   }
 
   loadRoles(): void {
@@ -533,14 +291,12 @@ export class UserListComponent implements OnInit {
     const form = this.editForm();
     const selected = this.selectedUser();
     const userId = form.id ?? selected?.id;
-    console.log('[saveEdit] form.id:', form.id, 'selected?.id:', selected?.id, 'userId:', userId, 'type:', typeof userId);
     if (!userId) {
       this.closeEditModal();
       return;
     }
 
     const numericId = typeof userId === 'number' ? userId : parseInt(String(userId), 10);
-    console.log('[saveEdit] numericId:', numericId, 'isNaN:', isNaN(numericId));
     if (isNaN(numericId)) {
       this.notification.set({ type: 'error', message: 'Cannot update user: invalid user ID.' });
       this.autoDismissNotification();
@@ -548,7 +304,6 @@ export class UserListComponent implements OnInit {
       return;
     }
 
-    // Optimistically update the local row so the UI feels instant.
     const original = this.users().find((u) => u.id === userId);
     const optimistic = this.users().map((u) =>
       u.id === userId ? ({ ...u, ...form } as User) : u,
@@ -556,7 +311,6 @@ export class UserListComponent implements OnInit {
     this.users.set(optimistic);
     this.closeEditModal();
 
-    // Persist the change to the backend. Only keep the local change if it succeeds.
     const payload: Partial<UserDto> = {
       id: numericId,
       username: form.username ?? original?.username ?? '',
@@ -570,14 +324,11 @@ export class UserListComponent implements OnInit {
     this.usersService.updateUser(numericId, payload).subscribe({
       next: (response: { success: boolean; message?: string }) => {
         if (response.success) {
-          if (!this.useMockData()) {
-            this.loadUsers();
-          }
+          this.loadUsers();
           this.notification.set({
             type: 'success',
             message: `${form.name ?? original?.name ?? 'User'} updated successfully.`,
           });
-          this.autoDismissNotification();
         } else {
           if (original) {
             this.users.set(this.users().map((u) => (u.id === userId ? original : u)));
@@ -586,8 +337,8 @@ export class UserListComponent implements OnInit {
             type: 'error',
             message: 'Failed to update user: ' + (response.message ?? 'Unknown error'),
           });
-          this.autoDismissNotification();
         }
+        this.autoDismissNotification();
       },
       error: (err: unknown) => {
         if (original) {
@@ -640,15 +391,11 @@ export class UserListComponent implements OnInit {
       .subscribe({
         next: (response: any) => {
           if (response.success) {
-            this.useMockData() ? this.mockToggle(user.id, newStatus) : this.loadUsers();
+            this.loadUsers();
           }
         },
-        error: () => this.mockToggle(user.id, newStatus),
+        error: () => {},
       });
-  }
-
-  private mockToggle(id: string, status: 'Active' | 'Inactive'): void {
-    this.users.set(this.users().map((u) => (u.id === id ? ({ ...u, status } as User) : u)));
   }
 
   deleteUser(user: User): void {
@@ -658,12 +405,10 @@ export class UserListComponent implements OnInit {
     this.usersService.deleteUser(numericId).subscribe({
       next: (response: any) => {
         if (response.success) {
-          this.useMockData()
-            ? this.users.set(this.users().filter((u) => u.id !== user.id))
-            : this.loadUsers();
+          this.loadUsers();
         }
       },
-      error: () => this.users.set(this.users().filter((u) => u.id !== user.id)),
+      error: () => {},
     });
   }
 
@@ -856,14 +601,6 @@ export class UserListComponent implements OnInit {
 
     this.closeResetConfirmModal();
 
-    this.notification.set({
-      type: 'success',
-      message: `Sending password reset instructions to ${user.name} (${user.email})...`,
-    });
-
-    const notifUserId = user.userId || user.id;
-    const notifGuid = this.extractGuidFromId(notifUserId);
-
     const message =
       `Password reset instructions\n\n` +
       `Hi ${user.name},\n\n` +
@@ -871,77 +608,154 @@ export class UserListComponent implements OnInit {
       `Please check your registered email for the secure reset link, or contact IT support ` +
       `if you did not request this.`;
 
+    this.notification.set({
+      type: 'success',
+      message: `Sending password reset instructions to ${user.name} (${user.email})...`,
+    });
+
+    let emailSent = false;
+    let notifSent = false;
+    let emailError = '';
+    let notifError = '';
+
+    const finalize = () => {
+      const parts: string[] = [];
+      if (emailSent) parts.push('email sent');
+      if (emailError) parts.push('email failed: ' + emailError);
+      if (notifSent) parts.push('dashboard notification sent');
+      if (notifError) parts.push('notification failed: ' + notifError);
+
+      const hasSuccess = emailSent || notifSent;
+      this.notification.set({
+        type: hasSuccess ? 'success' : 'error',
+        message: `${user.name}: ${parts.join(', ')}.`,
+      });
+      this.autoDismissNotification();
+    };
+
+    const sendNotification = (guidHint: string | null) => {
+      if (!guidHint || !this.extractGuidFromId(guidHint)) {
+        notifError = 'user has no Identity GUID in the database';
+        finalize();
+        return;
+      }
+      this.notificationsService.create({
+        userId: guidHint,
+        message,
+      }).subscribe({
+        next: (res: any) => {
+          if (res?.success === false) {
+            notifError = res.message || 'API rejected';
+          } else {
+            notifSent = true;
+          }
+          finalize();
+        },
+        error: (err: any) => {
+          notifError = err?.error?.message || err?.message || 'network error';
+          finalize();
+        },
+      });
+    };
+
+    const resolveGuidAndNotify = (guidHint: string | null) => {
+      if (guidHint) {
+        sendNotification(guidHint);
+        return;
+      }
+      const fromIdField = this.extractGuidFromId(user.id);
+      if (fromIdField) {
+        sendNotification(fromIdField);
+        return;
+      }
+      const numericId = typeof user.id === 'number' ? user.id : parseInt(String(user.id), 10);
+      if (isNaN(numericId)) {
+        sendNotification(null);
+        return;
+      }
+      this.usersService.getById(numericId).subscribe({
+        next: (res: any) => {
+          sendNotification(res?.data?.userId || res?.data?.UserId || null);
+        },
+        error: () => {
+          sendNotification(null);
+        },
+      });
+    };
+
+    const notifGuid = user.userId || this.extractGuidFromId(user.userId) || this.extractGuidFromId(user.id) || null;
+
     this.usersService
       .resetUserPassword({ email: user.email, userId: user.id, username: user.username })
       .subscribe({
         next: (response: any) => {
-          if (response?.success !== false) {
-            if (notifGuid) {
-              this.notificationsService.create({ userId: notifGuid, message }).subscribe({
-                next: (res: any) => {
-                  if (res?.success === false) {
-                    this.notification.set({
-                      type: 'success',
-                      message: `Password reset email sent to ${user.name} (${user.email}). Dashboard notification failed: ${res.message || 'unknown error'}.`,
-                    });
-                  } else {
-                    this.notification.set({
-                      type: 'success',
-                      message: `Password reset instructions sent to ${user.name} via email and dashboard notification.`,
-                    });
-                  }
-                  this.autoDismissNotification();
-                },
-                error: () => {
-                  this.notification.set({
-                    type: 'success',
-                    message: `Password reset email sent to ${user.name} (${user.email}). Dashboard notification could not be delivered.`,
-                  });
-                  this.autoDismissNotification();
-                },
-              });
-            } else {
-              this.notification.set({
-                type: 'success',
-                message: `Password reset instructions sent to ${user.name} via email (${user.email}).`,
-              });
-              this.autoDismissNotification();
-            }
-          } else {
-            this.notification.set({
-              type: 'error',
-              message: 'Failed to send reset instruction: ' + (response?.message ?? 'Unknown error'),
+          if (response?.success !== false && response?.statusCode !== 500) {
+            emailSent = true;
+            this.workflowService.createNotification({
+              recipientId: user.id,
+              recipientRole: 'Employee',
+              type: 'info',
+              title: 'Password Reset Initiated',
+              message: `Admin sent password reset instructions to ${user.name}. Please check your registered email for the secure reset link.`,
+              requestId: undefined,
+              actionRequired: false,
+              actionUrl: undefined,
             });
-            this.autoDismissNotification();
+          } else {
+            emailError = response?.message || 'API returned error';
           }
+          resolveGuidAndNotify(notifGuid);
         },
         error: (err: unknown) => {
-          const msg =
+          emailError =
             (err as { error?: { message?: string }; message?: string })?.error?.message ??
             (err as { message?: string })?.message ??
-            'Network error';
-          this.notification.set({
-            type: 'error',
-            message: 'Error sending password reset instruction: ' + msg,
-          });
-          this.autoDismissNotification();
+            'network error';
+          resolveGuidAndNotify(notifGuid);
         },
       });
   }
 
   /**
-   * Try to interpret a user row `id` as a Guid. The admin user-list screen
-   * may show rows whose `id` is either a numeric DB id (from /api/users)
-   * or a Guid string (from /api/Employees). Only Guid strings are usable
+   * Try to interpret a value as a Guid. Only Guid-formatted strings are usable
    * for the Notifications table.
    */
   private extractGuidFromId(id: string | number | undefined | null): string | null {
     if (id == null) return null;
     const s = String(id).trim();
     if (!s) return null;
-    // Guid format: 8-4-4-4-12 hex chars
     const guidLike = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     return guidLike.test(s) ? s : null;
+  }
+
+  /**
+   * Scan every possible field on a raw API user object to find the Identity Guid.
+   * The backend may return it under any of these keys (camelCase, PascalCase, etc.):
+   * userId, UserId, identityId, IdentityId, aspNetUserId, AspNetUserId, user_id,
+   * or even as the top-level `Id` / `id` field if it happens to be a Guid string.
+   */
+  private resolveUserGuid(rawUser: any): string | null {
+    if (!rawUser || typeof rawUser !== 'object') return null;
+    const GUID_FIELDS = [
+      'userId', 'UserId', 'user_id', 'userID',
+      'identityId', 'IdentityId', 'identity_id',
+      'aspNetUserId', 'AspNetUserId', 'asp_net_user_id',
+      'applicationUserId', 'ApplicationUserId',
+      'ownerId', 'OwnerId', 'owner_id',
+      'createdBy', 'CreatedBy', 'created_by',
+      'id', 'Id', 'ID',
+    ];
+    for (const field of GUID_FIELDS) {
+      const found = this.extractGuidFromId(rawUser[field]);
+      if (found) return found;
+    }
+    for (const val of Object.values(rawUser)) {
+      if (val && typeof val === 'object' && !Array.isArray(val)) {
+        const found = this.resolveUserGuid(val);
+        if (found) return found;
+      }
+    }
+    return null;
   }
 
   private autoDismissNotification(): void {

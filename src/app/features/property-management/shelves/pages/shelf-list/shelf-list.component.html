@@ -17,11 +17,6 @@
         <h1>Shelf Management</h1>
         <p>{{ totalShelves() }} shelf{{ totalShelves() !== 1 ? 'ves' : '' }} across all warehouses</p>
       </div>
-      @if (isMockBadge()) {
-        <div class="mock-badge">
-          <i class="bi bi-database-fill"></i> Sample Data
-        </div>
-      }
     </div>
     <div class="header-actions">
       <button type="button" class="action-btn secondary" (click)="exportCSV()">

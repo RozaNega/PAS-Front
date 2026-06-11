@@ -1,0 +1,6 @@
+[
+  {"id":"shelf-001","shelfCode":"A-R1-S1","shelfName":"Row A - Rack 1 - Shelf 1","warehouseId":"wh-001","warehouseName":"Main Warehouse","section":"A","aisle":"R1","shelf":"S1","capacity":100,"currentOccupancy":1,"isActive":true,"description":"Main office IT equipment shelf"},
+  {"id":"shelf-002","shelfCode":"A-R1-S2","shelfName":"Row A - Rack 1 - Shelf 2","warehouseId":"wh-001","warehouseName":"Main Warehouse","section":"A","aisle":"R1","shelf":"S2","capacity":100,"currentOccupancy":1,"isActive":true,"description":"Office furniture storage"},
+  {"id":"shelf-003","shelfCode":"A-R2-S1","shelfName":"Row A - Rack 2 - Shelf 1","warehouseId":"wh-001","warehouseName":"Main Warehouse","section":"A","aisle":"R2","shelf":"S1","capacity":100,"currentOccupancy":0,"isActive":true,"description":"General supplies"},
+  {"id":"shelf-004","shelfCode":"B-R1-S1-BW","shelfName":"Row B - Rack 1 - Shelf 1 (Branch)","warehouseId":"wh-002","warehouseName":"Branch Warehouse A","section":"B","aisle":"R1","shelf":"S1","capacity":200,"currentOccupancy":1,"isActive":true,"description":"Branch warehouse paper storage"}
+]

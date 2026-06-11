@@ -49,7 +49,6 @@ export class SafetyBoxListComponent {
 
   locations = signal<Array<{ id: string; name: string }>>([]);
   locationOptions = signal<string[]>(['All']);
-  mockUsed = false;
 
   modalForm = {
     boxNumber: '',
@@ -119,30 +118,6 @@ export class SafetyBoxListComponent {
     this.loadData();
   }
 
-  private createMockBoxes(): SafetyBox[] {
-    const locs = ['HQ Bole', 'Adama Office', 'Bahir Dar Campus', 'Central Warehouse', 'Finance Dept', 'HR Dept', 'IT Dept', 'Dire Dawa Branch', 'Executive Suite'];
-    const statuses: ('Empty' | 'Low' | 'Moderate' | 'High' | 'Full')[] = ['Empty', 'Low', 'Moderate', 'High', 'Full'];
-    const ts = '2025-05-15T10:00:00.000Z';
-
-    return [
-      { id: 'sb-001', boxNumber: 'SB-001', location: 'HQ Bole', totalShelves: 12, occupiedShelves: 8, status: 'Moderate', description: 'Main server room safety box', keyCardRequired: true, biometricAccess: true, cctvMonitored: true, access247: true, accessCode: 'EMP-001', createdAt: ts },
-      { id: 'sb-002', boxNumber: 'SB-002', location: 'HQ Bole', totalShelves: 8, occupiedShelves: 3, status: 'Low', description: 'Network equipment storage', keyCardRequired: true, biometricAccess: false, cctvMonitored: true, access247: true, accessCode: 'EMP-002', createdAt: ts },
-      { id: 'sb-003', boxNumber: 'SB-003', location: 'Finance Dept', totalShelves: 10, occupiedShelves: 10, status: 'Full', description: 'Financial records and cash', keyCardRequired: true, biometricAccess: true, cctvMonitored: true, access247: false, accessCode: 'EMP-003', createdAt: ts },
-      { id: 'sb-004', boxNumber: 'SB-004', location: 'Central Warehouse', totalShelves: 6, occupiedShelves: 0, status: 'Empty', description: 'New unused safety box', keyCardRequired: true, biometricAccess: false, cctvMonitored: true, access247: true, accessCode: '', createdAt: ts },
-      { id: 'sb-005', boxNumber: 'SB-005', location: 'HR Dept', totalShelves: 8, occupiedShelves: 5, status: 'Moderate', description: 'Personnel files storage', keyCardRequired: true, biometricAccess: false, cctvMonitored: false, access247: false, accessCode: 'EMP-005', createdAt: ts },
-      { id: 'sb-006', boxNumber: 'SB-006', location: 'IT Dept', totalShelves: 6, occupiedShelves: 4, status: 'Moderate', description: 'IT equipment spares', keyCardRequired: true, biometricAccess: true, cctvMonitored: true, access247: true, accessCode: 'EMP-006', createdAt: ts },
-      { id: 'sb-007', boxNumber: 'SB-007', location: 'Executive Suite', totalShelves: 10, occupiedShelves: 7, status: 'Moderate', description: 'Executive documents and assets', keyCardRequired: true, biometricAccess: true, cctvMonitored: true, access247: true, accessCode: 'EMP-007', createdAt: ts },
-      { id: 'sb-008', boxNumber: 'SB-008', location: 'Adama Office', totalShelves: 8, occupiedShelves: 2, status: 'Low', description: 'Regional office storage', keyCardRequired: false, biometricAccess: false, cctvMonitored: true, access247: false, accessCode: '', createdAt: ts },
-      { id: 'sb-009', boxNumber: 'SB-009', location: 'Bahir Dar Campus', totalShelves: 12, occupiedShelves: 9, status: 'High', description: 'Campus equipment storage', keyCardRequired: true, biometricAccess: false, cctvMonitored: true, access247: true, accessCode: 'EMP-009', createdAt: ts },
-      { id: 'sb-010', boxNumber: 'SB-010', location: 'Central Warehouse', totalShelves: 10, occupiedShelves: 6, status: 'Moderate', description: 'Warehouse inventory storage', keyCardRequired: true, biometricAccess: false, cctvMonitored: true, access247: true, accessCode: 'EMP-010', createdAt: ts },
-      { id: 'sb-011', boxNumber: 'SB-011', location: 'HQ Bole', totalShelves: 4, occupiedShelves: 4, status: 'Full', description: 'Critical spare keys cabinet', keyCardRequired: true, biometricAccess: true, cctvMonitored: true, access247: true, accessCode: 'EMP-011', createdAt: ts },
-      { id: 'sb-012', boxNumber: 'SB-012', location: 'Finance Dept', totalShelves: 6, occupiedShelves: 1, status: 'Low', description: 'Petty cash box', keyCardRequired: true, biometricAccess: false, cctvMonitored: true, access247: false, accessCode: 'EMP-012', createdAt: ts },
-      { id: 'sb-013', boxNumber: 'SB-013', location: 'Dire Dawa Branch', totalShelves: 8, occupiedShelves: 3, status: 'Low', description: 'Branch office secure storage', keyCardRequired: false, biometricAccess: false, cctvMonitored: false, access247: false, accessCode: '', createdAt: ts },
-      { id: 'sb-014', boxNumber: 'SB-014', location: 'IT Dept', totalShelves: 6, occupiedShelves: 6, status: 'Full', description: 'Server spare parts', keyCardRequired: true, biometricAccess: true, cctvMonitored: true, access247: true, accessCode: 'EMP-014', createdAt: ts },
-      { id: 'sb-015', boxNumber: 'SB-015', location: 'Central Warehouse', totalShelves: 12, occupiedShelves: 5, status: 'Moderate', description: 'General storage expansion', keyCardRequired: true, biometricAccess: false, cctvMonitored: true, access247: true, accessCode: 'EMP-015', createdAt: ts },
-    ];
-  }
-
   loadData(): void {
     this.isLoading.set(true);
     this.loadError.set(null);
@@ -185,7 +160,7 @@ export class SafetyBoxListComponent {
           this.safetyBoxes.set(boxes);
           this.page.set(1);
         } else {
-          this.useMockFallback();
+          this.loadError.set('No safety boxes found');
         }
         this.isLoading.set(false);
       },
@@ -195,23 +170,10 @@ export class SafetyBoxListComponent {
         if (error instanceof HttpErrorResponse) {
           msg = error.status === 0 ? 'Cannot reach the API (network).' : `HTTP ${error.status}.`;
         }
-        this.useMockFallback();
-        this.notification.set({ type: 'warning', message: msg + ' Showing sample data.' });
+        this.loadError.set(msg);
         this.isLoading.set(false);
       },
     });
-  }
-
-  private useMockFallback(): void {
-    if (this.mockUsed) return;
-    this.mockUsed = true;
-    const existing = this.safetyBoxes();
-    const mock = this.createMockBoxes();
-    if (existing.length < 3) {
-      this.safetyBoxes.set(mock);
-      this.page.set(1);
-      this.notification.set({ type: 'info', message: 'Showing sample data. Connect to the API for live data.' });
-    }
   }
 
   private calcStatus(count: number, capacity: number): SafetyBox['status'] {
@@ -494,10 +456,6 @@ export class SafetyBoxListComponent {
 
   isEditing(): boolean {
     return this.selectedBox() !== null;
-  }
-
-  isMockBadge(): boolean {
-    return this.mockUsed;
   }
 
   fieldError(field: string): string {

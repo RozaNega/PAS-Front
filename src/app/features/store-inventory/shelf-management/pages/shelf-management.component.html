@@ -452,7 +452,7 @@
           </div>
           <div class="detail-item">
             <label><i class="bi bi-speedometer2"></i> Capacity</label>
-            <span>{{ selectedShelf()!.raw.capacity ?? '—' }} units</span>
+            <span>{{ selectedShelf()!.raw.capacity }} units</span>
           </div>
           <div class="detail-item">
             <label><i class="bi bi-percent"></i> Occupancy</label>
@@ -466,6 +466,26 @@
           <div class="detail-item">
             <label><i class="bi bi-tag"></i> Bin Type</label>
             <span>{{ selectedShelf()!.raw.binType || '—' }}</span>
+          </div>
+          <div class="detail-item-full">
+            <label><i class="bi bi-boxes"></i> Items on Shelf</label>
+            @if (loadingItems()) {
+              <div class="items-loading"><i class="bi bi-arrow-repeat"></i> Loading items...</div>
+            } @else if (shelfItems().length === 0) {
+              <div class="no-items-found">
+                <i class="bi bi-inbox"></i> No items found on this shelf.
+              </div>
+            } @else {
+              <div class="shelf-items-list">
+                @for (item of shelfItems(); track item.id) {
+                  <div class="shelf-item-row">
+                    <span class="item-name">{{ item.itemName }}</span>
+                    <span class="item-sku">{{ item.sku }}</span>
+                    <span class="item-qty">{{ item.currentStock }} {{ item.unitOfMeasure }}</span>
+                  </div>
+                }
+              </div>
+            }
           </div>
           <div class="detail-item">
             <label><i class="bi bi-geo"></i> Zone</label>

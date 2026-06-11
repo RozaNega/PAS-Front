@@ -68,7 +68,11 @@ export interface PaginatedTransferResponse {
 export interface CreateTransferRecordCommand {
   itemId: string;
   quantity: number;
+
+  fromLocationId: string;
+
   fromLocationId?: string;
+
   toLocationId: string;
   toShelfId?: string;
   batchNumber?: string;

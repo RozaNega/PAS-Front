@@ -8,7 +8,7 @@ import { GridComponent, LegendComponent, TooltipComponent, TitleComponent } from
 import { CanvasRenderer } from 'echarts/renderers';
 import { ShelvesService, ShelfLocationDto, CreateShelfLocationRequest } from '../../../../core/services/shelves.service';
 import { WarehousesService, WarehouseDto } from '../../../../core/services/warehouses.service';
-import { InventoryService } from '../../../../core/services/inventory.service';
+import { InventoryService, InventoryStockDto } from '../../../../core/services/inventory.service';
 
 echarts.use([PieChart, BarChart, LineChart, GaugeChart, TooltipComponent, GridComponent, LegendComponent, TitleComponent, CanvasRenderer]);
 
@@ -55,6 +55,8 @@ export class ShelfManagementComponent implements OnInit {
   showRearrangeModal = signal(false);
   showMoveItemsModal = signal(false);
   selectedShelf = signal<ShelfRow | null>(null);
+  shelfItems = signal<InventoryStockDto[]>([]);
+  loadingItems = signal(false);
   saving = signal(false);
 
   addForm = {
@@ -452,7 +454,24 @@ export class ShelfManagementComponent implements OnInit {
 
   openShelfDetailsModal(shelf: ShelfRow): void {
     this.selectedShelf.set(shelf);
+    this.shelfItems.set([]);
     this.showShelfDetailsModal.set(true);
+    this.loadShelfItems(shelf.id);
+  }
+
+  private loadShelfItems(shelfId: string): void {
+    this.loadingItems.set(true);
+    this.inventoryService.getStockByShelf(shelfId).subscribe({
+      next: (res) => {
+        this.loadingItems.set(false);
+        if (res.success !== false && Array.isArray(res.data)) {
+          this.shelfItems.set(res.data);
+        }
+      },
+      error: () => {
+        this.loadingItems.set(false);
+      },
+    });
   }
 
   closeShelfDetailsModal(): void {

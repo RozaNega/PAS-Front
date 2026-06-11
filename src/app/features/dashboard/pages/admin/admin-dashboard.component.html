@@ -1,19 +1,11 @@
 <section class="admin-dashboard">
 
-  @if (isMockData()) {
-    <div class="mock-notice">
-      <i class="bi bi-database-fill"></i>
-      <span>Showing sample data. Connect to the API for live metrics.</span>
-    </div>
-  }
-
-  @if (loadError() && !isMockData()) {
+  @if (loadError()) {
     <div class="dashboard-alert" role="alert">
       <i class="bi bi-exclamation-triangle-fill"></i>
       <div class="dashboard-alert__body">
         <strong>Data unavailable</strong>
         <p>{{ loadError() }}</p>
-        <p class="dashboard-alert__hint">{{ apiConnectionHint() }}</p>
       </div>
       <button type="button" class="btn-retry" (click)="refreshData()">Try again</button>
     </div>
@@ -273,7 +265,6 @@
               <th>Status</th>
               <th>Qty</th>
               <th>Date</th>
-              <th class="text-center">Action</th>
             </tr>
           </thead>
           <tbody>
@@ -293,14 +284,9 @@
                 </td>
                 <td class="text-center">{{ req.quantity }}</td>
                 <td class="req-date">{{ req.date }}</td>
-                <td class="text-center">
-                  <button class="table-btn open" (click)="openRequisition(req.id); $event.stopPropagation()" title="Open">
-                    <i class="bi bi-eye"></i>
-                  </button>
-                </td>
               </tr>
             } @empty {
-              <tr><td colspan="8" class="empty-cell">No service requests found.</td></tr>
+              <tr><td colspan="7" class="empty-cell">No service requests found.</td></tr>
             }
           </tbody>
         </table>
@@ -329,46 +315,6 @@
       }
     </section>
   </div>
-
-  <!-- Notifications Section -->
-  <section class="panel notifications-panel">
-    <div class="panel-header">
-      <div>
-        <h3 class="panel-title"><i class="bi bi-bell"></i> Notifications</h3>
-        <p class="panel-desc">{{ workflowNotifications().length }} notifications, {{ workflowNotifications().filter(n => !n.isRead).length }} unread</p>
-      </div>
-      <div class="panel-actions">
-        <button type="button" class="action-btn secondary small" (click)="markAllNotificationsAsRead()">
-          <i class="bi bi-check-all"></i> Mark All Read
-        </button>
-        <button type="button" class="action-btn secondary small" (click)="loadWorkflowData()">
-          <i class="bi bi-arrow-repeat"></i> Refresh
-        </button>
-      </div>
-    </div>
-    <div class="notifications-list">
-      @for (notification of workflowNotifications().slice(0, 10); track notification.id) {
-        <div class="notification-item" [class.unread]="!notification.isRead">
-          <div class="notification-icon" [class]="'icon-' + notification.type">
-            <i class="bi" [class.bi-info-circle]="notification.type === 'info'"
-               [class.bi-check-circle]="notification.type === 'success'"
-               [class.bi-exclamation-triangle]="notification.type === 'warning'"
-               [class.bi-x-circle]="notification.type === 'error'"></i>
-          </div>
-          <div class="notification-content">
-            <h4>{{ notification.title }}</h4>
-            <p>{{ notification.message }}</p>
-            <span class="notification-time">{{ notification.createdDate | date:'MMM d, y h:mm a' }}</span>
-          </div>
-          <button type="button" class="notification-dismiss" (click)="dismissNotification(notification.id)" title="Dismiss">
-            <i class="bi bi-x"></i>
-          </button>
-        </div>
-      } @empty {
-        <div class="chart-empty">No notifications</div>
-      }
-    </div>
-  </section>
 
   <section class="analytics-row">
     <div class="chart-card">

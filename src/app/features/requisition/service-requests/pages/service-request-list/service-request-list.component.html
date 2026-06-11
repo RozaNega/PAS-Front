@@ -155,6 +155,7 @@
               <th>Department</th>
               <th>Purpose</th>
               <th>Status</th>
+              <th>Stock V.</th>
               <th>Urgency</th>
               <th>Items</th>
               <th>Qty</th>
@@ -163,8 +164,8 @@
             </tr>
           </thead>
           <tbody>
-            <tr *ngIf="pagedRequests().length === 0">
-              <td colspan="10">
+              <tr *ngIf="pagedRequests().length === 0">
+                <td colspan="11">
                 <div class="req-empty">
                   <i class="bi bi-inbox" aria-hidden="true"></i>
                   <p>No service requests match your filters.</p>
@@ -192,6 +193,9 @@
               </td>
               <td>
                 <span class="req-badge" [ngClass]="getStatusClass(sr.status)">{{ sr.status || '—' }}</span>
+              </td>
+              <td>
+                <span class="req-badge" [ngClass]="getStockVerificationClass(sr.stockVerificationStatus)">{{ sr.stockVerificationStatus || 'Pending' }}</span>
               </td>
               <td>
                 <span class="req-badge" [ngClass]="getUrgencyClass(sr.urgency || 'normal')">{{ formatUrgencyLabel(sr.urgency) }}</span>

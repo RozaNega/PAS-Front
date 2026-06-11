@@ -44,12 +44,6 @@ export class InventoryReportComponent implements OnInit {
 
   filterForm: FormGroup;
 
-  private readonly fallbackSummary = {
-    totalValue: 'ETB 2.4M',
-    lowStockItems: '43',
-    averageTurnover: '31 days',
-  };
-
   constructor(
     private readonly reportService: ReportService,
     private readonly notificationService: NotificationService,
@@ -79,8 +73,7 @@ export class InventoryReportComponent implements OnInit {
           this.reportData = data;
           this.hasLiveData = true;
         } else {
-          this.loadErrorMessage = 'Live inventory service is unavailable. Showing fallback summary values.';
-          this.notificationService.info('Inventory report fallback summary is displayed.', 'Report status');
+          this.loadErrorMessage = 'Live inventory service is unavailable.';
         }
         this.hasLoaded = true;
         this.loading = false;
@@ -89,8 +82,8 @@ export class InventoryReportComponent implements OnInit {
         this.hasLoaded = true;
         this.loading = false;
         this.hasLiveData = false;
-        this.loadErrorMessage = 'Unable to reach the inventory report endpoint. Showing fallback summary values.';
-        this.notificationService.error('Failed to load inventory report. Fallback summary is displayed.');
+        this.loadErrorMessage = 'Unable to reach the inventory report endpoint.';
+        this.notificationService.error('Failed to load inventory report.');
       }
     });
   }
@@ -133,7 +126,7 @@ export class InventoryReportComponent implements OnInit {
 
   get totalStockValue(): string {
     if (!this.reportData) {
-      return this.fallbackSummary.totalValue;
+      return 'ETB 0';
     }
 
     return new Intl.NumberFormat('en-ET', {
@@ -145,7 +138,7 @@ export class InventoryReportComponent implements OnInit {
 
   get lowStockItems(): string {
     if (!this.reportData) {
-      return this.fallbackSummary.lowStockItems;
+      return '0';
     }
 
     const count = this.reportData.items.filter((item) => item.quantity <= 5).length;
@@ -153,7 +146,7 @@ export class InventoryReportComponent implements OnInit {
   }
 
   get averageTurnover(): string {
-    return this.fallbackSummary.averageTurnover;
+    return '0 days';
   }
 }
 

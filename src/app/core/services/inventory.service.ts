@@ -29,10 +29,14 @@ export interface InventoryStockDto {
   warehouseId: string;
   minimumThreshold: number;
   maximumThreshold: number;
+
+  unitPrice?: number;
+
   lastUpdated: string;
   
   // Allow additional properties for mock data
   [key: string]: any;
+
 }
 
 /** Stock Movement from GET /api/StockLedger */
@@ -87,6 +91,9 @@ export interface ReleaseStockRequest {
 @Injectable({ providedIn: 'root' })
 export class InventoryService {
   constructor(private apiService: ApiService) {}
+
+
+
 
   private createMockInventoryStock(): InventoryStockDto[] {
     return [
@@ -192,6 +199,7 @@ export class InventoryService {
       },
     ];
   }
+
 
   // Stock Overview
   getStockOverview(params?: {
@@ -333,6 +341,7 @@ export class InventoryService {
   }): Observable<ApiResponse<any[]>> {
     return this.apiService.get<unknown>('ShelfLocations', params).pipe(
       map((raw) => normalizePasListResponse<any>(raw)),
+      catchError(() => of({ success: false, message: 'ShelfLocations unavailable', data: [], statusCode: 0 } as ApiResponse<any[]>)),
     );
   }
 

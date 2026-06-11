@@ -1,6 +1,4 @@
 /**
- * Default API base (relative). Override in the browser when needed:
- * `localStorage.setItem('pas.apiUrl', 'http://localhost:5028/api')` then reload.
  * Dev servers: `ng serve` uses `proxy.conf.json` to forward `/api` → backend (port 5028).
  */
 export const environment = {

@@ -1,7 +1,6 @@
 import { Component, signal, computed, inject, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { HttpErrorResponse } from '@angular/common/http';
 import { ShelvesService, ShelfLocationDto } from '../../../../../core/services/shelves.service';
 import { WarehousesService, WarehouseDto } from '../../../../../core/services/warehouses.service';
 
@@ -54,7 +53,6 @@ export class ShelfListComponent {
 
   statuses = ['All', 'Empty', 'Low', 'Partial', 'Full'];
   warehouses = signal<WarehouseDto[]>([]);
-  mockUsed = false;
 
   modalForm = {
     rack: '',
@@ -145,54 +143,6 @@ export class ShelfListComponent {
     this.loadData();
   }
 
-  private createMockShelves(): Shelf[] {
-    const wh = [
-      { id: 'wh-001', name: 'Main Warehouse' },
-      { id: 'wh-002', name: 'Branch Warehouse A' },
-      { id: 'wh-003', name: 'Cold Storage' },
-    ];
-    const ts = '2025-05-15T10:00:00.000Z';
-    const shelves: Shelf[] = [];
-    let idx = 0;
-
-    wh.forEach(w => {
-      const aisles = ['A', 'B'];
-      aisles.forEach(aisle => {
-        for (let rack = 1; rack <= 3; rack++) {
-          for (let shelf = 1; shelf <= 2; shelf++) {
-            idx++;
-            const items = [0, 0, 5, 12, 25, 40, 55, 70, 85, 95, 100, 110, 0, 18, 30, 48, 62, 78, 90][idx % 19];
-            const cap = [50, 75, 100, 100, 150][idx % 5];
-            const pct = cap > 0 ? items / cap : 0;
-            const status: Shelf['status'] = items === 0 ? 'Empty' : pct <= 0.3 ? 'Low' : pct < 1 ? 'Partial' : 'Full';
-            shelves.push({
-              id: `sh-${String(idx).padStart(3, '0')}`,
-              rack: `R${rack}`,
-              shelfNumber: `S${shelf}`,
-              warehouseId: w.id,
-              warehouseName: w.name,
-              aisle,
-              zone: `${aisle}-${rack}`,
-              binType: 'Standard',
-              length: 120,
-              width: 60,
-              height: 40,
-              maxWeight: 50,
-              capacity: cap,
-              itemsCount: items,
-              status,
-              description: `${w.name} - ${aisle}${rack}/${shelf}`,
-              isActive: idx % 7 !== 0,
-              createdAt: ts,
-            });
-          }
-        }
-      });
-    });
-
-    return shelves;
-  }
-
   loadData(): void {
     this.isLoading.set(true);
     this.loadError.set(null);
@@ -227,38 +177,19 @@ export class ShelfListComponent {
             status: this.calcStatus(dto.currentUtilization || 0, dto.capacity || 100),
             description: dto.description || '',
             isActive: dto.isActive,
-            createdAt: dto.createdAt,
+            createdAt: dto.createdAt || new Date().toISOString(),
           }));
           this.shelves.set(shelves);
           this.page.set(1);
-        } else {
-          this.useMockFallback();
         }
         this.isLoading.set(false);
       },
       error: (error: unknown) => {
         console.error('Error loading shelves:', error);
-        let msg = 'Failed to reach the server.';
-        if (error instanceof HttpErrorResponse) {
-          msg = error.status === 0 ? 'Cannot reach the API (network).' : `HTTP ${error.status}.`;
-        }
-        this.useMockFallback();
-        this.notification.set({ type: 'warning', message: msg + ' Showing sample data.' });
+        this.loadError.set('Failed to load shelves from the server.');
         this.isLoading.set(false);
       },
     });
-  }
-
-  private useMockFallback(): void {
-    if (this.mockUsed) return;
-    this.mockUsed = true;
-    const existing = this.shelves();
-    const mock = this.createMockShelves();
-    if (existing.length < 3) {
-      this.shelves.set(mock);
-      this.page.set(1);
-      this.notification.set({ type: 'info', message: 'Showing sample data. Connect to the API for live data.' });
-    }
   }
 
   private calcStatus(count: number, capacity: number): Shelf['status'] {
@@ -492,10 +423,6 @@ export class ShelfListComponent {
 
   isEditing(): boolean {
     return this.selectedShelf() !== null;
-  }
-
-  isMockBadge(): boolean {
-    return this.mockUsed;
   }
 
   fieldError(field: string): string {

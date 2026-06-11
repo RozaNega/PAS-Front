@@ -1,30 +1,9 @@
-import { Component, signal, computed, OnInit } from '@angular/core';
+import { Component, signal, computed, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
-
-interface RequisitionItem {
-  name: string;
-  quantity: number;
-  unit: string;
-}
-
-interface Requisition {
-  id: string;
-  requestNumber: string;
-  requesterName: string;
-  department: string;
-  purpose: string;
-  urgency: 'Low' | 'Medium' | 'High' | 'Critical';
-  status: 'Pending' | 'Approved' | 'Rejected' | 'Completed' | 'Cancelled';
-  totalItems: number;
-  totalQuantity: number;
-  requestDate: string;
-  approvedDate?: string;
-  completedDate?: string;
-  notes?: string;
-  items?: RequisitionItem[];
-}
+import { Router } from '@angular/router';
+import { ServiceRequestService, ServiceRequestDto } from '../../../requisition/service-requests/services/service-request.service';
+import { RequisitionsService, StoreIssueVoucherDto } from '../../../../core/services/requisitions.service';
 
 interface SIV {
   id: string;
@@ -53,53 +32,23 @@ interface UnifiedItem {
   status: string;
   statusClass: string;
   date: string;
-  source: Requisition | SIV;
+  source: ServiceRequestDto | SIV;
 }
 
-const MOCK_REQUISITIONS: Requisition[] = [
-  { id: 'REQ-001', requestNumber: 'SR-2026-0001', requesterName: 'John Doe', department: 'IT', purpose: 'Laptop replacement for new hire', urgency: 'High', status: 'Pending', totalItems: 2, totalQuantity: 5, requestDate: '2026-05-28T09:00:00.000Z', items: [{ name: 'Dell Laptop', quantity: 2, unit: 'pcs' }, { name: 'Laptop Bag', quantity: 3, unit: 'pcs' }] },
-  { id: 'REQ-002', requestNumber: 'SR-2026-0002', requesterName: 'Sarah Smith', department: 'Operations', purpose: 'Emergency server repair parts', urgency: 'Critical', status: 'Pending', totalItems: 3, totalQuantity: 8, requestDate: '2026-05-28T10:30:00.000Z', items: [{ name: 'Server PSU', quantity: 2, unit: 'pcs' }, { name: 'RAM 32GB', quantity: 4, unit: 'pcs' }, { name: 'SAS Cable', quantity: 2, unit: 'pcs' }] },
-  { id: 'REQ-003', requestNumber: 'SR-2026-0003', requesterName: 'Mike Wilson', department: 'Warehouse', purpose: 'Industrial shelving units', urgency: 'Medium', status: 'Approved', totalItems: 2, totalQuantity: 12, requestDate: '2026-05-27T08:00:00.000Z', approvedDate: '2026-05-28T14:00:00.000Z', items: [{ name: 'Heavy Duty Shelving', quantity: 4, unit: 'pcs' }, { name: 'Shelf Brackets', quantity: 8, unit: 'pcs' }] },
-  { id: 'REQ-004', requestNumber: 'SR-2026-0004', requesterName: 'Peter Chen', department: 'HR', purpose: 'Office supplies for new staff', urgency: 'Low', status: 'Approved', totalItems: 3, totalQuantity: 45, requestDate: '2026-05-26T11:00:00.000Z', approvedDate: '2026-05-27T09:00:00.000Z', items: [{ name: 'A4 Paper Box', quantity: 10, unit: 'boxes' }, { name: 'Ballpoint Pens', quantity: 25, unit: 'pcs' }, { name: 'Sticky Notes', quantity: 10, unit: 'packs' }] },
-  { id: 'REQ-005', requestNumber: 'SR-2026-0005', requesterName: 'Lisa Wong', department: 'Finance', purpose: 'Audit software license renewal', urgency: 'High', status: 'Rejected', totalItems: 1, totalQuantity: 1, requestDate: '2026-05-25T09:30:00.000Z', notes: 'Budget not available for this fiscal year', items: [{ name: 'AuditPro License', quantity: 1, unit: 'license' }] },
-  { id: 'REQ-006', requestNumber: 'SR-2026-0006', requesterName: 'Robert Brown', department: 'Compliance', purpose: 'Staff training materials', urgency: 'Medium', status: 'Completed', totalItems: 2, totalQuantity: 30, requestDate: '2026-05-24T08:00:00.000Z', approvedDate: '2026-05-25T10:00:00.000Z', completedDate: '2026-05-28T16:00:00.000Z', items: [{ name: 'Training Manuals', quantity: 20, unit: 'pcs' }, { name: 'Compliance Posters', quantity: 10, unit: 'pcs' }] },
-  { id: 'REQ-007', requestNumber: 'SR-2026-0007', requesterName: 'Alice Johnson', department: 'Property', purpose: 'Furniture repair supplies', urgency: 'Low', status: 'Pending', totalItems: 2, totalQuantity: 15, requestDate: '2026-05-28T07:00:00.000Z', items: [{ name: 'Wood Glue', quantity: 5, unit: 'bottles' }, { name: 'Sanding Paper Pack', quantity: 10, unit: 'packs' }] },
-  { id: 'REQ-008', requestNumber: 'SR-2026-0008', requesterName: 'David Lee', department: 'Warehouse', purpose: 'Safety equipment replacement', urgency: 'High', status: 'Approved', totalItems: 3, totalQuantity: 35, requestDate: '2026-05-27T13:00:00.000Z', approvedDate: '2026-05-28T11:00:00.000Z', items: [{ name: 'Safety Helmets', quantity: 15, unit: 'pcs' }, { name: 'Safety Vests', quantity: 15, unit: 'pcs' }, { name: 'First Aid Kits', quantity: 5, unit: 'pcs' }] },
-  { id: 'REQ-009', requestNumber: 'SR-2026-0009', requesterName: 'Elena Garcia', department: 'Sales', purpose: 'Marketing collateral printing', urgency: 'Medium', status: 'Rejected', totalItems: 2, totalQuantity: 500, requestDate: '2026-05-26T15:00:00.000Z', notes: 'Use existing stock before ordering new', items: [{ name: 'Brochures', quantity: 300, unit: 'pcs' }, { name: 'Business Cards', quantity: 200, unit: 'pcs' }] },
-  { id: 'REQ-010', requestNumber: 'SR-2026-0010', requesterName: 'Kevin Martin', department: 'IT', purpose: 'Cable management accessories', urgency: 'Low', status: 'Completed', totalItems: 2, totalQuantity: 50, requestDate: '2026-05-23T09:00:00.000Z', approvedDate: '2026-05-24T08:00:00.000Z', completedDate: '2026-05-27T12:00:00.000Z', items: [{ name: 'Cable Ties Pack', quantity: 30, unit: 'packs' }, { name: 'Cable Labels', quantity: 20, unit: 'rolls' }] },
-  { id: 'REQ-011', requestNumber: 'SR-2026-0011', requesterName: 'Neha Patel', department: 'Operations', purpose: 'Backup generator fuel', urgency: 'Critical', status: 'Pending', totalItems: 1, totalQuantity: 100, requestDate: '2026-05-29T06:00:00.000Z', items: [{ name: 'Diesel Fuel', quantity: 100, unit: 'liters' }] },
-  { id: 'REQ-012', requestNumber: 'SR-2026-0012', requesterName: 'Tom Clark', department: 'HR', purpose: 'Recruitment drive materials', urgency: 'Medium', status: 'Approved', totalItems: 3, totalQuantity: 60, requestDate: '2026-05-25T10:00:00.000Z', approvedDate: '2026-05-26T09:00:00.000Z', items: [{ name: 'Job Fair Banner', quantity: 2, unit: 'pcs' }, { name: 'Company Brochures', quantity: 50, unit: 'pcs' }, { name: 'Branded Pens', quantity: 8, unit: 'boxes' }] },
-  { id: 'REQ-013', requestNumber: 'SR-2026-0013', requesterName: 'Julia Rodriguez', department: 'HR', purpose: 'Printer toner and paper', urgency: 'Low', status: 'Cancelled', totalItems: 2, totalQuantity: 15, requestDate: '2026-05-24T12:00:00.000Z', notes: 'Cancelled by requester', items: [{ name: 'Printer Toner', quantity: 5, unit: 'pcs' }, { name: 'A4 Paper', quantity: 10, unit: 'reams' }] },
-  { id: 'REQ-014', requestNumber: 'SR-2026-0014', requesterName: 'Henry Kim', department: 'Warehouse', purpose: 'Forklift spare parts', urgency: 'High', status: 'Completed', totalItems: 2, totalQuantity: 8, requestDate: '2026-05-22T08:00:00.000Z', approvedDate: '2026-05-23T10:00:00.000Z', completedDate: '2026-05-26T15:00:00.000Z', items: [{ name: 'Forklift Tires', quantity: 4, unit: 'pcs' }, { name: 'Hydraulic Fluid', quantity: 4, unit: 'liters' }] },
-  { id: 'REQ-015', requestNumber: 'SR-2026-0015', requesterName: 'Megan White', department: 'Compliance', purpose: 'Security audit equipment', urgency: 'High', status: 'Pending', totalItems: 3, totalQuantity: 22, requestDate: '2026-05-29T08:00:00.000Z', items: [{ name: 'Security Cameras', quantity: 10, unit: 'pcs' }, { name: 'Access Cards', quantity: 10, unit: 'pcs' }, { name: 'Lock Sets', quantity: 2, unit: 'pcs' }] },
-  { id: 'REQ-016', requestNumber: 'SR-2026-0016', requesterName: 'John Doe', department: 'IT', purpose: 'UPS battery replacement', urgency: 'Low', status: 'Approved', totalItems: 1, totalQuantity: 6, requestDate: '2026-05-21T14:00:00.000Z', approvedDate: '2026-05-22T09:00:00.000Z', items: [{ name: 'UPS Battery Pack', quantity: 6, unit: 'pcs' }] },
-  { id: 'REQ-017', requestNumber: 'SR-2026-0017', requesterName: 'Lisa Wong', department: 'Finance', purpose: 'Fraud investigation tools', urgency: 'Critical', status: 'Rejected', totalItems: 2, totalQuantity: 3, requestDate: '2026-05-20T11:00:00.000Z', notes: 'Requires board approval first', items: [{ name: 'Forensic Software', quantity: 1, unit: 'license' }, { name: 'External HDD', quantity: 2, unit: 'pcs' }] },
-  { id: 'REQ-018', requestNumber: 'SR-2026-0018', requesterName: 'Alice Johnson', department: 'Property', purpose: 'Office renovation materials', urgency: 'Medium', status: 'Completed', totalItems: 3, totalQuantity: 75, requestDate: '2026-05-19T09:00:00.000Z', approvedDate: '2026-05-20T08:00:00.000Z', completedDate: '2026-05-28T10:00:00.000Z', items: [{ name: 'Paint Buckets', quantity: 15, unit: 'pcs' }, { name: 'Paint Brushes', quantity: 30, unit: 'pcs' }, { name: 'Drop Cloths', quantity: 30, unit: 'pcs' }] },
-  { id: 'REQ-019', requestNumber: 'SR-2026-0019', requesterName: 'Elena Garcia', department: 'Sales', purpose: 'Client gift hampers', urgency: 'Medium', status: 'Pending', totalItems: 2, totalQuantity: 25, requestDate: '2026-05-29T12:00:00.000Z', items: [{ name: 'Gift Hampers', quantity: 10, unit: 'pcs' }, { name: 'Greeting Cards', quantity: 15, unit: 'pcs' }] },
-  { id: 'REQ-020', requestNumber: 'SR-2026-0020', requesterName: 'Sarah Smith', department: 'Operations', purpose: 'Logistics tracking software', urgency: 'High', status: 'Approved', totalItems: 1, totalQuantity: 1, requestDate: '2026-05-18T10:00:00.000Z', approvedDate: '2026-05-19T14:00:00.000Z', items: [{ name: 'LogiTrack License', quantity: 1, unit: 'license' }] },
-];
 
-const MOCK_SIVS: SIV[] = [
-  { id: 'SIV-001', sivNumber: 'SIV-2026-0001', requestNumber: 'SR-2026-0003', issuedTo: 'Mike Wilson', issuedBy: 'John Doe', department: 'Warehouse', issueDate: '2026-05-28T14:30:00.000Z', status: 'Issued', totalItems: 2, totalQuantity: 12 },
-  { id: 'SIV-002', sivNumber: 'SIV-2026-0002', requestNumber: 'SR-2026-0008', issuedTo: 'David Lee', issuedBy: 'Sarah Smith', department: 'Warehouse', issueDate: '2026-05-28T11:30:00.000Z', status: 'Issued', totalItems: 3, totalQuantity: 35 },
-  { id: 'SIV-003', sivNumber: 'SIV-2026-0003', requestNumber: 'SR-2026-0006', issuedTo: 'Robert Brown', issuedBy: 'Neha Patel', department: 'Compliance', issueDate: '2026-05-28T16:00:00.000Z', status: 'Issued', totalItems: 2, totalQuantity: 30 },
-  { id: 'SIV-004', sivNumber: 'SIV-2026-0004', requestNumber: 'SR-2026-0010', issuedTo: 'Kevin Martin', issuedBy: 'Mike Wilson', department: 'IT', issueDate: '2026-05-27T12:00:00.000Z', status: 'Issued', totalItems: 2, totalQuantity: 50 },
-  { id: 'SIV-005', sivNumber: 'SIV-2026-0005', requestNumber: 'SR-2026-0014', issuedTo: 'Henry Kim', issuedBy: 'Alice Johnson', department: 'Warehouse', issueDate: '2026-05-26T15:00:00.000Z', status: 'Issued', totalItems: 2, totalQuantity: 8 },
-  { id: 'SIV-006', sivNumber: 'SIV-2026-0006', requestNumber: 'SR-2026-0012', issuedTo: 'Tom Clark', issuedBy: 'John Doe', department: 'HR', issueDate: '2026-05-26T09:30:00.000Z', status: 'Pending', totalItems: 3, totalQuantity: 60 },
-  { id: 'SIV-007', sivNumber: 'SIV-2026-0007', requestNumber: 'SR-2026-0018', issuedTo: 'Alice Johnson', issuedBy: 'Sarah Smith', department: 'Property', issueDate: '2026-05-28T10:00:00.000Z', status: 'Issued', totalItems: 3, totalQuantity: 75 },
-  { id: 'SIV-008', sivNumber: 'SIV-2026-0008', requestNumber: 'SR-2026-0001', issuedTo: 'John Doe', issuedBy: 'Peter Chen', department: 'IT', issueDate: '2026-05-29T08:00:00.000Z', status: 'Pending', totalItems: 2, totalQuantity: 5 },
-  { id: 'SIV-009', sivNumber: 'SIV-2026-0009', requestNumber: 'SR-2026-0016', issuedTo: 'John Doe', issuedBy: 'Lisa Wong', department: 'IT', issueDate: '2026-05-22T10:00:00.000Z', status: 'Cancelled', totalItems: 1, totalQuantity: 6, notes: 'Cancelled due to stock unavailability' },
-  { id: 'SIV-010', sivNumber: 'SIV-2026-0010', requestNumber: 'SR-2026-0013', issuedTo: 'Julia Rodriguez', issuedBy: 'Tom Clark', department: 'HR', issueDate: '2026-05-24T12:00:00.000Z', status: 'Cancelled', totalItems: 2, totalQuantity: 15, notes: 'Request was cancelled by requester' },
-];
 
 @Component({
   selector: 'app-requisition-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule],
   templateUrl: './requisition-dashboard.component.html',
   styleUrls: ['./requisition-dashboard.component.scss']
 })
 export class RequisitionDashboardComponent implements OnInit {
+  private readonly serviceRequestService = inject(ServiceRequestService);
+  private readonly requisitionsService = inject(RequisitionsService);
+  private readonly router = inject(Router);
+
   activeTab = signal<TabType>('all');
   searchQuery = signal('');
   statusFilter = signal('All');
@@ -108,27 +57,29 @@ export class RequisitionDashboardComponent implements OnInit {
   currentPage = signal(1);
   rowsPerPage = signal(10);
 
-  requisitions = signal<Requisition[]>([]);
+  requisitions = signal<ServiceRequestDto[]>([]);
   sivs = signal<SIV[]>([]);
 
   showDetailModal = signal(false);
-  selectedRequisition = signal<Requisition | null>(null);
+  selectedRequisition = signal<ServiceRequestDto | null>(null);
   showSivDetailModal = signal(false);
   selectedSiv = signal<SIV | null>(null);
 
   showApproveModal = signal(false);
-  approveTarget = signal<Requisition | null>(null);
+  approveTarget = signal<ServiceRequestDto | null>(null);
   approveForm = signal<{ remarks: string }>({ remarks: '' });
 
   showRejectModal = signal(false);
-  rejectTarget = signal<Requisition | null>(null);
+  rejectTarget = signal<ServiceRequestDto | null>(null);
   rejectReason = signal('');
 
   showDeleteConfirm = signal(false);
-  deleteTarget = signal<Requisition | SIV | null>(null);
+  deleteTarget = signal<ServiceRequestDto | SIV | null>(null);
 
   notification = signal<{ type: 'success' | 'error'; message: string } | null>(null);
   showExportDropdown = signal(false);
+  loading = signal(false);
+  error = signal<string | null>(null);
 
   tabCounts = computed(() => {
     const reqs = this.requisitions();
@@ -172,10 +123,10 @@ export class RequisitionDashboardComponent implements OnInit {
     const deptF = this.departmentFilter();
     const urgentF = this.urgencyFilter();
 
-    const mapReq = (r: Requisition): UnifiedItem => ({
-      type: 'Requisition', id: r.id, number: r.requestNumber, name: r.requesterName,
-      department: r.department, items: r.totalItems, quantity: r.totalQuantity,
-      status: r.status, statusClass: r.status.toLowerCase(), date: r.requestDate, source: r,
+    const mapReq = (r: ServiceRequestDto): UnifiedItem => ({
+      type: 'Requisition', id: r.id, number: r.srNumber || '—', name: r.requesterName || '—',
+      department: r.department || '—', items: r.totalItems || 0, quantity: r.totalQuantity || 0,
+      status: r.status || 'Pending', statusClass: (r.status || 'Pending').toLowerCase(), date: r.requestDate || new Date().toISOString(), source: r,
     });
     const mapSiv = (s: SIV): UnifiedItem => ({
       type: 'SIV', id: s.id, number: s.sivNumber, name: s.issuedTo,
@@ -207,7 +158,7 @@ export class RequisitionDashboardComponent implements OnInit {
       items = items.filter(item => item.department === deptF);
     }
     if (urgentF !== 'All' && tab !== 'sivs') {
-      items = items.filter(item => item.type === 'Requisition' && (item.source as Requisition).urgency === urgentF);
+      items = items.filter(item => item.type === 'Requisition' && (item.source as ServiceRequestDto).urgency === urgentF);
     }
 
     return items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -230,15 +181,61 @@ export class RequisitionDashboardComponent implements OnInit {
   uniqueDepartments = computed(() => {
     const seen = new Set<string>();
     return [...this.requisitions(), ...this.sivs()].filter(item => {
+      if (!item.department) return false;
       if (seen.has(item.department)) return false;
       seen.add(item.department);
       return true;
-    }).map(item => item.department).sort();
+    }).map(item => item.department!).sort();
   });
 
   ngOnInit(): void {
-    this.requisitions.set(MOCK_REQUISITIONS);
-    this.sivs.set(MOCK_SIVS);
+    this.loadRequisitions();
+    this.loadSIVs();
+  }
+
+  loadSIVs(): void {
+    this.requisitionsService.getAllSIVs().subscribe({
+      next: (response) => {
+        if (response.success !== false && Array.isArray(response.data)) {
+          const apiSivs: SIV[] = response.data.map(siv => ({
+            id: String(siv.id),
+            sivNumber: siv.voucherNumber || `SIV-${String(siv.id).slice(0, 8)}`,
+            requestNumber: String(siv.serviceRequestId || ''),
+            issuedTo: siv.issuedBy || '—',
+            issuedBy: siv.issuedBy || '—',
+            department: '—',
+            issueDate: siv.issueDate || new Date().toISOString(),
+            status: (siv.status || '').toLowerCase().includes('pending') ? 'Pending' : 'Issued',
+            totalItems: (siv.items ?? []).length,
+            totalQuantity: (siv.items ?? []).reduce((s: number, i: any) => s + (Number(i.quantity) || 0), 0) || 0,
+          }));
+          this.sivs.set(apiSivs);
+        }
+      },
+      error: () => {
+      },
+    });
+  }
+
+  loadRequisitions(): void {
+    this.loading.set(true);
+    this.error.set(null);
+
+    this.serviceRequestService.getAll().subscribe({
+      next: (response) => {
+        if (response.success !== false && Array.isArray(response.data)) {
+          this.requisitions.set(response.data);
+        } else {
+          this.error.set(response.message || 'No requisition data received from server');
+        }
+        this.loading.set(false);
+      },
+      error: (err: unknown) => {
+        console.error('Error loading requisitions', err);
+        this.error.set('Failed to load requisitions. Please try again.');
+        this.loading.set(false);
+      },
+    });
   }
 
   switchTab(tab: TabType): void {
@@ -292,7 +289,7 @@ export class RequisitionDashboardComponent implements OnInit {
       this.selectedSiv.set(item.source as SIV);
       this.showSivDetailModal.set(true);
     } else {
-      this.selectedRequisition.set(item.source as Requisition);
+      this.selectedRequisition.set(item.source as ServiceRequestDto);
       this.showDetailModal.set(true);
     }
   }
@@ -307,92 +304,19 @@ export class RequisitionDashboardComponent implements OnInit {
     this.selectedSiv.set(null);
   }
 
-  openApproveModal(item: UnifiedItem): void {
-    if (item.type !== 'Requisition') return;
-    this.approveTarget.set(item.source as Requisition);
-    this.approveForm.set({ remarks: '' });
-    this.showApproveModal.set(true);
-  }
-
-  closeApproveModal(): void {
-    this.showApproveModal.set(false);
-    this.approveTarget.set(null);
-    this.approveForm.set({ remarks: '' });
-  }
-
-  updateApproveRemarks(e: Event): void {
-    this.approveForm.update(f => ({ ...f, remarks: (e.target as HTMLTextAreaElement).value }));
-  }
-
-  executeApprove(): void {
-    const target = this.approveTarget();
-    if (!target) return;
-    this.requisitions.update(list =>
-      list.map(r => r.id === target.id ? { ...r, status: 'Approved' as const, approvedDate: new Date().toISOString() } as Requisition : r)
-    );
-    this.notification.set({ type: 'success', message: `${target.requestNumber} approved successfully.` });
-    this.autoDismissNotification();
-    this.closeApproveModal();
-  }
-
-  openRejectModal(item: UnifiedItem): void {
-    if (item.type !== 'Requisition') return;
-    this.rejectTarget.set(item.source as Requisition);
-    this.rejectReason.set('');
-    this.showRejectModal.set(true);
-  }
-
-  closeRejectModal(): void {
-    this.showRejectModal.set(false);
-    this.rejectTarget.set(null);
-    this.rejectReason.set('');
-  }
-
-  updateRejectReason(e: Event): void {
-    this.rejectReason.set((e.target as HTMLTextAreaElement).value);
-  }
-
-  executeReject(): void {
-    const target = this.rejectTarget();
-    if (!target) return;
-    if (!this.rejectReason().trim()) {
-      this.notification.set({ type: 'error', message: 'Please provide a rejection reason.' });
-      this.autoDismissNotification();
-      return;
+  navigateToIssueSiv(item: UnifiedItem): void {
+    if (item.type === 'Requisition') {
+      this.router.navigate(['/admin/sivs/new'], {
+        queryParams: { serviceRequestId: item.id },
+      });
     }
-    this.requisitions.update(list =>
-      list.map(r => r.id === target.id ? { ...r, status: 'Rejected' as const, notes: this.rejectReason() } as Requisition : r)
-    );
-    this.notification.set({ type: 'success', message: `${target.requestNumber} rejected.` });
-    this.autoDismissNotification();
-    this.closeRejectModal();
   }
 
-  confirmDelete(item: UnifiedItem): void {
-    this.deleteTarget.set(item.source);
-    this.showDeleteConfirm.set(true);
+  isIssueable(status: string): boolean {
+    return ['Manager Approved', 'Approved', 'Admin Approved', 'Compliance Review'].includes(status);
   }
 
-  cancelDelete(): void {
-    this.showDeleteConfirm.set(false);
-    this.deleteTarget.set(null);
-  }
 
-  executeDelete(): void {
-    const target = this.deleteTarget();
-    if (!target) return;
-    if ('urgency' in target) {
-      const req = target as Requisition;
-      this.requisitions.update(list => list.filter(r => r.id !== req.id));
-      this.notification.set({ type: 'success', message: `${req.requestNumber} deleted.` });
-    } else {
-      const siv = target as SIV;
-      this.sivs.update(list => list.filter(s => s.id !== siv.id));
-      this.notification.set({ type: 'success', message: `${siv.sivNumber} deleted.` });
-    }
-    this.autoDismissNotification();
-    this.cancelDelete();
-  }
 
   exportCSV(): void {
     this.showExportDropdown.set(false);
@@ -424,20 +348,20 @@ export class RequisitionDashboardComponent implements OnInit {
   }
 
   reqPurpose(item: UnifiedItem): string {
-    return (item.source as Requisition).purpose;
+    return (item.source as ServiceRequestDto).purpose || '—';
   }
 
   reqUrgency(item: UnifiedItem): string {
-    return (item.source as Requisition).urgency;
+    return (item.source as ServiceRequestDto).urgency || 'Normal';
   }
 
   reqUrgencyClass(item: UnifiedItem): string {
-    return 'urgency-' + (item.source as Requisition).urgency.toLowerCase();
+    return 'urgency-' + ((item.source as ServiceRequestDto).urgency || 'normal').toLowerCase();
   }
 
-  getDeleteLabel(target: Requisition | SIV): string {
+  getDeleteLabel(target: ServiceRequestDto | SIV): string {
     if ('urgency' in target) {
-      return (target as Requisition).requestNumber;
+      return (target as ServiceRequestDto).srNumber || '—';
     }
     return (target as SIV).sivNumber;
   }

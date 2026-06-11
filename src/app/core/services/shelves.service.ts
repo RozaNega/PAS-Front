@@ -4,11 +4,18 @@ import { ApiService } from './api.service';
 import { ApiResponse } from '../../types/api-response.type';
 import { normalizePasListResponse, toCamelCaseDeep, unwrapPasEnvelope } from '../utils/pas-api-json.util';
 
-/** Shelf Location from GET /api/ShelfLocations */
+/** Shelf Location from GET /api/ShelfLocations (ASP.NET Core backend) */
 export interface ShelfLocationDto {
   id: string;
   warehouseId: string;
   warehouseName: string;
+  fullAddress?: string;
+  qrCodeValue?: string;
+  isActive: boolean;
+  itemCount: number;
+  totalQuantity: number;
+  capacity: number;
+  currentUtilization?: number;
   aisle?: string;
   rack?: string;
   shelfNumber?: string;
@@ -18,11 +25,8 @@ export interface ShelfLocationDto {
   width?: number;
   height?: number;
   maxWeight?: number;
-  capacity?: number;
-  currentUtilization?: number;
-  isActive: boolean;
   description?: string;
-  createdAt: string;
+  createdAt?: string;
   updatedAt?: string;
 }
 
@@ -105,83 +109,6 @@ function buildUpdateCommand(data: UpdateShelfLocationRequest): Record<string, un
 @Injectable({ providedIn: 'root' })
 export class ShelvesService {
   constructor(private apiService: ApiService) {}
-
-  private createMockShelves(): ShelfLocationDto[] {
-    return [
-      {
-        id: 'a1111111-1111-1111-1111-111111111111',
-        warehouseId: '11111111-1111-1111-1111-111111111111',
-        warehouseName: 'Main Warehouse',
-        aisle: 'A',
-        rack: 'R1',
-        shelfNumber: 'S1',
-        zone: 'Zone-A',
-        binType: 'Standard',
-        length: 120,
-        width: 60,
-        height: 40,
-        maxWeight: 500,
-        capacity: 100,
-        currentUtilization: 65,
-        isActive: true,
-        createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-      },
-      {
-        id: 'a2222222-2222-2222-2222-222222222222',
-        warehouseId: '11111111-1111-1111-1111-111111111111',
-        warehouseName: 'Main Warehouse',
-        aisle: 'A',
-        rack: 'R1',
-        shelfNumber: 'S2',
-        zone: 'Zone-A',
-        binType: 'Standard',
-        length: 120,
-        width: 60,
-        height: 40,
-        maxWeight: 500,
-        capacity: 100,
-        currentUtilization: 45,
-        isActive: true,
-        createdAt: new Date(Date.now() - 28 * 24 * 60 * 60 * 1000).toISOString(),
-      },
-      {
-        id: 'a3333333-3333-3333-3333-333333333333',
-        warehouseId: '11111111-1111-1111-1111-111111111111',
-        warehouseName: 'Main Warehouse',
-        aisle: 'B',
-        rack: 'R2',
-        shelfNumber: 'S1',
-        zone: 'Zone-B',
-        binType: 'Heavy Duty',
-        length: 150,
-        width: 80,
-        height: 50,
-        maxWeight: 1000,
-        capacity: 150,
-        currentUtilization: 80,
-        isActive: true,
-        createdAt: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000).toISOString(),
-      },
-      {
-        id: 'a4444444-4444-4444-4444-444444444444',
-        warehouseId: '22222222-2222-2222-2222-222222222222',
-        warehouseName: 'Branch Warehouse A',
-        aisle: 'A',
-        rack: 'R1',
-        shelfNumber: 'S1',
-        zone: 'Zone-A',
-        binType: 'Standard',
-        length: 100,
-        width: 50,
-        height: 35,
-        maxWeight: 300,
-        capacity: 75,
-        currentUtilization: 40,
-        isActive: true,
-        createdAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(),
-      },
-    ];
-  }
 
   getAll(params?: {
     warehouseId?: string;

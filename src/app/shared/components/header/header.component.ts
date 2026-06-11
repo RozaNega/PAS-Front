@@ -6,6 +6,7 @@ import {
   Output,
   inject,
   signal,
+  computed,
 } from '@angular/core';
 import { Location } from '@angular/common';
 import { NavigationEnd, Router } from '@angular/router';
@@ -14,6 +15,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { filter } from 'rxjs';
 import { LayoutShellService } from '../../../layouts/layout-shell.service';
 import { CurrentUserService } from '../../../core/services/current-user.service';
+import { WorkflowService } from '../../../core/services/workflow.service';
 
 @Component({
   selector: 'app-header',
@@ -29,10 +31,22 @@ export class HeaderComponent {
   private readonly destroyRef = inject(DestroyRef);
   private readonly layoutShellService = inject(LayoutShellService);
   private readonly currentUserService = inject(CurrentUserService);
+  private readonly workflowService = inject(WorkflowService);
   
   @Output() searchChange = new EventEmitter<string>();
   public isBackVisible = signal(false);
   public profileImageUrl = signal<string | null>(null);
+
+  readonly unreadCount = computed(() => {
+    const user = this.authService.getCurrentUser();
+    const dashRole = this.authService.mapUserToDashboardRole(user);
+    const role = dashRole === 'admin' ? 'Admin'
+               : dashRole === 'manager' ? 'Manager'
+               : dashRole === 'compliance-officer' ? 'Compliance'
+               : dashRole === 'storekeeper' ? 'Storekeeper'
+               : 'Employee';
+    return this.workflowService.getNotificationsForUser(user?.id || '', role).filter(n => !n.isRead).length;
+  });
 
   constructor() {
     this.currentUserService.currentUser$
@@ -68,6 +82,10 @@ export class HeaderComponent {
     }
 
     this.router.navigateByUrl('/dashboard');
+  }
+
+  protected navigateToNotifications(): void {
+    this.router.navigate(['/admin/notifications']);
   }
 
   private updateBackButtonState(url: string): void {

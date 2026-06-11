@@ -219,6 +219,37 @@
     </div>
   </section>
 
+  <section class="activity-grid">
+    <div class="activity-panel" style="grid-column: 1 / -1;">
+      <div class="panel-header">
+        <div class="panel-header-left">
+          <i class="bi bi-trash3" style="color: #dc2626;"></i>
+          <h3>Recent Disposals</h3>
+        </div>
+        <button type="button" class="action-btn primary small" (click)="createDisposal()">
+          <i class="bi bi-plus-lg"></i> New Disposal
+        </button>
+      </div>
+      <div class="panel-body">
+        @if (recentDisposals().length === 0) {
+          <div class="empty-state">No disposal records yet</div>
+        }
+        @for (d of recentDisposals(); track d.id) {
+          <div class="activity-row">
+            <div class="activity-icon-box red">
+              <i class="bi bi-trash3"></i>
+            </div>
+            <div class="activity-info">
+              <span class="activity-title">{{ d.itemName || 'Item' }} — {{ d.reason || '—' }}</span>
+              <span class="activity-sub">{{ d.disposalNumber || d.id }} | {{ d.disposalDate | date:'shortDate' }}</span>
+            </div>
+            <span class="qty-badge">{{ d.quantity }}</span>
+          </div>
+        }
+      </div>
+    </div>
+  </section>
+
   <section class="panel">
     <div class="panel-header">
       <div class="panel-header-left">
@@ -247,6 +278,9 @@
           </button>
           <button type="button" class="scan-action-btn" (click)="adjustStock()">
             <i class="bi bi-sliders"></i> Adjust
+          </button>
+          <button type="button" class="scan-action-btn" (click)="createDisposal()">
+            <i class="bi bi-trash3"></i> Dispose
           </button>
         </div>
       </div>
@@ -285,6 +319,71 @@
     <span><i class="bi bi-database"></i> Data refreshes automatically every 5 minutes</span>
     <span><i class="bi bi-clock"></i> {{ today }}</span>
   </footer>
+</section>
+
+<!-- Stock Verification Queue -->
+<section class="panel">
+  <div class="panel-header">
+    <div class="panel-header-left">
+      <i class="bi bi-shield-check" style="color: #8b5cf6;"></i>
+      <h3>Pending Stock Verification</h3>
+      <span class="count-badge purple">{{ pendingVerifications().length }}</span>
+    </div>
+    <button type="button" class="action-btn secondary small" (click)="refreshPendingVerifications()" [disabled]="loadingVerifications()">
+      <i class="bi bi-arrow-repeat"></i> {{ loadingVerifications() ? 'Loading...' : 'Refresh' }}
+    </button>
+  </div>
+
+  @if (verificationNotifications(); as notif) {
+    <div class="notification" [class.success]="notif.type === 'success'" [class.error]="notif.type === 'error'">
+      <i [class]="notif.type === 'success' ? 'bi bi-check-circle-fill' : 'bi bi-exclamation-circle-fill'"></i>
+      <span>{{ notif.message }}</span>
+    </div>
+  }
+
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>SR Number</th>
+          <th>Requester</th>
+          <th>Department</th>
+          <th>Purpose</th>
+          <th>Urgency</th>
+          <th>Items</th>
+          <th>Qty</th>
+          <th>Date</th>
+          <th class="text-right">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (req of pendingVerifications(); track req.id) {
+          <tr>
+            <td><span class="mono">{{ req.srNumber }}</span></td>
+            <td>{{ req.requesterName }}</td>
+            <td>{{ req.department || '—' }}</td>
+            <td>{{ req.purpose || '—' }}</td>
+            <td><span class="priority-tag" [style.background]="getVerificationUrgencyColor(req.urgency) + '18'" [style.color]="getVerificationUrgencyColor(req.urgency)">{{ req.urgency || 'Normal' }}</span></td>
+            <td class="text-center">{{ req.totalItems }}</td>
+            <td class="text-center">{{ req.totalQuantity }}</td>
+            <td class="text-nowrap">{{ req.requestDate | date:'shortDate' }}</td>
+            <td class="text-right">
+              <div class="btn-group">
+                <button type="button" class="action-btn success small" (click)="verifyStock(req.id)" title="Stock Available">
+                  <i class="bi bi-check-lg"></i> Verify
+                </button>
+                <button type="button" class="action-btn danger small" (click)="markStockInsufficient(req.id)" title="Stock Insufficient">
+                  <i class="bi bi-x-lg"></i> Insufficient
+                </button>
+              </div>
+            </td>
+          </tr>
+        } @empty {
+          <tr><td colspan="9" class="empty-state">No requests pending stock verification</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
 </section>
 
 <!-- Workflow Requests Section -->

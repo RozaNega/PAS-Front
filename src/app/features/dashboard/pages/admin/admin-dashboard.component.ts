@@ -2,17 +2,11 @@ import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angula
 import { CommonModule, DatePipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
-import { EMPTY, of } from 'rxjs';
+import { EMPTY } from 'rxjs';
 import { catchError, finalize } from 'rxjs/operators';
 import { DashboardService, DashboardStatistics } from '../../../../core/services/dashboard.service';
 import { ServiceRequestService } from '../../../requisition/service-requests/services/service-request.service';
 import { NotificationService as ToastService } from '../../../../core/services/notification.service';
-import { pasApiUrlHint } from '../../../../core/config/api-base';
-import {
-  WorkflowService,
-  ServiceRequest,
-  NotificationMessage,
-} from '../../../../core/services/workflow.service';
 
 type RequisitionStatus = 'Pending' | 'Approved' | 'Rejected' | 'Completed' | 'Issued';
 
@@ -80,7 +74,7 @@ interface DeptActivity {
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink, RouterLinkActive, DatePipe],
+  imports: [CommonModule, RouterLink, RouterLinkActive],
   templateUrl: './admin-dashboard.component.html',
   styleUrl: './admin-dashboard.component.scss',
 })
@@ -91,7 +85,6 @@ export class AdminDashboardComponent implements OnInit {
   private readonly dashboardService = inject(DashboardService);
   private readonly serviceRequests = inject(ServiceRequestService);
   private readonly toast = inject(ToastService);
-  private readonly workflowService = inject(WorkflowService);
 
   readonly currentDate = signal('');
   readonly currentTime = signal('');
@@ -101,7 +94,6 @@ export class AdminDashboardComponent implements OnInit {
   readonly loadError = signal<string | null>(null);
   readonly lastRefreshed = signal<string | null>(null);
   readonly isAutoRefreshEnabled = signal(false);
-  readonly isMockData = signal(false);
   private autoRefreshInterval: ReturnType<typeof setInterval> | null = null;
 
   readonly requisitionsLoading = signal(false);
@@ -137,9 +129,6 @@ export class AdminDashboardComponent implements OnInit {
 
   readonly complianceScore = signal(94);
 
-  // Workflow integration
-  readonly workflowRequests = signal<ServiceRequest[]>([]);
-  readonly workflowNotifications = signal<NotificationMessage[]>([]);
   readonly monthlyMax = computed(() =>
     Math.max(1, ...this.monthlyTrend().flatMap(m => [m.requests, m.approved, m.completed]))
   );
@@ -163,33 +152,6 @@ export class AdminDashboardComponent implements OnInit {
     return 'stable';
   });
 
-  private mockMonthlyTrend: MonthlyTrend[] = [
-    { month: 'Jan', requests: 28, approved: 20, completed: 15 },
-    { month: 'Feb', requests: 35, approved: 25, completed: 18 },
-    { month: 'Mar', requests: 42, approved: 30, completed: 24 },
-    { month: 'Apr', requests: 38, approved: 28, completed: 22 },
-    { month: 'May', requests: 52, approved: 38, completed: 30 },
-    { month: 'Jun', requests: 48, approved: 35, completed: 28 },
-  ];
-
-  private mockCategoryBreakdown: CategoryItem[] = [
-    { name: 'Electronics', count: 62, color: '#3b82f6' },
-    { name: 'Furniture', count: 38, color: '#10b981' },
-    { name: 'Office Supplies', count: 28, color: '#f59e0b' },
-    { name: 'Vehicles', count: 12, color: '#8b5cf6' },
-    { name: 'Infrastructure', count: 16, color: '#ef4444' },
-  ];
-
-  private mockDepartmentActivity: DeptActivity[] = [
-    { department: 'IT Department', requests: 48, pct: 24 },
-    { department: 'Human Resources', requests: 32, pct: 16 },
-    { department: 'Finance', requests: 28, pct: 14 },
-    { department: 'Operations', requests: 36, pct: 18 },
-    { department: 'Marketing', requests: 20, pct: 10 },
-    { department: 'Administration', requests: 22, pct: 11 },
-    { department: 'Procurement', requests: 14, pct: 7 },
-  ];
-
   constructor() {
     this.updateDateTime();
     const interval = setInterval(() => this.updateDateTime(), 1000);
@@ -204,12 +166,6 @@ export class AdminDashboardComponent implements OnInit {
 
   ngOnInit(): void {
     this.refreshData();
-    this.setupWorkflowSubscriptions();
-    this.loadWorkflowData();
-  }
-
-  apiConnectionHint(): string {
-    return pasApiUrlHint();
   }
 
   private num(v: unknown): number {
@@ -273,76 +229,30 @@ export class AdminDashboardComponent implements OnInit {
   loadDashboardStatistics(): void {
     this.isLoading.set(true);
     this.loadError.set(null);
-    this.dashboardService
-      .getStatistics()
-      .pipe(
-        catchError((err: unknown) => {
-          this.loadError.set(this.describeHttpError(err));
-          return of(null);
-        }),
-        finalize(() => {
-          this.isLoading.set(false);
-          this.hasLoadedOnce.set(true);
-        }),
-      )
-      .subscribe((response) => {
+    this.dashboardService.getStatistics().subscribe({
+      next: (response) => {
+        this.isLoading.set(false);
+        this.hasLoadedOnce.set(true);
         if (response?.success && response.data) {
           this.applyStatistics(response.data);
           this.lastRefreshed.set(new Date().toLocaleString());
           this.loadError.set(null);
-          this.isMockData.set(false);
-        } else if (response && !response.success) {
-          this.loadError.set(response.message || 'Dashboard statistics could not be loaded.');
-          this.useMockFallback();
-        } else if (!response) {
-          this.useMockFallback();
         } else {
-          this.loadError.set('Dashboard returned no statistics payload.');
-          this.useMockFallback();
+          this.loadError.set(response?.message || 'Dashboard statistics are currently unavailable.');
         }
-      });
-  }
-
-  private useMockFallback(): void {
-    this.isMockData.set(true);
-    const mock: DashboardStatistics = {
-      totalProperties: 156, totalLocations: 12, totalSafetyBoxes: 48, totalItems: 2847,
-      totalSuppliers: 23, totalEmployees: 89, pendingRequisitions: 12, approvedRequisitions: 34,
-      issuedRequisitions: 28, completedRequisitions: 156, rejectedRequisitions: 5,
-      pendingInspections: 8, approvedReceiving: 42, rejectedReceiving: 3,
-      totalStockValue: 450000, lowStockItemsCount: 7, outOfStockItemsCount: 2,
-      totalPropertyValue: 2500000, propertiesByLocation: 12, propertiesByType: 5,
-      requisitionsByStatus: [
-        { label: 'Pending', value: 12, color: '#f59e0b' },
-        { label: 'Approved', value: 34, color: '#10b981' },
-        { label: 'Rejected', value: 5, color: '#ef4444' },
-        { label: 'Completed', value: 156, color: '#3b82f6' },
-        { label: 'Issued', value: 28, color: '#8b5cf6' },
-      ],
-      propertiesByLocationChart: [
-        { label: 'Main Warehouse', value: 45, color: '#3b82f6' },
-        { label: 'Branch A', value: 32, color: '#10b981' },
-        { label: 'Branch B', value: 24, color: '#f59e0b' },
-        { label: 'Regional Hub', value: 55, color: '#8b5cf6' },
-      ],
-      stockMovementsByMonth: [],
-      receivingByStatus: [],
-      dailyCreatedProperties: [],
-      recentActivities: [],
-      lowStockAlerts: [],
-      pendingTasks: [],
-      quickActions: [],
-    };
-    this.applyStatistics(mock);
-    this.requisitionsFromApi.set(false);
-    this.recentRequisitions.set(this.fallbackSampleRequisitions());
-    this.loadError.set(null);
+      },
+      error: (err: unknown) => {
+        this.isLoading.set(false);
+        this.hasLoadedOnce.set(true);
+        this.loadError.set(this.describeHttpError(err));
+      },
+    });
   }
 
   private describeHttpError(err: unknown): string {
     if (err instanceof HttpErrorResponse) {
       if (err.status === 0) {
-        return `Unable to reach the API (${err.url || 'unknown URL'}). ${pasApiUrlHint()}`;
+        return `Unable to reach the API (${err.url || 'unknown URL'}). Ensure the backend is running on port 5028.`;
       }
       const body = err.error;
       const msg =
@@ -351,7 +261,7 @@ export class AdminDashboardComponent implements OnInit {
           : err.message;
       return `Request failed (${err.status}). ${msg}`;
     }
-    return `Unable to reach the dashboard API. ${pasApiUrlHint()}`;
+    return `Unable to reach the dashboard API. Ensure the backend is running on port 5028.`;
   }
 
   loadRecentServiceRequests(): void {
@@ -361,7 +271,6 @@ export class AdminDashboardComponent implements OnInit {
       .pipe(
         catchError(() => {
           this.requisitionsFromApi.set(false);
-          this.recentRequisitions.set(this.fallbackSampleRequisitions());
           return EMPTY;
         }),
         finalize(() => this.requisitionsLoading.set(false)),
@@ -370,13 +279,11 @@ export class AdminDashboardComponent implements OnInit {
         if (!res) return;
         if (res.success === false) {
           this.requisitionsFromApi.set(false);
-          this.recentRequisitions.set(this.fallbackSampleRequisitions());
           return;
         }
         this.requisitionsFromApi.set(true);
         const list = res.data ?? [];
         if (!list.length) {
-          this.recentRequisitions.set(this.fallbackSampleRequisitions());
           return;
         }
         const rows: RequisitionRow[] = list.map((sr) => ({
@@ -391,19 +298,6 @@ export class AdminDashboardComponent implements OnInit {
         }));
         this.recentRequisitions.set(rows);
       });
-  }
-
-  private fallbackSampleRequisitions(): RequisitionRow[] {
-    return [
-      { id: 'REQ-2024-042', srNumber: 'SR-2024-042', requestor: 'Abebe Kebede', department: 'IT', item: 'Dell Latitude Laptop', quantity: 2, date: '28 Apr 2024', status: 'Pending' },
-      { id: 'REQ-2024-041', srNumber: 'SR-2024-041', requestor: 'Meron Alemu', department: 'HR', item: 'Office Chairs (Ergonomic)', quantity: 5, date: '27 Apr 2024', status: 'Approved' },
-      { id: 'REQ-2024-040', srNumber: 'SR-2024-040', requestor: 'Getachew Tadesse', department: 'Finance', item: 'HP LaserJet Printer', quantity: 1, date: '26 Apr 2024', status: 'Rejected' },
-      { id: 'REQ-2024-039', srNumber: 'SR-2024-039', requestor: 'Sara Tilahun', department: 'Operations', item: 'A4 Printer Paper (10 boxes)', quantity: 10, date: '25 Apr 2024', status: 'Completed' },
-      { id: 'REQ-2024-038', srNumber: 'SR-2024-038', requestor: 'Biruk Desta', department: 'Marketing', item: 'Conference Table', quantity: 1, date: '24 Apr 2024', status: 'Issued' },
-      { id: 'REQ-2024-037', srNumber: 'SR-2024-037', requestor: 'Tsion Girma', department: 'IT', item: 'Network Switch Cisco', quantity: 3, date: '23 Apr 2024', status: 'Pending' },
-      { id: 'REQ-2024-036', srNumber: 'SR-2024-036', requestor: 'Hanna Solomon', department: 'Sales', item: 'Projector Epson', quantity: 2, date: '22 Apr 2024', status: 'Approved' },
-      { id: 'REQ-2024-035', srNumber: 'SR-2024-035', requestor: 'Elias Worku', department: 'Operations', item: 'Air Conditioner 2 Ton', quantity: 4, date: '21 Apr 2024', status: 'Completed' },
-    ];
   }
 
   private applyStatistics(d: DashboardStatistics): void {
@@ -488,29 +382,14 @@ export class AdminDashboardComponent implements OnInit {
         })),
     );
 
-    if (!d.recentActivities?.length || this.isMockData()) {
-      this.recentActivities.set([
-        { id: 1, title: 'Property Added', description: 'Office Building B · John Admin', time: '2 hours ago', icon: 'bi bi-building-add' },
-        { id: 2, title: 'Requisition Approved', description: 'Laptop Request · Sarah Manager', time: '3 hours ago', icon: 'bi bi-check-circle' },
-        { id: 3, title: 'Inventory Adjusted', description: 'Stock Level Update · Mike Wilson', time: '5 hours ago', icon: 'bi bi-arrow-repeat' },
-        { id: 4, title: 'Transfer Completed', description: 'Dell Latitude Laptop · Abebe K.', time: '1 day ago', icon: 'bi bi-arrow-left-right' },
-        { id: 5, title: 'GRN Received', description: 'Electronics Shipment · Hanna S.', time: '1 day ago', icon: 'bi bi-truck' },
-        { id: 6, title: 'Safety Box Opened', description: 'SAB-BL-003 · Getachew T.', time: '2 days ago', icon: 'bi bi-box-seam' },
-      ]);
-    }
-
-    this.monthlyTrend.set(this.mockMonthlyTrend);
-    this.categoryBreakdown.set(this.mockCategoryBreakdown);
-    this.departmentActivity.set(this.mockDepartmentActivity);
-
-    this.topRequestedItems.set([
-      { id: 1, name: 'Laptop', category: 'Electronics', quantity: 48, requests: 52 },
-      { id: 2, name: 'Office Chair', category: 'Furniture', quantity: 120, requests: 38 },
-      { id: 3, name: 'Printer Paper', category: 'Office Supplies', quantity: 500, requests: 32 },
-      { id: 4, name: 'Monitor', category: 'Electronics', quantity: 28, requests: 28 },
-      { id: 5, name: 'Desk Lamp', category: 'Furniture', quantity: 35, requests: 25 },
-      { id: 6, name: 'Air Conditioner', category: 'HVAC', quantity: 12, requests: 18 },
-    ]);
+    this.monthlyTrend.set(d.monthlyTrend || []);
+    this.categoryBreakdown.set(
+      d.categoryBreakdown?.map(c => ({ name: c.label, count: c.value, color: c.color })) ||
+      d.propertiesByLocationChart?.map(c => ({ name: c.label, count: c.value, color: c.color })) ||
+      []
+    );
+    this.departmentActivity.set(d.departmentActivity || []);
+    this.topRequestedItems.set(d.topRequestedItems || []);
   }
 
   updateDateTime(): void {
@@ -520,57 +399,6 @@ export class AdminDashboardComponent implements OnInit {
     };
     this.currentDate.set(now.toLocaleDateString('en-US', options));
     this.currentTime.set(now.toLocaleTimeString('en-US', { hour12: true }));
-  }
-
-  private setupWorkflowSubscriptions(): void {
-    this.workflowService.getRequestUpdates().subscribe((request) => {
-      this.loadWorkflowData();
-    });
-
-    this.workflowService.getNotificationUpdates().subscribe(() => {
-      this.loadWorkflowData();
-    });
-  }
-
-  loadWorkflowData(): void {
-    const requests = this.workflowService.getRequestsForAdmin();
-    this.workflowRequests.set(requests);
-
-    const notifications = this.workflowService.getNotificationsForUser(
-      'admin_001',
-      'Admin'
-    );
-    this.workflowNotifications.set(notifications);
-  }
-
-  approveRequest(id: string): void {
-    const request = this.workflowRequests().find((r) => r.id === id);
-    if (request) {
-      this.workflowService.adminReviewRequest(
-        id,
-        'approve',
-        'Approved by admin',
-        'admin_001',
-        'Admin User'
-      );
-      this.toast.success(`Request ${request.srNumber} approved`);
-      this.loadWorkflowData();
-    }
-  }
-
-  rejectRequest(id: string): void {
-    const request = this.workflowRequests().find((r) => r.id === id);
-    if (request) {
-      this.workflowService.adminReviewRequest(
-        id,
-        'reject',
-        'Rejected by admin',
-        'admin_001',
-        'Admin User'
-      );
-      this.toast.error(`Request ${request.srNumber} rejected`);
-      this.loadWorkflowData();
-    }
   }
 
   toggleAutoRefresh(): void {
@@ -590,17 +418,6 @@ export class AdminDashboardComponent implements OnInit {
 
   openRequisition(id: string): void {
     void this.router.navigate(['/admin/requisitions', id]);
-  }
-
-  markAllNotificationsAsRead(): void {
-    this.workflowService.markAllNotificationsAsRead('admin_001', 'Admin');
-    this.loadWorkflowData();
-    this.toast.success('All notifications marked as read');
-  }
-
-  dismissNotification(id: string): void {
-    this.workflowService.dismissNotification(id);
-    this.loadWorkflowData();
   }
 
   getStatusClass(status: string): string {

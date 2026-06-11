@@ -192,9 +192,12 @@
       box-shadow: 0 6px 20px var(--primary-shadow-color);
     }
     &:disabled {
-      opacity: 0.5;
+      opacity: 0.45;
       cursor: not-allowed;
       transform: none;
+      box-shadow: none;
+      background: #9ca3af;
+      pointer-events: none;
     }
   }
 

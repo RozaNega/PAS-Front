@@ -1,7 +1,6 @@
 import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { StockTransferService, TransferItem, TransferHistory } from '../services/stock-transfer.service';
+import { StockTransferService, TransferHistory } from '../services/stock-transfer.service';
 
 import { NgxEchartsDirective, provideEchartsCore } from 'ngx-echarts';
 import * as echarts from 'echarts/core';
@@ -11,15 +10,10 @@ import { CanvasRenderer } from 'echarts/renderers';
 
 echarts.use([BarChart, PieChart, LineChart, TooltipComponent, GridComponent, LegendComponent, CanvasRenderer]);
 
-interface WarehouseOption {
-  id: string;
-  name: string;
-}
-
 @Component({
   selector: 'app-stock-transfer',
   standalone: true,
-  imports: [CommonModule, FormsModule, NgxEchartsDirective],
+  imports: [CommonModule, NgxEchartsDirective],
   providers: [provideEchartsCore({ echarts })],
   templateUrl: './stock-transfer.component.html',
   styleUrls: ['./stock-transfer.component.scss']
@@ -28,25 +22,12 @@ export class StockTransferComponent implements OnInit {
   private readonly transferService = inject(StockTransferService);
   readonly Math = Math;
 
-  todayDate = new Date().toLocaleDateString();
-  activeTab = signal<'create' | 'history'>('create');
-
-  // Form state
-  fromWarehouse = signal('');
-  toWarehouse = signal('');
-  transferReason = signal('');
-  requiredByDate = signal('');
-  notes = signal('');
-  itemSearch = signal('');
-
   // Data state
-  warehouses = signal<WarehouseOption[]>([]);
-  transferItems = signal<TransferItem[]>([]);
   transferHistory = signal<TransferHistory[]>([]);
 
   // UI state
-  showHistoryModal = signal(false);
   loading = signal(false);
+
   submitting = signal(false);
   error = signal<string | null>(null);
   success = signal<string | null>(null);
@@ -68,6 +49,7 @@ export class StockTransferComponent implements OnInit {
     this.transferReason().trim().length > 0 &&
     this.selectedItems().length > 0
   );
+
 
   // KPI data
   totalTransfers = computed(() => this.transferHistory().length);
@@ -126,76 +108,26 @@ export class StockTransferComponent implements OnInit {
     };
   }
 
-  filteredTransferItems = computed(() => {
-    const query = this.itemSearch().toLowerCase();
-    if (!query) return this.transferItems();
-    return this.transferItems().filter(i =>
-      i.name.toLowerCase().includes(query) || i.sku.toLowerCase().includes(query)
-    );
-  });
-
   filteredHistory = computed(() => {
     return this.transferHistory();
   });
 
   ngOnInit(): void {
-    this.loadWarehouses();
     this.loadTransferHistory();
   }
 
-  loadWarehouses(): void {
-    this.loading.set(true);
-    this.error.set(null);
-    this.transferService.getWarehouses().subscribe({
-      next: (res) => {
-        if (res.success !== false && Array.isArray(res.data)) {
-          const warehouseList = (res.data as any[]).map(wh => ({ id: wh.id, name: wh.warehouseName }));
-          this.warehouses.set(warehouseList);
-          if (warehouseList.length >= 2) {
-            this.fromWarehouse.set(warehouseList[0].id);
-            this.toWarehouse.set(warehouseList[1].id);
-            this.loadItemsForWarehouse();
-          }
-        } else {
-          this.error.set(res.message || 'Failed to load warehouses');
-        }
-        this.loading.set(false);
-      },
-      error: () => {
-        this.error.set('Failed to load warehouses.');
-        this.loading.set(false);
-      }
-    });
-  }
-
-  loadItemsForWarehouse(): void {
-    const warehouseId = this.fromWarehouse();
-    if (!warehouseId) return;
-    this.loadingItems.set(true);
-    this.error.set(null);
-    this.transferService.getItemsInWarehouse(warehouseId).subscribe({
-      next: (res) => {
-        if (res.success !== false && Array.isArray(res.data)) {
-          this.transferItems.set(res.data);
-        } else {
-          this.error.set(res.message || 'Failed to load items');
-        }
-        this.loadingItems.set(false);
-      },
-      error: () => {
-        this.error.set('Failed to load items.');
-        this.loadingItems.set(false);
-      }
-    });
-  }
-
   loadTransferHistory(): void {
+    this.loading.set(true);
     this.transferService.getTransferHistory().subscribe({
       next: (res) => {
         if (res.success !== false && Array.isArray(res.data)) {
           this.transferHistory.set(res.data);
         }
+        this.loading.set(false);
       },
+
+      error: () => { this.loading.set(false); }
+
       error: () => {}
     });
   }
@@ -255,27 +187,8 @@ export class StockTransferComponent implements OnInit {
         this.submitting.set(false);
         this.error.set('Failed to create transfer. Please try again.');
       }
+
     });
-  }
-
-  cancelForm(): void {
-    this.resetForm();
-  }
-
-  private resetForm(): void {
-    this.transferReason.set('');
-    this.requiredByDate.set('');
-    this.notes.set('');
-    this.itemSearch.set('');
-    this.error.set(null);
-    this.success.set(null);
-    this.transferItems.update(items => items.map(item => ({ ...item, toTransfer: 0 })));
-  }
-
-  showToast(message: string, type: 'success' | 'error' | 'info' = 'success'): void {
-    if (this.toastTimer) clearTimeout(this.toastTimer);
-    this.toast.set({ message, type, visible: true });
-    this.toastTimer = setTimeout(() => this.toast.set({ message: '', type: 'info', visible: false }), 3000);
   }
 
   getStatusIcon(status: string): string {
@@ -301,9 +214,5 @@ export class StockTransferComponent implements OnInit {
     if (value >= 1000000) return '$' + (value / 1000000).toFixed(2) + 'M';
     if (value >= 1000) return '$' + (value / 1000).toFixed(0) + 'K';
     return '$' + value.toString();
-  }
-
-  getWarehouseName(id: string): string {
-    return this.warehouses().find(w => w.id === id)?.name || id;
   }
 }

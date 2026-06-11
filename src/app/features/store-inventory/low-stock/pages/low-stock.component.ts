@@ -5,7 +5,6 @@ import { InventoryService, InventoryStockDto } from '../../../../core/services/i
 import { WarehousesService } from '../../../../core/services/warehouses.service';
 
 type AlertSeverity = 'Critical' | 'Warning' | 'Info';
-type AlertThreshold = 'Critical Only' | 'Critical & Warning' | 'All Low Stock';
 
 interface LowStockItem {
   id: string;
@@ -53,11 +52,13 @@ interface SummaryStats {
   categoriesAffected: number;
 }
 
+
 interface AnalysisItem {
   name: string;
   items: number;
   percentage: number;
 }
+
 
 function computeSeverity(current: number, minStock: number): LowStockItem['severity'] {
   if (minStock <= 0) return 'Info';
@@ -221,6 +222,17 @@ export class LowStockComponent implements OnInit {
     this.inventory.getStockOverview(params).subscribe({
       next: (res) => {
         this.loading.set(false);
+
+        if (res.success !== false && Array.isArray(res.data) && res.data.length > 0) {
+          const rows = res.data.map(r => this.mapRow(r));
+          if (rows.length > 0) {
+            this.allLowStock.set(rows);
+            this.loadError.set(null);
+            return;
+          }
+        }
+        this.loadError.set('No low stock items found.');
+
         if (res.success === false) {
           this.allLowStock.set([]);
           this.loadError.set(res.message || 'Failed to load low stock data');
@@ -237,11 +249,18 @@ export class LowStockComponent implements OnInit {
         this.allLowStock.set([]);
         this.loadError.set('No low stock items found');
         this.autoDismiss();
+
       },
       error: (err) => {
         this.loading.set(false);
+
+        this.loadError.set('Failed to load low stock items. Please try again.');
+        this.notification.set({ type: 'error', message: 'Failed to load low stock data' });
+        this.autoDismiss();
+
         this.allLowStock.set([]);
         this.loadError.set(err.message || 'Failed to load low stock data');
+
       },
     });
   }
@@ -428,10 +447,6 @@ export class LowStockComponent implements OnInit {
 
   refreshData(): void {
     this.loadLowStock();
-  }
-
-  trackByAnalysisName(_: number, item: AnalysisItem): string {
-    return item.name;
   }
 
   openOrderModal(item: LowStockItem): void {

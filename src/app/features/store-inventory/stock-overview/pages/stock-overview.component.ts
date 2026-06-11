@@ -61,6 +61,7 @@ interface SummaryStats {
   netChange: number;
 }
 
+
 function toYmd(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
@@ -102,6 +103,7 @@ export class StockOverviewComponent implements OnInit {
   private allItems = signal<InventoryStockDto[]>([]);
   private movements = signal<StockMovementDto[]>([]);
 
+
   selectedHistory = signal<StockHistoryEntry[]>([]);
 
   displayRows = computed<StockDisplayRow[]>(() => {
@@ -112,7 +114,7 @@ export class StockOverviewComponent implements OnInit {
     const items = this.allItems();
     const movs = this.movements();
     const totalItems = items.reduce((s, i) => s + (Number(i.currentStock) || 0), 0);
-    const totalStockValue = items.reduce((s, i) => s + (Number(i.currentStock) || 0) * 15, 0);
+    const totalStockValue = items.reduce((s, i) => s + (Number(i.currentStock) || 0) * (Number((i as any).unitPrice) || 15), 0);
     const lowStockItems = items.filter(i => {
       const min = Number(i.minimumThreshold) || 0;
       const q = Number(i.currentStock) || 0;
@@ -137,9 +139,13 @@ export class StockOverviewComponent implements OnInit {
 
   monthlyTrend = computed<MonthlyTrendPoint[]>(() => {
     const movs = this.movements();
+
+    if (movs.length === 0) return [];
+
     if (movs.length === 0) {
       return [];
     }
+
     const monthlyMap = new Map<string, { total: number; inflow: number; outflow: number }>();
     for (const m of movs) {
       if (!m.movementDate) continue;
@@ -221,7 +227,6 @@ export class StockOverviewComponent implements OnInit {
   });
 
 
-
   ngOnInit(): void {
     this.loadData();
   }
@@ -239,9 +244,18 @@ export class StockOverviewComponent implements OnInit {
     }).subscribe({
       next: ({ overview, movements }) => {
         this.loading.set(false);
-        if (overview.success !== false && Array.isArray(overview.data) && overview.data.length > 0) {
+        if (overview.success !== false && Array.isArray(overview.data)) {
           this.allItems.set(overview.data);
           this.loadError.set(null);
+
+          if (overview.data.length === 0) {
+            this.loadError.set('No stock items found in the database.');
+          }
+        }
+        if (movements.success !== false && Array.isArray(movements.data)) {
+          this.movements.set(movements.data);
+        }
+
         } else {
           this.allItems.set([]);
           this.loadError.set(overview.message || 'No stock data available');
@@ -252,12 +266,17 @@ export class StockOverviewComponent implements OnInit {
           this.movements.set([]);
         }
         this.autoDismiss();
+
       },
       error: (err) => {
         this.loading.set(false);
+
+        this.loadError.set('Failed to load stock data from server.');
+
         this.allItems.set([]);
         this.movements.set([]);
         this.loadError.set(err.message || 'Failed to load stock data');
+
       },
     });
   }
@@ -306,7 +325,19 @@ export class StockOverviewComponent implements OnInit {
 
   openDetailModal(row: StockDisplayRow): void {
     this.selectedItem.set(row);
+
+    const movs = this.movements().filter(m => m.itemId === row.itemId);
+    this.selectedHistory.set(movs.map(m => ({
+      date: m.movementDate || '',
+      type: (m.movementType || '').toLowerCase().includes('grn') ? 'In' : 'Out',
+      quantity: Math.abs(Number(m.quantity) || 0),
+      reference: m.referenceNumber || '',
+      performedBy: m.performedBy || '—',
+      notes: m.notes || '',
+    })));
+
     this.selectedHistory.set([]);
+
     this.showDetailModal.set(true);
   }
 

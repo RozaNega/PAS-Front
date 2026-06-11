@@ -1,10 +1,7 @@
 import { ChangeDetectionStrategy, Component, OnInit, OnDestroy, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { forkJoin, of } from 'rxjs';
-import { catchError, map } from 'rxjs/operators';
 import { InventoryService, StockMovementDto } from '../../../../core/services/inventory.service';
-import { MovementTrendDto, ReportsService, StockMovementDetailDto } from '../../../../core/services/reports.service';
 
 type MovementType = 'Inflow' | 'Outflow' | 'Transfer' | 'Adjustment' | 'Other';
 
@@ -80,66 +77,6 @@ function getMonday(d: Date): Date {
   return date;
 }
 
-function createMockMovements(): Movement[] {
-  const now = new Date();
-  const items: Array<{ item: string; sku: string }> = [
-    { item: 'Office Laptop', sku: 'LAP-HP-001' },
-    { item: 'Office Chair', sku: 'CHR-STD-001' },
-    { item: 'Desk Printer', sku: 'PRT-JET-001' },
-    { item: 'Printer Paper', sku: 'PAP-A4-001' },
-    { item: 'Wireless Mouse', sku: 'MOU-WL-001' },
-    { item: 'Mechanical Keyboard', sku: 'KEY-MC-001' },
-    { item: 'Monitor 24"', sku: 'MON-24-001' },
-    { item: 'Desk Lamp', sku: 'LMP-DK-001' },
-    { item: 'USB-C Hub', sku: 'USB-HB-001' },
-    { item: 'Headset', sku: 'HDS-BT-001' },
-  ];
-  const users = ['John Doe', 'Jane Smith', 'Mike Johnson', 'Sarah Wilson', 'David Chen'];
-
-  const records: Array<{
-    type: MovementType;
-    itemIdx: number;
-    qty: number;
-    refNum: string;
-    userIdx: number;
-    note: string;
-    daysAgo: number;
-  }> = [
-    { type: 'Inflow', itemIdx: 0, qty: 10, refNum: 'GRN-2026-0401', userIdx: 0, note: 'Supplier delivery - HP ProBook', daysAgo: 84 },
-    { type: 'Outflow', itemIdx: 1, qty: 5, refNum: 'SIV-2026-0301', userIdx: 1, note: 'Issued to Admin department', daysAgo: 80 },
-    { type: 'Inflow', itemIdx: 3, qty: 50, refNum: 'GRN-2026-0402', userIdx: 2, note: 'Bulk paper order from supplier', daysAgo: 75 },
-    { type: 'Transfer', itemIdx: 0, qty: 3, refNum: 'TRF-2026-0201', userIdx: 3, note: 'Transferred to Branch A', daysAgo: 70 },
-    { type: 'Outflow', itemIdx: 2, qty: 2, refNum: 'SIV-2026-0302', userIdx: 0, note: 'IT department replacement', daysAgo: 65 },
-    { type: 'Adjustment', itemIdx: 1, qty: -1, refNum: 'ADJ-2026-0101', userIdx: 4, note: 'Count correction - damaged unit', daysAgo: 60 },
-    { type: 'Inflow', itemIdx: 4, qty: 20, refNum: 'GRN-2026-0403', userIdx: 1, note: 'New peripheral stock', daysAgo: 55 },
-    { type: 'Outflow', itemIdx: 5, qty: 8, refNum: 'SIV-2026-0303', userIdx: 2, note: 'Equipment for new hires', daysAgo: 50 },
-    { type: 'Inflow', itemIdx: 6, qty: 5, refNum: 'GRN-2026-0404', userIdx: 3, note: 'Monitor shipment arrived', daysAgo: 45 },
-    { type: 'Outflow', itemIdx: 3, qty: 20, refNum: 'SIV-2026-0304', userIdx: 0, note: 'Office consumables', daysAgo: 40 },
-    { type: 'Transfer', itemIdx: 2, qty: 1, refNum: 'TRF-2026-0202', userIdx: 4, note: 'Cross-warehouse transfer', daysAgo: 35 },
-    { type: 'Adjustment', itemIdx: 4, qty: 2, refNum: 'ADJ-2026-0102', userIdx: 1, note: 'Physical count adjustment', daysAgo: 30 },
-    { type: 'Inflow', itemIdx: 7, qty: 15, refNum: 'GRN-2026-0405', userIdx: 2, note: 'Lighting equipment stock', daysAgo: 28 },
-    { type: 'Outflow', itemIdx: 8, qty: 10, refNum: 'SIV-2026-0305', userIdx: 3, note: 'Accessories issued', daysAgo: 25 },
-    { type: 'Inflow', itemIdx: 9, qty: 8, refNum: 'GRN-2026-0406', userIdx: 0, note: 'Headset restock', daysAgo: 20 },
-    { type: 'Outflow', itemIdx: 6, qty: 2, refNum: 'SIV-2026-0306', userIdx: 1, note: 'Executive office setup', daysAgo: 15 },
-    { type: 'Adjustment', itemIdx: 5, qty: -3, refNum: 'ADJ-2026-0103', userIdx: 4, note: 'Inventory variance correction', daysAgo: 12 },
-    { type: 'Transfer', itemIdx: 9, qty: 4, refNum: 'TRF-2026-0203', userIdx: 2, note: 'Transfer to satellite office', daysAgo: 8 },
-    { type: 'Inflow', itemIdx: 1, qty: 10, refNum: 'GRN-2026-0407', userIdx: 3, note: 'Chair order fulfillment', daysAgo: 5 },
-    { type: 'Outflow', itemIdx: 0, qty: 1, refNum: 'SIV-2026-0307', userIdx: 0, note: 'New employee laptop', daysAgo: 1 },
-  ];
-
-  return records.map((r, i) => ({
-    id: `mov-${String(i + 1).padStart(3, '0')}`,
-    dateTime: addDays(now, -r.daysAgo).toISOString(),
-    type: r.type,
-    item: items[r.itemIdx].item,
-    sku: items[r.itemIdx].sku,
-    quantity: r.type === 'Outflow' ? -Math.abs(r.qty) : Math.abs(r.qty),
-    refNumber: r.refNum,
-    performedBy: users[r.userIdx],
-    notes: r.note,
-  }));
-}
-
 @Component({
   selector: 'app-stock-movements',
   standalone: true,
@@ -158,7 +95,6 @@ export class StockMovementsComponent implements OnInit, OnDestroy {
 
   loading = signal(false);
   loadError = signal<string | null>(null);
-  isUsingMock = signal(false);
   allMovements = signal<Movement[]>([]);
 
   sortField = signal<SortField>('dateTime');
@@ -328,7 +264,6 @@ export class StockMovementsComponent implements OnInit, OnDestroy {
   loadMovements(): void {
     this.loading.set(true);
     this.loadError.set(null);
-    this.isUsingMock.set(false);
 
     this.inventory
       .getStockMovements({
@@ -342,16 +277,13 @@ export class StockMovementsComponent implements OnInit, OnDestroy {
           if (res.success !== false && Array.isArray(res.data) && res.data.length > 0) {
             this.allMovements.set(res.data.map((d) => this.mapDto(d)));
           } else {
-            this.allMovements.set(createMockMovements());
-            this.isUsingMock.set(true);
-            this.showNotification('Using sample data - API unavailable', 'info');
+            this.loadError.set('No stock movements found.');
           }
         },
         error: () => {
           this.loading.set(false);
-          this.allMovements.set(createMockMovements());
-          this.isUsingMock.set(true);
-          this.showNotification('Using sample data - API unavailable', 'info');
+          this.loadError.set('Failed to load stock movements. Please try again.');
+          this.showNotification('Failed to load stock movements', 'error');
         },
       });
   }

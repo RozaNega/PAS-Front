@@ -3,10 +3,20 @@ import { CommonModule, CurrencyPipe } from '@angular/common';
 import { Router } from '@angular/router';
 
 import { DashboardService, DashboardStatistics } from '../../../../core/services/dashboard.service';
+
+import {
+  WorkflowService,
+  ServiceRequest,
+  NotificationMessage,
+} from '../../../../core/services/workflow.service';
+import { ServiceRequestService, ServiceRequestDto } from '../../../requisition/service-requests/services/service-request.service';
+import { DisposalRecordsService, DisposalRecordDto } from '../../../../core/services/disposal-records.service';
+
 import { WorkflowService, ServiceRequest, NotificationMessage } from '../../../../core/services/workflow.service';
 import { ReceivingNotesService, ReceivingNoteListDto } from '../../../../core/services/receiving-notes.service';
 import { RequisitionsService, StoreIssueVoucherDto, ServiceRequestDto } from '../../../../core/services/requisitions.service';
 import { ReportsService, ValuationByCategoryDto } from '../../../../core/services/reports.service';
+
 
 import { NgxEchartsDirective, provideEchartsCore } from 'ngx-echarts';
 import * as echarts from 'echarts/core';
@@ -91,9 +101,14 @@ export class StorekeeperDashboardComponent implements OnInit {
   readonly router = inject(Router);
   private readonly dashboardService = inject(DashboardService);
   private readonly workflowService = inject(WorkflowService);
+
+  private readonly srService = inject(ServiceRequestService);
+  private readonly disposalService = inject(DisposalRecordsService);
+
   private readonly receivingNotesService = inject(ReceivingNotesService);
   private readonly requisitionsService = inject(RequisitionsService);
   private readonly reportsService = inject(ReportsService);
+
 
   readonly isLoading = signal(false);
   readonly statistics = signal<DashboardStatistics | null>(null);
@@ -110,6 +125,72 @@ export class StorekeeperDashboardComponent implements OnInit {
   readonly workflowRequests = signal<ServiceRequest[]>([]);
   readonly workflowNotifications = signal<NotificationMessage[]>([]);
 
+
+  // Stock verification queue
+  readonly pendingVerifications = signal<ServiceRequestDto[]>([]);
+  readonly loadingVerifications = signal(false);
+
+  // Disposal
+  readonly recentDisposals = signal<DisposalRecordDto[]>([]);
+  readonly verificationNotifications = signal<{ type: string; message: string } | null>(null);
+
+  readonly weeklyTrends: WeeklyTrend[] = [
+    { label: 'W1', total: 4200, electronics: 1800, furniture: 1200 },
+    { label: 'W2', total: 4350, electronics: 1900, furniture: 1250 },
+    { label: 'W3', total: 4100, electronics: 1750, furniture: 1180 },
+    { label: 'W4', total: 4450, electronics: 2000, furniture: 1300 },
+    { label: 'W5', total: 4600, electronics: 2100, furniture: 1350 },
+    { label: 'W6', total: 4500, electronics: 2050, furniture: 1320 },
+    { label: 'W7', total: 4700, electronics: 2200, furniture: 1400 },
+    { label: 'W8', total: 4900, electronics: 2300, furniture: 1450 },
+    { label: 'W9', total: 4800, electronics: 2250, furniture: 1420 },
+    { label: 'W10', total: 5100, electronics: 2400, furniture: 1500 },
+    { label: 'W11', total: 5000, electronics: 2350, furniture: 1480 },
+    { label: 'W12', total: 5200, electronics: 2450, furniture: 1520 },
+  ];
+
+  readonly stockCategories: StockCategory[] = [
+    { name: 'Electronics', percentage: 35, units: 4320, color: '#3B82F6' },
+    { name: 'Furniture', percentage: 25, units: 3086, color: '#10B981' },
+    { name: 'Office Supplies', percentage: 15, units: 1852, color: '#F59E0B' },
+    { name: 'IT Equipment', percentage: 10, units: 1234, color: '#8B5CF6' },
+    { name: 'Stationery', percentage: 8, units: 988, color: '#EC4899' },
+    { name: 'Other', percentage: 7, units: 865, color: '#6B7280' },
+  ];
+
+  readonly pendingIssues: PendingIssue[] = [
+    { id: 'SR-2024-0123', priority: 'Urgent', item: 'Laptop', quantity: 5, waitTime: '2 hours' },
+    { id: 'SR-2024-0124', priority: 'Medium', item: 'Monitor', quantity: 3, waitTime: '5 hours' },
+    { id: 'SR-2024-0125', priority: 'Normal', item: 'Keyboard', quantity: 10, waitTime: '1 day' },
+    { id: 'SR-2024-0126', priority: 'Normal', item: 'Mouse', quantity: 15, waitTime: '1 day' },
+  ];
+
+  readonly pendingReceivings: PendingReceiving[] = [
+    { id: '1', grnNo: 'GRN-2024-0456', supplier: 'Tech Supplies Ltd', items: 'Laptop (45 units)', receivedTime: '10:30 AM' },
+    { id: '2', grnNo: 'GRN-2024-0457', supplier: 'Office Depot', items: 'Chair (30 units)', receivedTime: '09:15 AM' },
+    { id: '3', grnNo: 'GRN-2024-0458', supplier: 'Global Suppliers', items: 'Paper (100 boxes)', receivedTime: '08:00 AM' },
+  ];
+
+  readonly recentIssues: RecentIssue[] = [
+    { sivNo: 'SIV-0012', item: 'Laptop', quantity: 2, department: 'IT Dept', time: '10:15 AM' },
+    { sivNo: 'SIV-0011', item: 'Monitor', quantity: 3, department: 'HR Dept', time: '09:30 AM' },
+    { sivNo: 'SIV-0010', item: 'Keyboard', quantity: 5, department: 'Sales Dept', time: '08:45 AM' },
+  ];
+
+  readonly recentReceivings: RecentReceiving[] = [
+    { grnNo: 'GRN-0456', item: 'Laptop', quantity: 45, supplier: 'Tech Supplies', time: '10:30 AM' },
+    { grnNo: 'GRN-0455', item: 'Chair', quantity: 30, supplier: 'Office Depot', time: '09:15 AM' },
+    { grnNo: 'GRN-0454', item: 'Paper', quantity: 100, supplier: 'Paper Co', time: '08:00 AM' },
+  ];
+
+  readonly recentGRNs: GRN[] = [
+    { id: 1, grnNo: 'GRN-001', supplier: 'Tech Supplies', items: 'Laptop x5', date: '2024-04-28', status: 'Pending' },
+    { id: 2, grnNo: 'GRN-002', supplier: 'XYZ Corp', items: 'Monitor x10', date: '2024-04-27', status: 'Received' },
+    { id: 3, grnNo: 'GRN-003', supplier: 'ABC Supplies', items: 'Keyboard x20', date: '2024-04-26', status: 'Rejected' },
+  ];
+
+
+
   today = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
   isScanning = false;
   scannedItem = {
@@ -124,6 +205,8 @@ export class StorekeeperDashboardComponent implements OnInit {
     this.loadSectionData();
     this.setupWorkflowSubscriptions();
     this.loadWorkflowData();
+    this.loadPendingVerifications();
+    this.loadDisposalData();
   }
 
   private setupWorkflowSubscriptions(): void {
@@ -134,13 +217,104 @@ export class StorekeeperDashboardComponent implements OnInit {
   private loadWorkflowData(): void {
     const requests = this.workflowService.getRequestsForManagerAll('storekeeper_queue');
     this.workflowRequests.set(requests);
+
+
+    const notifications = this.workflowService.getNotificationsForUser(
+      'storekeeper_001',
+      'Storekeeper'
+    );
+
     const notifications = this.workflowService.getNotificationsForUser('storekeeper_001', 'Manager');
+
     this.workflowNotifications.set(notifications);
   }
 
   refreshWorkflowData(): void {
     this.loadWorkflowData();
   }
+
+
+  loadPendingVerifications(): void {
+    this.loadingVerifications.set(true);
+    this.srService.getAll({ status: 'Pending', pageSize: 50 }).subscribe({
+      next: (res) => {
+        if (res.success && Array.isArray(res.data)) {
+          const pending = res.data.filter(
+            (sr) => sr.stockVerificationStatus?.toLowerCase() === 'pending'
+          );
+          this.pendingVerifications.set(pending);
+        }
+        this.loadingVerifications.set(false);
+      },
+      error: () => {
+        this.loadingVerifications.set(false);
+      },
+    });
+  }
+
+  refreshPendingVerifications(): void {
+    this.loadPendingVerifications();
+  }
+
+  loadDisposalData(): void {
+    this.disposalService.getAll({ pageSize: 5 }).subscribe({
+      next: (res) => {
+        if (res.success !== false && res.data) {
+          const items = (res.data as any)?.items || (Array.isArray(res.data) ? res.data : []);
+          this.recentDisposals.set(items);
+        }
+      },
+    });
+  }
+
+  createDisposal(): void {
+    this.router.navigate(['/storekeeper/disposal']);
+  }
+
+  verifyStock(id: string): void {
+    if (!confirm('Confirm stock is available for this request?')) return;
+    this.srService.verifyStock({ id, isAvailable: true }).subscribe({
+      next: (res) => {
+        if (res.success) {
+          this.verificationNotifications.set({ type: 'success', message: 'Stock verified successfully' });
+          this.loadPendingVerifications();
+          this.loadWorkflowData();
+        } else {
+          this.verificationNotifications.set({ type: 'error', message: res.message || 'Verification failed' });
+        }
+      },
+      error: (err) => {
+        let msg = 'Failed to verify stock.';
+        if (err?.error?.message) msg = err.error.message;
+        else if (err?.error?.title) msg = err.error.title;
+        if (err?.status) msg = `[${err.status}] ${msg}`;
+        this.verificationNotifications.set({ type: 'error', message: msg });
+      },
+    });
+  }
+
+  markStockInsufficient(id: string): void {
+    const notes = prompt('Enter notes about the insufficient stock:');
+    if (notes === null) return;
+    if (!confirm('Mark stock as insufficient for this request?')) return;
+    this.srService.verifyStock({ id, isAvailable: false, notes: notes || undefined }).subscribe({
+      next: (res) => {
+        if (res.success) {
+          this.verificationNotifications.set({ type: 'success', message: 'Marked as insufficient' });
+          this.loadPendingVerifications();
+          this.loadWorkflowData();
+        } else {
+          this.verificationNotifications.set({ type: 'error', message: res.message || 'Operation failed' });
+        }
+      },
+      error: (err) => {
+        let msg = 'Failed to mark insufficient.';
+        if (err?.error?.message) msg = err.error.message;
+        else if (err?.error?.title) msg = err.error.title;
+        if (err?.status) msg = `[${err.status}] ${msg}`;
+        this.verificationNotifications.set({ type: 'error', message: msg });
+      },
+    });
 
   private loadSectionData(): void {
     this.loadStockCategories();
@@ -149,6 +323,7 @@ export class StorekeeperDashboardComponent implements OnInit {
     this.loadRecentIssues();
     this.loadRecentReceivings();
     this.loadRecentGRNs();
+
   }
 
   loadDashboardData(): void {
@@ -427,5 +602,15 @@ export class StorekeeperDashboardComponent implements OnInit {
 
   formatNumber(n: number): string {
     return n.toLocaleString();
+  }
+
+  getVerificationUrgencyColor(urgency: string | undefined): string {
+    const u = (urgency || 'normal').toLowerCase();
+    switch (u) {
+      case 'critical': case 'urgent': return '#ef4444';
+      case 'high': return '#f59e0b';
+      case 'normal': case 'low': return '#10b981';
+      default: return '#10b981';
+    }
   }
 }

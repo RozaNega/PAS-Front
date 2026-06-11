@@ -39,8 +39,13 @@ export class IssuanceReportService {
           }));
           return { success: res.success, message: res.message, data: items, statusCode: res.statusCode };
         }
+
+        return { ...res, data: [] } as ApiResponse<IssuanceReportItem[]>;
+      }),
+
         return { success: res.success, message: res.message, data: [], statusCode: res.statusCode };
       })
+
     );
   }
 }

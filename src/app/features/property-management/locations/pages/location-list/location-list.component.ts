@@ -61,7 +61,6 @@ export class LocationListComponent {
 
   locationTypes = ['All Types', 'Building', 'Floor', 'Department', 'Room', 'Warehouse', 'Aisle', 'Shelf'];
   parentOptions = ['All'];
-  mockUsed = false;
 
   modalForm = {
     name: '',
@@ -185,50 +184,19 @@ export class LocationListComponent {
     this.loadLocations();
   }
 
-  private createMockLocations(): Location[] {
-    const types = ['Building', 'Floor', 'Department', 'Room', 'Warehouse', 'Aisle', 'Shelf'];
-    const active = (): 'Active' | 'Inactive' => Math.random() > 0.15 ? 'Active' : 'Inactive';
-    const ts = '2025-05-15T10:00:00.000Z';
-
-    return [
-      { id: 'loc-001', name: 'HQ Bole', type: 'Building', parentId: null, propertiesCount: 45, status: active(), description: 'Headquarters building in Bole district', contactPerson: 'Amanuel Tadesse', phone: '+251 911 100 001', email: 'amanuel@afrocom.com', addressLine1: 'Bole Road, near Bole International Airport', addressLine2: 'P.O. Box 1234', city: 'Addis Ababa', zipCode: '1000', latitude: '8.9806', longitude: '38.7578', maxCapacity: 500, allowStorage: true, generateQR: true, createdAt: ts },
-      { id: 'loc-002', name: 'Adama Regional Office', type: 'Building', parentId: null, propertiesCount: 28, status: active(), description: 'Regional office for Oromia region', contactPerson: 'Tola Bekele', phone: '+251 911 100 002', email: 'tola@afrocom.com', addressLine1: 'Adama City Center', addressLine2: '', city: 'Adama', zipCode: '1250', latitude: '8.5400', longitude: '39.2700', maxCapacity: 200, allowStorage: true, generateQR: true, createdAt: ts },
-      { id: 'loc-003', name: 'Bahir Dar Campus', type: 'Building', parentId: null, propertiesCount: 32, status: active(), description: 'Training and development campus', contactPerson: 'Hanna Wondimu', phone: '+251 911 100 003', email: 'hanna@afrocom.com', addressLine1: 'Bahir Dar, near Lake Tana', addressLine2: '', city: 'Bahir Dar', zipCode: '6000', latitude: '11.5850', longitude: '37.3900', maxCapacity: 350, allowStorage: false, generateQR: true, createdAt: ts },
-      { id: 'loc-004', name: 'Dire Dawa Branch', type: 'Building', parentId: null, propertiesCount: 18, status: active(), description: 'Branch office serving eastern Ethiopia', contactPerson: 'Fikru Alemayehu', phone: '+251 911 100 004', email: 'fikru@afrocom.com', addressLine1: 'Dire Dawa Industrial Zone', addressLine2: '', city: 'Dire Dawa', zipCode: '3000', latitude: '9.6000', longitude: '41.8500', maxCapacity: 150, allowStorage: true, generateQR: false, createdAt: ts },
-      { id: 'loc-005', name: 'HQ Ground Floor', type: 'Floor', parentId: 'loc-001', propertiesCount: 12, status: active(), description: 'Ground floor - reception and common areas', contactPerson: '', phone: '', email: '', addressLine1: '', addressLine2: '', city: '', zipCode: '', latitude: '', longitude: '', maxCapacity: 80, allowStorage: false, generateQR: false, createdAt: ts },
-      { id: 'loc-006', name: 'HQ 1st Floor', type: 'Floor', parentId: 'loc-001', propertiesCount: 15, status: active(), description: 'First floor - executive offices', contactPerson: '', phone: '', email: '', addressLine1: '', addressLine2: '', city: '', zipCode: '', latitude: '', longitude: '', maxCapacity: 60, allowStorage: false, generateQR: false, createdAt: ts },
-      { id: 'loc-007', name: 'HQ 2nd Floor', type: 'Floor', parentId: 'loc-001', propertiesCount: 18, status: active(), description: 'Second floor - IT and operations', contactPerson: '', phone: '', email: '', addressLine1: '', addressLine2: '', city: '', zipCode: '', latitude: '', longitude: '', maxCapacity: 70, allowStorage: false, generateQR: false, createdAt: ts },
-      { id: 'loc-008', name: 'Finance Department', type: 'Department', parentId: 'loc-006', propertiesCount: 8, status: active(), description: 'Finance and accounting department', contactPerson: 'Meron Solomon', phone: '+251 911 200 001', email: 'meron@afrocom.com', addressLine1: '', addressLine2: '', city: '', zipCode: '', latitude: '', longitude: '', maxCapacity: 30, allowStorage: false, generateQR: false, createdAt: ts },
-      { id: 'loc-009', name: 'Human Resources', type: 'Department', parentId: 'loc-006', propertiesCount: 6, status: active(), description: 'HR department', contactPerson: 'Sara Tekle', phone: '+251 911 200 002', email: 'sara@afrocom.com', addressLine1: '', addressLine2: '', city: '', zipCode: '', latitude: '', longitude: '', maxCapacity: 25, allowStorage: false, generateQR: false, createdAt: ts },
-      { id: 'loc-010', name: 'IT Department', type: 'Department', parentId: 'loc-007', propertiesCount: 12, status: active(), description: 'Information Technology department', contactPerson: 'Biruk Assefa', phone: '+251 911 200 003', email: 'biruk@afrocom.com', addressLine1: '', addressLine2: '', city: '', zipCode: '', latitude: '', longitude: '', maxCapacity: 35, allowStorage: true, generateQR: true, createdAt: ts },
-      { id: 'loc-011', name: 'Server Room', type: 'Room', parentId: 'loc-010', propertiesCount: 8, status: active(), description: 'Main server and network equipment room', contactPerson: '', phone: '', email: '', addressLine1: '', addressLine2: '', city: '', zipCode: '', latitude: '', longitude: '', maxCapacity: 15, allowStorage: true, generateQR: true, createdAt: ts },
-      { id: 'loc-012', name: 'Conference Room A', type: 'Room', parentId: 'loc-005', propertiesCount: 3, status: active(), description: 'Large conference room with AV equipment', contactPerson: '', phone: '', email: '', addressLine1: '', addressLine2: '', city: '', zipCode: '', latitude: '', longitude: '', maxCapacity: 20, allowStorage: false, generateQR: false, createdAt: ts },
-      { id: 'loc-013', name: 'MD Office', type: 'Room', parentId: 'loc-006', propertiesCount: 5, status: active(), description: 'Managing Director office suite', contactPerson: 'Dr. Tadesse Haile', phone: '+251 911 300 001', email: 'tadesse@afrocom.com', addressLine1: '', addressLine2: '', city: '', zipCode: '', latitude: '', longitude: '', maxCapacity: 5, allowStorage: false, generateQR: true, createdAt: ts },
-      { id: 'loc-014', name: 'Operations Department', type: 'Department', parentId: 'loc-007', propertiesCount: 10, status: active(), description: 'Operations and logistics', contactPerson: 'Kebede Assefa', phone: '+251 911 200 004', email: 'kebede@afrocom.com', addressLine1: '', addressLine2: '', city: '', zipCode: '', latitude: '', longitude: '', maxCapacity: 30, allowStorage: true, generateQR: false, createdAt: ts },
-      { id: 'loc-015', name: 'Central Warehouse', type: 'Warehouse', parentId: null, propertiesCount: 120, status: active(), description: 'Main warehouse for inventory storage', contactPerson: 'Mohammed Seid', phone: '+251 911 400 001', email: 'mohammed@afrocom.com', addressLine1: 'Industrial Area, near Bole', addressLine2: '', city: 'Addis Ababa', zipCode: '1000', latitude: '8.9500', longitude: '38.7800', maxCapacity: 2000, allowStorage: true, generateQR: true, createdAt: ts },
-      { id: 'loc-016', name: 'Aisle A', type: 'Aisle', parentId: 'loc-015', propertiesCount: 40, status: active(), description: 'Aisle A - electronics and IT equipment', contactPerson: '', phone: '', email: '', addressLine1: '', addressLine2: '', city: '', zipCode: '', latitude: '', longitude: '', maxCapacity: 500, allowStorage: true, generateQR: false, createdAt: ts },
-      { id: 'loc-017', name: 'Aisle B', type: 'Aisle', parentId: 'loc-015', propertiesCount: 35, status: active(), description: 'Aisle B - office furniture and supplies', contactPerson: '', phone: '', email: '', addressLine1: '', addressLine2: '', city: '', zipCode: '', latitude: '', longitude: '', maxCapacity: 450, allowStorage: true, generateQR: false, createdAt: ts },
-      { id: 'loc-018', name: 'Shelf A-01', type: 'Shelf', parentId: 'loc-016', propertiesCount: 8, status: active(), description: 'Top shelf for small electronics', contactPerson: '', phone: '', email: '', addressLine1: '', addressLine2: '', city: '', zipCode: '', latitude: '', longitude: '', maxCapacity: 50, allowStorage: true, generateQR: true, createdAt: ts },
-      { id: 'loc-019', name: 'Shelf A-02', type: 'Shelf', parentId: 'loc-016', propertiesCount: 6, status: active(), description: 'Mid shelf for networking equipment', contactPerson: '', phone: '', email: '', addressLine1: '', addressLine2: '', city: '', zipCode: '', latitude: '', longitude: '', maxCapacity: 40, allowStorage: true, generateQR: true, createdAt: ts },
-      { id: 'loc-020', name: 'Shelf B-01', type: 'Shelf', parentId: 'loc-017', propertiesCount: 10, status: active(), description: 'Shelf for office supplies', contactPerson: '', phone: '', email: '', addressLine1: '', addressLine2: '', city: '', zipCode: '', latitude: '', longitude: '', maxCapacity: 60, allowStorage: true, generateQR: false, createdAt: ts },
-    ];
-  }
-
   loadLocations(): void {
     this.isLoading.set(true);
     this.loadError.set(null);
     this.locationService.getAll().subscribe({
       next: (response) => {
         if (response.success && response.data && response.data.length > 0) {
-          const locations: Location[] = (response.data as LocationDto[]).map((loc, i) => {
-            const names = ['HQ Bole', 'Adama Office', 'Bahir Dar Campus', 'Dire Dawa Branch', 'Central WH'];
-            const types = ['Building', 'Building', 'Building', 'Building', 'Warehouse'];
+          const locations: Location[] = (response.data as LocationDto[]).map((loc) => {
             return {
               id: loc.id,
-              name: loc.name || names[i] || 'Location ' + (i + 1),
+              name: loc.name || 'Location',
               type: this.inferLocationType(loc.name || ''),
               parentId: null,
-              propertiesCount: Math.floor(Math.random() * 50),
+              propertiesCount: 0,
               status: loc.isActive ? 'Active' : 'Inactive',
               description: '',
               contactPerson: '',
@@ -249,8 +217,7 @@ export class LocationListComponent {
           this.locations.set(locations);
           this.page.set(1);
         } else {
-          this.useMockFallback();
-          this.loadError.set(response.success === false && response.message ? response.message : null);
+          this.loadError.set(response.message || 'Failed to load locations');
         }
         this.isLoading.set(false);
       },
@@ -264,23 +231,10 @@ export class LocationListComponent {
             msg = `HTTP ${error.status}: ${error.message || 'request failed'}.`;
           }
         }
-        this.useMockFallback();
-        this.notification.set({ type: 'warning', message: msg + ' Showing sample data.' });
+        this.loadError.set(msg);
         this.isLoading.set(false);
       },
     });
-  }
-
-  private useMockFallback(): void {
-    if (this.mockUsed) return;
-    this.mockUsed = true;
-    const existing = this.locations();
-    const mock = this.createMockLocations();
-    if (existing.length < 3) {
-      this.locations.set(mock);
-      this.page.set(1);
-      this.notification.set({ type: 'info', message: 'Showing sample location data. Connect to the API for live data.' });
-    }
   }
 
   private inferLocationType(name: string): string {
@@ -474,35 +428,53 @@ export class LocationListComponent {
         generateQR: data.generateQR,
         status: data.active ? 'Active' : 'Inactive',
       };
-      this.locations.update(locs => locs.map(l => l.id === editing.id ? updated : l));
-      this.notification.set({ type: 'success', message: `Location "${updated.name}" updated successfully.` });
+
+      this.locationService.update(editing.id, {
+        name: data.name,
+        address: data.addressLine1,
+        city: data.city,
+        isActive: data.active,
+      }).subscribe({
+        next: (res) => {
+          if (res.success) {
+            this.loadLocations();
+            this.notification.set({ type: 'success', message: `Location "${updated.name}" updated successfully.` });
+          } else {
+            this.notification.set({ type: 'error', message: 'Failed to update: ' + (res.message || 'Unknown error') });
+          }
+          this.closeModal();
+        },
+        error: (err) => {
+          this.notification.set({ type: 'error', message: 'Error updating location: ' + (err?.error?.message || err?.message || 'Network error') });
+          this.closeModal();
+        },
+      });
     } else {
-      const newLoc: Location = {
-        id: 'loc-' + String(Date.now()).slice(-6),
+      const payload = {
         name: data.name,
         type: data.type,
         parentId: data.parentId,
-        propertiesCount: 0,
-        status: data.active ? 'Active' : 'Inactive',
-        description: data.description,
-        contactPerson: data.contactPerson,
-        phone: data.phone,
-        email: data.email,
-        addressLine1: data.addressLine1,
-        addressLine2: data.addressLine2,
+        address: data.addressLine1,
         city: data.city,
-        zipCode: data.zipCode,
-        latitude: data.latitude,
-        longitude: data.longitude,
-        maxCapacity: data.maxCapacity,
-        allowStorage: data.allowStorage,
-        generateQR: data.generateQR,
-        createdAt: new Date().toISOString(),
+        isActive: data.active,
       };
-      this.locations.update(locs => [...locs, newLoc]);
-      this.notification.set({ type: 'success', message: `Location "${newLoc.name}" created successfully.` });
+
+      this.locationService.create(payload).subscribe({
+        next: (res) => {
+          if (res.success) {
+            this.loadLocations();
+            this.notification.set({ type: 'success', message: `Location "${data.name}" created successfully.` });
+          } else {
+            this.notification.set({ type: 'error', message: 'Failed to create: ' + (res.message || 'Unknown error') });
+          }
+          this.closeModal();
+        },
+        error: (err) => {
+          this.notification.set({ type: 'error', message: 'Error creating location: ' + (err?.error?.message || err?.message || 'Network error') });
+          this.closeModal();
+        },
+      });
     }
-    this.closeModal();
   }
 
   confirmDelete(): void {
@@ -634,10 +606,6 @@ export class LocationListComponent {
 
   isEditing(): boolean {
     return this.selectedLocation() !== null;
-  }
-
-  isMockBadge(): boolean {
-    return this.mockUsed;
   }
 
   fieldError(field: string): string {

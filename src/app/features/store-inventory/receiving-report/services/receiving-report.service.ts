@@ -40,8 +40,13 @@ export class ReceivingReportService {
           }));
           return { success: res.success, message: res.message, data: items, statusCode: res.statusCode };
         }
+
+        return { ...res, data: [] } as ApiResponse<ReceivingReportItem[]>;
+      }),
+
         return { success: res.success, message: res.message, data: [], statusCode: res.statusCode };
       })
+
     );
   }
 }

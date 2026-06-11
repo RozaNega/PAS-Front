@@ -13,7 +13,11 @@ import { Router } from '@angular/router';
 import { firstValueFrom, Subject, takeUntil } from 'rxjs';
 import { InventoryService, InventoryStockDto, StockMovementDto } from '../../../../core/services/inventory.service';
 import { WarehousesService } from '../../../../core/services/warehouses.service';
+
+import { ToastService } from '../../../../core/services/toast.service';
+
 import { CategoriesService, Category } from '../../../../core/services/categories.service';
+
 
 import { NgxEchartsDirective, provideEchartsCore } from 'ngx-echarts';
 import * as echarts from 'echarts/core';
@@ -66,6 +70,7 @@ export class CurrentStockComponent implements OnInit, OnDestroy {
   private readonly warehousesService = inject(WarehousesService);
   private readonly categoriesService = inject(CategoriesService);
   private readonly router = inject(Router);
+  private readonly toast = inject(ToastService);
   private readonly warehouseNameToId = new Map<string, string>();
   private readonly categoryNameToId = new Map<string, string>();
   private readonly destroy$ = new Subject<void>();
@@ -246,20 +251,61 @@ export class CurrentStockComponent implements OnInit, OnDestroy {
   }
 
   bulkExport(): void {
-    const rows = this.selected().size ? this.stockItems().filter((item) => this.selected().has(item.id)) : this.filteredStock();
-    if (!rows.length) return;
-    const headers = ['SKU', 'Item Name', 'Category', 'Warehouse', 'Shelf', 'Quantity', 'Status'];
-    const csv = [
-      headers.join(','),
-      ...rows.map((row) => [row.sku, row.name, row.category, row.warehouse, row.shelf, String(row.quantity), row.status].map((value) => `"${String(value).replace(/"/g, '""')}"`).join(',')),
-    ].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
+    const rows = this.selected().size
+      ? this.stockItems().filter((item) => this.selected().has(item.id))
+      : this.filteredStock();
+    if (!rows.length) {
+      this.toast.info('No stock data to export. Adjust your filters or load inventory first.');
+      return;
+    }
+
+    const headers = [
+      'SKU',
+      'Item Name',
+      'Category',
+      'Warehouse',
+      'Shelf',
+      'Quantity',
+      'Available',
+      'Reserved',
+      'Status',
+    ];
+
+    const escape = (value: string): string =>
+      `"${value.replace(/"/g, '""')}"`;
+
+    const csvRows = rows.map((row) =>
+      [
+        row.sku,
+        row.name,
+        row.category,
+        row.warehouse,
+        row.shelf,
+        String(row.quantity),
+        String(row.available),
+        String(row.reserved),
+        this.statusLabel(row.status),
+      ]
+        .map(escape)
+        .join(','),
+    );
+
+    const csv = [headers.join(','), ...csvRows].join('\r\n');
+    const bom = '\uFEFF';
+    const blob = new Blob([bom + csv], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
+
+    const now = new Date();
+    const pad = (n: number): string => String(n).padStart(2, '0');
+    const filename = `current-stock-${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}.csv`;
+
     const anchor = document.createElement('a');
     anchor.href = url;
-    anchor.download = `inventory-export-${new Date().toISOString().slice(0, 10)}.csv`;
+    anchor.download = filename;
     anchor.click();
     URL.revokeObjectURL(url);
+
+    this.toast.success(`Exported ${rows.length} item(s) to CSV successfully.`);
   }
 
   bulkGenerateQRCodes(): void {

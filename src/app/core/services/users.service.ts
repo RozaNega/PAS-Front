@@ -51,7 +51,7 @@ export class UsersService {
   }
 
   getById(id: string | number): Observable<UserApiResponse> {
-    return this.getUser(typeof id === 'number' ? id : parseInt(id, 10) || 0);
+    return this.http.get<UserApiResponse>(`${this.baseUrl}/${id}`);
   }
 
   activate(id: number): Observable<UserApiResponse> {

@@ -21,9 +21,6 @@
           </div>
         }
       </div>
-      <a class="action-btn primary" routerLink="/admin/requisitions/create">
-        <i class="bi bi-plus-lg"></i> New Request
-      </a>
     </div>
   </header>
 
@@ -182,7 +179,7 @@
                 <td>
                   <div class="action-buttons">
                     <button type="button" class="icon-btn" title="View" (click)="openDetailModal(item)"><i class="bi bi-eye"></i></button>
-                    <button type="button" class="icon-btn danger" title="Delete" (click)="confirmDelete(item)"><i class="bi bi-trash"></i></button>
+                    
                   </div>
                 </td>
               </tr>
@@ -223,11 +220,9 @@
                 <td>
                   <div class="action-buttons">
                     <button type="button" class="icon-btn" title="View" (click)="openDetailModal(item)"><i class="bi bi-eye"></i></button>
-                    @if (item.status === 'Pending') {
-                      <button type="button" class="icon-btn success" title="Approve" (click)="openApproveModal(item)"><i class="bi bi-check-lg"></i></button>
-                      <button type="button" class="icon-btn danger" title="Reject" (click)="openRejectModal(item)"><i class="bi bi-x-lg"></i></button>
+                    @if (isIssueable(item.status)) {
+                      <button type="button" class="icon-btn" title="Issue Items" (click)="navigateToIssueSiv(item)"><i class="bi bi-box-seam"></i></button>
                     }
-                    <button type="button" class="icon-btn danger" title="Delete" (click)="confirmDelete(item)"><i class="bi bi-trash"></i></button>
                   </div>
                 </td>
               </tr>
@@ -265,7 +260,7 @@
   <div class="modal-overlay" (click)="closeDetailModal()">
     <div class="modal-card" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <h3><i class="bi bi-file-earmark-text"></i> {{ req.requestNumber }}</h3>
+        <h3><i class="bi bi-file-earmark-text"></i> {{ req.srNumber }}</h3>
         <button type="button" class="modal-close" (click)="closeDetailModal()"><i class="bi bi-x-lg"></i></button>
       </div>
       <div class="modal-body">
@@ -275,15 +270,10 @@
             <div class="detail-item"><span class="label">Requester</span><span class="value">{{ req.requesterName }}</span></div>
             <div class="detail-item"><span class="label">Department</span><span class="value">{{ req.department }}</span></div>
             <div class="detail-item"><span class="label">Purpose</span><span class="value">{{ req.purpose }}</span></div>
-            <div class="detail-item"><span class="label">Urgency</span><span class="value"><span class="urgency-badge" [class]="'urgency-' + req.urgency.toLowerCase()">{{ req.urgency }}</span></span></div>
+            <div class="detail-item"><span class="label">Urgency</span><span class="value"><span class="urgency-badge" [class]="'urgency-' + (req.urgency || 'normal').toLowerCase()">{{ req.urgency }}</span></span></div>
             <div class="detail-item"><span class="label">Status</span><span class="value"><span class="status-badge" [class]="req.status.toLowerCase()"><span class="status-dot"></span> {{ req.status }}</span></span></div>
             <div class="detail-item"><span class="label">Request Date</span><span class="value">{{ formatDate(req.requestDate) }}</span></div>
-            @if (req.approvedDate) {
-              <div class="detail-item"><span class="label">Approved Date</span><span class="value">{{ formatDate(req.approvedDate) }}</span></div>
-            }
-            @if (req.completedDate) {
-              <div class="detail-item"><span class="label">Completed Date</span><span class="value">{{ formatDate(req.completedDate) }}</span></div>
-            }
+            
           </div>
         </div>
         @if (req.notes) {
@@ -292,21 +282,7 @@
             <p style="font-size:0.85rem;color:var(--text-color-muted);margin:0;">{{ req.notes }}</p>
           </div>
         }
-        @if (req.items && req.items.length) {
-          <div class="detail-section">
-            <h4>Items ({{ req.totalItems }})</h4>
-            <table class="data-table">
-              <thead>
-                <tr><th>Item</th><th>Quantity</th><th>Unit</th></tr>
-              </thead>
-              <tbody>
-                @for (item of req.items; track $index) {
-                  <tr><td>{{ item.name }}</td><td>{{ item.quantity }}</td><td>{{ item.unit }}</td></tr>
-                }
-              </tbody>
-            </table>
-          </div>
-        }
+        
       </div>
       <div class="modal-footer">
         <button type="button" class="action-btn secondary" (click)="closeDetailModal()">Close</button>
@@ -351,73 +327,4 @@
   </div>
 }
 
-@if (showApproveModal() && approveTarget(); as req) {
-  <div class="modal-overlay" (click)="closeApproveModal()">
-    <div class="modal-card modal-sm" (click)="$event.stopPropagation()">
-      <div class="modal-header">
-        <h3><i class="bi bi-check-circle"></i> Approve Request</h3>
-        <button type="button" class="modal-close" (click)="closeApproveModal()"><i class="bi bi-x-lg"></i></button>
-      </div>
-      <div class="modal-body">
-        <div class="approve-form">
-          <p>Approve <strong>{{ req.requestNumber }}</strong> from {{ req.requesterName }}?</p>
-          <div class="form-group">
-            <label>Remarks (optional)</label>
-            <textarea class="form-textarea" rows="3" placeholder="Add approval remarks..." [value]="approveForm().remarks" (input)="updateApproveRemarks($event)"></textarea>
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="action-btn secondary" (click)="closeApproveModal()">Cancel</button>
-        <button type="button" class="action-btn primary" (click)="executeApprove()"><i class="bi bi-check-lg"></i> Approve</button>
-      </div>
-    </div>
-  </div>
-}
 
-@if (showRejectModal() && rejectTarget(); as req) {
-  <div class="modal-overlay" (click)="closeRejectModal()">
-    <div class="modal-card modal-sm" (click)="$event.stopPropagation()">
-      <div class="modal-header">
-        <h3><i class="bi bi-x-circle"></i> Reject Request</h3>
-        <button type="button" class="modal-close" (click)="closeRejectModal()"><i class="bi bi-x-lg"></i></button>
-      </div>
-      <div class="modal-body">
-        <div class="approve-form">
-          <p>Reject <strong>{{ req.requestNumber }}</strong> from {{ req.requesterName }}?</p>
-          <div class="form-group">
-            <label>Reason <span class="required">*</span></label>
-            <textarea class="form-textarea" rows="3" placeholder="Enter rejection reason..." [value]="rejectReason()" (input)="updateRejectReason($event)"></textarea>
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="action-btn secondary" (click)="closeRejectModal()">Cancel</button>
-        <button type="button" class="action-btn danger" (click)="executeReject()"><i class="bi bi-x-lg"></i> Reject</button>
-      </div>
-    </div>
-  </div>
-}
-
-@if (showDeleteConfirm() && deleteTarget(); as target) {
-  <div class="modal-overlay" (click)="cancelDelete()">
-    <div class="modal-card modal-sm" (click)="$event.stopPropagation()">
-      <div class="modal-header">
-        <h3><i class="bi bi-trash"></i> Confirm Delete</h3>
-        <button type="button" class="modal-close" (click)="cancelDelete()"><i class="bi bi-x-lg"></i></button>
-      </div>
-      <div class="modal-body">
-        <div class="confirm-content">
-          <div class="confirm-icon"><i class="bi bi-exclamation-triangle"></i></div>
-          <p>Are you sure you want to delete</p>
-          <strong>{{ getDeleteLabel(target) }}</strong>
-          <p class="confirm-user">This action cannot be undone.</p>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="action-btn secondary" (click)="cancelDelete()">Cancel</button>
-        <button type="button" class="action-btn danger" (click)="executeDelete()"><i class="bi bi-trash"></i> Delete</button>
-      </div>
-    </div>
-  </div>
-}

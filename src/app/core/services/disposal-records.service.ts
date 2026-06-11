@@ -5,12 +5,14 @@ import { ApiResponseModel } from '../models/api-response.model';
 
 export interface DisposalRecordDto {
   id: string;
+  disposalNumber?: string;
   itemId: string;
   itemName?: string;
   sku?: string;
   unitOfMeasure?: string;
   quantity: number;
   disposalDate: string;
+  createdAt?: string;
   disposedBy: string;
   disposedByName?: string;
   reason?: string;
@@ -21,6 +23,10 @@ export interface DisposalRecordDto {
   approvalRemarks?: string;
   estimatedValue: number;
   actualValue: number;
+  totalItems?: number;
+  totalQuantity?: number;
+  totalValue?: number;
+  items?: any[];
 }
 
 export interface DisposalRecordDetailDto extends DisposalRecordDto {
