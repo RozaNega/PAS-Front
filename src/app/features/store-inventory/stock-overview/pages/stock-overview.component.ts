@@ -251,11 +251,6 @@ export class StockOverviewComponent implements OnInit {
           if (overview.data.length === 0) {
             this.loadError.set('No stock items found in the database.');
           }
-        }
-        if (movements.success !== false && Array.isArray(movements.data)) {
-          this.movements.set(movements.data);
-        }
-
         } else {
           this.allItems.set([]);
           this.loadError.set(overview.message || 'No stock data available');

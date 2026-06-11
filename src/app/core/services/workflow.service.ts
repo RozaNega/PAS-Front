@@ -21,8 +21,6 @@ export type RequestStatus =
   | 'Cancelled';
 export type RequestPriority = 'Low' | 'Medium' | 'High' | 'Urgent';
 
-export type UserRole = 'Employee' | 'Manager' | 'Admin' | 'Compliance' | 'Storekeeper';
-
 export type UserRole = 'Employee' | 'Manager' | 'Admin' | 'Compliance' | 'Storekeeper' | 'Director';
 
 export const WORKFLOW_PENDING_STATUSES: readonly RequestStatus[] = [

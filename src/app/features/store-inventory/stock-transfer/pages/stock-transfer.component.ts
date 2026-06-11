@@ -1,6 +1,6 @@
 import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { StockTransferService, TransferHistory } from '../services/stock-transfer.service';
+import { StockTransferService, TransferHistory, TransferItem } from '../services/stock-transfer.service';
 
 import { NgxEchartsDirective, provideEchartsCore } from 'ngx-echarts';
 import * as echarts from 'echarts/core';
@@ -27,6 +27,14 @@ export class StockTransferComponent implements OnInit {
 
   // UI state
   loading = signal(false);
+
+  // Form state
+  fromWarehouse = signal('');
+  toWarehouse = signal('');
+  transferReason = signal('');
+  notes = signal('');
+  transferItems = signal<TransferItem[]>([]);
+  showHistoryModal = signal(false);
 
   submitting = signal(false);
   error = signal<string | null>(null);
@@ -127,8 +135,6 @@ export class StockTransferComponent implements OnInit {
       },
 
       error: () => { this.loading.set(false); }
-
-      error: () => {}
     });
   }
 
@@ -189,6 +195,42 @@ export class StockTransferComponent implements OnInit {
       }
 
     });
+  }
+
+  private showToast(msg: string): void {
+    this.toast.set({ message: msg, type: 'success', visible: true });
+    if (this.toastTimer) clearTimeout(this.toastTimer);
+    this.toastTimer = setTimeout(() => this.toast.set({ message: '', type: 'info', visible: false }), 4000);
+  }
+
+  loadItemsForWarehouse(): void {
+    const whId = this.fromWarehouse();
+    if (!whId) { this.transferItems.set([]); return; }
+    this.loadingItems.set(true);
+    this.transferService.getItemsInWarehouse(whId).subscribe({
+      next: (res) => {
+        this.loadingItems.set(false);
+        if (res.success !== false && Array.isArray(res.data)) {
+          this.transferItems.set(res.data);
+        } else {
+          this.transferItems.set([]);
+        }
+      },
+      error: () => {
+        this.loadingItems.set(false);
+        this.transferItems.set([]);
+      }
+    });
+  }
+
+  resetForm(): void {
+    this.fromWarehouse.set('');
+    this.toWarehouse.set('');
+    this.transferReason.set('');
+    this.notes.set('');
+    this.transferItems.set([]);
+    this.error.set(null);
+    this.success.set(null);
   }
 
   getStatusIcon(status: string): string {

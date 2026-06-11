@@ -461,15 +461,10 @@ export class StockAdjustmentComponent implements OnInit, OnDestroy {
 
           this.resetForm();
         },
-        error: () => {
-          this.showNotification('Adjustment request failed. Please try again.', 'error');
-
+        error: (err) => {
+          this.showNotification(err?.message || 'Adjustment request failed. Please try again.', 'error');
           this.loadData();
           this.resetForm();
-        },
-        error: (err) => {
-          this.showNotification(err.message || 'Request failed. Please try again.', 'error');
-
         },
       });
   }
