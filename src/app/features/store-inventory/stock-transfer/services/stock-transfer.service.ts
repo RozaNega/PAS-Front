@@ -1,9 +1,7 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable, of, forkJoin } from 'rxjs';
-import { map, catchError } from 'rxjs/operators';
+import { Observable, map, catchError, of, forkJoin } from 'rxjs';
 import { ApiResponseModel } from '../../../../core/models/api-response.model';
 import { InventoryService } from '../../../../core/services/inventory.service';
-import { ApiService } from '../../../../core/services/api.service';
 import { WarehousesService, WarehouseDto } from '../../../../core/services/warehouses.service';
 import { TransferRecordsService, CreateTransferRecordCommand } from '../../../../core/services/transfer-records.service';
 
@@ -21,23 +19,6 @@ export interface TransferItem {
 export interface WarehouseOption {
   id: string;
   name: string;
-}
-
-export interface StockTransferRequest {
-  fromWarehouseId: string;
-  toWarehouseId: string;
-  items: Array<{ itemId: string; quantity: number }>;
-  reason: string;
-  requiredByDate: string;
-  notes?: string;
-}
-
-export interface StockTransferResponse {
-  id: string;
-  transferNumber: string;
-  status: 'pending' | 'in-progress' | 'completed' | 'cancelled';
-  createdAt: string;
-  estimatedDate: string;
 }
 
 export interface TransferHistory {
@@ -65,7 +46,6 @@ export class StockTransferService {
   private readonly warehousesService = inject(WarehousesService);
   private readonly inventory = inject(InventoryService);
   private readonly transferRecords = inject(TransferRecordsService);
-  private readonly apiService = inject(ApiService);
 
   getWarehouses(): Observable<ApiResponseModel<any[]>> {
     return this.warehousesService.getAll({ isActive: true }).pipe(
@@ -93,20 +73,24 @@ export class StockTransferService {
         if (res.success !== false && Array.isArray(res.data)) {
           const items = res.data.map(item => ({
             sku: item.sku || '',
-            itemId: item.itemId || item.id || '',
+            itemId: item.itemId || '',
             name: item.itemName || '',
-            available: item.currentQuantity ?? item.currentStock ?? item.availableStock ?? 0,
+            available: item.currentQuantity ?? item.currentStock ?? 0,
             toTransfer: 0,
-            price: item.unitPrice || 0,
-            warehouseId: item.warehouseId || warehouseId,
-            shelfId: item.shelfId || ''
+            price: item['unitPrice'] || 0
           }));
           return { ...res, data: items } as ApiResponseModel<TransferItem[]>;
         }
-        return { success: true, message: 'No items in this warehouse', data: [], statusCode: 200 } as ApiResponseModel<TransferItem[]>;
+        return { ...res, data: [] } as ApiResponseModel<TransferItem[]>;
       }),
-      catchError(() => {
-        return of({ success: false, message: 'Failed to load items', data: [], statusCode: 500 } as ApiResponseModel<TransferItem[]>);
+      catchError((error: any) => {
+        console.error('Failed to load items:', error);
+        return of({
+          success: false,
+          message: error?.error?.message || error?.message || 'Failed to load items',
+          data: [],
+          statusCode: error?.status || 500
+        } as ApiResponseModel<TransferItem[]>);
       })
     );
   }
@@ -214,26 +198,14 @@ export class StockTransferService {
         }
         return { success: true, message: '', data: [], statusCode: 200 } as ApiResponseModel<TransferHistory[]>;
       }),
-      catchError(() => {
-        return of({ success: true, message: '', data: [], statusCode: 200 } as ApiResponseModel<TransferHistory[]>);
-      })
-    );
-  }
-
-  getTransferById(id: string): Observable<ApiResponseModel<any>> {
-    return this.transferRecords.getById(id);
-  }
-
-  cancelTransfer(id: string): Observable<ApiResponseModel<any>> {
-    return this.apiService.put<any>(`TransferRecords/${id}`, { status: 'cancelled' }).pipe(
       catchError((error: any) => {
-        console.error('Failed to cancel transfer:', error);
+        console.error('Failed to load transfer history:', error);
         return of({
           success: false,
-          message: error?.error?.message || error?.message || 'Failed to cancel transfer',
-          data: null,
+          message: error?.error?.message || error?.message || 'Failed to load transfer history',
+          data: [],
           statusCode: error?.status || 500
-        } as ApiResponseModel<any>);
+        } as ApiResponseModel<TransferHistory[]>);
       })
     );
   }

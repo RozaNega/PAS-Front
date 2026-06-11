@@ -17,6 +17,7 @@ import { WarehousesService } from '../../../../core/services/warehouses.service'
 import { ToastService } from '../../../../core/services/toast.service';
 
 import { CategoriesService, Category } from '../../../../core/services/categories.service';
+import { ToastService } from '../../../../core/services/toast.service';
 
 
 import { NgxEchartsDirective, provideEchartsCore } from 'ngx-echarts';

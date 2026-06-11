@@ -134,43 +134,6 @@ export class DashboardService {
         } satisfies ApiResponseModel<DashboardStatistics>;
       }),
 
-      catchError(() => this.computeFallbackStatistics()),
-    );
-  }
-
-  private computeFallbackStatistics(): Observable<ApiResponseModel<DashboardStatistics>> {
-    return forkJoin({
-      properties: this.apiService.get<unknown>('Properties').pipe(
-        catchError(() => of({ success: false, data: [], statusCode: 0 } as unknown as ApiResponseModel<unknown>)),
-      ),
-      employees: this.apiService.get<unknown>('employees').pipe(
-        catchError(() => of({ success: false, data: { items: [] }, statusCode: 0 } as unknown as ApiResponseModel<unknown>)),
-      ),
-      serviceRequests: this.apiService.get<unknown>('ServiceRequests').pipe(
-        catchError(() => of({ success: false, data: { items: [] }, statusCode: 0 } as unknown as ApiResponseModel<unknown>)),
-      ),
-      inventory: this.apiService.get<unknown>('InventoryStock').pipe(
-        catchError(() => of({ success: false, data: [], statusCode: 0 } as unknown as ApiResponseModel<unknown>)),
-      ),
-      inspections: this.apiService.get<unknown>('Inspections').pipe(
-        catchError(() => of({ success: false, data: { items: [] }, statusCode: 0 } as unknown as ApiResponseModel<unknown>)),
-      ),
-    }).pipe(
-      map((raw) => {
-        const props = this.toArray(raw.properties?.data);
-        const emps = this.toArray(raw.employees?.data, 'items');
-        const reqs = this.toArray(raw.serviceRequests?.data, 'items');
-        const inv = this.toArray(raw.inventory?.data);
-        const insp = this.toArray(raw.inspections?.data, 'items');
-
-        const d = this.compute(props, emps, reqs, inv, insp);
-        return {
-          success: true,
-          message: 'Dashboard statistics computed from registered data.',
-          data: d,
-          statusCode: 200,
-        } satisfies ApiResponseModel<DashboardStatistics>;
-      }),
       catchError(() => {
         return of({
           success: false,

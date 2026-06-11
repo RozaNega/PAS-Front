@@ -1,16 +1,14 @@
-﻿import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule, CurrencyPipe } from '@angular/common';
 import { Router } from '@angular/router';
 
 import { DashboardService, DashboardStatistics } from '../../../../core/services/dashboard.service';
-
 import { WorkflowService, ServiceRequest, NotificationMessage } from '../../../../core/services/workflow.service';
+import { ReceivingNotesService, ReceivingNoteListDto } from '../../../../core/services/receiving-notes.service';
+import { RequisitionsService, StoreIssueVoucherDto, ServiceRequestDto as ReqServiceRequestDto } from '../../../../core/services/requisitions.service';
+import { ReportsService, ValuationByCategoryDto } from '../../../../core/services/reports.service';
 import { ServiceRequestService, ServiceRequestDto } from '../../../requisition/service-requests/services/service-request.service';
 import { DisposalRecordsService, DisposalRecordDto } from '../../../../core/services/disposal-records.service';
-import { ReceivingNotesService } from '../../../../core/services/receiving-notes.service';
-import { RequisitionsService, StoreIssueVoucherDto } from '../../../../core/services/requisitions.service';
-import { ReportsService } from '../../../../core/services/reports.service';
-
 
 import { NgxEchartsDirective, provideEchartsCore } from 'ngx-echarts';
 import * as echarts from 'echarts/core';
@@ -95,14 +93,11 @@ export class StorekeeperDashboardComponent implements OnInit {
   readonly router = inject(Router);
   private readonly dashboardService = inject(DashboardService);
   private readonly workflowService = inject(WorkflowService);
-
-  private readonly srService = inject(ServiceRequestService);
-  private readonly disposalService = inject(DisposalRecordsService);
-
   private readonly receivingNotesService = inject(ReceivingNotesService);
   private readonly requisitionsService = inject(RequisitionsService);
   private readonly reportsService = inject(ReportsService);
-
+  private readonly srService = inject(ServiceRequestService);
+  private readonly disposalService = inject(DisposalRecordsService);
 
   readonly isLoading = signal(false);
   readonly statistics = signal<DashboardStatistics | null>(null);
@@ -119,7 +114,6 @@ export class StorekeeperDashboardComponent implements OnInit {
   readonly workflowRequests = signal<ServiceRequest[]>([]);
   readonly workflowNotifications = signal<NotificationMessage[]>([]);
 
-
   // Stock verification queue (API-based)
   readonly pendingVerifications = signal<ServiceRequestDto[]>([]);
   readonly loadingVerifications = signal(false);
@@ -131,23 +125,6 @@ export class StorekeeperDashboardComponent implements OnInit {
   // Disposal
   readonly recentDisposals = signal<DisposalRecordDto[]>([]);
   readonly verificationNotifications = signal<{ type: string; message: string } | null>(null);
-
-  readonly weeklyTrendsPlaceholder = [
-    { label: 'W1', total: 4200, electronics: 1800, furniture: 1200 },
-    { label: 'W2', total: 4350, electronics: 1900, furniture: 1250 },
-    { label: 'W3', total: 4100, electronics: 1750, furniture: 1180 },
-    { label: 'W4', total: 4450, electronics: 2000, furniture: 1300 },
-    { label: 'W5', total: 4600, electronics: 2100, furniture: 1350 },
-    { label: 'W6', total: 4500, electronics: 2050, furniture: 1320 },
-    { label: 'W7', total: 4700, electronics: 2200, furniture: 1400 },
-    { label: 'W8', total: 4900, electronics: 2300, furniture: 1450 },
-    { label: 'W9', total: 4800, electronics: 2250, furniture: 1420 },
-    { label: 'W10', total: 5100, electronics: 2400, furniture: 1500 },
-    { label: 'W11', total: 5000, electronics: 2350, furniture: 1480 },
-    { label: 'W12', total: 5200, electronics: 2450, furniture: 1520 },
-  ];
-
-
 
   today = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
   isScanning = false;
@@ -181,22 +158,23 @@ export class StorekeeperDashboardComponent implements OnInit {
   private loadWorkflowData(): void {
     const requests = this.workflowService.getRequestsForManagerAll('storekeeper_queue');
     this.workflowRequests.set(requests);
-
-
-    const storekeeperNotes = this.workflowService.getNotificationsForUser(
-      'storekeeper_001',
-      'Storekeeper'
-    );
-
-    const managerNotes = this.workflowService.getNotificationsForUser('storekeeper_001', 'Manager');
-
-    this.workflowNotifications.set([...storekeeperNotes, ...managerNotes]);
+    const notifications = this.workflowService.getNotificationsForUser('storekeeper_001', 'Storekeeper');
+    this.workflowNotifications.set(notifications);
   }
 
   refreshWorkflowData(): void {
     this.loadWorkflowData();
   }
 
+
+  private loadSectionData(): void {
+    this.loadStockCategories();
+    this.loadPendingIssues();
+    this.loadPendingReceivings();
+    this.loadRecentIssues();
+    this.loadRecentReceivings();
+    this.loadRecentGRNs();
+  }
 
   loadPendingVerifications(): void {
     this.loadingVerifications.set(true);
@@ -306,15 +284,6 @@ export class StorekeeperDashboardComponent implements OnInit {
         this.verificationNotifications.set({ type: 'error', message: msg });
       },
     });
-  }
-
-  private loadSectionData(): void {
-    this.loadStockCategories();
-    this.loadPendingIssues();
-    this.loadPendingReceivings();
-    this.loadRecentIssues();
-    this.loadRecentReceivings();
-    this.loadRecentGRNs();
 
   }
 
@@ -365,7 +334,7 @@ export class StorekeeperDashboardComponent implements OnInit {
     this.reportsService.getInventoryValuation().subscribe({
       next: (resp) => {
         if (resp.success && resp.data?.byCategory) {
-          const cats: StockCategory[] = resp.data.byCategory.map((c: any, i: number) => ({
+          const cats: StockCategory[] = resp.data.byCategory.map((c: ValuationByCategoryDto, i: number) => ({
             name: c.categoryName || 'Unknown',
             percentage: Math.round(c.percentageOfTotal * 100) / 100,
             units: c.totalQuantity,
@@ -381,11 +350,11 @@ export class StorekeeperDashboardComponent implements OnInit {
     this.requisitionsService.getAllServiceRequests({ status: 'Approved' }).subscribe({
       next: (resp) => {
         if (resp.success && resp.data) {
-          const issues: PendingIssue[] = resp.data.slice(0, 6).map((sr: any) => ({
-            id: sr.requestNumber || sr.srNumber || sr.id,
+          const issues: PendingIssue[] = resp.data.slice(0, 6).map((sr: ReqServiceRequestDto) => ({
+            id: sr.requestNumber,
             priority: 'Medium' as Priority,
-            item: sr.itemName || sr.item?.name || 'Item',
-            quantity: sr.quantity || sr.totalQuantity,
+            item: sr.itemName || 'Item',
+            quantity: sr.quantity,
             waitTime: 'Pending',
           }));
           this.pendingIssues.set(issues);
@@ -398,9 +367,9 @@ export class StorekeeperDashboardComponent implements OnInit {
     this.receivingNotesService.getAll({ status: 'Pending', pageSize: 10 }).subscribe({
       next: (resp) => {
         if (resp.success && resp.data?.items) {
-          const receivings: PendingReceiving[] = resp.data.items.map((r: any) => ({
+          const receivings: PendingReceiving[] = resp.data.items.map((r: ReceivingNoteListDto) => ({
             id: r.id,
-            grnNo: r.grnNumber || r.grnNo || `GRN-${r.id}`,
+            grnNo: r.grnNumber || `GRN-${r.id}`,
             supplier: r.supplierName || 'Unknown',
             items: `${r.totalQuantity} item(s)`,
             receivedTime: r.receivedDate ? new Date(r.receivedDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--',
@@ -432,7 +401,7 @@ export class StorekeeperDashboardComponent implements OnInit {
     this.receivingNotesService.getAll({ pageSize: 5 }).subscribe({
       next: (resp) => {
         if (resp.success && resp.data?.items) {
-          const receivings: RecentReceiving[] = resp.data.items.map((r: any) => ({
+          const receivings: RecentReceiving[] = resp.data.items.map((r: ReceivingNoteListDto) => ({
             grnNo: r.grnNumber || `GRN-${r.id}`,
             item: `${r.totalQuantity} units`,
             quantity: r.totalQuantity,
@@ -449,7 +418,7 @@ export class StorekeeperDashboardComponent implements OnInit {
     this.receivingNotesService.getAll({ pageSize: 5 }).subscribe({
       next: (resp) => {
         if (resp.success && resp.data?.items) {
-          const grns: GRN[] = resp.data.items.map((r: any) => ({
+          const grns: GRN[] = resp.data.items.map((r: ReceivingNoteListDto) => ({
             id: r.id,
             grnNo: r.grnNumber || `GRN-${r.id}`,
             supplier: r.supplierName || 'Unknown',

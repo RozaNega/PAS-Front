@@ -56,7 +56,7 @@ function getStatusLabel(occupancy: number, isActive: boolean): string {
   return 'Critical';
 }
 
-function formatDate(iso: string): string {
+function formatDate(iso: string | null | undefined): string {
   if (!iso) return '\u2014';
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;

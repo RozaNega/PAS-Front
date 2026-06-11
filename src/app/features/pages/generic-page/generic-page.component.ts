@@ -7,7 +7,7 @@ import * as echarts from 'echarts/core';
 import { BarChart, LineChart } from 'echarts/charts';
 import { GridComponent, TooltipComponent } from 'echarts/components';
 import { CanvasRenderer } from 'echarts/renderers';
-import { BrowserMultiFormatReader } from '@zxing/library';
+import { BrowserMultiFormatReader, Result, Exception } from '@zxing/library';
 
 echarts.use([BarChart, LineChart, TooltipComponent, GridComponent, CanvasRenderer]);
 
@@ -212,7 +212,7 @@ export class GenericPageComponent implements OnDestroy {
       videoEl.srcObject = stream;
 
       this.zxingReader = new BrowserMultiFormatReader();
-      this.zxingReader.decodeFromVideoDevice(null, videoEl, (result, error) => {
+      this.zxingReader.decodeFromVideoDevice(null, videoEl, (result: Result, error?: Exception) => {
         if (result) {
           this.handleScanResult(result.getText());
         }
@@ -276,7 +276,7 @@ export class GenericPageComponent implements OnDestroy {
         this.zxingReader.reset();
         if (this.mediaStream) {
           const videoEl = this.cameraVideo()?.nativeElement;
-          if (videoEl) this.zxingReader.decodeFromVideoDevice(null, videoEl, (r) => { if (r) this.handleScanResult(r.getText()); });
+          if (videoEl) this.zxingReader.decodeFromVideoDevice(null, videoEl, (r: Result) => { if (r) this.handleScanResult(r.getText()); });
         }
       }
     }, 2000);

@@ -65,9 +65,6 @@ function addDays(d: Date, n: number): Date {
   return x;
 }
 
-
-
-
 type SortField = 'dateTime' | 'item' | 'type' | 'quantity' | 'reason' | 'performedBy' | 'status';
 
 @Component({
@@ -293,23 +290,15 @@ export class StockAdjustmentComponent implements OnInit, OnDestroy {
         if (res.success !== false && Array.isArray(res.data) && res.data.length > 0) {
           this.allItemsRaw.set(res.data.map((r) => this.mapPick(r)));
         } else {
-
-          this.showNotification('No stock items available from server', 'error');
-
           this.allItemsRaw.set([]);
           this.showNotification(res.message || 'No stock data available', 'info');
-
         }
         this.loadHistory();
       },
       error: (err) => {
         this.loading.set(false);
-
-        this.loadError.set('Failed to load stock data from server.');
-
         this.loadError.set(err.message || 'Failed to load stock data');
         this.showNotification('Failed to load stock data from server', 'error');
-
       },
     });
   }
@@ -334,9 +323,7 @@ export class StockAdjustmentComponent implements OnInit, OnDestroy {
         },
         error: () => {
           this.allAdjustments.set([]);
-
           this.showNotification('Failed to load adjustment history', 'error');
-
         },
       });
   }
@@ -458,13 +445,11 @@ export class StockAdjustmentComponent implements OnInit, OnDestroy {
             return;
           }
           this.showNotification('Adjustment submitted successfully.', 'success');
-
+          this.loadData();
           this.resetForm();
         },
         error: (err) => {
-          this.showNotification(err?.message || 'Adjustment request failed. Please try again.', 'error');
-          this.loadData();
-          this.resetForm();
+          this.showNotification(err.message || 'Request failed. Please try again.', 'error');
         },
       });
   }

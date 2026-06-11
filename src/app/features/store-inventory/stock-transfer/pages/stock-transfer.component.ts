@@ -1,6 +1,6 @@
 import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { StockTransferService, TransferHistory, TransferItem } from '../services/stock-transfer.service';
+import { StockTransferService, TransferHistory } from '../services/stock-transfer.service';
 
 import { NgxEchartsDirective, provideEchartsCore } from 'ngx-echarts';
 import * as echarts from 'echarts/core';
@@ -27,15 +27,14 @@ export class StockTransferComponent implements OnInit {
 
   // UI state
   loading = signal(false);
-
-  // Form state
-  fromWarehouse = signal('');
-  toWarehouse = signal('');
-  transferReason = signal('');
-  notes = signal('');
-  transferItems = signal<TransferItem[]>([]);
+  transferItems = signal<any[]>([]);
+  fromWarehouse = signal<string>('');
+  toWarehouse = signal<string>('');
+  transferReason = signal<string>('');
+  notes = signal<string>('');
+  requiredByDate = signal<string>('');
+  itemSearch = signal<string>('');
   showHistoryModal = signal(false);
-
   submitting = signal(false);
   error = signal<string | null>(null);
   success = signal<string | null>(null);
@@ -57,7 +56,6 @@ export class StockTransferComponent implements OnInit {
     this.transferReason().trim().length > 0 &&
     this.selectedItems().length > 0
   );
-
 
   // KPI data
   totalTransfers = computed(() => this.transferHistory().length);
@@ -133,7 +131,6 @@ export class StockTransferComponent implements OnInit {
         }
         this.loading.set(false);
       },
-
       error: () => { this.loading.set(false); }
     });
   }
@@ -145,6 +142,19 @@ export class StockTransferComponent implements OnInit {
         item.sku === sku ? { ...item, toTransfer: Math.min(quantity, item.available) } : item
       )
     );
+  }
+
+  loadItemsForWarehouse(): void {
+    this.transferService.getItemsInWarehouse(this.fromWarehouse()).subscribe({
+      next: (res) => {
+        if (res.success !== false && Array.isArray(res.data)) {
+          this.transferItems.set(res.data);
+        } else {
+          this.transferItems.set([]);
+        }
+      },
+      error: () => { this.transferItems.set([]); }
+    });
   }
 
   onFromWarehouseChange(): void {
@@ -193,44 +203,27 @@ export class StockTransferComponent implements OnInit {
         this.submitting.set(false);
         this.error.set('Failed to create transfer. Please try again.');
       }
-
     });
   }
 
-  private showToast(msg: string): void {
-    this.toast.set({ message: msg, type: 'success', visible: true });
-    if (this.toastTimer) clearTimeout(this.toastTimer);
-    this.toastTimer = setTimeout(() => this.toast.set({ message: '', type: 'info', visible: false }), 4000);
+  cancelForm(): void {
+    this.resetForm();
   }
 
-  loadItemsForWarehouse(): void {
-    const whId = this.fromWarehouse();
-    if (!whId) { this.transferItems.set([]); return; }
-    this.loadingItems.set(true);
-    this.transferService.getItemsInWarehouse(whId).subscribe({
-      next: (res) => {
-        this.loadingItems.set(false);
-        if (res.success !== false && Array.isArray(res.data)) {
-          this.transferItems.set(res.data);
-        } else {
-          this.transferItems.set([]);
-        }
-      },
-      error: () => {
-        this.loadingItems.set(false);
-        this.transferItems.set([]);
-      }
-    });
-  }
-
-  resetForm(): void {
-    this.fromWarehouse.set('');
-    this.toWarehouse.set('');
+  private resetForm(): void {
     this.transferReason.set('');
+    this.requiredByDate.set('');
     this.notes.set('');
-    this.transferItems.set([]);
+    this.itemSearch.set('');
     this.error.set(null);
     this.success.set(null);
+    this.transferItems.update(items => items.map(item => ({ ...item, toTransfer: 0 })));
+  }
+
+  showToast(message: string, type: 'success' | 'error' | 'info' = 'success'): void {
+    if (this.toastTimer) clearTimeout(this.toastTimer);
+    this.toast.set({ message, type, visible: true });
+    this.toastTimer = setTimeout(() => this.toast.set({ message: '', type: 'info', visible: false }), 3000);
   }
 
   getStatusIcon(status: string): string {
