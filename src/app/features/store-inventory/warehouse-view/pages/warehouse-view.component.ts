@@ -178,7 +178,7 @@ export class WarehouseViewComponent implements OnInit {
       value: 0,
       occupancy: occ,
       status: getStatusSymbol(occ, isActive),
-      lastUpdated: formatDate(d.updatedAt || d.createdAt),
+      lastUpdated: formatDate(d.updatedAt || d.createdAt || ''),
     };
   }
 

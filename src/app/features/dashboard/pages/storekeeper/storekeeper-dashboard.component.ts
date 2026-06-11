@@ -4,18 +4,12 @@ import { Router } from '@angular/router';
 
 import { DashboardService, DashboardStatistics } from '../../../../core/services/dashboard.service';
 
-import {
-  WorkflowService,
-  ServiceRequest,
-  NotificationMessage,
-} from '../../../../core/services/workflow.service';
+import { WorkflowService, ServiceRequest, NotificationMessage } from '../../../../core/services/workflow.service';
 import { ServiceRequestService, ServiceRequestDto } from '../../../requisition/service-requests/services/service-request.service';
 import { DisposalRecordsService, DisposalRecordDto } from '../../../../core/services/disposal-records.service';
-
-import { WorkflowService, ServiceRequest, NotificationMessage } from '../../../../core/services/workflow.service';
-import { ReceivingNotesService, ReceivingNoteListDto } from '../../../../core/services/receiving-notes.service';
-import { RequisitionsService, StoreIssueVoucherDto, ServiceRequestDto } from '../../../../core/services/requisitions.service';
-import { ReportsService, ValuationByCategoryDto } from '../../../../core/services/reports.service';
+import { ReceivingNotesService } from '../../../../core/services/receiving-notes.service';
+import { RequisitionsService, StoreIssueVoucherDto } from '../../../../core/services/requisitions.service';
+import { ReportsService } from '../../../../core/services/reports.service';
 
 
 import { NgxEchartsDirective, provideEchartsCore } from 'ngx-echarts';
@@ -134,7 +128,7 @@ export class StorekeeperDashboardComponent implements OnInit {
   readonly recentDisposals = signal<DisposalRecordDto[]>([]);
   readonly verificationNotifications = signal<{ type: string; message: string } | null>(null);
 
-  readonly weeklyTrends: WeeklyTrend[] = [
+  readonly weeklyTrendsPlaceholder = [
     { label: 'W1', total: 4200, electronics: 1800, furniture: 1200 },
     { label: 'W2', total: 4350, electronics: 1900, furniture: 1250 },
     { label: 'W3', total: 4100, electronics: 1750, furniture: 1180 },
@@ -147,46 +141,6 @@ export class StorekeeperDashboardComponent implements OnInit {
     { label: 'W10', total: 5100, electronics: 2400, furniture: 1500 },
     { label: 'W11', total: 5000, electronics: 2350, furniture: 1480 },
     { label: 'W12', total: 5200, electronics: 2450, furniture: 1520 },
-  ];
-
-  readonly stockCategories: StockCategory[] = [
-    { name: 'Electronics', percentage: 35, units: 4320, color: '#3B82F6' },
-    { name: 'Furniture', percentage: 25, units: 3086, color: '#10B981' },
-    { name: 'Office Supplies', percentage: 15, units: 1852, color: '#F59E0B' },
-    { name: 'IT Equipment', percentage: 10, units: 1234, color: '#8B5CF6' },
-    { name: 'Stationery', percentage: 8, units: 988, color: '#EC4899' },
-    { name: 'Other', percentage: 7, units: 865, color: '#6B7280' },
-  ];
-
-  readonly pendingIssues: PendingIssue[] = [
-    { id: 'SR-2024-0123', priority: 'Urgent', item: 'Laptop', quantity: 5, waitTime: '2 hours' },
-    { id: 'SR-2024-0124', priority: 'Medium', item: 'Monitor', quantity: 3, waitTime: '5 hours' },
-    { id: 'SR-2024-0125', priority: 'Normal', item: 'Keyboard', quantity: 10, waitTime: '1 day' },
-    { id: 'SR-2024-0126', priority: 'Normal', item: 'Mouse', quantity: 15, waitTime: '1 day' },
-  ];
-
-  readonly pendingReceivings: PendingReceiving[] = [
-    { id: '1', grnNo: 'GRN-2024-0456', supplier: 'Tech Supplies Ltd', items: 'Laptop (45 units)', receivedTime: '10:30 AM' },
-    { id: '2', grnNo: 'GRN-2024-0457', supplier: 'Office Depot', items: 'Chair (30 units)', receivedTime: '09:15 AM' },
-    { id: '3', grnNo: 'GRN-2024-0458', supplier: 'Global Suppliers', items: 'Paper (100 boxes)', receivedTime: '08:00 AM' },
-  ];
-
-  readonly recentIssues: RecentIssue[] = [
-    { sivNo: 'SIV-0012', item: 'Laptop', quantity: 2, department: 'IT Dept', time: '10:15 AM' },
-    { sivNo: 'SIV-0011', item: 'Monitor', quantity: 3, department: 'HR Dept', time: '09:30 AM' },
-    { sivNo: 'SIV-0010', item: 'Keyboard', quantity: 5, department: 'Sales Dept', time: '08:45 AM' },
-  ];
-
-  readonly recentReceivings: RecentReceiving[] = [
-    { grnNo: 'GRN-0456', item: 'Laptop', quantity: 45, supplier: 'Tech Supplies', time: '10:30 AM' },
-    { grnNo: 'GRN-0455', item: 'Chair', quantity: 30, supplier: 'Office Depot', time: '09:15 AM' },
-    { grnNo: 'GRN-0454', item: 'Paper', quantity: 100, supplier: 'Paper Co', time: '08:00 AM' },
-  ];
-
-  readonly recentGRNs: GRN[] = [
-    { id: 1, grnNo: 'GRN-001', supplier: 'Tech Supplies', items: 'Laptop x5', date: '2024-04-28', status: 'Pending' },
-    { id: 2, grnNo: 'GRN-002', supplier: 'XYZ Corp', items: 'Monitor x10', date: '2024-04-27', status: 'Received' },
-    { id: 3, grnNo: 'GRN-003', supplier: 'ABC Supplies', items: 'Keyboard x20', date: '2024-04-26', status: 'Rejected' },
   ];
 
 
@@ -219,14 +173,14 @@ export class StorekeeperDashboardComponent implements OnInit {
     this.workflowRequests.set(requests);
 
 
-    const notifications = this.workflowService.getNotificationsForUser(
+    const storekeeperNotes = this.workflowService.getNotificationsForUser(
       'storekeeper_001',
       'Storekeeper'
     );
 
-    const notifications = this.workflowService.getNotificationsForUser('storekeeper_001', 'Manager');
+    const managerNotes = this.workflowService.getNotificationsForUser('storekeeper_001', 'Manager');
 
-    this.workflowNotifications.set(notifications);
+    this.workflowNotifications.set([...storekeeperNotes, ...managerNotes]);
   }
 
   refreshWorkflowData(): void {
@@ -315,6 +269,7 @@ export class StorekeeperDashboardComponent implements OnInit {
         this.verificationNotifications.set({ type: 'error', message: msg });
       },
     });
+  }
 
   private loadSectionData(): void {
     this.loadStockCategories();
@@ -373,7 +328,7 @@ export class StorekeeperDashboardComponent implements OnInit {
     this.reportsService.getInventoryValuation().subscribe({
       next: (resp) => {
         if (resp.success && resp.data?.byCategory) {
-          const cats: StockCategory[] = resp.data.byCategory.map((c: ValuationByCategoryDto, i: number) => ({
+          const cats: StockCategory[] = resp.data.byCategory.map((c: any, i: number) => ({
             name: c.categoryName || 'Unknown',
             percentage: Math.round(c.percentageOfTotal * 100) / 100,
             units: c.totalQuantity,
@@ -389,11 +344,11 @@ export class StorekeeperDashboardComponent implements OnInit {
     this.requisitionsService.getAllServiceRequests({ status: 'Approved' }).subscribe({
       next: (resp) => {
         if (resp.success && resp.data) {
-          const issues: PendingIssue[] = resp.data.slice(0, 6).map((sr: ServiceRequestDto) => ({
-            id: sr.requestNumber,
+          const issues: PendingIssue[] = resp.data.slice(0, 6).map((sr: any) => ({
+            id: sr.requestNumber || sr.srNumber || sr.id,
             priority: 'Medium' as Priority,
-            item: sr.itemName || 'Item',
-            quantity: sr.quantity,
+            item: sr.itemName || sr.item?.name || 'Item',
+            quantity: sr.quantity || sr.totalQuantity,
             waitTime: 'Pending',
           }));
           this.pendingIssues.set(issues);
@@ -406,9 +361,9 @@ export class StorekeeperDashboardComponent implements OnInit {
     this.receivingNotesService.getAll({ status: 'Pending', pageSize: 10 }).subscribe({
       next: (resp) => {
         if (resp.success && resp.data?.items) {
-          const receivings: PendingReceiving[] = resp.data.items.map((r: ReceivingNoteListDto) => ({
+          const receivings: PendingReceiving[] = resp.data.items.map((r: any) => ({
             id: r.id,
-            grnNo: r.grnNumber || `GRN-${r.id}`,
+            grnNo: r.grnNumber || r.grnNo || `GRN-${r.id}`,
             supplier: r.supplierName || 'Unknown',
             items: `${r.totalQuantity} item(s)`,
             receivedTime: r.receivedDate ? new Date(r.receivedDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--',
@@ -440,7 +395,7 @@ export class StorekeeperDashboardComponent implements OnInit {
     this.receivingNotesService.getAll({ pageSize: 5 }).subscribe({
       next: (resp) => {
         if (resp.success && resp.data?.items) {
-          const receivings: RecentReceiving[] = resp.data.items.map((r: ReceivingNoteListDto) => ({
+          const receivings: RecentReceiving[] = resp.data.items.map((r: any) => ({
             grnNo: r.grnNumber || `GRN-${r.id}`,
             item: `${r.totalQuantity} units`,
             quantity: r.totalQuantity,
@@ -457,7 +412,7 @@ export class StorekeeperDashboardComponent implements OnInit {
     this.receivingNotesService.getAll({ pageSize: 5 }).subscribe({
       next: (resp) => {
         if (resp.success && resp.data?.items) {
-          const grns: GRN[] = resp.data.items.map((r: ReceivingNoteListDto) => ({
+          const grns: GRN[] = resp.data.items.map((r: any) => ({
             id: r.id,
             grnNo: r.grnNumber || `GRN-${r.id}`,
             supplier: r.supplierName || 'Unknown',

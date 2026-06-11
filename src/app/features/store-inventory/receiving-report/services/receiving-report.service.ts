@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
-import { Observable, map } from 'rxjs';
+import { Observable, of } from 'rxjs';
+import { map, catchError } from 'rxjs/operators';
 import { ApiService } from '../../../../core/services/api.service';
 import { normalizePasListResponse } from '../../../../core/utils/pas-api-json.util';
 
@@ -41,12 +42,11 @@ export class ReceivingReportService {
           return { success: res.success, message: res.message, data: items, statusCode: res.statusCode };
         }
 
-        return { ...res, data: [] } as ApiResponse<ReceivingReportItem[]>;
-      }),
-
         return { success: res.success, message: res.message, data: [], statusCode: res.statusCode };
+      }),
+      catchError(() => {
+        return of({ success: false, message: 'Failed to load receiving report', data: [], statusCode: 500 });
       })
-
     );
   }
 }

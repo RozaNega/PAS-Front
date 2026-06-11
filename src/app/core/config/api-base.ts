@@ -1,5 +1,7 @@
 import { environment } from '../../../environments/environment';
 
+export const PAS_API_URL_STORAGE_KEY = 'pas_api_base_url';
+
 export function resolveApiBaseUrl(): string {
   return (environment.apiUrl || '/api').replace(/\/+$/, '');
 }

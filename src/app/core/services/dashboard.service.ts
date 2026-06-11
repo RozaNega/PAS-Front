@@ -170,7 +170,7 @@ export class DashboardService {
           data: d,
           statusCode: 200,
         } satisfies ApiResponseModel<DashboardStatistics>;
-
+      }),
       catchError(() => {
         return of({
           success: false,
@@ -178,7 +178,6 @@ export class DashboardService {
           data: undefined,
           statusCode: 0,
         } satisfies ApiResponseModel<DashboardStatistics>);
-
       }),
     );
   }
