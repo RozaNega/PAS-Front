@@ -27,14 +27,13 @@ export class ResetPassword {
 
   protected readonly submitted = signal(false);
   protected readonly loading = signal(false);
-  protected readonly statusMessage = signal(
-    'Paste the reset token from the previous step and set a new password.',
-  );
+  protected readonly statusMessage = signal('');
   protected readonly statusTone = signal<'neutral' | 'success' | 'error'>('neutral');
   protected readonly showPassword = signal(false);
   protected readonly showConfirmPassword = signal(false);
   protected readonly routeToken = signal(this.route.snapshot.queryParamMap.get('token') ?? '');
   protected readonly routeEmail = signal(this.route.snapshot.queryParamMap.get('email') ?? '');
+
   protected readonly resetForm = this.formBuilder.nonNullable.group(
     {
       token: [this.routeToken(), [Validators.required]],
@@ -55,7 +54,7 @@ export class ResetPassword {
     }
 
     this.loading.set(true);
-    
+
     this.authService
       .resetPassword({
         token: this.resetForm.controls.token.value,
@@ -66,14 +65,10 @@ export class ResetPassword {
         next: (result) => {
           this.statusTone.set(result.succeeded ? 'success' : 'error');
           this.statusMessage.set(result.message || (result.succeeded ? 'Password successfully reset.' : 'Failed to reset password.'));
-          
+
           if (result.succeeded) {
             const token = this.resetForm.controls.token.value;
-            this.resetForm.reset({
-              token,
-              password: '',
-              confirmPassword: '',
-            });
+            this.resetForm.reset({ token, password: '', confirmPassword: '' });
             this.submitted.set(false);
           }
         },
@@ -110,6 +105,5 @@ const passwordsMatchValidator: ValidatorFn = (
 ): ValidationErrors | null => {
   const password = control.get('password')?.value;
   const confirmPassword = control.get('confirmPassword')?.value;
-
   return password === confirmPassword ? null : { passwordMismatch: true };
 };

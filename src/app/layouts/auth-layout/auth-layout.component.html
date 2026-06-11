@@ -1,6 +1,58 @@
 ﻿<div class="auth-layout">
-  <main class="auth-layout__stage">
-    <router-outlet></router-outlet>
+  <div class="auth-backdrop">
+    <video autoplay muted loop playsinline class="backdrop-video">
+      <source src="/assets/videos/back1.mp4" type="video/mp4" />
+    </video>
+  </div>
+
+  <header class="auth-toolbar" aria-label="Theme controls">
+    <button
+      type="button"
+      class="toolbar-btn"
+      (click)="toggleDarkMode()"
+      [attr.aria-pressed]="theme.darkMode()"
+      [attr.aria-label]="theme.darkMode() ? 'Switch to light mode' : 'Switch to dark mode'"
+      title="{{ theme.darkMode() ? 'Switch to light mode' : 'Switch to dark mode' }}"
+    >
+      <i
+        class="bi"
+        [class.bi-sun-fill]="theme.darkMode()"
+        [class.bi-moon-stars-fill]="!theme.darkMode()"
+      ></i>
+    </button>
+    <button
+      type="button"
+      class="toolbar-btn toolbar-btn--primary"
+      (click)="toggleThemePanel()"
+      [attr.aria-expanded]="themePanelOpen"
+      aria-controls="auth-theme-panel"
+      aria-label="Open primary palette"
+      title="Open primary palette"
+    >
+      <i class="bi bi-palette2"></i>
+    </button>
+    @if (themePanelOpen) {
+      <div class="theme-backdrop" (click)="closeThemePanel()" aria-hidden="true"></div>
+      <section id="auth-theme-panel" class="theme-panel" aria-label="Primary colors">
+        <h3>Primary color</h3>
+        <div class="primary-swatches">
+          @for (option of theme.primaryOptions; track option.id) {
+            <button
+              type="button"
+              class="swatch"
+              [class.active]="theme.selectedPrimary() === option.id"
+              [style.background]="option.value"
+              [attr.aria-label]="'Set primary color ' + option.label"
+              title="{{ 'Set primary color ' + option.label }}"
+              (click)="setPrimary(option.id)"
+            ></button>
+          }
+        </div>
+      </section>
+    }
+  </header>
+
+  <main class="auth-stage">
+    <router-outlet />
   </main>
 </div>
-

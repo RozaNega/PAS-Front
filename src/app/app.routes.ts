@@ -352,7 +352,7 @@ export const routes: Routes = [
       {
         path: 'warehouse/scanner',
         loadComponent: () => import('./features/pages/generic-page/generic-page.component').then(m => m.GenericPageComponent),
-        data: { pageTitle: 'QR Code Scanner', pageDescription: 'Scan QR codes for items', icon: 'bi bi-qr-code-scan', pageType: 'scanner' },
+        data: { pageTitle: 'Barcode & QR Scanner', pageDescription: 'Scan barcodes and QR codes for items', icon: 'bi bi-upc-scan', pageType: 'scanner' },
       },
       // Goods Receiving
       {

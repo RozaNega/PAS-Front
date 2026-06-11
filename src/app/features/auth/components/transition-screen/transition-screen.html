@@ -1,0 +1,84 @@
+<div class="ts-overlay">
+  <div class="ts-bg-grid"></div>
+  <div class="ts-bg-glow"></div>
+  <div class="ts-bg-particles"></div>
+
+  <!-- Full content (Phase 1-2) -->
+  <div class="ts-content" [class.ts-content--hidden]="isSplitting()">
+    <div class="ts-brand">
+      <div class="ts-emblem">
+        <div class="ts-corner ts-corner--tl"></div>
+        <div class="ts-corner ts-corner--tr"></div>
+        <div class="ts-corner ts-corner--bl"></div>
+        <div class="ts-corner ts-corner--br"></div>
+        <div class="ts-emblem-ring"></div>
+        <div class="ts-emblem-glow"></div>
+        <img
+          class="ts-logo"
+          src="/assets/images/africom-logo.png"
+          alt="AFRICOM Technologies"
+        />
+        <div class="ts-emblem-scan"></div>
+      </div>
+      <h1 class="ts-title">AFRICOM TECHNOLOGIES</h1>
+      <p class="ts-subtitle">Secure Access System</p>
+    </div>
+
+    <div class="ts-lock-area">
+      <div class="ts-ring ts-ring--outer" [class.ts-ring--spin]="phase() >= 1"></div>
+      <div class="ts-ring ts-ring--inner" [class.ts-ring--spin]="phase() >= 1"></div>
+
+      <div class="ts-lock" [class.ts-lock--unlock]="phase() >= 3">
+        <svg class="ts-lock-svg" viewBox="0 0 64 80" fill="none">
+          <path class="ts-shackle" d="M20 36V24a12 12 0 0 1 24 0v12" stroke="currentColor" stroke-width="5" stroke-linecap="round" fill="none"/>
+          <rect class="ts-body" x="12" y="32" width="40" height="36" rx="6" fill="currentColor"/>
+          <circle class="ts-keyhole-a" cx="32" cy="52" r="6" fill="#0a1628"/>
+          <rect class="ts-keyhole-b" x="29" y="52" width="6" height="10" rx="2" fill="#0a1628"/>
+        </svg>
+        <div class="ts-scan-beam" [class.ts-scan-beam--active]="phase() >= 1 && phase() < 3"></div>
+      </div>
+    </div>
+
+    <div class="ts-status-area" [class.ts-status-area--visible]="phase() >= 1">
+      <div class="ts-progress-track">
+        <div class="ts-progress-fill" [style.width.%]="progress()"></div>
+      </div>
+      <p class="ts-status-text">{{ statusMessage() }}</p>
+      <div class="ts-energy-bar">
+        @for (dot of [1,2,3,4,5]; track dot; let i = $index) {
+          <div class="ts-energy-dot" [class.ts-energy-dot--lit]="progress() > i * 20"></div>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- Split overlay (Phase 3) -->
+  <div class="ts-split" [class.ts-split--active]="isSplitting()">
+    <div class="ts-split-panel ts-split-panel--top">
+      <div class="ts-bg-grid"></div>
+      <div class="ts-bg-glow"></div>
+      <div class="ts-emblem ts-emblem--small">
+        <div class="ts-corner ts-corner--tl"></div>
+        <div class="ts-corner ts-corner--tr"></div>
+        <div class="ts-corner ts-corner--bl"></div>
+        <div class="ts-corner ts-corner--br"></div>
+        <div class="ts-emblem-ring"></div>
+        <img class="ts-split-logo" src="/assets/images/africom-logo.png" alt="AFRICOM" />
+      </div>
+      <p class="ts-split-label">Access Granted</p>
+    </div>
+    <div class="ts-split-panel ts-split-panel--bottom">
+      <div class="ts-bg-grid"></div>
+      <div class="ts-bg-glow"></div>
+      <div class="ts-emblem ts-emblem--small">
+        <div class="ts-corner ts-corner--tl"></div>
+        <div class="ts-corner ts-corner--tr"></div>
+        <div class="ts-corner ts-corner--bl"></div>
+        <div class="ts-corner ts-corner--br"></div>
+        <div class="ts-emblem-ring"></div>
+        <img class="ts-split-logo" src="/assets/images/africom-logo.png" alt="AFRICOM" />
+      </div>
+      <p class="ts-split-label">Welcome to AFRICOM</p>
+    </div>
+  </div>
+</div>

@@ -1,58 +1,7 @@
-<section class="auth-page auth-glass" aria-labelledby="register-title">
-  <div class="auth-background">
-    <div class="bg-overlay"></div>
-  </div>
-
-  <header class="auth-toolbar" aria-label="Theme controls">
-    <button
-      type="button"
-      class="icon-btn"
-      (click)="toggleDarkMode()"
-      [attr.aria-pressed]="theme.darkMode()"
-      [attr.aria-label]="theme.darkMode() ? 'Switch to light mode' : 'Switch to dark mode'"
-      title="{{ theme.darkMode() ? 'Switch to light mode' : 'Switch to dark mode' }}"
-    >
-      <i
-        class="bi"
-        [class.bi-sun-fill]="theme.darkMode()"
-        [class.bi-moon-stars-fill]="!theme.darkMode()"
-      ></i>
-    </button>
-    <button
-      type="button"
-      class="icon-btn icon-btn--primary"
-      (click)="toggleThemePanel()"
-      [attr.aria-expanded]="themePanelOpen()"
-      aria-controls="auth-theme-panel"
-      aria-label="Open primary palette"
-      title="Open primary palette"
-    >
-      <i class="bi bi-palette2"></i>
-    </button>
-    @if (themePanelOpen()) {
-      <div class="theme-backdrop" (click)="closeThemePanel()" aria-hidden="true"></div>
-      <section id="auth-theme-panel" class="theme-panel" aria-label="Primary colors">
-        <h3>Primary</h3>
-        <div class="primary-swatches">
-          @for (option of theme.primaryOptions; track option.id) {
-            <button
-              type="button"
-              class="swatch"
-              [class.active]="theme.selectedPrimary() === option.id"
-              [style.background]="option.value"
-              [attr.aria-label]="'Set primary color ' + option.label"
-              title="{{ 'Set primary color ' + option.label }}"
-              (click)="setPrimary(option.id)"
-            ></button>
-          }
-        </div>
-      </section>
-    }
-  </header>
-
+<section class="auth-page" aria-labelledby="register-title">
   <article class="auth-card auth-card--wide">
     <img
-      class="auth-logo auth-logo--wordmark"
+      class="auth-logo"
       ngSrc="/assets/images/africom-logo.png"
       width="540"
       height="140"
@@ -60,217 +9,202 @@
       priority
     />
     <h1 id="register-title">Create Account</h1>
-    <p class="auth-subtitle">Set up your account to continue</p>
+    <p class="auth-subtitle">Fill in the details to set up your account</p>
 
     <form class="auth-form" [formGroup]="registerForm" (ngSubmit)="submit()" novalidate>
-      <label class="auth-label" for="register-full-name">Full name</label>
-      <div class="input-shell">
-        <i class="bi bi-person input-icon"></i>
-        <input
-          id="register-full-name"
-          type="text"
-          formControlName="fullName"
-          placeholder="Full Name"
-          autocomplete="name"
-        />
+      <div class="form-section">
+        <p class="form-section-title">Personal Information</p>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="auth-label" for="register-full-name">Full name</label>
+            <div class="input-shell" [class.input-shell--error]="showControlError('fullName')">
+              <i class="bi bi-person input-icon"></i>
+              <input id="register-full-name" type="text" formControlName="fullName" placeholder="Full Name" autocomplete="name" />
+            </div>
+            @if (showControlError('fullName') && registerForm.controls.fullName.hasError('required')) {
+              <p class="field-error">Full name is required.</p>
+            }
+          </div>
+          <div class="form-group">
+            <label class="auth-label" for="register-phone">Phone number</label>
+            <div class="input-shell" [class.input-shell--error]="showControlError('phoneNumber')">
+              <i class="bi bi-telephone input-icon"></i>
+              <input id="register-phone" type="tel" formControlName="phoneNumber" placeholder="Phone Number" autocomplete="tel" />
+            </div>
+            @if (showControlError('phoneNumber') && registerForm.controls.phoneNumber.hasError('required')) {
+              <p class="field-error">Phone number is required.</p>
+            }
+            @if (showControlError('phoneNumber') && registerForm.controls.phoneNumber.hasError('pattern')) {
+              <p class="field-error">Enter a valid phone number.</p>
+            }
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="auth-label" for="register-email">Email</label>
+            <div class="input-shell" [class.input-shell--error]="showControlError('email')">
+              <i class="bi bi-envelope input-icon"></i>
+              <input id="register-email" type="email" formControlName="email" placeholder="Email address" autocomplete="email" />
+            </div>
+            @if (showControlError('email') && registerForm.controls.email.hasError('required')) {
+              <p class="field-error">Email is required.</p>
+            }
+            @if (showControlError('email') && registerForm.controls.email.hasError('email')) {
+              <p class="field-error">Enter a valid email address.</p>
+            }
+          </div>
+          <div class="form-group">
+            <label class="auth-label" for="register-department">Department</label>
+            <div class="input-shell" [class.input-shell--error]="showControlError('department')">
+              <i class="bi bi-building input-icon"></i>
+              <input id="register-department" type="text" formControlName="department" placeholder="Department" autocomplete="organization-title" />
+            </div>
+            @if (showControlError('department') && registerForm.controls.department.hasError('required')) {
+              <p class="field-error">Department is required.</p>
+            }
+          </div>
+        </div>
       </div>
-      @if (showControlError('fullName') && registerForm.controls.fullName.hasError('required')) {
-        <p class="field-error">Full name is required.</p>
-      }
 
-      <label class="auth-label" for="register-username">Username</label>
-      <div class="input-shell">
-        <i class="bi bi-at input-icon"></i>
-        <input
-          id="register-username"
-          type="text"
-          formControlName="username"
-          placeholder="Username"
-          autocomplete="username"
-        />
-      </div>
-      @if (showControlError('username') && registerForm.controls.username.hasError('required')) {
-        <p class="field-error">Username is required.</p>
-      }
-      @if (showControlError('username') && registerForm.controls.username.hasError('minlength')) {
-        <p class="field-error">Username must be at least 3 characters.</p>
-      }
-      @if (showControlError('username') && registerForm.controls.username.hasError('pattern')) {
-        <p class="field-error">Username can only contain letters, numbers, and underscores.</p>
-      }
-
-      <label class="auth-label" for="register-phone">Phone number</label>
-      <div class="input-shell">
-        <i class="bi bi-telephone input-icon"></i>
-        <input
-          id="register-phone"
-          type="tel"
-          formControlName="phoneNumber"
-          placeholder="Phone Number"
-          autocomplete="tel"
-        />
-      </div>
-      @if (
-        showControlError('phoneNumber') && registerForm.controls.phoneNumber.hasError('required')
-      ) {
-        <p class="field-error">Phone number is required.</p>
-      }
-      @if (
-        showControlError('phoneNumber') && registerForm.controls.phoneNumber.hasError('pattern')
-      ) {
-        <p class="field-error">Please enter a valid phone number.</p>
-      }
-
-      <label class="auth-label" for="register-email">Email</label>
-      <div class="input-shell">
-        <i class="bi bi-envelope input-icon"></i>
-        <input
-          id="register-email"
-          type="email"
-          formControlName="email"
-          placeholder="Email address"
-          autocomplete="email"
-        />
-      </div>
-      @if (showControlError('email') && registerForm.controls.email.hasError('required')) {
-        <p class="field-error">Email is required.</p>
-      }
-      @if (showControlError('email') && registerForm.controls.email.hasError('email')) {
-        <p class="field-error">Please enter a valid email address.</p>
-      }
-
-      <label class="auth-label" for="register-department">Department</label>
-      <div class="input-shell">
-        <i class="bi bi-building input-icon"></i>
-        <input
-          id="register-department"
-          type="text"
-          formControlName="department"
-          placeholder="Department"
-          autocomplete="organization-title"
-        />
-      </div>
-      @if (
-        showControlError('department') && registerForm.controls.department.hasError('required')
-      ) {
-        <p class="field-error">Department is required.</p>
-      }
-
-      <label class="auth-label" for="register-employee-code">Employee code</label>
-      <div class="input-shell">
-        <i class="bi bi-hash input-icon"></i>
-        <input
-          id="register-employee-code"
-          type="text"
-          formControlName="employeeCode"
-          placeholder="EMP1234"
-          autocomplete="off"
-        />
-      </div>
-      @if (
-        showControlError('employeeCode') && registerForm.controls.employeeCode.hasError('required')
-      ) {
-        <p class="field-error">Employee code is required.</p>
-      }
-      @if (
-        showControlError('employeeCode') &&
-        registerForm.controls.employeeCode.hasError('invalidFormat')
-      ) {
-        <p class="field-error">
-          Employee code must be in format EMP followed by numbers (e.g., EMP1234).
-        </p>
-      }
-      @if (
-        showControlError('employeeCode') &&
-        registerForm.controls.employeeCode.hasError('invalidLength')
-      ) {
-        <p class="field-error">Employee code must be between 4-15 characters long.</p>
-      }
-
-      <label class="auth-label" for="register-password">Password</label>
-      <div class="input-shell input-shell--with-action">
-        <i class="bi bi-lock input-icon"></i>
-        <input
-          id="register-password"
-          [type]="showPassword() ? 'text' : 'password'"
-          formControlName="password"
-          placeholder="Password"
-          autocomplete="new-password"
-        />
-        <button
-          type="button"
-          class="input-action"
-          (click)="togglePasswordVisibility()"
-          [attr.aria-label]="showPassword() ? 'Hide password' : 'Show password'"
-          title="{{ showPassword() ? 'Hide password' : 'Show password' }}"
-        >
-          <i class="bi" [class.bi-eye-slash]="showPassword()" [class.bi-eye]="!showPassword()"></i>
-        </button>
-      </div>
-      @if (showControlError('password') && registerForm.controls.password.hasError('required')) {
-        <p class="field-error">Password is required.</p>
-      }
-      @if (showControlError('password') && registerForm.controls.password.hasError('minlength')) {
-        <p class="field-error">Password must be at least 8 characters.</p>
-      }
-      @if (
-        showControlError('password') && registerForm.controls.password.hasError('passwordStrength')
-      ) {
-        <p class="field-error">
-          Password must contain at least one uppercase letter, one lowercase letter, and one number.
-        </p>
-      }
-
-      <label class="auth-label" for="register-confirm-password">Confirm password</label>
-      <div class="input-shell input-shell--with-action">
-        <i class="bi bi-lock-fill input-icon"></i>
-        <input
-          id="register-confirm-password"
-          [type]="showConfirmPassword() ? 'text' : 'password'"
-          formControlName="confirmPassword"
-          placeholder="Confirm Password"
-          autocomplete="new-password"
-        />
-        <button
-          type="button"
-          class="input-action"
-          (click)="toggleConfirmPasswordVisibility()"
-          [attr.aria-label]="
-            showConfirmPassword() ? 'Hide confirm password' : 'Show confirm password'
-          "
-          title="{{ showConfirmPassword() ? 'Hide confirm password' : 'Show confirm password' }}"
-        >
-          <i
-            class="bi"
-            [class.bi-eye-slash]="showConfirmPassword()"
-            [class.bi-eye]="!showConfirmPassword()"
-          ></i>
-        </button>
-      </div>
-      @if (
-        showControlError('confirmPassword') &&
-        registerForm.controls.confirmPassword.hasError('required')
-      ) {
-        <p class="field-error">Confirm password is required.</p>
-      }
-      @if (passwordMismatch()) {
-        <p class="field-error">Passwords do not match.</p>
-      }
-
-      <label class="auth-label" for="register-role">Role</label>
-      <div class="input-shell input-shell--select">
-        <i class="bi bi-shield-lock input-icon"></i>
-        <select id="register-role" formControlName="roleName" class="select-field">
-          @for (role of roleOptions; track role.value) {
-            <option [value]="role.value">{{ role.label }}</option>
+      <div class="form-section">
+        <p class="form-section-title">Account Details</p>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="auth-label" for="register-username">Username</label>
+            <div class="input-shell" [class.input-shell--error]="showControlError('username')">
+              <i class="bi bi-at input-icon"></i>
+              <input id="register-username" type="text" formControlName="username" placeholder="Username" autocomplete="username" />
+            </div>
+            @if (showControlError('username') && registerForm.controls.username.hasError('required')) {
+              <p class="field-error">Username is required.</p>
+            }
+            @if (showControlError('username') && registerForm.controls.username.hasError('minlength')) {
+              <p class="field-error">Username must be at least 3 characters.</p>
+            }
+            @if (showControlError('username') && registerForm.controls.username.hasError('pattern')) {
+              <p class="field-error">Letters, numbers, and underscores only.</p>
+            }
+          </div>
+          <div class="form-group">
+            <label class="auth-label" for="register-employee-code">Employee code</label>
+            <div class="input-shell" [class.input-shell--error]="showControlError('employeeCode')">
+              <i class="bi bi-hash input-icon"></i>
+              <input id="register-employee-code" type="text" formControlName="employeeCode" placeholder="EMP1234" autocomplete="off" />
+            </div>
+            @if (showControlError('employeeCode') && registerForm.controls.employeeCode.hasError('required')) {
+              <p class="field-error">Employee code is required.</p>
+            }
+            @if (showControlError('employeeCode') && registerForm.controls.employeeCode.hasError('invalidFormat')) {
+              <p class="field-error">Format: EMP followed by numbers (e.g., EMP1234).</p>
+            }
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="auth-label" for="register-role">Role</label>
+          <div class="input-shell input-shell--select" [class.input-shell--error]="showControlError('roleName')">
+            <i class="bi bi-shield-lock input-icon"></i>
+            <select id="register-role" formControlName="roleName" class="select-field">
+              @for (role of roleOptions; track role.value) {
+                <option [value]="role.value">{{ role.label }}</option>
+              }
+            </select>
+          </div>
+          @if (showControlError('roleName') && registerForm.controls.roleName.hasError('required')) {
+            <p class="field-error">Please select a role.</p>
           }
-        </select>
+        </div>
       </div>
-      @if (showControlError('roleName') && registerForm.controls.roleName.hasError('required')) {
-        <p class="field-error">Please select a role.</p>
-      }
 
-      <label class="remember-row">
+      <div class="form-section">
+        <p class="form-section-title">Security</p>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="auth-label" for="register-password">Password</label>
+            <div class="input-shell input-shell--with-action" [class.input-shell--error]="showControlError('password')">
+              <i class="bi bi-lock input-icon"></i>
+              <input
+                id="register-password"
+                [type]="showPassword() ? 'text' : 'password'"
+                formControlName="password"
+                placeholder="Password"
+                autocomplete="new-password"
+              />
+              <button
+                type="button"
+                class="input-action"
+                (click)="togglePasswordVisibility()"
+                [attr.aria-label]="showPassword() ? 'Hide password' : 'Show password'"
+                title="{{ showPassword() ? 'Hide password' : 'Show password' }}"
+              >
+                <i class="bi" [class.bi-eye-slash]="showPassword()" [class.bi-eye]="!showPassword()"></i>
+              </button>
+            </div>
+
+            @if (registerForm.controls.password.value) {
+              <div class="password-strength">
+                <span class="password-strength__bar">
+                  <span
+                    class="password-strength__fill"
+                    [style.width.%]="getPasswordStrength()"
+                    [style.background]="
+                      getPasswordStrength() < 40 ? '#ef4444' :
+                      getPasswordStrength() < 70 ? '#f59e0b' :
+                      getPasswordStrength() < 90 ? '#3b82f6' :
+                      '#22c55e'
+                    "
+                  ></span>
+                </span>
+                <span class="password-strength__label">
+                  @if (getPasswordStrength() < 40) { Weak }
+                  @else if (getPasswordStrength() < 70) { Fair }
+                  @else if (getPasswordStrength() < 90) { Strong }
+                  @else { Very strong }
+                </span>
+              </div>
+            }
+
+            @if (showControlError('password') && registerForm.controls.password.hasError('required')) {
+              <p class="field-error">Password is required.</p>
+            }
+            @if (showControlError('password') && registerForm.controls.password.hasError('minlength')) {
+              <p class="field-error">Password must be at least 8 characters.</p>
+            }
+            @if (showControlError('password') && registerForm.controls.password.hasError('passwordStrength')) {
+              <p class="field-error">Password must contain uppercase, lowercase, and a number.</p>
+            }
+          </div>
+          <div class="form-group">
+            <label class="auth-label" for="register-confirm-password">Confirm password</label>
+            <div class="input-shell input-shell--with-action" [class.input-shell--error]="showControlError('confirmPassword')">
+              <i class="bi bi-lock-fill input-icon"></i>
+              <input
+                id="register-confirm-password"
+                [type]="showConfirmPassword() ? 'text' : 'password'"
+                formControlName="confirmPassword"
+                placeholder="Confirm Password"
+                autocomplete="new-password"
+              />
+              <button
+                type="button"
+                class="input-action"
+                (click)="toggleConfirmPasswordVisibility()"
+                [attr.aria-label]="showConfirmPassword() ? 'Hide confirm password' : 'Show confirm password'"
+                title="{{ showConfirmPassword() ? 'Hide confirm password' : 'Show confirm password' }}"
+              >
+                <i class="bi" [class.bi-eye-slash]="showConfirmPassword()" [class.bi-eye]="!showConfirmPassword()"></i>
+              </button>
+            </div>
+            @if (showControlError('confirmPassword') && registerForm.controls.confirmPassword.hasError('required')) {
+              <p class="field-error">Confirm password is required.</p>
+            }
+            @if (passwordMismatch()) {
+              <p class="field-error">Passwords do not match.</p>
+            }
+          </div>
+        </div>
+      </div>
+
+      <label class="remember-row" style="margin-top: 0.75rem;">
         <input type="checkbox" formControlName="acceptedTerms" />
         <span>I agree to the terms and privacy policy</span>
       </label>
@@ -279,6 +213,9 @@
       }
 
       <button type="submit" class="btn-primary" [disabled]="loading()">
+        @if (loading()) {
+          <span class="btn-spinner"></span>
+        }
         {{ loading() ? 'Creating account...' : 'Create Account' }}
       </button>
 
@@ -287,6 +224,7 @@
           class="status-text"
           [class.status-text--error]="statusTone() === 'error'"
           [class.status-text--success]="statusTone() === 'success'"
+          [class.status-text--neutral]="statusTone() === 'neutral'"
         >
           {{ statusMessage() }}
         </p>

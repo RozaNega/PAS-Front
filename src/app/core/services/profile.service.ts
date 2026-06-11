@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { Observable, map, tap, throwError, from, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { ApiService } from './api.service';
-import { CurrentUserService } from './current-user.service';
+import { CurrentUserService, CurrentUser } from './current-user.service';
 import { ApiResponseModel } from '../models/api-response.model';
 import { DEFAULT_AVATAR_PATH } from '../models/stored-user.model';
 import {
@@ -48,6 +48,11 @@ export class ProfileService {
       isActive: true,
     };
     return this.apiService.put(`users/${userId}`, body).pipe(
+      tap((res) => {
+        if (res.success) {
+          this.currentUserService.updateUser(data as Partial<CurrentUser>);
+        }
+      }),
       map(res => ({ succeeded: res.success, message: res.message })),
       catchError((err) => {
         console.error('[ProfileService] updateProfileViaApi error:', err);

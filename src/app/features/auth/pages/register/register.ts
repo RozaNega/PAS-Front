@@ -5,7 +5,6 @@ import { RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 
 import { AuthApi } from '../../services/auth-api';
-import { AuthThemeService } from '../../services/auth-theme.service';
 import { RegistrationService } from '../../../../core/services/registration.service';
 
 @Component({
@@ -19,7 +18,6 @@ export class Register {
   private readonly formBuilder = inject(FormBuilder);
   private readonly authApi = inject(AuthApi);
   private readonly registrationService = inject(RegistrationService);
-  protected readonly theme = inject(AuthThemeService);
 
   protected readonly roleOptions = [
     { label: 'Admin', value: 'Admin' },
@@ -35,7 +33,6 @@ export class Register {
   protected readonly statusTone = signal<'neutral' | 'success' | 'error'>('neutral');
   protected readonly showPassword = signal(false);
   protected readonly showConfirmPassword = signal(false);
-  protected readonly themePanelOpen = signal(false);
 
   protected readonly registerForm = this.formBuilder.nonNullable.group(
     {
@@ -73,21 +70,9 @@ export class Register {
 
   private employeeCodeValidator(control: AbstractControl) {
     const value = control.value;
-    if (!value) {
-      return { required: true };
-    }
-
-    // Check if it matches EMP followed by numbers only
-    const empPattern = /^EMP\d+$/;
-    if (!empPattern.test(value)) {
-      return { invalidFormat: true };
-    }
-
-    // Check length (minimum EMP + 1 digit, maximum reasonable length)
-    if (value.length < 4 || value.length > 15) {
-      return { invalidLength: true };
-    }
-
+    if (!value) return { required: true };
+    if (!/^EMP\d+$/.test(value)) return { invalidFormat: true };
+    if (value.length < 4 || value.length > 15) return { invalidLength: true };
     return null;
   }
 
@@ -102,8 +87,6 @@ export class Register {
     }
 
     const raw = this.registerForm.getRawValue();
-
-    // Enhanced validation and data cleaning
     const registerData = {
       username: raw.username.trim(),
       password: raw.password,
@@ -116,7 +99,6 @@ export class Register {
       phoneNumber: raw.phoneNumber?.trim() || undefined,
     };
 
-    // Client-side validation
     const validationErrors = this.validateRegistrationData(registerData);
     if (validationErrors.length > 0) {
       this.statusTone.set('error');
@@ -124,20 +106,15 @@ export class Register {
       return;
     }
 
-    console.log('Sending registration data:', registerData);
-
     this.loading.set(true);
     this.registrationService
       .register(registerData)
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
         next: (response) => {
-          console.log('Registration response:', response);
           if (response.success) {
             this.statusTone.set('success');
-            this.statusMessage.set(
-              response.message || 'Account created successfully! Please login.',
-            );
+            this.statusMessage.set(response.message || 'Account created successfully! Please login.');
             this.registerForm.reset({
               fullName: '',
               username: '',
@@ -157,26 +134,17 @@ export class Register {
           }
         },
         error: (error) => {
-          console.error('Registration error:', error);
-          console.error('Error status:', error.status);
-          console.error('Error details:', error.error);
-          console.error('Full error:', JSON.stringify(error, null, 2));
-          console.error('Error text:', error.error?.text || error.statusText);
-
           let errorMessage = 'Registration failed. Please try again.';
 
           if (error.status === 0) {
-            errorMessage =
-              'Unable to connect to the server. Please restart the dev server (ng serve) and clear browser cache.';
+            errorMessage = 'Unable to connect to the server. Please ensure the backend API is running.';
           } else if (error.status === 400) {
-            // Parse detailed validation errors
             if (error.error?.errors) {
               const errors = error.error.errors;
               if (typeof errors === 'object') {
-                const errorMessages = Object.keys(errors).map((key) =>
+                errorMessage = Object.keys(errors).map((key) =>
                   Array.isArray(errors[key]) ? errors[key].join(', ') : errors[key],
-                );
-                errorMessage = errorMessages.join(' ');
+                ).join(' ');
               } else if (Array.isArray(errors)) {
                 errorMessage = errors.join(' ');
               } else {
@@ -185,8 +153,7 @@ export class Register {
             } else if (error.error?.message) {
               errorMessage = error.error.message;
             } else {
-              errorMessage =
-                'Invalid registration data. Please check: username (3+ chars), email format, password (8+ chars), phone number format.';
+              errorMessage = 'Invalid registration data. Check your inputs and try again.';
             }
           } else if (error.status === 409) {
             errorMessage = 'Username or email already exists. Please use different credentials.';
@@ -198,8 +165,6 @@ export class Register {
             errorMessage = Array.isArray(error.error.errors)
               ? error.error.errors.join(', ')
               : JSON.stringify(error.error.errors);
-          } else if (typeof error.error === 'string') {
-            errorMessage = error.error;
           }
 
           this.statusTone.set('error');
@@ -210,46 +175,14 @@ export class Register {
 
   private validateRegistrationData(data: any): string[] {
     const errors: string[] = [];
-
-    // Username validation
-    if (!data.username || data.username.length < 3) {
-      errors.push('Username must be at least 3 characters.');
-    }
-    if (!/^[a-zA-Z0-9_]+$/.test(data.username)) {
-      errors.push('Username can only contain letters, numbers, and underscores.');
-    }
-
-    // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(data.email)) {
-      errors.push('Please enter a valid email address.');
-    }
-
-    // Password validation
-    if (data.password.length < 8) {
-      errors.push('Password must be at least 8 characters.');
-    }
-    if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(data.password)) {
-      errors.push(
-        'Password must contain at least one uppercase letter, one lowercase letter, and one number.',
-      );
-    }
-
-    // Phone number validation
-    if (data.phoneNumber && !/^\+?[0-9\s()-]{7,20}$/.test(data.phoneNumber)) {
-      errors.push('Please enter a valid phone number.');
-    }
-
-    // Employee code validation
-    if (!data.employeeCode || !/^EMP\d+$/.test(data.employeeCode)) {
-      errors.push('Employee code must be in format EMP followed by numbers (e.g., EMP1234).');
-    }
-
-    // Full name validation
-    if (!data.fullName || data.fullName.length < 2) {
-      errors.push('Full name must be at least 2 characters.');
-    }
-
+    if (!data.username || data.username.length < 3) errors.push('Username must be at least 3 characters.');
+    if (!/^[a-zA-Z0-9_]+$/.test(data.username)) errors.push('Username can only contain letters, numbers, and underscores.');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) errors.push('Please enter a valid email address.');
+    if (data.password.length < 8) errors.push('Password must be at least 8 characters.');
+    if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(data.password)) errors.push('Password must contain uppercase, lowercase, and a number.');
+    if (data.phoneNumber && !/^\+?[0-9\s()-]{7,20}$/.test(data.phoneNumber)) errors.push('Please enter a valid phone number.');
+    if (!data.employeeCode || !/^EMP\d+$/.test(data.employeeCode)) errors.push('Employee code must be in format EMP followed by numbers (e.g., EMP1234).');
+    if (!data.fullName || data.fullName.length < 2) errors.push('Full name must be at least 2 characters.');
     return errors;
   }
 
@@ -261,23 +194,6 @@ export class Register {
     this.showConfirmPassword.update((value) => !value);
   }
 
-  protected toggleDarkMode(): void {
-    this.theme.toggleDarkMode();
-  }
-
-  protected toggleThemePanel(): void {
-    this.themePanelOpen.update((value) => !value);
-  }
-
-  protected closeThemePanel(): void {
-    this.themePanelOpen.set(false);
-  }
-
-  protected setPrimary(optionId: string): void {
-    this.theme.setPrimary(optionId);
-    this.themePanelOpen.set(false);
-  }
-
   protected passwordMismatch(): boolean {
     return (
       this.registerForm.hasError('passwordMismatch') &&
@@ -285,50 +201,37 @@ export class Register {
     );
   }
 
-  protected showControlError(
-    controlName:
-      | 'fullName'
-      | 'username'
-      | 'phoneNumber'
-      | 'email'
-      | 'department'
-      | 'employeeCode'
-      | 'roleName'
-      | 'password'
-      | 'confirmPassword'
-      | 'acceptedTerms',
-  ): boolean {
-    const control = this.registerForm.controls[controlName];
+  protected showControlError(controlName: string): boolean {
+    const control = this.registerForm.controls[controlName as keyof typeof this.registerForm.controls];
     return control.invalid && (control.touched || this.submitted());
+  }
+
+  protected getPasswordStrength(): number {
+    const password = this.registerForm.controls.password.value;
+    if (!password) return 0;
+    let score = 0;
+    if (password.length >= 8) score += 25;
+    if (password.length >= 12) score += 10;
+    if (/[A-Z]/.test(password)) score += 20;
+    if (/[a-z]/.test(password)) score += 15;
+    if (/[0-9]/.test(password)) score += 15;
+    if (/[^A-Za-z0-9]/.test(password)) score += 15;
+    return Math.min(score, 100);
   }
 
   private matchPasswordsValidator(control: AbstractControl) {
     const password = control.get('password')?.value;
     const confirmPassword = control.get('confirmPassword')?.value;
-
-    if (!password || !confirmPassword) {
-      return null;
-    }
-
+    if (!password || !confirmPassword) return null;
     return password === confirmPassword ? null : { passwordMismatch: true };
   }
 
   private passwordStrengthValidator(control: AbstractControl) {
     const password = control.value;
-    if (!password) {
-      return null;
-    }
-
+    if (!password) return null;
     const hasUpperCase = /[A-Z]/.test(password);
     const hasLowerCase = /[a-z]/.test(password);
     const hasNumeric = /[0-9]/.test(password);
-
-    const valid = hasUpperCase && hasLowerCase && hasNumeric;
-
-    if (!valid) {
-      return { passwordStrength: true };
-    }
-
-    return null;
+    return hasUpperCase && hasLowerCase && hasNumeric ? null : { passwordStrength: true };
   }
 }

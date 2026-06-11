@@ -7,7 +7,7 @@ import * as echarts from 'echarts/core';
 import { BarChart, LineChart } from 'echarts/charts';
 import { GridComponent, TooltipComponent } from 'echarts/components';
 import { CanvasRenderer } from 'echarts/renderers';
-import jsQR from 'jsqr';
+import { BrowserMultiFormatReader } from '@zxing/library';
 
 echarts.use([BarChart, LineChart, TooltipComponent, GridComponent, CanvasRenderer]);
 
@@ -60,7 +60,7 @@ export class GenericPageComponent implements OnDestroy {
   quickScanSuggestions = ['SKU-001', 'ITEM-123', 'BOX-456', 'TAG-789'];
   avgScanTime = '0.8s';
   mediaStream: MediaStream | null = null;
-  private scanInterval: ReturnType<typeof setInterval> | null = null;
+  private zxingReader: BrowserMultiFormatReader | null = null;
   readonly cameraVideo = viewChild<ElementRef<HTMLVideoElement>>('cameraVideo');
 
   scanCount = signal(0);
@@ -204,14 +204,23 @@ export class GenericPageComponent implements OnDestroy {
       this.mediaStream = stream;
 
       const videoEl = this.cameraVideo()?.nativeElement;
-      if (videoEl) {
-        videoEl.srcObject = stream;
+      if (!videoEl) {
+        this.showToast('Video element not found', 'error');
+        return;
       }
+
+      videoEl.srcObject = stream;
+
+      this.zxingReader = new BrowserMultiFormatReader();
+      this.zxingReader.decodeFromVideoDevice(null, videoEl, (result, error) => {
+        if (result) {
+          this.handleScanResult(result.getText());
+        }
+      });
 
       this.isScanning = true;
       this.isStreaming = true;
-      this.startScanning();
-      this.showToast('Camera activated', 'success');
+      this.showToast('Camera activated - scanning QR & barcodes', 'success');
     } catch (err: any) {
       this.showToast(`Camera error: ${err?.message || err?.name || 'denied'}`, 'error');
       this.isScanning = false;
@@ -220,6 +229,10 @@ export class GenericPageComponent implements OnDestroy {
   }
 
   private stopCamera(): void {
+    if (this.zxingReader) {
+      this.zxingReader.reset();
+      this.zxingReader = null;
+    }
     if (this.mediaStream) {
       this.mediaStream.getTracks().forEach(t => t.stop());
       this.mediaStream = null;
@@ -228,60 +241,19 @@ export class GenericPageComponent implements OnDestroy {
     if (videoEl) {
       videoEl.srcObject = null;
     }
-    this.stopScanning();
     this.isScanning = false;
     this.isStreaming = false;
     this.scanAnimation.set('idle');
   }
 
-  onVideoReady(): void {
-    this.startScanning();
-  }
-
-  private startScanning(): void {
-    this.stopScanning();
-    this.scanInterval = setInterval(() => this.scanFrame(), 300);
-  }
-
-  private stopScanning(): void {
-    if (this.scanInterval) {
-      clearInterval(this.scanInterval);
-      this.scanInterval = null;
-    }
-  }
-
-  private scanFrame(): void {
-    const videoEl = this.cameraVideo()?.nativeElement;
-    if (!videoEl || videoEl.readyState < 2 || !videoEl.videoWidth) return;
-
-    try {
-      const canvas = document.createElement('canvas');
-      canvas.width = videoEl.videoWidth;
-      canvas.height = videoEl.videoHeight;
-      const ctx = canvas.getContext('2d', { willReadFrequently: true });
-      if (!ctx) return;
-
-      ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'dontInvert' });
-
-      if (code) {
-        this.stopScanning();
-        this.handleQrResult(code.data);
-      }
-    } catch (e) {
-      /* frame error — skip */
-    }
-  }
-
-  private handleQrResult(data: string): void {
+  private handleScanResult(data: string): void {
     const startTime = performance.now();
     const raw = data.trim();
     const parsed = this.parseQrData(raw);
     const id = Date.now();
     const result = {
       id,
-      itemName: parsed.name || `QR: ${parsed.sku}`,
+      itemName: parsed.name || `Scanned: ${parsed.sku}`,
       sku: parsed.sku,
       location: parsed.location || parsed.warehouse || 'Unregistered',
       time: 'Just now',
@@ -297,10 +269,16 @@ export class GenericPageComponent implements OnDestroy {
     const avg = this.scanTimes.reduce((a, b) => a + b, 0) / this.scanTimes.length;
     this.avgScanTime = avg < 1 ? `${Math.round(avg * 10) / 10}s` : `${Math.round(avg)}s`;
 
-    this.showToast(`QR Found: ${result.itemName}`, 'success');
+    this.showToast(`Scanned: ${result.itemName}`, 'success');
     setTimeout(() => {
       this.scanAnimation.set('idle');
-      if (this.isStreaming) this.startScanning();
+      if (this.isStreaming && this.zxingReader) {
+        this.zxingReader.reset();
+        if (this.mediaStream) {
+          const videoEl = this.cameraVideo()?.nativeElement;
+          if (videoEl) this.zxingReader.decodeFromVideoDevice(null, videoEl, (r) => { if (r) this.handleScanResult(r.getText()); });
+        }
+      }
     }, 2000);
   }
 
@@ -369,7 +347,7 @@ export class GenericPageComponent implements OnDestroy {
     const id = Date.now();
     const result = {
       id,
-      itemName: parsed.name || `QR: ${parsed.sku}`,
+      itemName: parsed.name || `Scanned: ${parsed.sku}`,
       sku: parsed.sku,
       location: parsed.location || parsed.warehouse || 'Unregistered',
       time: 'Just now',
