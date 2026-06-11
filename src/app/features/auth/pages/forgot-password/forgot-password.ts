@@ -5,7 +5,6 @@ import { RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 
 import { AuthService } from '../../../../core/services/auth.service';
-import { AuthThemeService } from '../../services/auth-theme.service';
 
 @Component({
   selector: 'app-forgot-password',
@@ -17,7 +16,6 @@ import { AuthThemeService } from '../../services/auth-theme.service';
 export class ForgotPassword {
   private readonly formBuilder = inject(FormBuilder);
   private readonly authService = inject(AuthService);
-  protected readonly theme = inject(AuthThemeService);
 
   protected readonly submitted = signal(false);
   protected readonly loading = signal(false);
@@ -25,7 +23,7 @@ export class ForgotPassword {
   protected readonly statusTone = signal<'neutral' | 'success' | 'error'>('neutral');
   protected readonly requestSuccessful = signal(false);
   protected readonly generatedToken = signal('');
-  protected readonly themePanelOpen = signal(false);
+
   protected readonly forgotForm = this.formBuilder.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],
   });
@@ -70,22 +68,5 @@ export class ForgotPassword {
   protected showEmailError(): boolean {
     const control = this.forgotForm.controls.email;
     return control.invalid && (control.touched || this.submitted());
-  }
-
-  protected toggleDarkMode(): void {
-    this.theme.toggleDarkMode();
-  }
-
-  protected toggleThemePanel(): void {
-    this.themePanelOpen.update((value) => !value);
-  }
-
-  protected closeThemePanel(): void {
-    this.themePanelOpen.set(false);
-  }
-
-  protected setPrimary(optionId: string): void {
-    this.theme.setPrimary(optionId);
-    this.themePanelOpen.set(false);
   }
 }

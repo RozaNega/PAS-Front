@@ -132,7 +132,7 @@ export const storekeeperMenuConfig: MenuItem[] = [
       { label: 'Warehouse View', route: '/storekeeper/warehouse' },
       { label: 'Warehouses', route: '/storekeeper/warehouse/warehouses' },
       { label: 'Shelf Management', route: '/storekeeper/warehouse/shelves' },
-      { label: 'QR Scanner', route: '/storekeeper/warehouse/scanner' },
+      { label: 'Barcode / QR Scanner', route: '/storekeeper/warehouse/scanner' },
     ],
   },
   {

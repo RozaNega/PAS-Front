@@ -907,7 +907,7 @@
         <!-- Camera Module -->
         <div class="qr-camera-module">
           <div class="qr-camera" [class.active]="isScanning" [class.hit]="scanAnimation() === 'success'" [class.streaming]="isStreaming">
-            <video #cameraVideo class="cam-video" autoplay muted playsinline (loadedmetadata)="onVideoReady()"></video>
+            <video #cameraVideo class="cam-video" autoplay muted playsinline></video>
 
             @if (!isStreaming) {
               <div class="cam-bg">
@@ -921,7 +921,7 @@
                 </div>
                 <div class="cam-info">
                   <strong>Camera Feed</strong>
-                  <span>Point camera at QR code</span>
+                  <span>Point camera at barcode / QR code</span>
                 </div>
               </div>
             }
@@ -968,7 +968,7 @@
                   <input
                     type="text"
                     class="qr-input"
-                    placeholder="Type QR code or SKU..."
+                    placeholder="Type barcode / QR code or SKU..."
                     [(ngModel)]="manualQrCode"
                     (keyup.enter)="lookupQR()"
                     #manualInput

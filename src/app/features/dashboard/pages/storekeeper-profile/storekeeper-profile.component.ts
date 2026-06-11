@@ -635,8 +635,11 @@ export class StorekeeperProfileComponent implements OnInit {
     });
 
     this.profileService.fetchProfileFromApi().subscribe({
-      next: (userData) => {
-        if (userData) this.applyUser(userData as unknown as User);
+      next: (apiData) => {
+        if (apiData) {
+          const merged = { ...apiData, ...this.currentUserService.getCurrentUserValue() } as User;
+          this.applyUser(merged);
+        }
       },
     });
   }
