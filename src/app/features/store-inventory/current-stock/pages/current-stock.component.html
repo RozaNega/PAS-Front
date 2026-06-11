@@ -42,7 +42,7 @@
       <div class="filter-group">
         <label><i class="bi bi-tag"></i> Category:</label>
         <select class="filter-select" [ngModel]="categoryFilter()" (ngModelChange)="categoryFilter.set($event)">
-          @for (cat of categories; track cat) {
+          @for (cat of categories(); track cat) {
             <option [value]="cat">{{ cat }}</option>
           }
         </select>
@@ -142,7 +142,6 @@
         <button class="btn" (click)="selectOutOfStock()"><i class="bi bi-x-octagon"></i> Out of Stock</button>
         <button class="btn" (click)="clearSelection()"><i class="bi bi-x-square"></i> Clear</button>
         <div class="bulk-spacer"></div>
-        <button class="btn btn-primary" (click)="openBulkAdjustModal()"><i class="bi bi-sliders"></i> Bulk Adjust</button>
         <button class="btn btn-secondary" (click)="bulkExport()"><i class="bi bi-download"></i> Export</button>
         <button class="btn btn-success" (click)="bulkGenerateQRCodes()"><i class="bi bi-qr-code"></i> QR Codes</button>
       </div>
@@ -311,15 +310,15 @@
                     </tr>
                   </thead>
                   <tbody>
-                    @for (mov of stockMovements(); track mov.date + mov.reference) {
+                    @for (mov of stockMovements(); track mov.id) {
                       <tr>
-                        <td>{{ mov.date }}</td>
-                        <td>{{ mov.type }}</td>
+                        <td>{{ mov.movementDate }}</td>
+                        <td>{{ mov.movementType }}</td>
                         <td [style.color]="mov.quantity > 0 ? '#059669' : '#dc2626'" style="font-weight: 700;">
                           {{ mov.quantity > 0 ? '+' : '' }}{{ mov.quantity }}
                         </td>
-                        <td>{{ mov.reference }}</td>
-                        <td>{{ mov.location }}</td>
+                        <td>{{ mov.referenceNumber }}</td>
+                        <td>{{ mov.shelfLocation }}</td>
                       </tr>
                     }
                   </tbody>
@@ -332,41 +331,6 @@
         </div>
         <div class="modal-footer">
           <button type="button" class="action-btn secondary" (click)="closeModal()">Close</button>
-        </div>
-      </div>
-    </div>
-  }
-
-  @if (showBulkAdjustModal()) {
-    <div class="modal-overlay" (click)="closeBulkAdjustModal()">
-      <div class="modal-content" (click)="$event.stopPropagation()" style="max-width: 480px;">
-        <div class="modal-header">
-          <h3><i class="bi bi-sliders"></i> Bulk Adjust Stock</h3>
-          <button class="close-btn" (click)="closeBulkAdjustModal()"><i class="bi bi-x-lg"></i></button>
-        </div>
-        <div class="modal-body">
-          <div style="display: flex; flex-direction: column; gap: 1rem;">
-            <div>
-              <label style="display: block; font-size: 0.82rem; font-weight: 600; color: var(--text-color-muted); margin-bottom: 0.35rem;">Quantity</label>
-              <input type="number" [ngModel]="bulkAdjustQty()" (ngModelChange)="bulkAdjustQty.set($event)" style="width: 100%; padding: 0.65rem; border: 1px solid var(--surface-border); border-radius: 8px; background: var(--surface-section); color: var(--text-color); font-family: inherit; font-size: 0.9rem;" />
-            </div>
-            <div>
-              <label style="display: block; font-size: 0.82rem; font-weight: 600; color: var(--text-color-muted); margin-bottom: 0.35rem;">Adjustment Type</label>
-              <select [ngModel]="bulkAdjustType()" (ngModelChange)="bulkAdjustType.set($event)" style="width: 100%; padding: 0.65rem; border: 1px solid var(--surface-border); border-radius: 8px; background: var(--surface-section); color: var(--text-color); font-family: inherit; font-size: 0.9rem;">
-                <option value="increase">Increase</option>
-                <option value="decrease">Decrease</option>
-                <option value="set">Set</option>
-              </select>
-            </div>
-            <div>
-              <label style="display: block; font-size: 0.82rem; font-weight: 600; color: var(--text-color-muted); margin-bottom: 0.35rem;">Reason</label>
-              <input type="text" [ngModel]="bulkAdjustReason()" (ngModelChange)="bulkAdjustReason.set($event)" style="width: 100%; padding: 0.65rem; border: 1px solid var(--surface-border); border-radius: 8px; background: var(--surface-section); color: var(--text-color); font-family: inherit; font-size: 0.9rem;" />
-            </div>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button class="action-btn secondary" (click)="closeBulkAdjustModal()">Cancel</button>
-          <button class="action-btn primary" (click)="performBulkAdjust()">Submit</button>
         </div>
       </div>
     </div>

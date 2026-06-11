@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
-import { Observable, map, tap, throwError, from } from 'rxjs';
+import { Observable, map, tap, throwError, from, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { ApiService } from './api.service';
 import { CurrentUserService } from './current-user.service';
 import { ApiResponseModel } from '../models/api-response.model';
@@ -30,13 +31,41 @@ export class ProfileService {
     return this.uploadProfileImage(file);
   }
 
-  updateProfileViaApi(data: Partial<Record<string, unknown>>): Observable<{ succeeded: boolean }> {
-    const userId = this.currentUserService.getUserId();
+  updateProfileViaApi(data: Partial<Record<string, unknown>>): Observable<{ succeeded: boolean; message?: string }> {
+    const user = this.currentUserService.getCurrentUserValue();
+    const userId = user?.id;
     if (!userId) {
-      return throwError(() => new Error('User not found'));
+      return of({ succeeded: false, message: 'User session not found. Please log in again.' });
     }
-    return this.apiService.put(`Users/${userId}`, data).pipe(
-      map(res => ({ succeeded: res.success }))
+    const body = {
+      ...data,
+      id: userId,
+      userId,
+      username: (data['username'] as string) || user?.username || '',
+      name: data['fullName'] || user?.fullName || '',
+      phoneNumber: data['phone'] as string,
+      joinDate: user?.joinDate || undefined,
+      isActive: true,
+    };
+    return this.apiService.put(`users/${userId}`, body).pipe(
+      map(res => ({ succeeded: res.success, message: res.message })),
+      catchError((err) => {
+        console.error('[ProfileService] updateProfileViaApi error:', err);
+        let detail = err.error?.message || err.message || '';
+        if (err.error?.errors) {
+          const e = err.error.errors;
+          detail = Array.isArray(e) ? e.join('; ') : typeof e === 'string' ? e : JSON.stringify(e);
+        }
+        const msg =
+          err.status === 404
+            ? 'Profile update endpoint not found'
+            : err.status === 400
+              ? `Invalid data: ${detail}`
+              : err.status === 401
+                ? 'Session expired. Please log in again.'
+                : `API error (${err.status}): ${err.statusText}`;
+        return of({ succeeded: false, message: msg });
+      }),
     );
   }
 

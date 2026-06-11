@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -13,6 +13,9 @@ import {
   TitleComponent,
 } from 'echarts/components';
 import { CanvasRenderer } from 'echarts/renderers';
+
+import { ShelvesService, ShelfLocationDto } from '../../../../core/services/shelves.service';
+import { WarehousesService } from '../../../../core/services/warehouses.service';
 
 echarts.use([
   BarChart,
@@ -34,6 +37,32 @@ interface Shelf {
   lastUpdated: string;
 }
 
+interface WarehouseOption {
+  id: string;
+  name: string;
+}
+
+function getStatusSymbol(occupancy: number, isActive: boolean): string {
+  if (!isActive) return '\u26AA';
+  if (occupancy >= 70) return '\uD83D\uDFE2';
+  if (occupancy >= 30) return '\uD83D\uDFE1';
+  return '\uD83D\uDD34';
+}
+
+function getStatusLabel(occupancy: number, isActive: boolean): string {
+  if (!isActive) return 'Inactive';
+  if (occupancy >= 70) return 'Active';
+  if (occupancy >= 30) return 'Warning';
+  return 'Critical';
+}
+
+function formatDate(iso: string): string {
+  if (!iso) return '\u2014';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
 @Component({
   selector: 'app-warehouse-view',
   standalone: true,
@@ -43,39 +72,39 @@ interface Shelf {
   styleUrls: ['./warehouse-view.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class WarehouseViewComponent {
+export class WarehouseViewComponent implements OnInit {
   readonly Math = Math;
   readonly router = inject(Router);
+  private readonly shelvesService = inject(ShelvesService);
+  private readonly warehousesService = inject(WarehousesService);
 
-  selectedWarehouse = signal('Warehouse A');
+  selectedWarehouseId = signal<string>('');
   viewMode = signal('grid');
-  warehouses = ['Warehouse A', 'Warehouse B', 'Warehouse C', 'Warehouse D'];
-
-  shelves = signal<Shelf[]>([
-    { aisle: 'A-01', rack: 'R-01', items: 234, value: 45678, occupancy: 78, status: '\uD83D\uDFE2', lastUpdated: 'Dec 15, 2024' },
-    { aisle: 'A-01', rack: 'R-02', items: 189, value: 34567, occupancy: 63, status: '\uD83D\uDFE2', lastUpdated: 'Dec 14, 2024' },
-    { aisle: 'A-01', rack: 'R-03', items: 98, value: 12345, occupancy: 33, status: '\uD83D\uDFE1', lastUpdated: 'Dec 13, 2024' },
-    { aisle: 'A-01', rack: 'R-04', items: 156, value: 8901, occupancy: 52, status: '\uD83D\uDFE2', lastUpdated: 'Dec 15, 2024' },
-    { aisle: 'A-02', rack: 'R-01', items: 67, value: 4567, occupancy: 22, status: '\uD83D\uDFE1', lastUpdated: 'Dec 12, 2024' },
-    { aisle: 'A-02', rack: 'R-02', items: 34, value: 2345, occupancy: 11, status: '\uD83D\uDD34', lastUpdated: 'Dec 10, 2024' },
-  ]);
-
+  warehouses = signal<WarehouseOption[]>([]);
+  shelves = signal<Shelf[]>([]);
   showWarehouseDetailsModal = signal(false);
   loading = signal(false);
+  loadError = signal<string | null>(null);
+
+  selectedWarehouseName = computed(() => {
+    const id = this.selectedWarehouseId();
+    const found = this.warehouses().find(w => w.id === id);
+    return found?.name || 'Select a warehouse';
+  });
 
   totalItems = computed(() => this.shelves().reduce((sum, s) => sum + s.items, 0));
   totalShelves = computed(() => this.shelves().length);
   totalValue = computed(() => this.shelves().reduce((sum, s) => sum + s.value, 0));
   occupancyRate = computed(() => {
-    const shelves = this.shelves();
-    if (shelves.length === 0) return 0;
-    return Math.round(shelves.reduce((sum, s) => sum + s.occupancy, 0) / shelves.length);
+    const items = this.shelves();
+    if (items.length === 0) return 0;
+    return Math.round(items.reduce((sum, s) => sum + s.occupancy, 0) / items.length);
   });
   utilizationRate = computed(() => {
-    const shelves = this.shelves();
-    if (shelves.length === 0) return 0;
-    const active = shelves.filter(s => s.occupancy >= 60).length;
-    return Math.round((active / shelves.length) * 100);
+    const items = this.shelves();
+    if (items.length === 0) return 0;
+    const active = items.filter(s => s.occupancy >= 60).length;
+    return Math.round((active / items.length) * 100);
   });
   filteredShelves = computed(() => this.shelves());
 
@@ -84,19 +113,88 @@ export class WarehouseViewComponent {
     return [...set].sort();
   });
 
+  ngOnInit(): void {
+    this.loadWarehouses();
+  }
+
+  private loadWarehouses(): void {
+    this.loading.set(true);
+    this.loadError.set(null);
+    this.warehousesService.getAll({ isActive: true }).subscribe({
+      next: (res) => {
+        if (res.success !== false && Array.isArray(res.data)) {
+          const list = res.data.map(w => ({ id: w.id, name: w.warehouseName }));
+          this.warehouses.set(list);
+          if (list.length > 0) {
+            this.selectedWarehouseId.set(list[0].id);
+            this.loadShelves(list[0].id);
+          } else {
+            this.loading.set(false);
+          }
+        } else {
+          this.loading.set(false);
+          this.loadError.set('Failed to load warehouses');
+        }
+      },
+      error: () => {
+        this.loading.set(false);
+        this.loadError.set('Warehouses API unavailable');
+      },
+    });
+  }
+
+  private loadShelves(warehouseId: string): void {
+    this.loading.set(true);
+    this.loadError.set(null);
+    this.shelvesService.getAll({ warehouseId, isActive: true }).subscribe({
+      next: (res) => {
+        this.loading.set(false);
+        if (res.success === false) {
+          this.shelves.set([]);
+          this.loadError.set(res.message || 'Failed to load shelves');
+          return;
+        }
+        if (Array.isArray(res.data) && res.data.length > 0) {
+          this.shelves.set(res.data.map(d => this.mapShelf(d)));
+        } else {
+          this.shelves.set([]);
+        }
+      },
+      error: (err) => {
+        this.loading.set(false);
+        this.shelves.set([]);
+        this.loadError.set(err.message || 'Failed to load shelves');
+      },
+    });
+  }
+
+  private mapShelf(d: ShelfLocationDto): Shelf {
+    const occ = d.currentUtilization ?? 0;
+    const isActive = d.isActive ?? true;
+    return {
+      aisle: d.aisle || '\u2014',
+      rack: d.rack || '\u2014',
+      items: d.capacity ? Math.round(d.capacity * occ / 100) : 0,
+      value: 0,
+      occupancy: occ,
+      status: getStatusSymbol(occ, isActive),
+      lastUpdated: formatDate(d.updatedAt || d.createdAt),
+    };
+  }
+
   getShelvesByAisle(aisle: string): Shelf[] {
     return this.shelves().filter(s => s.aisle === aisle);
   }
 
   readonly chartOption = computed(() => {
-    const shelves = this.shelves();
-    const aisleList = [...new Set(shelves.map(s => s.aisle))].sort();
+    const items = this.shelves();
+    const aisleList = [...new Set(items.map(s => s.aisle))].sort();
     const occupancyData = aisleList.map(aisle => {
-      const filtered = shelves.filter(s => s.aisle === aisle);
+      const filtered = items.filter(s => s.aisle === aisle);
       return Math.round(filtered.reduce((sum, s) => sum + s.occupancy, 0) / filtered.length);
     });
     const itemsData = aisleList.map(aisle => {
-      const filtered = shelves.filter(s => s.aisle === aisle);
+      const filtered = items.filter(s => s.aisle === aisle);
       return filtered.reduce((sum, s) => sum + s.items, 0);
     });
 
@@ -162,8 +260,9 @@ export class WarehouseViewComponent {
     };
   });
 
-  onWarehouseChange(value: string): void {
-    this.selectedWarehouse.set(value);
+  onWarehouseChange(id: string): void {
+    this.selectedWarehouseId.set(id);
+    if (id) this.loadShelves(id);
   }
 
   setViewMode(mode: string): void {
@@ -187,13 +286,13 @@ export class WarehouseViewComponent {
   }
 
   viewItems(shelf: Shelf): void {
-    this.router.navigate(['/storekeeper/inventory'], { queryParams: { shelf: `${shelf.aisle}-${shelf.rack}`, warehouse: this.selectedWarehouse() } });
+    this.router.navigate(['/storekeeper/inventory'], { queryParams: { shelf: `${shelf.aisle}-${shelf.rack}`, warehouse: this.selectedWarehouseName() } });
   }
 
   printShelf(shelf: Shelf): void {
     const win = window.open('', '_blank');
     if (!win) return;
-    win.document.write(`<div style="font-family: Arial; padding: 20px;"><h2>Shelf ${shelf.aisle}-${shelf.rack}</h2><p>Items: ${shelf.items}</p><p>Value: $${shelf.value.toLocaleString()}</p><p>Occupancy: ${shelf.occupancy}%</p><p>Status: ${shelf.status}</p><p>Last Updated: ${shelf.lastUpdated}</p></div>`);
+    win.document.write(`<div style="font-family: Arial; padding: 20px;"><h2>Shelf ${shelf.aisle}-${shelf.rack}</h2><p>Items: ${shelf.items}</p><p>Occupancy: ${shelf.occupancy}%</p><p>Status: ${getStatusLabel(shelf.occupancy, true)}</p><p>Last Updated: ${shelf.lastUpdated}</p></div>`);
     win.document.close();
     win.print();
   }
@@ -208,16 +307,16 @@ export class WarehouseViewComponent {
 
   exportData(): void {
     const rows = this.shelves();
-    const headers = ['Aisle', 'Rack', 'Items', 'Value', 'Occupancy %', 'Status', 'Last Updated'];
+    const headers = ['Aisle', 'Rack', 'Items', 'Occupancy %', 'Status', 'Last Updated'];
     const csv = [
       headers.join(','),
-      ...rows.map((r) => [r.aisle, r.rack, String(r.items), String(r.value), String(r.occupancy), r.status === '\uD83D\uDFE2' ? 'Active' : r.status === '\uD83D\uDFE1' ? 'Warning' : 'Critical', r.lastUpdated].map((v) => `"${v.replace(/"/g, '""')}"`).join(',')),
+      ...rows.map((r) => [r.aisle, r.rack, String(r.items), String(r.occupancy), getStatusLabel(r.occupancy, true), r.lastUpdated].map((v) => `"${v.replace(/"/g, '""')}"`).join(',')),
     ].join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `warehouse-${this.selectedWarehouse().replace(/\s+/g, '-')}-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `warehouse-${this.selectedWarehouseName().replace(/\s+/g, '-')}-${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   }
@@ -240,4 +339,6 @@ export class WarehouseViewComponent {
     if (occupancy >= 30) return 'yellow';
     return 'red';
   }
+
+  getStatusLabel = getStatusLabel;
 }

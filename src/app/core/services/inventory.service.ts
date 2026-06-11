@@ -4,7 +4,7 @@ import { ApiService } from './api.service';
 import { ApiResponse } from '../../types/api-response.type';
 import { normalizePasListResponse, toCamelCaseDeep, unwrapPasEnvelope } from '../utils/pas-api-json.util';
 
-/** Inventory Stock from GET /api/InventoryStock */
+/** Inventory Stock from GET /api/InventoryStock (matches backend InventoryStockDto) */
 export interface InventoryStockDto {
   id: string;
   itemId: string;
@@ -12,15 +12,27 @@ export interface InventoryStockDto {
   sku: string;
   shelfId: string;
   shelfLocation: string;
-  warehouseId: string;
   warehouseName: string;
+  currentQuantity: number;
+  reservedQuantity: number;
+  availableQuantity: number;
+  unitOfMeasure: string;
+  batchNumber: string | null;
+  expiryDate: string | null;
+  lastReceived: string | null;
+  lastIssued: string | null;
+
+  // Backward compatibility - old field names from previous API
   currentStock: number;
   reservedStock: number;
   availableStock: number;
-  unitOfMeasure: string;
-  lastUpdated: string;
+  warehouseId: string;
   minimumThreshold: number;
   maximumThreshold: number;
+  lastUpdated: string;
+  
+  // Allow additional properties for mock data
+  [key: string]: any;
 }
 
 /** Stock Movement from GET /api/StockLedger */
@@ -85,15 +97,23 @@ export class InventoryService {
         sku: 'LAP-HP-001',
         shelfId: 'shelf-001',
         shelfLocation: 'A-R1-S1',
-        warehouseId: 'wh-001',
         warehouseName: 'Main Warehouse',
+        currentQuantity: 25,
+        reservedQuantity: 5,
+        availableQuantity: 20,
+        unitOfMeasure: 'Units',
+        batchNumber: null,
+        expiryDate: null,
+        lastReceived: new Date().toISOString(),
+        lastIssued: null,
+        // Backward compatibility
         currentStock: 25,
         reservedStock: 5,
         availableStock: 20,
-        unitOfMeasure: 'Units',
-        lastUpdated: new Date().toISOString(),
+        warehouseId: 'wh-001',
         minimumThreshold: 10,
         maximumThreshold: 50,
+        lastUpdated: new Date().toISOString(),
       },
       {
         id: 'inv-002',
@@ -102,15 +122,23 @@ export class InventoryService {
         sku: 'CHR-STD-001',
         shelfId: 'shelf-002',
         shelfLocation: 'A-R1-S2',
-        warehouseId: 'wh-001',
         warehouseName: 'Main Warehouse',
+        currentQuantity: 45,
+        reservedQuantity: 10,
+        availableQuantity: 35,
+        unitOfMeasure: 'Units',
+        batchNumber: null,
+        expiryDate: null,
+        lastReceived: new Date().toISOString(),
+        lastIssued: null,
+        // Backward compatibility
         currentStock: 45,
         reservedStock: 10,
         availableStock: 35,
-        unitOfMeasure: 'Units',
-        lastUpdated: new Date().toISOString(),
+        warehouseId: 'wh-001',
         minimumThreshold: 20,
         maximumThreshold: 100,
+        lastUpdated: new Date().toISOString(),
       },
       {
         id: 'inv-003',
@@ -119,15 +147,23 @@ export class InventoryService {
         sku: 'PRT-JET-001',
         shelfId: 'shelf-003',
         shelfLocation: 'B-R2-S1',
-        warehouseId: 'wh-001',
         warehouseName: 'Main Warehouse',
+        currentQuantity: 12,
+        reservedQuantity: 2,
+        availableQuantity: 10,
+        unitOfMeasure: 'Units',
+        batchNumber: null,
+        expiryDate: null,
+        lastReceived: new Date().toISOString(),
+        lastIssued: null,
+        // Backward compatibility
         currentStock: 12,
         reservedStock: 2,
         availableStock: 10,
-        unitOfMeasure: 'Units',
-        lastUpdated: new Date().toISOString(),
+        warehouseId: 'wh-001',
         minimumThreshold: 5,
         maximumThreshold: 20,
+        lastUpdated: new Date().toISOString(),
       },
       {
         id: 'inv-004',
@@ -136,15 +172,23 @@ export class InventoryService {
         sku: 'PAP-A4-001',
         shelfId: 'shelf-004',
         shelfLocation: 'A-R1-S1-BW',
-        warehouseId: 'wh-002',
         warehouseName: 'Branch Warehouse A',
+        currentQuantity: 500,
+        reservedQuantity: 100,
+        availableQuantity: 400,
+        unitOfMeasure: 'Boxes',
+        batchNumber: null,
+        expiryDate: null,
+        lastReceived: new Date().toISOString(),
+        lastIssued: null,
+        // Backward compatibility
         currentStock: 500,
         reservedStock: 100,
         availableStock: 400,
-        unitOfMeasure: 'Boxes',
-        lastUpdated: new Date().toISOString(),
+        warehouseId: 'wh-002',
         minimumThreshold: 200,
         maximumThreshold: 1000,
+        lastUpdated: new Date().toISOString(),
       },
     ];
   }
@@ -159,7 +203,26 @@ export class InventoryService {
     pageSize?: number;
   }): Observable<ApiResponse<InventoryStockDto[]>> {
     return this.apiService.get<unknown>('InventoryStock', params).pipe(
-      map((raw) => normalizePasListResponse<InventoryStockDto>(raw)),
+      map((raw) => {
+        const normalized = normalizePasListResponse<InventoryStockDto>(raw);
+        // Ensure backward compatible fields are present (server may return either format)
+        if (normalized.data) {
+          normalized.data = normalized.data.map(item => ({
+            ...item,
+            currentQuantity: item.currentQuantity ?? item.currentStock ?? 0,
+            reservedQuantity: item.reservedQuantity ?? item.reservedStock ?? 0,
+            availableQuantity: item.availableQuantity ?? item.availableStock ?? (item.currentQuantity ?? item.currentStock ?? 0),
+            currentStock: item.currentStock ?? item.currentQuantity ?? 0,
+            reservedStock: item.reservedStock ?? item.reservedQuantity ?? 0,
+            availableStock: item.availableStock ?? item.availableQuantity ?? (item.currentStock ?? item.currentQuantity ?? 0),
+            warehouseId: item.warehouseId ?? item.shelfId ?? '',
+            minimumThreshold: item.minimumThreshold ?? 10,
+            maximumThreshold: item.maximumThreshold ?? 100,
+            lastUpdated: item.lastUpdated ?? item.lastReceived ?? item.lastIssued ?? new Date().toISOString(),
+          }));
+        }
+        return normalized;
+      }),
       catchError(() => {
         console.warn('InventoryStock API unavailable');
         return of({

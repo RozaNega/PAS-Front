@@ -213,14 +213,14 @@
               <td>{{ item.warehouseName }}</td>
               <td>{{ item.shelfLocation || 'N/A' }}</td>
               <td>
-                <span class="stock-quantity" [class.text-danger]="item.currentStock === 0">
-                  {{ item.currentStock }}
+                <span class="stock-quantity" [class.text-danger]="item.currentQuantity === 0">
+                  {{ item.currentQuantity }}
                 </span>
               </td>
-              <td>{{ item.reservedStock || 0 }}</td>
+              <td>{{ item.reservedQuantity || 0 }}</td>
               <td>
-                <span class="available-quantity" [class.text-success]="item.availableStock > 0">
-                  {{ item.availableStock }}
+                <span class="available-quantity" [class.text-success]="item.availableQuantity > 0">
+                  {{ item.availableQuantity }}
                 </span>
               </td>
               <td>

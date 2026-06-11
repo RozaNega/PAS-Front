@@ -76,7 +76,7 @@
         <div class="summary-content">
           <div class="summary-label">Total SIVs Issued</div>
           <div class="summary-value">{{ totalSIVs() }}</div>
-          <div class="summary-sub">▲ +12%</div>
+          <div class="summary-sub">—</div>
         </div>
       </div>
       <div class="summary-card">
@@ -84,7 +84,6 @@
         <div class="summary-content">
           <div class="summary-label">Total Items Issued</div>
           <div class="summary-value">{{ totalItemsIssued() }} units</div>
-          <div class="summary-sub">▲ +8%</div>
         </div>
       </div>
       <div class="summary-card">
@@ -92,7 +91,7 @@
         <div class="summary-content">
           <div class="summary-label">Total Value Issued</div>
           <div class="summary-value">{{ formatValue(totalValueIssued()) }}</div>
-          <div class="summary-sub">▲ +15%</div>
+          <div class="summary-sub">—</div>
         </div>
       </div>
       <div class="summary-card">
@@ -100,7 +99,7 @@
         <div class="summary-content">
           <div class="summary-label">Avg. Per Day</div>
           <div class="summary-value">{{ avgPerDay() }}</div>
-          <div class="summary-sub">▲ +5 units</div>
+          <div class="summary-sub">—</div>
         </div>
       </div>
       <div class="summary-card">
@@ -108,154 +107,156 @@
         <div class="summary-content">
           <div class="summary-label">Active Users</div>
           <div class="summary-value">{{ activeUsers() }}</div>
-          <div class="summary-sub">▲ +3</div>
+          <div class="summary-sub">—</div>
         </div>
       </div>
     </div>
   </div>
 
   <!-- Issuance Trend Chart -->
-  <div class="chart-section">
-    <div class="section-header">
-      <h3>📈 ISSUANCE TREND CHART</h3>
-    </div>
-    <div class="chart-placeholder">
-      <div class="chart-legend">
-        <span class="legend-item"><span class="dot blue"></span> Items Issued</span>
-        <span class="legend-item"><span class="dot green"></span> Total Value</span>
-        <span class="legend-item"><span class="dot orange"></span> Unique Requesters</span>
+  @if (filteredIssuances().length > 0) {
+    <div class="chart-section">
+      <div class="section-header">
+        <h3>📈 ISSUANCE TREND CHART</h3>
       </div>
-      <div class="chart-bars">
-        @for (height of barHeights(); track $index) {
-          <div class="bar-group">
-            <div class="bar main" [style.height.px]="height"></div>
-            <div class="bar-label">Week {{ $index + 1 }}</div>
-          </div>
-        }
+      <div class="chart-placeholder">
+        <p class="text-muted">Trend visualization available when more data is collected.</p>
       </div>
     </div>
-  </div>
+  }
 
   <!-- Detailed Issuance Table -->
   <div class="table-section">
     <div class="section-header">
       <h3>📋 DETAILED ISSUANCE TABLE</h3>
     </div>
-    <div class="table-container">
-      <table class="issuance-table">
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>SIV #</th>
-            <th>Requester</th>
-            <th>Department</th>
-            <th>Item</th>
-            <th>Qty</th>
-            <th>Value</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (issuance of filteredIssuances(); track issuance.sivNumber) {
+    @if (loading()) {
+      <div class="loading-state">Loading issuance data...</div>
+    } @else if (error(); as err) {
+      <div class="error-state">{{ err }}</div>
+    } @else {
+      <div class="table-container">
+        <table class="issuance-table">
+          <thead>
             <tr>
-              <td>{{ issuance.date }}</td>
-              <td>{{ issuance.sivNumber }}</td>
-              <td>{{ issuance.requester }}</td>
-              <td>{{ issuance.department }}</td>
-              <td>{{ issuance.item }}</td>
-              <td>{{ issuance.quantity }}</td>
-              <td>{{ formatValue(issuance.value) }}</td>
-              <td>
-                <div class="actions-cell">
-                  <button class="action-btn" title="View">
-                    <i class="bi bi-eye"></i>
-                  </button>
-                  <button class="action-btn" title="Print">
-                    <i class="bi bi-printer"></i>
-                  </button>
-                </div>
-              </td>
+              <th>Date</th>
+              <th>SIV #</th>
+              <th>Requester</th>
+              <th>Department</th>
+              <th>Item</th>
+              <th>Qty</th>
+              <th>Value</th>
+              <th>Actions</th>
             </tr>
-          }
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody>
+            @for (issuance of filteredIssuances(); track issuance.sivNumber) {
+              <tr>
+                <td>{{ issuance.date }}</td>
+                <td>{{ issuance.sivNumber }}</td>
+                <td>{{ issuance.requester }}</td>
+                <td>{{ issuance.department }}</td>
+                <td>{{ issuance.item }}</td>
+                <td>{{ issuance.quantity }}</td>
+                <td>{{ formatValue(issuance.value) }}</td>
+                <td>
+                  <div class="actions-cell">
+                    <button class="action-btn" title="View">
+                      <i class="bi bi-eye"></i>
+                    </button>
+                    <button class="action-btn" title="Print">
+                      <i class="bi bi-printer"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="8" class="empty-cell">No issuance records found for the selected filters.</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
     <div class="pagination-bar">
-      <div class="pagination-info">Showing 1-{{ filteredIssuances().length }} of 156 SIVs</div>
+      <div class="pagination-info">Showing {{ filteredIssuances().length }} of {{ totalSIVs() }} SIVs</div>
       <div class="pagination-controls">
         <button class="page-btn" disabled>Previous</button>
         <button class="page-btn active">1</button>
-        <button class="page-btn">2</button>
-        <button class="page-btn">3</button>
-        <button class="page-btn">→</button>
-        <button class="page-btn">7</button>
       </div>
     </div>
   </div>
 
   <!-- Issuance by Department -->
-  <div class="category-section">
-    <div class="section-header">
-      <h3>📊 ISSUANCE BY DEPARTMENT</h3>
-    </div>
-    <div class="category-list">
-      @for (dept of issuanceByDepartment(); track dept.name) {
-        <div class="category-item">
-          <div class="category-info">
-            <span class="category-name">{{ dept.name }}</span>
-            <span class="category-stats">{{ dept.units }} units</span>
-            <span class="category-value">{{ formatValue(dept.value) }}</span>
+  @if (issuanceByDepartment().length > 0) {
+    <div class="category-section">
+      <div class="section-header">
+        <h3>📊 ISSUANCE BY DEPARTMENT</h3>
+      </div>
+      <div class="category-list">
+        @for (dept of issuanceByDepartment(); track dept.name) {
+          <div class="category-item">
+            <div class="category-info">
+              <span class="category-name">{{ dept.name }}</span>
+              <span class="category-stats">{{ dept.units }} units</span>
+              <span class="category-value">{{ formatValue(dept.value) }}</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" [style.width.%]="dept.percentage"></div>
+              <span class="progress-label">{{ dept.percentage }}%</span>
+            </div>
           </div>
-          <div class="progress-bar">
-            <div class="progress-fill" [style.width.%]="dept.percentage"></div>
-            <span class="progress-label">{{ dept.percentage }}%</span>
-          </div>
-        </div>
-      }
+        }
+      </div>
     </div>
-  </div>
+  }
 
   <!-- Top Requested Items -->
-  <div class="top-items-section">
-    <div class="section-header">
-      <h3>🔥 TOP REQUESTED ITEMS</h3>
-    </div>
-    <div class="top-items-list">
-      @for (item of topRequestedItems(); track item.name) {
-        <div class="top-item">
-          <div class="item-info">
-            <span class="item-rank">{{ topRequestedItems().indexOf(item) + 1 }}. {{ item.name }}</span>
-            <span class="item-stats">{{ item.requests }} requests</span>
-            <span class="item-value">{{ formatValue(item.value) }}</span>
+  @if (topRequestedItems().length > 0) {
+    <div class="top-items-section">
+      <div class="section-header">
+        <h3>🔥 TOP REQUESTED ITEMS</h3>
+      </div>
+      <div class="top-items-list">
+        @for (item of topRequestedItems(); track item.name) {
+          <div class="top-item">
+            <div class="item-info">
+              <span class="item-rank">{{ topRequestedItems().indexOf(item) + 1 }}. {{ item.name }}</span>
+              <span class="item-stats">{{ item.requests }} requests</span>
+              <span class="item-value">{{ formatValue(item.value) }}</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" [style.width.%]="item.percentage"></div>
+            </div>
           </div>
-          <div class="progress-bar">
-            <div class="progress-fill" [style.width.%]="item.percentage"></div>
-          </div>
-        </div>
-      }
+        }
+      </div>
     </div>
-  </div>
+  }
 
   <!-- Top Requesters Analysis -->
-  <div class="requesters-section">
-    <div class="section-header">
-      <h3>👥 TOP REQUESTERS ANALYSIS - Most Active Requesters (Last 30 days)</h3>
-    </div>
-    <div class="requesters-list">
-      @for (req of topRequesters(); track req.name) {
-        <div class="requester-item">
-          <div class="requester-info">
-            <span class="requester-rank">{{ topRequesters().indexOf(req) + 1 }}. {{ req.name }}</span>
-            <span class="requester-stats">{{ req.requests }} requests</span>
-            <span class="requester-value">{{ formatValue(req.value) }}</span>
+  @if (topRequesters().length > 0) {
+    <div class="requesters-section">
+      <div class="section-header">
+        <h3>👥 TOP REQUESTERS ANALYSIS - Most Active Requesters</h3>
+      </div>
+      <div class="requesters-list">
+        @for (req of topRequesters(); track req.name) {
+          <div class="requester-item">
+            <div class="requester-info">
+              <span class="requester-rank">{{ topRequesters().indexOf(req) + 1 }}. {{ req.name }}</span>
+              <span class="requester-stats">{{ req.requests }} requests</span>
+              <span class="requester-value">{{ formatValue(req.value) }}</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" [style.width.%]="req.percentage"></div>
+            </div>
           </div>
-          <div class="progress-bar">
-            <div class="progress-fill" [style.width.%]="req.percentage"></div>
-          </div>
-        </div>
-      }
+        }
+      </div>
     </div>
-  </div>
+  }
 
   <!-- Export Options -->
   <div class="export-section">

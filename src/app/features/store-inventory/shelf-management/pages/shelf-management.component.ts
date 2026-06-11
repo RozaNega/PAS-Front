@@ -480,10 +480,6 @@ export class ShelfManagementComponent implements OnInit {
     this.openShelfDetailsModal(shelf);
   }
 
-  editShelf(shelf: ShelfRow): void {
-    this.openShelfDetailsModal(shelf);
-  }
-
   viewItems(_shelf: ShelfRow): void {
     /* Navigate or open stock-by-shelf when route exists */
   }

@@ -75,7 +75,7 @@
         <div class="summary-content">
           <div class="summary-label">Total GRNs Received</div>
           <div class="summary-value">{{ totalGRNs() }}</div>
-          <div class="summary-sub">▲ +15%</div>
+          <div class="summary-sub">—</div>
         </div>
       </div>
       <div class="summary-card">
@@ -83,7 +83,7 @@
         <div class="summary-content">
           <div class="summary-label">Total Items Received</div>
           <div class="summary-value">{{ totalItemsReceived() }} units</div>
-          <div class="summary-sub">▲ +12%</div>
+          <div class="summary-sub">—</div>
         </div>
       </div>
       <div class="summary-card">
@@ -91,7 +91,7 @@
         <div class="summary-content">
           <div class="summary-label">Total Value Received</div>
           <div class="summary-value">{{ formatValue(totalValueReceived()) }}</div>
-          <div class="summary-sub">▲ +18%</div>
+          <div class="summary-sub">—</div>
         </div>
       </div>
       <div class="summary-card">
@@ -99,7 +99,7 @@
         <div class="summary-content">
           <div class="summary-label">Avg. Daily Receiving</div>
           <div class="summary-value">{{ avgDailyReceiving() }}</div>
-          <div class="summary-sub">▲ +8 units</div>
+          <div class="summary-sub">—</div>
         </div>
       </div>
       <div class="summary-card">
@@ -107,91 +107,88 @@
         <div class="summary-content">
           <div class="summary-label">Active Suppliers</div>
           <div class="summary-value">{{ activeSuppliers() }}</div>
-          <div class="summary-sub">▲ +2</div>
+          <div class="summary-sub">—</div>
         </div>
       </div>
     </div>
   </div>
 
   <!-- Receiving Trend Chart -->
-  <div class="chart-section">
-    <div class="section-header">
-      <h3>📈 RECEIVING TREND CHART</h3>
-    </div>
-    <div class="chart-placeholder">
-      <div class="chart-legend">
-        <span class="legend-item"><span class="dot blue"></span> Items Received</span>
-        <span class="legend-item"><span class="dot green"></span> Total Value</span>
-        <span class="legend-item"><span class="dot orange"></span> Number of GRNs</span>
+  @if (filteredReceivings().length > 0) {
+    <div class="chart-section">
+      <div class="section-header">
+        <h3>📈 RECEIVING TREND CHART</h3>
       </div>
-      <div class="chart-bars">
-        @for (height of barHeights(); track $index) {
-          <div class="bar-group">
-            <div class="bar main" [style.height.px]="height"></div>
-            <div class="bar-label">Week {{ $index + 1 }}</div>
-          </div>
-        }
+      <div class="chart-placeholder">
+        <p class="text-muted">Trend visualization available when more data is collected.</p>
       </div>
     </div>
-  </div>
+  }
 
   <!-- Detailed Receiving Table -->
   <div class="table-section">
     <div class="section-header">
       <h3>📋 DETAILED RECEIVING TABLE</h3>
     </div>
-    <div class="table-container">
-      <table class="receiving-table">
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>GRN #</th>
-            <th>Supplier</th>
-            <th>Items</th>
-            <th>Qty</th>
-            <th>Value</th>
-            <th>Status</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (receiving of filteredReceivings(); track receiving.grnNumber) {
+    @if (loading()) {
+      <div class="loading-state">Loading receiving data...</div>
+    } @else if (error(); as err) {
+      <div class="error-state">{{ err }}</div>
+    } @else {
+      <div class="table-container">
+        <table class="receiving-table">
+          <thead>
             <tr>
-              <td>{{ receiving.date }}</td>
-              <td>{{ receiving.grnNumber }}</td>
-              <td>{{ receiving.supplier }}</td>
-              <td>{{ receiving.items }}</td>
-              <td>{{ receiving.quantity }}</td>
-              <td>{{ formatValue(receiving.value) }}</td>
-              <td>
-                <span class="status-icon">{{ getStatusIcon(receiving.status) }}</span>
-                <span class="status-text">{{ receiving.status }}</span>
-              </td>
-              <td>
-                <div class="actions-cell">
-                  <button class="action-btn" title="View">
-                    <i class="bi bi-eye"></i>
-                  </button>
-                  <button class="action-btn" title="Print">
-                    <i class="bi bi-printer"></i>
-                  </button>
-                </div>
-              </td>
+              <th>Date</th>
+              <th>GRN #</th>
+              <th>Supplier</th>
+              <th>Items</th>
+              <th>Qty</th>
+              <th>Value</th>
+              <th>Status</th>
+              <th>Actions</th>
             </tr>
-          }
-        </tbody>
-      </table>
-    </div>
-    <div class="pagination-bar">
-      <div class="pagination-info">Showing 1-{{ filteredReceivings().length }} of 45 GRNs</div>
-      <div class="pagination-controls">
-        <button class="page-btn" disabled>Previous</button>
-        <button class="page-btn active">1</button>
-        <button class="page-btn">2</button>
-        <button class="page-btn">→</button>
-        <button class="page-btn">2</button>
+          </thead>
+          <tbody>
+            @for (receiving of filteredReceivings(); track receiving.grnNumber) {
+              <tr>
+                <td>{{ receiving.date }}</td>
+                <td>{{ receiving.grnNumber }}</td>
+                <td>{{ receiving.supplier }}</td>
+                <td>{{ receiving.items }}</td>
+                <td>{{ receiving.quantity }}</td>
+                <td>{{ formatValue(receiving.value) }}</td>
+                <td>
+                  <span class="status-icon">{{ getStatusIcon(receiving.status) }}</span>
+                  <span class="status-text">{{ receiving.status }}</span>
+                </td>
+                <td>
+                  <div class="actions-cell">
+                    <button class="action-btn" title="View">
+                      <i class="bi bi-eye"></i>
+                    </button>
+                    <button class="action-btn" title="Print">
+                      <i class="bi bi-printer"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="8" class="empty-cell">No receiving records found for the selected filters.</td>
+              </tr>
+            }
+          </tbody>
+        </table>
       </div>
-    </div>
+      <div class="pagination-bar">
+        <div class="pagination-info">Showing {{ filteredReceivings().length }} of {{ totalGRNs() }} GRNs</div>
+        <div class="pagination-controls">
+          <button class="page-btn" disabled>Previous</button>
+          <button class="page-btn active">1</button>
+        </div>
+      </div>
+    }
   </div>
 
   <!-- Receiving by Supplier -->
@@ -216,68 +213,74 @@
   </div>
 
   <!-- Quality Inspection Summary -->
-  <div class="quality-section">
-    <div class="section-header">
-      <h3>🔍 QUALITY INSPECTION SUMMARY</h3>
-    </div>
-    <div class="quality-summary">
-      @for (item of qualitySummary(); track item.label) {
-        <div class="quality-item">
-          <div class="quality-info">
-            <span class="quality-label">{{ item.label }}:</span>
-            <span class="quality-count">({{ item.count }} GRNs)</span>
+  @if (receivings().length > 0) {
+    <div class="quality-section">
+      <div class="section-header">
+        <h3>🔍 QUALITY INSPECTION SUMMARY</h3>
+      </div>
+      <div class="quality-summary">
+        @for (item of qualitySummary(); track item.label) {
+          <div class="quality-item">
+            <div class="quality-info">
+              <span class="quality-label">{{ item.label }}:</span>
+              <span class="quality-count">({{ item.count }} GRNs)</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" [style.width.%]="item.percentage" [style.background-color]="item.color"></div>
+              <span class="progress-label">{{ item.percentage }}%</span>
+            </div>
           </div>
-          <div class="progress-bar">
-            <div class="progress-fill" [style.width.%]="item.percentage" [style.background-color]="item.color"></div>
-            <span class="progress-label">{{ item.percentage }}%</span>
-          </div>
+        }
+      </div>
+      @if (topQualityIssues().length > 0) {
+        <div class="quality-issues">
+          <h4>Top Quality Issues:</h4>
+          @for (issue of topQualityIssues(); track issue.issue) {
+            <div class="quality-issue">
+              <span>• {{ issue.issue }} ({{ issue.percentage }}%)</span>
+            </div>
+          }
         </div>
       }
     </div>
-    <div class="quality-issues">
-      <h4>Top Quality Issues:</h4>
-      @for (issue of topQualityIssues(); track issue.issue) {
-        <div class="quality-issue">
-          <span>• {{ issue.issue }} ({{ issue.percentage }}%)</span>
-        </div>
-      }
-    </div>
-  </div>
+  }
 
   <!-- Supplier Performance Ratings -->
-  <div class="performance-section">
-    <div class="section-header">
-      <h3>📊 SUPPLIER PERFORMANCE RATINGS</h3>
-    </div>
-    <div class="table-container">
-      <table class="performance-table">
-        <thead>
-          <tr>
-            <th>Supplier</th>
-            <th>On-Time</th>
-            <th>Quality</th>
-            <th>Price</th>
-            <th>Delivery</th>
-            <th>Overall</th>
-            <th>Trend</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (sup of supplierPerformance(); track sup.name) {
+  @if (supplierPerformance().length > 0) {
+    <div class="performance-section">
+      <div class="section-header">
+        <h3>📊 SUPPLIER PERFORMANCE RATINGS</h3>
+      </div>
+      <div class="table-container">
+        <table class="performance-table">
+          <thead>
             <tr>
-              <td>{{ sup.name }}</td>
-              <td>{{ sup.onTime }}</td>
-              <td>{{ sup.quality }}</td>
-              <td>{{ sup.price }}</td>
-              <td>{{ sup.delivery }}</td>
-              <td>{{ sup.overall }}</td>
-              <td class="trend {{ getTrendClass(sup.trend) }}">{{ sup.trend }}</td>
+              <th>Supplier</th>
+              <th>On-Time</th>
+              <th>Quality</th>
+              <th>Price</th>
+              <th>Delivery</th>
+              <th>Overall</th>
+              <th>Trend</th>
             </tr>
-          }
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            @for (sup of supplierPerformance(); track sup.name) {
+              <tr>
+                <td>{{ sup.name }}</td>
+                <td>{{ sup.onTime }}</td>
+                <td>{{ sup.quality }}</td>
+                <td>{{ sup.price }}</td>
+                <td>{{ sup.delivery }}</td>
+                <td>{{ sup.overall }}</td>
+                <td>{{ sup.trend }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
     </div>
-  </div>
+  }
 
   <!-- Export Options -->
   <div class="export-section">

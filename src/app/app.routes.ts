@@ -104,6 +104,10 @@ export const routes: Routes = [
         loadComponent: () => import('./features/store-inventory/stock-adjustment/pages/stock-adjustment.component').then(m => m.StockAdjustmentComponent),
       },
       {
+        path: 'inventory/bulk-adjust',
+        loadComponent: () => import('./features/inventory/pages/bulk-adjust-stock/bulk-adjust-stock.component').then(m => m.BulkAdjustStockComponent),
+      },
+      {
         path: 'inventory/transfer',
         loadComponent: () => import('./features/store-inventory/stock-transfer/pages/stock-transfer.component').then(m => m.StockTransferComponent),
       },
@@ -323,6 +327,10 @@ export const routes: Routes = [
       {
         path: 'inventory/adjustment',
         loadComponent: () => import('./features/store-inventory/stock-adjustment/pages/stock-adjustment.component').then(m => m.StockAdjustmentComponent),
+      },
+      {
+        path: 'inventory/bulk-adjust',
+        loadComponent: () => import('./features/inventory/pages/bulk-adjust-stock/bulk-adjust-stock.component').then(m => m.BulkAdjustStockComponent),
       },
       {
         path: 'inventory/transfer',

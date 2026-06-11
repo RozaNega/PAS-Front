@@ -49,56 +49,52 @@ export class ReceivingReportComponent implements OnInit {
   loading = signal(false);
   error = signal<string | null>(null);
 
-  // Computed summary statistics
   totalGRNs = computed(() => this.receivings().length);
-  totalItemsReceived = computed(() => 2345);
-  totalValueReceived = computed(() => this.receivings().reduce((sum, item) => sum + item.value, 0));
-  avgDailyReceiving = computed(() => '156 units/day');
-  activeSuppliers = computed(() => 12);
+  totalItemsReceived = computed(() => this.receivings().reduce((s, r) => s + r.quantity, 0));
+  totalValueReceived = computed(() => this.receivings().reduce((sum, r) => sum + r.value, 0));
+  avgDailyReceiving = computed(() => {
+    const items = this.receivings();
+    if (items.length === 0) return '0 units/day';
+    const start = new Date(this.dateRange.start);
+    const end = new Date(this.dateRange.end);
+    const days = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / 86400000));
+    return Math.round(items.reduce((s, r) => s + r.quantity, 0) / days) + ' units/day';
+  });
+  activeSuppliers = computed(() => new Set(this.receivings().map(r => r.supplier)).size);
 
-  // Receiving by supplier
-  receivingBySupplier = computed(() => [
-    { name: 'Tech Supplies Ltd', percentage: 40, value: 62800, grns: 12 },
-    { name: 'Office Depot', percentage: 22, value: 34500, grns: 8 },
-    { name: 'Global Suppliers', percentage: 18, value: 28200, grns: 7 },
-    { name: 'Paper Co', percentage: 12, value: 18900, grns: 6 },
-    { name: 'Tech Solutions', percentage: 8, value: 12490, grns: 4 }
-  ]);
+  receivingBySupplier = computed(() => {
+    const groups = new Map<string, { name: string; percentage: number; value: number; grns: number }>();
+    for (const r of this.receivings()) {
+      const g = groups.get(r.supplier) || { name: r.supplier, percentage: 0, value: 0, grns: 0 };
+      g.value += r.value;
+      g.grns++;
+      groups.set(r.supplier, g);
+    }
+    const entries = Array.from(groups.values()).sort((a, b) => b.value - a.value);
+    const total = entries.reduce((s, e) => s + e.value, 0) || 1;
+    return entries.map(e => ({ ...e, percentage: Math.round((e.value / total) * 100) }));
+  });
 
-  // Quality inspection summary
-  qualitySummary = computed(() => [
-    { label: 'Pass Rate', percentage: 85, count: 38, color: '#10b981' },
-    { label: 'Fail Rate', percentage: 8, count: 4, color: '#ef4444' },
-    { label: 'Partial Rate', percentage: 7, count: 3, color: '#f59e0b' }
-  ]);
+  qualitySummary = computed(() => {
+    const items = this.receivings();
+    const total = items.length || 1;
+    const passed = items.filter(r => r.status === 'Passed').length;
+    const failed = items.filter(r => r.status === 'Failed').length;
+    const pending = items.filter(r => r.status === 'Pending').length;
+    return [
+      { label: 'Pass Rate', percentage: Math.round((passed / total) * 100), count: passed, color: '#10b981' },
+      { label: 'Fail Rate', percentage: Math.round((failed / total) * 100), count: failed, color: '#ef4444' },
+      { label: 'Pending Rate', percentage: Math.round((pending / total) * 100), count: pending, color: '#f59e0b' }
+    ];
+  });
 
-  // Top quality issues
-  topQualityIssues = computed(() => [
-    { issue: 'Missing accessories', percentage: 45 },
-    { issue: 'Physical damage', percentage: 30 },
-    { issue: 'Wrong quantity', percentage: 15 },
-    { issue: 'Expired products', percentage: 10 }
-  ]);
+  topQualityIssues = computed<{ issue: string; percentage: number }[]>(() => []);
 
-  // Supplier performance ratings
-  supplierPerformance = computed<SupplierPerformance[]>(() => [
-    { name: 'Tech Supplies Ltd', onTime: '92%', quality: '88%', price: '★★★★☆', delivery: '3 days', overall: '4.2 ★', trend: '▲ Improving' },
-    { name: 'Office Depot', onTime: '95%', quality: '94%', price: '★★★★☆', delivery: '2 days', overall: '4.5 ★', trend: '● Stable' },
-    { name: 'Global Suppliers', onTime: '85%', quality: '78%', price: '★★★☆☆', delivery: '5 days', overall: '3.5 ★', trend: '▼ Declining' },
-    { name: 'Paper Co', onTime: '98%', quality: '96%', price: '★★★★☆', delivery: '2 days', overall: '4.7 ★', trend: '▲ Improving' }
-  ]);
-
-  // Bar heights for the chart - calculated once to avoid ExpressionChangedAfterItHasBeenCheckedError
-  barHeights = signal<number[]>([]);
+  supplierPerformance = computed<SupplierPerformance[]>(() => []);
 
   filteredReceivings = signal<Receiving[]>([]);
 
   ngOnInit(): void {
-    const heights: number[] = [];
-    for (let i = 0; i < 8; i++) {
-      heights.push(this.getRandomHeight(100, 60));
-    }
-    this.barHeights.set(heights);
     this.loadReceivingReport();
   }
 
@@ -130,7 +126,6 @@ export class ReceivingReportComponent implements OnInit {
 
   filterReceivings(): void {
     const supplier = this.supplierFilter();
-    const category = this.categoryFilter();
     const status = this.statusFilter();
 
     this.filteredReceivings.set(
@@ -159,14 +154,8 @@ export class ReceivingReportComponent implements OnInit {
   generateReport(): void {
     this.isLoading.set(true);
     this.reportGenerated.set(false);
-
-    setTimeout(() => {
-      this.filterReceivings();
-      this.reportGenerated.set(true);
-      this.lastRunTime.set(new Date());
-      this.isLoading.set(false);
-      console.log('Receiving report generated successfully');
-    }, 1500);
+    this.loadReceivingReport();
+    this.lastRunTime.set(new Date());
   }
 
   exportToExcel(): void {
@@ -247,16 +236,5 @@ export class ReceivingReportComponent implements OnInit {
       'Failed': 'bi bi-x-circle-fill'
     };
     return icons[status] || 'bi bi-info-circle-fill';
-  }
-
-  getRandomHeight(base: number, variance: number): number {
-    return base + Math.random() * variance;
-  }
-
-  getTrendClass(trend: string): string {
-    if (trend.includes('Improving')) return 'improving';
-    if (trend.includes('Stable')) return 'stable';
-    if (trend.includes('Declining')) return 'declining';
-    return '';
   }
 }

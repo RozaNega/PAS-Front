@@ -5,13 +5,15 @@ import {
   computed,
   inject,
   signal,
+  OnDestroy,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { firstValueFrom } from 'rxjs';
-import { InventoryService, InventoryStockDto } from '../../../../core/services/inventory.service';
+import { firstValueFrom, Subject, takeUntil } from 'rxjs';
+import { InventoryService, InventoryStockDto, StockMovementDto } from '../../../../core/services/inventory.service';
 import { WarehousesService } from '../../../../core/services/warehouses.service';
+import { CategoriesService, Category } from '../../../../core/services/categories.service';
 
 import { NgxEchartsDirective, provideEchartsCore } from 'ngx-echarts';
 import * as echarts from 'echarts/core';
@@ -59,11 +61,14 @@ interface StockMovement {
   styleUrls: ['./current-stock.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class CurrentStockComponent implements OnInit {
+export class CurrentStockComponent implements OnInit, OnDestroy {
   private readonly inventory = inject(InventoryService);
   private readonly warehousesService = inject(WarehousesService);
+  private readonly categoriesService = inject(CategoriesService);
   private readonly router = inject(Router);
   private readonly warehouseNameToId = new Map<string, string>();
+  private readonly categoryNameToId = new Map<string, string>();
+  private readonly destroy$ = new Subject<void>();
 
   searchTerm = signal('');
   warehouseFilter = signal('All Warehouses');
@@ -74,7 +79,6 @@ export class CurrentStockComponent implements OnInit {
   selectedStock = signal<StockItem | null>(null);
   selected = signal(new Set<string>());
 
-  showBulkAdjustModal = signal(false);
   bulkAdjustQty = signal<number | null>(1);
   bulkAdjustType = signal<'increase' | 'decrease' | 'set'>('decrease');
   bulkAdjustReason = signal('');
@@ -89,10 +93,10 @@ export class CurrentStockComponent implements OnInit {
 
   stockItems = signal<StockItem[]>([]);
   stockLocations = signal<StockLocation[]>([]);
-  stockMovements = signal<StockMovement[]>([]);
+  stockMovements = signal<StockMovementDto[]>([]);
 
   warehouses = signal<string[]>(['All Warehouses']);
-  categories = ['All Categories', 'General'];
+  categories = signal<string[]>(['All Categories']);
   statuses = ['All Status', 'Good', 'Low', 'Critical'];
 
   filteredStock = computed(() => {
@@ -175,6 +179,11 @@ export class CurrentStockComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.loadWarehouses();
+    this.loadCategories();
+  }
+
+  private loadWarehouses(): void {
     this.warehousesService.getAll({ isActive: true }).subscribe({
       next: (res) => {
         this.warehouseNameToId.clear();
@@ -188,6 +197,26 @@ export class CurrentStockComponent implements OnInit {
       error: () => undefined,
       complete: () => this.loadStock(),
     });
+  }
+
+  private loadCategories(): void {
+    this.categoriesService.getAll(1, 100).pipe(takeUntil(this.destroy$)).subscribe({
+      next: (res) => {
+        this.categoryNameToId.clear();
+        if (res.success !== false && res.data?.items) {
+          for (const c of res.data.items) {
+            this.categoryNameToId.set(c.categoryName, String(c.id));
+          }
+          this.categories.set(['All Categories', ...res.data.items.map((c) => c.categoryName)]);
+        }
+      },
+      error: () => undefined,
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   toggleSelect(id: string): void {
@@ -243,43 +272,6 @@ export class CurrentStockComponent implements OnInit {
     } else {
       this.router.navigate(['/storekeeper/warehouse/scanner']);
     }
-  }
-
-  openBulkAdjustModal(): void {
-    if (this.selected().size === 0) return;
-    this.bulkAdjustQty.set(1);
-    this.bulkAdjustType.set('decrease');
-    this.bulkAdjustReason.set('Bulk adjustment');
-    this.showBulkAdjustModal.set(true);
-  }
-
-  closeBulkAdjustModal(): void {
-    this.showBulkAdjustModal.set(false);
-  }
-
-  async performBulkAdjust(): Promise<void> {
-    const ids = Array.from(this.selected());
-    if (!ids.length) return;
-    const qty = Number(this.bulkAdjustQty());
-    if (Number.isNaN(qty)) return;
-    for (const id of ids) {
-      try {
-        await firstValueFrom(
-          this.inventory.adjustStock({
-            itemId: id,
-            shelfId: '',
-            adjustmentType: this.bulkAdjustType(),
-            quantity: qty,
-            reason: this.bulkAdjustReason() || 'Bulk adjustment',
-          }),
-        );
-      } catch (error) {
-        console.error('Bulk adjust error', error);
-      }
-    }
-    this.showBulkAdjustModal.set(false);
-    this.clearSelection();
-    this.loadStock();
   }
 
   openItemAdjustModal(item: StockItem): void {
@@ -347,11 +339,16 @@ export class CurrentStockComponent implements OnInit {
   loadStock(): void {
     this.loading.set(true);
     this.loadError.set(null);
-    const params: { warehouseId?: string } = {};
+    const params: { warehouseId?: string; categoryId?: string } = {};
     const wname = this.warehouseFilter();
     if (wname !== 'All Warehouses') {
       const id = this.warehouseNameToId.get(wname);
       if (id) params.warehouseId = id;
+    }
+    const cname = this.categoryFilter();
+    if (cname !== 'All Categories') {
+      const id = this.categoryNameToId.get(cname);
+      if (id) params.categoryId = id;
     }
 
     this.inventory.getStockOverview(params).subscribe({
@@ -377,8 +374,8 @@ export class CurrentStockComponent implements OnInit {
   }
 
   private mapRow(row: InventoryStockDto): StockItem {
-    const min = Number(row.minimumThreshold) || 0;
-    const qty = Number(row.currentStock) || 0;
+    const min = Number(row.minimumThreshold) || 10;
+    const qty = Number(row.currentQuantity) || 0;
     let status: 'good' | 'low' | 'critical' = 'good';
     if (min > 0) {
       if (qty <= min * 0.25) status = 'critical';
@@ -393,8 +390,8 @@ export class CurrentStockComponent implements OnInit {
       warehouse: row.warehouseName || '\u2014',
       shelf: row.shelfLocation || '\u2014',
       quantity: qty,
-      reserved: Number(row.reservedStock) || 0,
-      available: row.availableStock != null ? Number(row.availableStock) : qty,
+      reserved: Number(row.reservedQuantity) || 0,
+      available: row.availableQuantity != null ? Number(row.availableQuantity) : qty,
       status,
     };
   }
@@ -438,12 +435,28 @@ export class CurrentStockComponent implements OnInit {
         available: item.available,
       },
     ]);
+    
+    // Load stock movements for this item
+    this.inventory.getStockMovementsByItem(item.id).pipe(takeUntil(this.destroy$)).subscribe({
+      next: (res) => {
+        if (res.success !== false && Array.isArray(res.data)) {
+          this.stockMovements.set(res.data);
+        } else {
+          this.stockMovements.set([]);
+        }
+      },
+      error: () => {
+        this.stockMovements.set([]);
+      },
+    });
+
     this.showDetailsModal.set(true);
   }
 
   closeModal(): void {
     this.showDetailsModal.set(false);
     this.selectedStock.set(null);
+    this.stockMovements.set([]);
   }
 
   exportData(): void {
