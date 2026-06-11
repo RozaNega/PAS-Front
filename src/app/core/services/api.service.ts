@@ -3,6 +3,7 @@ import { HttpClient, HttpErrorResponse, HttpParams, HttpEvent } from '@angular/c
 import { Observable, throwError } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { ApiResponseModel } from '../models/api-response.model';
+import { resolveApiBaseUrl } from '../config/api-base';
 
 export interface PasSuccessResponse<T = unknown> {
   success: true;
@@ -61,7 +62,7 @@ export class ApiService {
   private readonly baseUrl: string;
 
   constructor(private http: HttpClient) {
-    this.baseUrl = '/api';
+    this.baseUrl = resolveApiBaseUrl();
   }
 
   private buildUrl(path: string): string {

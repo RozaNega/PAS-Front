@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import { ApiService } from '../../../../core/services/api.service';
-import { ApiResponse } from '../../../../types/api-response.type';
+import { normalizePasListResponse } from '../../../../core/utils/pas-api-json.util';
 
 export interface ReceivingReportItem {
   date: string;
@@ -23,12 +23,13 @@ export class ReceivingReportService {
     dateFrom?: string;
     dateTo?: string;
     pageSize?: number;
-  }): Observable<ApiResponse<ReceivingReportItem[]>> {
+  }): Observable<{ success: boolean; message: string; data: ReceivingReportItem[]; statusCode: number }> {
     const params = { ...filters, movementType: 'Inbound', pageSize: filters?.pageSize || 100 };
-    return this.apiService.get<ApiResponse<ReceivingReportItem[]>>('StockLedger', params).pipe(
-      map((res: any) => {
-        if (res.success !== false && Array.isArray(res.data)) {
-          const items = (res.data as any[]).map((item, index) => ({
+    return this.apiService.get<unknown>('StockLedger', params).pipe(
+      map((raw) => normalizePasListResponse<any>(raw)),
+      map((res) => {
+        if (res.success !== false && res.data.length > 0) {
+          const items: ReceivingReportItem[] = res.data.map((item: any, index: number) => ({
             date: new Date(item.movementDate).toLocaleDateString() || '',
             grnNumber: item.referenceNumber || `GRN-${String(index).padStart(3, '0')}`,
             supplier: item.supplierName || 'N/A',
@@ -37,10 +38,15 @@ export class ReceivingReportService {
             value: (item.quantity || 0) * (item.unitPrice || 0),
             status: item.status === 'Pending' ? 'Pending' : (item.status === 'Rejected' ? 'Failed' : 'Passed')
           }));
-          return { ...res, data: items } as ApiResponse<ReceivingReportItem[]>;
+          return { success: res.success, message: res.message, data: items, statusCode: res.statusCode };
         }
+
         return { ...res, data: [] } as ApiResponse<ReceivingReportItem[]>;
       }),
+
+        return { success: res.success, message: res.message, data: [], statusCode: res.statusCode };
+      })
+
     );
   }
 }

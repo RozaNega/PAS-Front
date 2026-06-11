@@ -2,7 +2,8 @@ import { Component, signal, computed, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CurrentUserService } from '../../../../core/services/current-user.service';
-import { ReceivingNotesService, CreateReceivingNoteCommand } from '../../../../core/services/receiving-notes.service';
+import { ReceivingNotesService, CreateReceivingNoteCommand, ReceivingNoteListDto } from '../../../../core/services/receiving-notes.service';
+import { InspectionsService, InspectionDto } from '../../../../core/services/inspections.service';
 import { SuppliersService } from '../../../../core/services/suppliers.service';
 import { ItemMasterService, ItemMasterPaginatedResponse } from '../../../../core/services/item-master.service';
 
@@ -94,8 +95,11 @@ export class ReceivingComponent implements OnInit {
 
   private readonly currentUserService = inject(CurrentUserService);
   private readonly receivingNotesService = inject(ReceivingNotesService);
+  private readonly inspectionsService = inject(InspectionsService);
   private readonly suppliersService = inject(SuppliersService);
   private readonly itemMasterService = inject(ItemMasterService);
+
+  private readonly rawHistoryItems = signal<ReceivingNoteListDto[]>([]);
 
   availableItems = signal<{ id: string; name: string; sku: string; uom: string }[]>([]);
   selectedItemId = signal('');
@@ -107,31 +111,71 @@ export class ReceivingComponent implements OnInit {
   // ══════════════════════════════════════════════════════════════
   //  SUMMARY / OVERVIEW
   // ══════════════════════════════════════════════════════════════
-  totalPendingGRNs = signal(4);
-  pendingInspections = signal(3);
-  receivedToday = signal(2);
-  totalItemsReceived = signal(1247);
-  totalGRNsThisMonth = signal(28);
-  avgInspectionTime = signal('1.2d');
+  totalPendingGRNs = computed(() =>
+    this.rawHistoryItems().filter(h => h.status === 'Pending' || h.status === 'Under Review' || h.status === 'Awaiting Approval').length
+  );
 
-  receivingTrend = signal([
-    { week: 'W1', grns: 5 },
-    { week: 'W2', grns: 8 },
-    { week: 'W3', grns: 6 },
-    { week: 'W4', grns: 10 },
-    { week: 'W5', grns: 7 },
-    { week: 'W6', grns: 9 },
-    { week: 'W7', grns: 12 },
-    { week: 'W8', grns: 8 },
-  ]);
+  pendingInspections = computed(() =>
+    this.allInspections().filter(i => i.status === 'Pending').length
+  );
 
-  supplierDistribution = signal([
-    { value: 35, name: 'ABC Supplies', itemStyle: { color: '#3b82f6' } },
-    { value: 25, name: 'Global Parts', itemStyle: { color: '#10b981' } },
-    { value: 20, name: 'TechDistributor', itemStyle: { color: '#f59e0b' } },
-    { value: 12, name: 'LogiMart', itemStyle: { color: '#8b5cf6' } },
-    { value: 8, name: 'Others', itemStyle: { color: '#94a3b8' } },
-  ]);
+  receivedToday = computed(() => {
+    const today = new Date().toISOString().split('T')[0];
+    return this.rawHistoryItems().filter(h => h.receivedDate?.startsWith(today)).length;
+  });
+
+  totalItemsReceived = computed(() =>
+    this.rawHistoryItems().reduce((s, h) => s + h.totalQuantity, 0)
+  );
+
+  totalGRNsThisMonth = computed(() => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const days = this.rawHistoryItems().filter(h => {
+      const d = new Date(h.receivedDate);
+      return !isNaN(d.getTime()) && d.getFullYear() === year && d.getMonth() === month;
+    });
+    return days.length;
+  });
+
+  avgInspectionTime = signal('—');
+
+  receivingTrend = computed(() => {
+    const items = this.rawHistoryItems();
+    const weeks = new Map<string, number>();
+    for (const h of items) {
+      const d = new Date(h.receivedDate);
+      if (isNaN(d.getTime())) continue;
+      const weekStart = new Date(d);
+      weekStart.setDate(d.getDate() - d.getDay());
+      const key = weekStart.toISOString().split('T')[0];
+      weeks.set(key, (weeks.get(key) || 0) + 1);
+    }
+    return Array.from(weeks.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .slice(-8)
+      .map(([_, count], i) => ({ week: `W${i + 1}`, grns: count }));
+  });
+
+  supplierDistribution = computed(() => {
+    const groups = new Map<string, number>();
+    for (const h of this.rawHistoryItems()) {
+      const name = h.supplierName || 'Unknown';
+      groups.set(name, (groups.get(name) || 0) + h.totalQuantity);
+    }
+    const entries = Array.from(groups.entries()).sort(([, a], [, b]) => b - a);
+    const colors = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#94a3b8'];
+    const top5 = entries.slice(0, 5);
+    if (entries.length > 5) {
+      const others = entries.slice(5).reduce((s, [, v]) => s + v, 0);
+      top5.push(['Others', others]);
+    }
+    return top5.map(([name, value], i) => ({
+      value, name,
+      itemStyle: { color: colors[i % colors.length] }
+    }));
+  });
 
   get trendChartOpts(): Record<string, unknown> {
     return {
@@ -309,15 +353,11 @@ export class ReceivingComponent implements OnInit {
   inspectionNotes = signal('');
   inspectionItems = signal<InspectionItem[]>([]);
 
-  constructor() {
-    this.loadInspections();
-    this.loadHistory();
-  }
-
   ngOnInit(): void {
     this.loadSuppliersFromApi();
     this.loadItemsFromApi();
     this.loadHistoryFromApi();
+    this.loadInspectionsFromApi();
   }
 
   private loadSuppliersFromApi(): void {
@@ -382,8 +422,9 @@ export class ReceivingComponent implements OnInit {
   private loadHistoryFromApi(): void {
     this.receivingNotesService.getAll({ pageNumber: 1, pageSize: 50 }).subscribe({
       next: (res) => {
-        if (res.success && res.data?.items?.length) {
+        if (res.success && res.data?.items) {
           const items = res.data.items;
+          this.rawHistoryItems.set(items);
           this.allHistory.set(items.map((n: any) => ({
             grnNumber: n.grnNumber || '—',
             date: n.receivedDate ? new Date(n.receivedDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—',
@@ -392,7 +433,7 @@ export class ReceivingComponent implements OnInit {
             items: n.itemCount || 0,
             value: n.totalQuantity || 0,
             status: n.status || 'Pending',
-            inspectedBy: n.receivedByName || '—',
+            inspectedBy: n.receivedBy || '—',
           })));
         }
       },
@@ -400,18 +441,31 @@ export class ReceivingComponent implements OnInit {
     });
   }
 
-  private loadInspections(): void {
-    this.allInspections.set(this.mockInspections());
-  }
-
-  private mockInspections(): InspectionRecord[] {
-    return [
-      { id: '1', grnNumber: 'GRN-2024-015', supplier: 'ABC Supplies Ltd', receivedDate: 'Dec 15, 2024', inspector: 'Unassigned', status: 'Pending', items: [{ itemName: 'Steel Rods', sku: 'SR-12MM', delivered: 100, passed: 0, failed: 0, status: 'Pending' }], priority: 'High' },
-      { id: '2', grnNumber: 'GRN-2024-016', supplier: 'Global Parts Inc', receivedDate: 'Dec 14, 2024', inspector: 'John Doe', status: 'In Progress', items: [{ itemName: 'Copper Wire', sku: 'CW-2.5MM', delivered: 500, passed: 450, failed: 50, status: 'Partial' }], priority: 'High' },
-      { id: '3', grnNumber: 'GRN-2024-014', supplier: 'TechDistributor Co', receivedDate: 'Dec 13, 2024', inspector: 'Jane Smith', status: 'Completed', items: [{ itemName: 'PVC Pipes', sku: 'PVC-4IN', delivered: 200, passed: 200, failed: 0, status: 'Passed' }], priority: 'Medium' },
-      { id: '4', grnNumber: 'GRN-2024-013', supplier: 'LogiMart Logistics', receivedDate: 'Dec 12, 2024', inspector: 'Unassigned', status: 'Pending', items: [{ itemName: 'Aluminum Sheets', sku: 'AL-SHT', delivered: 50, passed: 0, failed: 0, status: 'Pending' }], priority: 'Low' },
-      { id: '5', grnNumber: 'GRN-2024-012', supplier: 'Prime Materials', receivedDate: 'Dec 11, 2024', inspector: 'Mike Wilson', status: 'Failed', items: [{ itemName: 'Chemical X', sku: 'CH-X', delivered: 100, passed: 30, failed: 70, status: 'Failed' }], priority: 'High' },
-    ];
+  private loadInspectionsFromApi(): void {
+    this.inspectionsService.getAll({ pageNumber: 1, pageSize: 50 }).subscribe({
+      next: (res) => {
+        if (res.success && res.data?.items?.length) {
+          this.allInspections.set(res.data.items.map((i: InspectionDto) => ({
+            id: i.id,
+            grnNumber: i.grnNumber || '—',
+            supplier: '',
+            receivedDate: i.inspectionDate ? new Date(i.inspectionDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—',
+            inspector: i.inspectorName || 'Unassigned',
+            status: (i.status || (i.isPassed ? 'Completed' : 'Failed')) as InspectionRecord['status'],
+            items: i.items.map((item) => ({
+              itemName: item.itemName || 'Unknown',
+              sku: item.sku || '—',
+              delivered: item.receivedQuantity,
+              passed: item.acceptedQuantity,
+              failed: item.rejectedQuantity,
+              status: item.isPassed ? 'Passed' : 'Failed',
+            })),
+            priority: 'Medium' as 'High' | 'Medium' | 'Low',
+          })));
+        }
+      },
+      error: () => {}
+    });
   }
 
   openInspectionModal(inspection: InspectionRecord): void {
@@ -428,12 +482,9 @@ export class ReceivingComponent implements OnInit {
   }
 
   submitInspection(): void {
-    this.isLoading.set(true);
-    setTimeout(() => {
-      this.isLoading.set(false);
-      this.closeInspectionModal();
-      this.loadInspections();
-    }, 800);
+    this.isLoading.set(false);
+    this.closeInspectionModal();
+    this.loadInspectionsFromApi();
   }
 
   assignInspector(_inspection: InspectionRecord): void {}
@@ -466,28 +517,22 @@ export class ReceivingComponent implements OnInit {
   totalItemsReceivedHistory = computed(() => this.allHistory().reduce((s, h) => s + h.items, 0));
   totalValueReceived = computed(() => this.allHistory().reduce((s, h) => s + h.value, 0));
 
-  topSuppliers = signal<TopSupplier[]>([
-    { name: 'ABC Supplies', deliveries: 12, value: 45000, percentage: 28 },
-    { name: 'Global Parts', deliveries: 8, value: 32000, percentage: 20 },
-    { name: 'TechDistributor', deliveries: 6, value: 28000, percentage: 18 },
-    { name: 'LogiMart', deliveries: 5, value: 15000, percentage: 12 },
-    { name: 'Prime Materials', deliveries: 4, value: 12000, percentage: 10 },
-  ]);
-
-  private loadHistory(): void {
-    this.allHistory.set(this.mockHistory());
-  }
-
-  private mockHistory(): GRNHistory[] {
-    return [
-      { grnNumber: 'GRN-2024-015', date: 'Dec 15, 2024', supplier: 'ABC Supplies Ltd', poNumber: 'PO-2024-101', items: 3, value: 15000, status: 'Completed', inspectedBy: 'John Doe' },
-      { grnNumber: 'GRN-2024-014', date: 'Dec 14, 2024', supplier: 'Global Parts Inc', poNumber: 'PO-2024-102', items: 5, value: 8500, status: 'Completed', inspectedBy: 'Jane Smith' },
-      { grnNumber: 'GRN-2024-013', date: 'Dec 13, 2024', supplier: 'TechDistributor Co', poNumber: 'PO-2024-099', items: 2, value: 22000, status: 'Under Review', inspectedBy: 'Mike Wilson' },
-      { grnNumber: 'GRN-2024-012', date: 'Dec 12, 2024', supplier: 'LogiMart Logistics', poNumber: 'PO-2024-098', items: 4, value: 3200, status: 'Completed', inspectedBy: 'John Doe' },
-      { grnNumber: 'GRN-2024-011', date: 'Dec 11, 2024', supplier: 'Prime Materials', poNumber: 'PO-2024-097', items: 1, value: 5000, status: 'Completed', inspectedBy: 'Jane Smith' },
-      { grnNumber: 'GRN-2024-010', date: 'Dec 10, 2024', supplier: 'Quality Goods Supply', poNumber: 'PO-2024-096', items: 6, value: 12500, status: 'Returned', inspectedBy: 'Mike Wilson' },
-    ];
-  }
+  topSuppliers = computed<TopSupplier[]>(() => {
+    const groups = new Map<string, { deliveries: number; value: number }>();
+    for (const h of this.rawHistoryItems()) {
+      const name = h.supplierName || 'Unknown';
+      const g = groups.get(name) || { deliveries: 0, value: 0 };
+      g.deliveries++;
+      g.value += h.totalQuantity;
+      groups.set(name, g);
+    }
+    const entries = Array.from(groups.entries())
+      .map(([name, stats]) => ({ name, ...stats }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 5);
+    const maxVal = entries.reduce((s, e) => s + e.value, 0) || 1;
+    return entries.map(e => ({ ...e, percentage: Math.round((e.value / maxVal) * 100) }));
+  });
 
   openHistoryModal(record: GRNHistory): void {
     this.selectedHistory.set(record);

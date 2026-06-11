@@ -133,6 +133,7 @@ export class DashboardService {
           statusCode: env.statusCode ?? 0,
         } satisfies ApiResponseModel<DashboardStatistics>;
       }),
+
       catchError(() => this.computeFallbackStatistics()),
     );
   }
@@ -169,6 +170,15 @@ export class DashboardService {
           data: d,
           statusCode: 200,
         } satisfies ApiResponseModel<DashboardStatistics>;
+
+      catchError(() => {
+        return of({
+          success: false,
+          message: 'Dashboard statistics API unavailable',
+          data: undefined,
+          statusCode: 0,
+        } satisfies ApiResponseModel<DashboardStatistics>);
+
       }),
     );
   }

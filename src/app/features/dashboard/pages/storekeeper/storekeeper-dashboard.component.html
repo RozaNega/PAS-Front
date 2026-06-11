@@ -83,7 +83,7 @@
           </tr>
         </thead>
         <tbody>
-          @for (grn of recentGRNs; track grn.id) {
+          @for (grn of recentGRNs(); track grn.id) {
             <tr>
               <td><span class="mono">{{ grn.grnNo }}</span></td>
               <td>{{ grn.supplier }}</td>
@@ -109,14 +109,14 @@
         <div class="panel-header-left">
           <i class="bi bi-hourglass-split" style="color: #ef4444;"></i>
           <h3>Pending Issues</h3>
-          <span class="count-badge red">{{ pendingIssues.length }}</span>
+          <span class="count-badge red">{{ pendingIssues().length }}</span>
         </div>
         <button type="button" class="action-btn link" (click)="router.navigate(['/storekeeper/issuing'])">
           View All <i class="bi bi-chevron-right"></i>
         </button>
       </div>
       <div class="panel-body">
-        @for (issue of pendingIssues; track issue.id) {
+        @for (issue of pendingIssues(); track issue.id) {
           <div class="queue-item {{ getPriorityClass(issue.priority) }}">
             <div class="queue-priority-bar" [style.background]="getPriorityColor(issue.priority)"></div>
             <div class="queue-content">
@@ -141,14 +141,14 @@
         <div class="panel-header-left">
           <i class="bi bi-box-seam" style="color: #3b82f6;"></i>
           <h3>Pending Receivings</h3>
-          <span class="count-badge blue">{{ pendingReceivings.length }}</span>
+          <span class="count-badge blue">{{ pendingReceivings().length }}</span>
         </div>
         <button type="button" class="action-btn link" (click)="router.navigate(['/storekeeper/receiving'])">
           View All <i class="bi bi-chevron-right"></i>
         </button>
       </div>
       <div class="panel-body">
-        @for (receiving of pendingReceivings; track receiving.id) {
+        @for (receiving of pendingReceivings(); track receiving.id) {
           <div class="queue-item">
             <div class="queue-icon-box">
               <i class="bi bi-arrow-down-circle"></i>
@@ -181,7 +181,7 @@
         </div>
       </div>
       <div class="panel-body">
-        @for (issue of recentIssues; track issue.sivNo) {
+        @for (issue of recentIssues(); track issue.sivNo) {
           <div class="activity-row">
             <div class="activity-icon-box green">
               <i class="bi bi-arrow-up-circle"></i>
@@ -203,7 +203,7 @@
         </div>
       </div>
       <div class="panel-body">
-        @for (receiving of recentReceivings; track receiving.grnNo) {
+        @for (receiving of recentReceivings(); track receiving.grnNo) {
           <div class="activity-row">
             <div class="activity-icon-box blue">
               <i class="bi bi-arrow-down-circle"></i>

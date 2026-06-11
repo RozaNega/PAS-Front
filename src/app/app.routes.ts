@@ -33,6 +33,13 @@ export const routes: Routes = [
         path: 'dashboard',
         loadComponent: () => import('./features/dashboard/pages/admin/admin-dashboard.component').then(m => m.AdminDashboardComponent),
       },
+      {
+        path: 'profile',
+        loadComponent: () =>
+          import('./features/dashboard/pages/admin-profile/admin-profile.component').then(
+            (m) => m.AdminProfileComponent,
+          ),
+      },
       // Property Management
       {
         path: 'properties',
@@ -95,6 +102,10 @@ export const routes: Routes = [
       {
         path: 'inventory/adjustment',
         loadComponent: () => import('./features/store-inventory/stock-adjustment/pages/stock-adjustment.component').then(m => m.StockAdjustmentComponent),
+      },
+      {
+        path: 'inventory/bulk-adjust',
+        loadComponent: () => import('./features/inventory/pages/bulk-adjust-stock/bulk-adjust-stock.component').then(m => m.BulkAdjustStockComponent),
       },
       {
         path: 'inventory/transfer',
@@ -318,6 +329,10 @@ export const routes: Routes = [
         loadComponent: () => import('./features/store-inventory/stock-adjustment/pages/stock-adjustment.component').then(m => m.StockAdjustmentComponent),
       },
       {
+        path: 'inventory/bulk-adjust',
+        loadComponent: () => import('./features/inventory/pages/bulk-adjust-stock/bulk-adjust-stock.component').then(m => m.BulkAdjustStockComponent),
+      },
+      {
         path: 'inventory/transfer',
         loadComponent: () => import('./features/store-inventory/stock-transfer/pages/stock-transfer.component').then(m => m.StockTransferComponent),
       },
@@ -337,7 +352,7 @@ export const routes: Routes = [
       {
         path: 'warehouse/scanner',
         loadComponent: () => import('./features/pages/generic-page/generic-page.component').then(m => m.GenericPageComponent),
-        data: { pageTitle: 'QR Code Scanner', pageDescription: 'Scan QR codes for items', icon: 'bi bi-qr-code-scan', pageType: 'scanner' },
+        data: { pageTitle: 'Barcode & QR Scanner', pageDescription: 'Scan barcodes and QR codes for items', icon: 'bi bi-upc-scan', pageType: 'scanner' },
       },
       // Goods Receiving
       {
@@ -362,6 +377,13 @@ export const routes: Routes = [
       {
         path: 'catalog/categories',
         loadComponent: () => import('./features/store-inventory/categories/pages/categories.component').then(m => m.CategoriesComponent),
+      },
+      {
+        path: 'profile',
+        loadComponent: () =>
+          import('./features/dashboard/pages/storekeeper-profile/storekeeper-profile.component').then(
+            (m) => m.StorekeeperProfileComponent,
+          ),
       },
       // Reports (unified page with tabs)
       {

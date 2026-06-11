@@ -28,6 +28,29 @@ export class StockTransferComponent implements OnInit {
   // UI state
   loading = signal(false);
 
+  submitting = signal(false);
+  error = signal<string | null>(null);
+  success = signal<string | null>(null);
+  loadingItems = signal(false);
+
+  toast = signal<{ message: string; type: 'success' | 'error' | 'info'; visible: boolean }>({ message: '', type: 'info', visible: false });
+  private toastTimer: any = null;
+
+  // Computed
+  selectedItems = computed(() => this.transferItems().filter(item => item.toTransfer > 0));
+
+  totalQuantity = computed(() => this.selectedItems().reduce((sum, item) => sum + item.toTransfer, 0));
+
+  totalValue = computed(() => this.selectedItems().reduce((sum, item) => sum + (item.toTransfer * (item.price || 0)), 0));
+
+  isFormValid = computed(() =>
+    this.fromWarehouse() && this.toWarehouse() &&
+    this.fromWarehouse() !== this.toWarehouse() &&
+    this.transferReason().trim().length > 0 &&
+    this.selectedItems().length > 0
+  );
+
+
   // KPI data
   totalTransfers = computed(() => this.transferHistory().length);
   completedTransfers = computed(() => this.transferHistory().filter(h => h.status === 'completed').length);
@@ -102,7 +125,69 @@ export class StockTransferComponent implements OnInit {
         }
         this.loading.set(false);
       },
+
       error: () => { this.loading.set(false); }
+
+      error: () => {}
+    });
+  }
+
+  updateTransferQuantity(sku: string, value: any): void {
+    const quantity = Math.max(0, parseInt(value) || 0);
+    this.transferItems.update(items =>
+      items.map(item =>
+        item.sku === sku ? { ...item, toTransfer: Math.min(quantity, item.available) } : item
+      )
+    );
+  }
+
+  onFromWarehouseChange(): void {
+    this.loadItemsForWarehouse();
+    this.transferItems.set([]);
+  }
+
+  openHistoryModal(): void { this.showHistoryModal.set(true); }
+  closeHistoryModal(): void { this.showHistoryModal.set(false); }
+
+  createTransferOrder(): void {
+    if (!this.isFormValid()) {
+      this.error.set('Please fill in all required fields and select items to transfer.');
+      return;
+    }
+    this.submitting.set(true);
+    this.error.set(null);
+    this.success.set(null);
+
+    const items = this.selectedItems().map(item => ({ itemId: item.itemId, quantity: item.toTransfer }));
+
+    this.transferService.createTransfer(
+      this.fromWarehouse(),
+      this.toWarehouse(),
+      items,
+      this.transferReason(),
+      this.notes() || undefined
+    ).subscribe({
+      next: (res) => {
+        this.submitting.set(false);
+        if (res.success) {
+          const created = res.data?.created ?? 0;
+          const msg = created > 1
+            ? `${created} transfer records created successfully`
+            : 'Transfer record created successfully';
+          this.showToast(msg);
+          setTimeout(() => {
+            this.resetForm();
+            this.loadTransferHistory();
+          }, 2000);
+        } else {
+          this.error.set(res.message || 'Failed to create transfer');
+        }
+      },
+      error: () => {
+        this.submitting.set(false);
+        this.error.set('Failed to create transfer. Please try again.');
+      }
+
     });
   }
 

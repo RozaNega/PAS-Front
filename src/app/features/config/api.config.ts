@@ -203,7 +203,8 @@ export const API_ENDPOINTS = {
     GET_ALL: 'Notifications',
     UNREAD_COUNT: 'Notifications/unread-count',
     MARK_AS_READ: (id: string) => `Notifications/${id}/read`,
-    MARK_ALL_READ: 'Notifications/read-all'
+    MARK_ALL_READ: 'Notifications/read-all',
+    DELETE: (id: string) => `Notifications/${id}`
   },
 
   DOCUMENTS: {

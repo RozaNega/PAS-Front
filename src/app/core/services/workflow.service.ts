@@ -20,7 +20,10 @@ export type RequestStatus =
   | 'Completed'
   | 'Cancelled';
 export type RequestPriority = 'Low' | 'Medium' | 'High' | 'Urgent';
+
 export type UserRole = 'Employee' | 'Manager' | 'Admin' | 'Compliance' | 'Storekeeper';
+
+export type UserRole = 'Employee' | 'Manager' | 'Admin' | 'Compliance' | 'Storekeeper' | 'Director';
 
 export const WORKFLOW_PENDING_STATUSES: readonly RequestStatus[] = [
   'Submitted',
@@ -322,6 +325,85 @@ export class WorkflowService {
         isRead: false,
       },
     ];
+    seedNotifs.push(
+      {
+        id: 'seed_notif_sk_1',
+        title: 'New Delivery Received',
+        message: 'Shipment #INV-2026-0421 has arrived. 15 items pending inspection.',
+        type: 'info',
+        recipientId: 'storekeeper_001',
+        recipientRole: 'Manager',
+        requestId: undefined,
+        createdDate: new Date(now - 10 * minutes),
+        isRead: false,
+      },
+      {
+        id: 'seed_notif_sk_2',
+        title: 'Stock Alert',
+        message: 'Item "Dell Latitude 5420 Laptop" is below minimum stock level (5 remaining).',
+        type: 'warning',
+        recipientId: 'storekeeper_001',
+        recipientRole: 'Manager',
+        requestId: undefined,
+        createdDate: new Date(now - 45 * minutes),
+        isRead: false,
+      },
+      {
+        id: 'seed_notif_sk_3',
+        title: 'Issuance Request',
+        message: 'New issuance request #SIV-2026-0032 needs your approval.',
+        type: 'info',
+        recipientId: 'storekeeper_001',
+        recipientRole: 'Manager',
+        requestId: undefined,
+        createdDate: new Date(now - 90 * minutes),
+        isRead: false,
+      },
+      {
+        id: 'seed_notif_mgr_1',
+        title: 'Approval Pending',
+        message: '2 service requests are awaiting your approval.',
+        type: 'info',
+        recipientId: 'mgr_001',
+        recipientRole: 'Manager',
+        requestId: undefined,
+        createdDate: new Date(now - 15 * minutes),
+        isRead: false,
+      },
+      {
+        id: 'seed_notif_mgr_2',
+        title: 'Request Escalated',
+        message: 'Service request SR-2026-0043 has been escalated to you.',
+        type: 'warning',
+        recipientId: 'mgr_001',
+        recipientRole: 'Manager',
+        requestId: undefined,
+        createdDate: new Date(now - 60 * minutes),
+        isRead: false,
+      },
+      {
+        id: 'seed_notif_emp_1',
+        title: 'Request Approved',
+        message: 'Your service request SR-2026-0039 has been approved.',
+        type: 'success',
+        recipientId: 'emp_001',
+        recipientRole: 'Employee',
+        requestId: undefined,
+        createdDate: new Date(now - 20 * minutes),
+        isRead: false,
+      },
+      {
+        id: 'seed_notif_emp_2',
+        title: 'Items Ready for Pickup',
+        message: 'Your requested items are ready for pickup at the store.',
+        type: 'info',
+        recipientId: 'emp_001',
+        recipientRole: 'Employee',
+        requestId: undefined,
+        createdDate: new Date(now - 120 * minutes),
+        isRead: false,
+      },
+    );
     this.notifications.set(seedNotifs);
   }
 

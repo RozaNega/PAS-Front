@@ -6,20 +6,36 @@
       <p>Monitor and manage warehouse shelf inventory, occupancy, and layout</p>
     </div>
     <div class="header-actions">
-      <button type="button" class="action-btn primary" (click)="openWarehouseDetailsModal()">
+      <button type="button" class="action-btn primary" (click)="openWarehouseDetailsModal()" [disabled]="!selectedWarehouseId()">
         <i class="bi bi-building"></i>
         Warehouse Details
       </button>
     </div>
   </header>
 
+  @if (loadError(); as err) {
+    <div class="error-state">
+      <i class="bi bi-exclamation-triangle-fill"></i>
+      <span>{{ err }}</span>
+      <button type="button" class="action-btn secondary" (click)="ngOnInit()">Retry</button>
+    </div>
+  }
+
+  @if (loading()) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <span>Loading warehouse data...</span>
+    </div>
+  }
+
+  @if (!loading() && !loadError()) {
   <!-- Warehouse Selector -->
   <section class="warehouse-selector">
     <div class="selector-left">
       <label class="selector-label"><i class="bi bi-geo-alt"></i> Warehouse</label>
-      <select class="filter-select" [ngModel]="selectedWarehouse()" (ngModelChange)="onWarehouseChange($event)">
-        @for (wh of warehouses; track wh) {
-          <option [value]="wh">{{ wh }}</option>
+      <select class="filter-select" [ngModel]="selectedWarehouseId()" (ngModelChange)="onWarehouseChange($event)">
+        @for (wh of warehouses(); track wh.id) {
+          <option [value]="wh.id">{{ wh.name }}</option>
         }
       </select>
     </div>
@@ -86,10 +102,10 @@
     <section class="map-section">
       <div class="section-header">
         <h3><i class="bi bi-map"></i> Warehouse Map</h3>
-        <span class="section-badge">{{ selectedWarehouse() }}</span>
+        <span class="section-badge">{{ selectedWarehouseName() }}</span>
       </div>
       <div class="warehouse-map">
-        <div class="map-header">{{ selectedWarehouse() }} &mdash; Floor Layout</div>
+        <div class="map-header">{{ selectedWarehouseName() }} &mdash; Floor Layout</div>
         @for (aisle of aisles(); track aisle) {
           <div class="aisle-section">
             <div class="aisle-label">Aisle {{ aisle }}</div>
@@ -175,11 +191,11 @@
               <td>
                 <span
                   class="status-badge"
-                  [class.status-green]="shelf.status === '\uD83D\uDFE2'"
-                  [class.status-yellow]="shelf.status === '\uD83D\uDFE1'"
-                  [class.status-red]="shelf.status === '\uD83D\uDD34'"
+                  [class.status-green]="getStatusLabel(shelf.occupancy, true) === 'Active'"
+                  [class.status-yellow]="getStatusLabel(shelf.occupancy, true) === 'Warning'"
+                  [class.status-red]="getStatusLabel(shelf.occupancy, true) === 'Critical'"
                 >
-                  {{ shelf.status === '\uD83D\uDFE2' ? 'Active' : shelf.status === '\uD83D\uDFE1' ? 'Warning' : 'Critical' }}
+                  {{ getStatusLabel(shelf.occupancy, true) }}
                 </span>
               </td>
               <td class="date-cell">{{ shelf.lastUpdated }}</td>
@@ -260,6 +276,7 @@
       </button>
     </div>
   </section>
+  }
 </div>
 
 <!-- Warehouse Details Modal -->
@@ -267,7 +284,7 @@
   <div class="modal-overlay" (click)="closeWarehouseDetailsModal()">
     <div class="modal-content" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <h3><i class="bi bi-building"></i> {{ selectedWarehouse() }} Details</h3>
+        <h3><i class="bi bi-building"></i> {{ selectedWarehouseName() }} Details</h3>
         <button type="button" class="close-btn" (click)="closeWarehouseDetailsModal()">
           <i class="bi bi-x-lg"></i>
         </button>
@@ -278,52 +295,15 @@
           <div class="info-grid">
             <div class="info-item">
               <span class="info-label">Name</span>
-              <span class="info-value">Warehouse A</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">Code</span>
-              <span class="info-value">WH-01</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">Type</span>
-              <span class="info-value">Main Warehouse</span>
+              <span class="info-value">{{ selectedWarehouseName() }}</span>
             </div>
             <div class="info-item">
               <span class="info-label">Status</span>
               <span class="info-value"><span class="status-badge status-green">&#9679; Active</span></span>
             </div>
             <div class="info-item">
-              <span class="info-label">Manager</span>
-              <span class="info-value">John Doe</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">Phone</span>
-              <span class="info-value">+251-911-234567</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">Email</span>
-              <span class="info-value">wh-a@afrocom.com</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">Created</span>
-              <span class="info-value">Jan 15, 2020</span>
-            </div>
-          </div>
-        </div>
-        <div class="modal-section">
-          <h3><i class="bi bi-geo-alt"></i> Address</h3>
-          <div class="info-grid">
-            <div class="info-item">
-              <span class="info-label">Street</span>
-              <span class="info-value">Bole Road, Near Bole Medhanialem Church</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">City</span>
-              <span class="info-value">Addis Ababa, Ethiopia</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">GPS</span>
-              <span class="info-value">9.0320&deg; N, 38.7469&deg; E</span>
+              <span class="info-label">Total Shelves</span>
+              <span class="info-value">{{ totalShelves() }} shelves</span>
             </div>
           </div>
         </div>
@@ -339,45 +319,12 @@
               <span class="info-value">{{ shelves().filter(s => s.occupancy > 0).length }} shelves ({{ occupancyRate() }}%)</span>
             </div>
             <div class="info-item">
-              <span class="info-label">Total Capacity</span>
-              <span class="info-value">10,000 units</span>
+              <span class="info-label">Average Occupancy</span>
+              <span class="info-value">{{ occupancyRate() }}%</span>
             </div>
             <div class="info-item">
-              <span class="info-label">Current Stock</span>
-              <span class="info-value">{{ totalItems().toLocaleString() }} units ({{ Math.round(totalItems() / 10000 * 100) }}%)</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">Available Space</span>
-              <span class="info-value">{{ (10000 - totalItems()).toLocaleString() }} units ({{ Math.round((10000 - totalItems()) / 10000 * 100) }}%)</span>
-            </div>
-          </div>
-        </div>
-        <div class="modal-section">
-          <h3><i class="bi bi-graph-up"></i> Performance Metrics</h3>
-          <div class="info-grid">
-            <div class="info-item">
-              <span class="info-label">Inventory Turnover</span>
-              <span class="info-value">4.2x per year</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">Order Accuracy</span>
-              <span class="info-value">99.2%</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">Stockout Rate</span>
-              <span class="info-value">2.1%</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">Receiving Accuracy</span>
-              <span class="info-value">98.5%</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">Damage Rate</span>
-              <span class="info-value">0.8%</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">Audit Score</span>
-              <span class="info-value">94%</span>
+              <span class="info-label">Items on Shelves</span>
+              <span class="info-value">{{ totalItems().toLocaleString() }} units</span>
             </div>
           </div>
         </div>

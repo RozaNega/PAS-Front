@@ -3,12 +3,10 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { NgOptimizedImage } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
-import { finalize, catchError, of, switchMap } from 'rxjs';
-import { environment } from '../../../../../environments/environment';
-import { UsersService } from '../../../../core/services/users.service';
-import { RegistrationService } from '../../../../core/services/registration.service';
+import { finalize, switchMap } from 'rxjs';
 
-import { AuthThemeService } from '../../services/auth-theme.service';
+import { LoginTransitionService } from '../../../../core/services/login-transition.service';
+import { UsersService } from '../../../../core/services/users.service';
 import { AuthService } from '../../../../core/services/auth.service';
 
 @Component({
@@ -19,29 +17,17 @@ import { AuthService } from '../../../../core/services/auth.service';
   styleUrl: './login.css',
 })
 export class Login {
-  protected readonly quickRoles = [
-    { label: 'Admin', slug: 'property-admin' },
-    { label: 'Storekeeper', slug: 'storekeeper' },
-    { label: 'Employee', slug: 'employee' },
-    { label: 'Manager', slug: 'manager' },
-    { label: 'Compliance Officer', slug: 'compliance' },
-  ];
   private readonly formBuilder = inject(FormBuilder);
   private readonly authService = inject(AuthService);
-  private readonly registrationService = inject(RegistrationService);
   private readonly usersService = inject(UsersService);
   private readonly router = inject(Router);
-  protected readonly theme = inject(AuthThemeService);
-
-  protected readonly isDevelopment = !environment.production;
-  protected readonly activating = signal(false);
+  private readonly transitionSvc = inject(LoginTransitionService);
 
   protected readonly submitted = signal(false);
   protected readonly loading = signal(false);
   protected readonly statusMessage = signal('');
   protected readonly statusTone = signal<'neutral' | 'success' | 'error'>('neutral');
   protected readonly showPassword = signal(false);
-  protected readonly themePanelOpen = signal(false);
 
   protected readonly loginForm = this.formBuilder.nonNullable.group({
     username: ['', [Validators.required]],
@@ -69,7 +55,6 @@ export class Login {
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
         next: (result) => {
-          console.log('DEBUG: Login result in component:', result);
           if (!result.succeeded) {
             this.statusTone.set('error');
             this.statusMessage.set(result.errors?.join(' ') || 'Invalid username or password.');
@@ -77,36 +62,34 @@ export class Login {
           }
 
           this.statusTone.set('success');
-          this.statusMessage.set('Sign-in successful. Redirecting to your dashboard...');
+          this.statusMessage.set('Sign-in successful.');
           this.loginForm.controls.password.setValue('');
           this.loginForm.controls.rememberMe.setValue(raw.rememberMe);
-          void this.router.navigateByUrl(this.authService.getDashboardRouteForUser(result.user));
+
+          const targetUrl = this.authService.getDashboardRouteForUser(result.user);
+
+          this.transitionSvc.start();
+          void this.router.navigateByUrl(targetUrl);
+
+          setTimeout(() => {
+            this.transitionSvc.end();
+          }, 3500);
         },
         error: (err) => {
-          console.error('Detailed login error:', err);
-          console.error('Error status:', err?.status);
-          console.error('Error message:', err?.message);
-          console.error('Error details:', err?.error);
-
-          if (err instanceof HttpErrorResponse) {
-            console.error('🔍 Full HTTP error body:', err.error);
-          }
-
           let errorMessage = 'Unable to sign in. Verify your credentials and try again.';
 
-          if (err?.status === 0) {
-            errorMessage =
-              'Unable to connect to the server. Please ensure the backend API is running on port 5028.';
-          } else if (err?.status === 404) {
-            errorMessage = 'Login endpoint not found. Please check API configuration.';
-          } else if (err?.error?.title) {
-            errorMessage = err.error.title;
-          } else if (err?.error?.message) {
-            errorMessage = err.error.message;
-          } else if (err?.error?.detail) {
-            errorMessage = err.error.detail;
-          } else if (err?.message) {
-            errorMessage = err.message;
+          if (err instanceof HttpErrorResponse) {
+            if (err.status === 0) {
+              errorMessage = 'Unable to connect to the server. Please ensure the backend API is running.';
+            } else if (err.status === 404) {
+              errorMessage = 'Login endpoint not found. Please check API configuration.';
+            } else if (err.error?.title) {
+              errorMessage = err.error.title;
+            } else if (err.error?.message) {
+              errorMessage = err.error.message;
+            } else if (err.error?.detail) {
+              errorMessage = err.error.detail;
+            }
           }
 
           this.statusTone.set('error');
@@ -123,16 +106,14 @@ export class Login {
     const username = this.loginForm.controls.username.value.trim();
     if (!username) return;
 
-    this.activating.set(true);
     this.statusMessage.set('Searching for account...');
+    this.statusTone.set('neutral');
 
-    // 1. Search for user by searchTerm to get the actual GUID ID
     this.usersService
       .getAll({ searchTerm: username })
       .pipe(
         switchMap((response) => {
           if (response.success && response.data && 'items' in response.data && response.data.items.length) {
-            // Find exact match by username
             const exactMatch = response.data.items.find(
               (u: any) => u.username.toLowerCase() === username.toLowerCase(),
             );
@@ -140,8 +121,6 @@ export class Login {
             this.statusMessage.set('Force activating account...');
             return this.usersService.activate(userId);
           }
-
-          // Fallback: If getAll is not matching or returns empty, try direct getById(username)
           return this.usersService.getById(username).pipe(
             switchMap((directRes) => {
               if (directRes.success && directRes.data && 'id' in directRes.data && directRes.data.id) {
@@ -151,7 +130,7 @@ export class Login {
             }),
           );
         }),
-        finalize(() => this.activating.set(false)),
+        finalize(() => {}),
       )
       .subscribe({
         next: (response) => {
@@ -163,29 +142,11 @@ export class Login {
             this.statusMessage.set(response.message || 'Activation failed.');
           }
         },
-        error: (err) => {
-          console.error('Force activation failed:', err);
+        error: () => {
           this.statusTone.set('error');
           this.statusMessage.set('Could not activate account. The user may not exist.');
         },
       });
-  }
-
-  protected toggleDarkMode(): void {
-    this.theme.toggleDarkMode();
-  }
-
-  protected toggleThemePanel(): void {
-    this.themePanelOpen.update((value) => !value);
-  }
-
-  protected closeThemePanel(): void {
-    this.themePanelOpen.set(false);
-  }
-
-  protected setPrimary(optionId: string): void {
-    this.theme.setPrimary(optionId);
-    this.themePanelOpen.set(false);
   }
 
   protected showFieldError(controlName: 'username' | 'password'): boolean {

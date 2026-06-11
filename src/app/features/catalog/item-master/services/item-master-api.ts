@@ -76,7 +76,7 @@ export class ItemMasterApi {
   update(id: string, payload: Record<string, unknown>) {
     console.log('=== ITEM MASTER API: Updating item ===');
     console.log('ID:', id, 'Payload:', payload);
-    return this.itemService.updateItemMaster(Number(id), payload).pipe(
+    return this.itemService.updateItemMaster(id, payload).pipe(
       tap(res => {
         console.log('=== ITEM MASTER API: Update response ===');
         console.log('Response:', res);
@@ -91,7 +91,7 @@ export class ItemMasterApi {
   remove(id: string): Observable<void> {
     console.log('=== ITEM MASTER API: Deleting item ===');
     console.log('ID:', id);
-    return this.itemService.deleteItemMaster(Number(id)).pipe(
+    return this.itemService.deleteItemMaster(id).pipe(
       tap((res) => {
       console.log('=== ITEM MASTER API: Delete response ===');
       console.log('Response:', res);
@@ -119,7 +119,7 @@ export class ItemMasterApi {
       const currentMinimum = item.minStockLevel ?? item['minimumThreshold'] ?? 0;
       const minStockLevel = Math.max(0, currentMinimum + adjustment);
 
-      return this.itemService.updateItemMaster(Number(id), { minStockLevel });
+      return this.itemService.updateItemMaster(id, { minStockLevel: minStockLevel as any });
     });
 
     this.loadingSignal.set(true);
@@ -136,7 +136,9 @@ export class ItemMasterApi {
     }
 
     this.loadingSignal.set(true);
-    const updates$ = itemIds.map((id) => this.itemService.updateItemMaster(Number(id), updates));
+    const updates$ = itemIds.map((id) => {
+      return this.itemService.updateItemMaster(id, updates);
+    });
 
     return forkJoin(updates$).pipe(
       tap(() => this.refresh()),

@@ -52,6 +52,14 @@ interface SummaryStats {
   categoriesAffected: number;
 }
 
+
+interface AnalysisItem {
+  name: string;
+  items: number;
+  percentage: number;
+}
+
+
 function computeSeverity(current: number, minStock: number): LowStockItem['severity'] {
   if (minStock <= 0) return 'Info';
   const ratio = current / minStock;
@@ -203,8 +211,7 @@ export class LowStockComponent implements OnInit {
   loadLowStock(): void {
     this.loading.set(true);
     this.loadError.set(null);
-    const params: { warehouseId?: string; lowStockOnly?: boolean; pageSize?: number } = {
-      lowStockOnly: true,
+    const params: { warehouseId?: string; pageSize?: number } = {
       pageSize: 500,
     };
     const wname = this.warehouseFilter();
@@ -212,9 +219,10 @@ export class LowStockComponent implements OnInit {
       const id = this.warehouseNameToId.get(wname);
       if (id) params.warehouseId = id;
     }
-    this.inventory.getLowStockItems(params).subscribe({
+    this.inventory.getStockOverview(params).subscribe({
       next: (res) => {
         this.loading.set(false);
+
         if (res.success !== false && Array.isArray(res.data) && res.data.length > 0) {
           const rows = res.data.map(r => this.mapRow(r));
           if (rows.length > 0) {
@@ -224,12 +232,35 @@ export class LowStockComponent implements OnInit {
           }
         }
         this.loadError.set('No low stock items found.');
+
+        if (res.success === false) {
+          this.allLowStock.set([]);
+          this.loadError.set(res.message || 'Failed to load low stock data');
+          return;
+        }
+        const items = Array.isArray(res.data) ? res.data : [];
+        const lowStock = items.filter(i => (i.currentStock ?? 0) <= (i.minimumThreshold ?? 0));
+        if (lowStock.length > 0) {
+          this.allLowStock.set(lowStock.map(r => this.mapRow(r)));
+          this.loadError.set(null);
+          this.autoDismiss();
+          return;
+        }
+        this.allLowStock.set([]);
+        this.loadError.set('No low stock items found');
+        this.autoDismiss();
+
       },
-      error: () => {
+      error: (err) => {
         this.loading.set(false);
+
         this.loadError.set('Failed to load low stock items. Please try again.');
         this.notification.set({ type: 'error', message: 'Failed to load low stock data' });
         this.autoDismiss();
+
+        this.allLowStock.set([]);
+        this.loadError.set(err.message || 'Failed to load low stock data');
+
       },
     });
   }

@@ -247,6 +247,11 @@ export const API_ENDPOINTS = {
     DEACTIVATE: (id: string) => `Users/${id}/deactivate`
   },
 
+  PERMISSIONS: {
+    GET_ALL: 'Permissions',
+    BY_USER: (userId: string) => `Permissions/user/${userId}`,
+  },
+
   ROLES: {
     GET_ALL: 'Roles',
     BY_USER: (userId: string) => `Roles/user/${userId}`,

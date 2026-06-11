@@ -264,12 +264,20 @@ export class MainLayoutComponent implements OnInit {
   }
 
   protected profileRoute(): string {
+    if (this.router.url.startsWith('/admin')) {
+      return '/admin/profile';
+    }
+
+    if (this.router.url.startsWith('/storekeeper')) {
+      return '/storekeeper/profile';
+    }
+
     if (this.isManagerRoute()) {
-      return '/manager/dashboard';
+      return '/manager/profile';
     }
 
     if (this.isComplianceOfficerRoute()) {
-      return '/compliance-officer/dashboard';
+      return '/compliance-officer/profile';
     }
 
     return '/employee/dashboard/profile';

@@ -62,7 +62,6 @@ interface SummaryStats {
 }
 
 
-
 function toYmd(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
@@ -140,7 +139,13 @@ export class StockOverviewComponent implements OnInit {
 
   monthlyTrend = computed<MonthlyTrendPoint[]>(() => {
     const movs = this.movements();
+
     if (movs.length === 0) return [];
+
+    if (movs.length === 0) {
+      return [];
+    }
+
     const monthlyMap = new Map<string, { total: number; inflow: number; outflow: number }>();
     for (const m of movs) {
       if (!m.movementDate) continue;
@@ -221,6 +226,7 @@ export class StockOverviewComponent implements OnInit {
     return { start, end: Math.min(this.currentPage() * this.rowsPerPage(), count), total: count };
   });
 
+
   ngOnInit(): void {
     this.loadData();
   }
@@ -233,7 +239,7 @@ export class StockOverviewComponent implements OnInit {
     const end = toYmd(today);
 
     forkJoin({
-      overview: this.inventory.getStockOverview({ pageSize: 10000 }),
+      overview: this.inventory.getStockOverview({}),
       movements: this.inventory.getStockMovements({ dateFrom: startMonth, dateTo: end, pageSize: 2000 }),
     }).subscribe({
       next: ({ overview, movements }) => {
@@ -241,6 +247,7 @@ export class StockOverviewComponent implements OnInit {
         if (overview.success !== false && Array.isArray(overview.data)) {
           this.allItems.set(overview.data);
           this.loadError.set(null);
+
           if (overview.data.length === 0) {
             this.loadError.set('No stock items found in the database.');
           }
@@ -248,10 +255,28 @@ export class StockOverviewComponent implements OnInit {
         if (movements.success !== false && Array.isArray(movements.data)) {
           this.movements.set(movements.data);
         }
+
+        } else {
+          this.allItems.set([]);
+          this.loadError.set(overview.message || 'No stock data available');
+        }
+        if (movements.success !== false && Array.isArray(movements.data)) {
+          this.movements.set(movements.data);
+        } else {
+          this.movements.set([]);
+        }
+        this.autoDismiss();
+
       },
-      error: () => {
+      error: (err) => {
         this.loading.set(false);
+
         this.loadError.set('Failed to load stock data from server.');
+
+        this.allItems.set([]);
+        this.movements.set([]);
+        this.loadError.set(err.message || 'Failed to load stock data');
+
       },
     });
   }
@@ -300,6 +325,7 @@ export class StockOverviewComponent implements OnInit {
 
   openDetailModal(row: StockDisplayRow): void {
     this.selectedItem.set(row);
+
     const movs = this.movements().filter(m => m.itemId === row.itemId);
     this.selectedHistory.set(movs.map(m => ({
       date: m.movementDate || '',
@@ -309,6 +335,9 @@ export class StockOverviewComponent implements OnInit {
       performedBy: m.performedBy || '—',
       notes: m.notes || '',
     })));
+
+    this.selectedHistory.set([]);
+
     this.showDetailModal.set(true);
   }
 

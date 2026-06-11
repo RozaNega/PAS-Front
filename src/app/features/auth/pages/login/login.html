@@ -1,95 +1,29 @@
-<section class="auth-page auth-glass" aria-labelledby="login-title">
-  <div class="auth-background">
-    <img src="/assets/images/afr.jpg" alt="Background" class="bg-image" />
-    <div class="bg-overlay"></div>
-    <div class="bg-text-watermark">
-      <div class="watermark-scroll">
-        <span class="watermark-text">AFRICOM TECHNOLOGIES</span>
-        <span class="watermark-text">AFRICOM TECHNOLOGIES</span>
-        <span class="watermark-text">AFRICOM TECHNOLOGIES</span>
-        <span class="watermark-text">AFRICOM TECHNOLOGIES</span>
-        <span class="watermark-text">AFRICOM TECHNOLOGIES</span>
-      </div>
-    </div>
-    <div class="bg-text-watermark bg-text-watermark--bottom">
-      <div class="watermark-scroll watermark-scroll--reverse">
-        <span class="watermark-text">AFRICOM TECHNOLOGIES</span>
-        <span class="watermark-text">AFRICOM TECHNOLOGIES</span>
-        <span class="watermark-text">AFRICOM TECHNOLOGIES</span>
-        <span class="watermark-text">AFRICOM TECHNOLOGIES</span>
-        <span class="watermark-text">AFRICOM TECHNOLOGIES</span>
-      </div>
-    </div>
-  </div>
 
-  <header class="auth-toolbar" aria-label="Theme controls">
-    <button
-      type="button"
-      class="icon-btn"
-      (click)="toggleDarkMode()"
-      [attr.aria-pressed]="theme.darkMode()"
-      [attr.aria-label]="theme.darkMode() ? 'Switch to light mode' : 'Switch to dark mode'"
-      title="{{ theme.darkMode() ? 'Switch to light mode' : 'Switch to dark mode' }}"
-    >
-      <i
-        class="bi"
-        [class.bi-sun-fill]="theme.darkMode()"
-        [class.bi-moon-stars-fill]="!theme.darkMode()"
-      ></i>
-    </button>
-    <button
-      type="button"
-      class="icon-btn icon-btn--primary"
-      (click)="toggleThemePanel()"
-      [attr.aria-expanded]="themePanelOpen()"
-      aria-controls="auth-theme-panel"
-      aria-label="Open primary palette"
-      title="Open primary palette"
-    >
-      <i class="bi bi-palette2"></i>
-    </button>
-    @if (themePanelOpen()) {
-      <div class="theme-backdrop" (click)="closeThemePanel()" aria-hidden="true"></div>
-      <section id="auth-theme-panel" class="theme-panel" aria-label="Primary colors">
-        <h3>Primary</h3>
-        <div class="primary-swatches">
-          @for (option of theme.primaryOptions; track option.id) {
-            <button
-              type="button"
-              class="swatch"
-              [class.active]="theme.selectedPrimary() === option.id"
-              [style.background]="option.value"
-              [attr.aria-label]="'Set primary color ' + option.label"
-              title="{{ 'Set primary color ' + option.label }}"
-              (click)="setPrimary(option.id)"
-            ></button>
-          }
-        </div>
-      </section>
-    }
-  </header>
-
+<section class="auth-page" aria-labelledby="login-title">
   <article class="auth-card">
     <img
-      class="auth-logo auth-logo--wordmark"
+      class="auth-logo"
       ngSrc="/assets/images/africom-logo.png"
       width="540"
       height="140"
       alt="AFRICOM Technologies"
       priority
     />
-    <h1 id="login-title">Welcome to AFRICOM!</h1>
-    <p class="auth-subtitle">Sign in to continue</p>
+    <h1 id="login-title">Welcome Back</h1>
+    <p class="auth-subtitle">Sign in to your account to continue</p>
 
     <form class="auth-form" [formGroup]="loginForm" (ngSubmit)="submit()" novalidate>
       <label class="auth-label" for="login-username">Username</label>
-      <div class="input-shell">
+      <div
+        class="input-shell"
+        [class.input-shell--error]="showFieldError('username')"
+      >
         <i class="bi bi-person input-icon"></i>
         <input
           id="login-username"
           type="text"
           formControlName="username"
-          placeholder="Username"
+          placeholder="Enter your username"
           autocomplete="username"
         />
       </div>
@@ -98,13 +32,16 @@
       }
 
       <label class="auth-label" for="login-password">Password</label>
-      <div class="input-shell input-shell--with-action">
+      <div
+        class="input-shell input-shell--with-action"
+        [class.input-shell--error]="showFieldError('password')"
+      >
         <i class="bi bi-lock input-icon"></i>
         <input
           id="login-password"
           [type]="showPassword() ? 'text' : 'password'"
           formControlName="password"
-          placeholder="Password"
+          placeholder="Enter your password"
           autocomplete="current-password"
         />
         <button
@@ -133,6 +70,9 @@
       </div>
 
       <button type="submit" class="btn-primary" [disabled]="loading()">
+        @if (loading()) {
+          <span class="btn-spinner"></span>
+        }
         {{ loading() ? 'Signing in...' : 'Sign In' }}
       </button>
 
@@ -141,25 +81,10 @@
           class="status-text"
           [class.status-text--error]="statusTone() === 'error'"
           [class.status-text--success]="statusTone() === 'success'"
+          [class.status-text--neutral]="statusTone() === 'neutral'"
         >
           {{ statusMessage() }}
         </p>
-
-        @if (statusTone() === 'error' && isDevelopment && statusMessage().includes('allowed')) {
-          <div class="activation-helper">
-            <button
-              type="button"
-              (click)="forceActivate()"
-              class="btn-secondary activation-helper__button"
-              [disabled]="activating()"
-            >
-              {{ activating() ? 'Activating...' : '🔧 Force Activate Account (DEV)' }}
-            </button>
-            <p class="activation-helper__note">
-              Account might be inactive in DB. Use this to bypass in development.
-            </p>
-          </div>
-        }
       }
     </form>
 

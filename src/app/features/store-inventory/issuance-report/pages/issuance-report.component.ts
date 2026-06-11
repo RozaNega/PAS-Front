@@ -40,52 +40,61 @@ export class IssuanceReportComponent implements OnInit {
   loading = signal(false);
   error = signal<string | null>(null);
 
-  // Computed summary statistics
   totalSIVs = computed(() => this.issuances().length);
-  totalItemsIssued = computed(() => 987);
+  totalItemsIssued = computed(() => this.issuances().reduce((s, i) => s + i.quantity, 0));
   totalValueIssued = computed(() => this.issuances().reduce((sum, item) => sum + item.value, 0));
-  avgPerDay = computed(() => '66 units/day');
-  activeUsers = computed(() => 45);
+  avgPerDay = computed(() => {
+    const items = this.issuances();
+    if (items.length === 0) return '0 units/day';
+    const start = new Date(this.dateRange.start);
+    const end = new Date(this.dateRange.end);
+    const days = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / 86400000));
+    return Math.round(items.reduce((s, i) => s + i.quantity, 0) / days) + ' units/day';
+  });
+  activeUsers = computed(() => new Set(this.issuances().map(i => i.requester)).size);
 
-  // Issuance by department
-  issuanceByDepartment = computed(() => [
-    { name: 'IT Department', percentage: 35, units: 345, value: 45000 },
-    { name: 'HR Department', percentage: 20, units: 198, value: 23000 },
-    { name: 'Operations', percentage: 18, units: 178, value: 18500 },
-    { name: 'Finance', percentage: 12, units: 120, value: 15000 },
-    { name: 'Marketing', percentage: 8, units: 78, value: 10500 },
-    { name: 'Sales', percentage: 7, units: 68, value: 11450 }
-  ]);
+  issuanceByDepartment = computed(() => {
+    const groups = new Map<string, { name: string; percentage: number; units: number; value: number }>();
+    for (const i of this.issuances()) {
+      const g = groups.get(i.department) || { name: i.department, percentage: 0, units: 0, value: 0 };
+      g.units += i.quantity;
+      g.value += i.value;
+      groups.set(i.department, g);
+    }
+    const entries = Array.from(groups.values()).sort((a, b) => b.value - a.value);
+    const total = entries.reduce((s, e) => s + e.value, 0) || 1;
+    return entries.map(e => ({ ...e, percentage: Math.round((e.value / total) * 100) }));
+  });
 
-  // Top requested items
-  topRequestedItems = computed(() => [
-    { name: 'Dell XPS Laptop', requests: 45, value: 112455, percentage: 100 },
-    { name: 'USB Cables', requests: 32, value: 160, percentage: 71 },
-    { name: 'Office Chair', requests: 28, value: 12600, percentage: 62 },
-    { name: 'HP Monitor', requests: 23, value: 8050, percentage: 51 },
-    { name: 'A4 Paper', requests: 18, value: 450, percentage: 40 }
-  ]);
+  topRequestedItems = computed(() => {
+    const groups = new Map<string, { name: string; requests: number; value: number; percentage: number }>();
+    for (const i of this.issuances()) {
+      const g = groups.get(i.item) || { name: i.item, requests: 0, value: 0, percentage: 0 };
+      g.requests += i.quantity;
+      g.value += i.value;
+      groups.set(i.item, g);
+    }
+    const entries = Array.from(groups.values()).sort((a, b) => b.requests - a.requests).slice(0, 5);
+    const max = entries[0]?.requests || 1;
+    return entries.map(e => ({ ...e, percentage: Math.round((e.requests / max) * 100) }));
+  });
 
-  // Top requesters
-  topRequesters = computed(() => [
-    { name: 'John Doe (IT)', requests: 23, value: 45000, percentage: 100 },
-    { name: 'Sarah Smith (HR)', requests: 18, value: 23000, percentage: 78 },
-    { name: 'Mike Wilson (Ops)', requests: 15, value: 18500, percentage: 65 },
-    { name: 'Lisa Wong (Finance)', requests: 12, value: 15000, percentage: 52 },
-    { name: 'Peter Chen (Marketing)', requests: 10, value: 10500, percentage: 43 }
-  ]);
-
-  // Bar heights for the chart - calculated once to avoid ExpressionChangedAfterItHasBeenCheckedError
-  barHeights = signal<number[]>([]);
+  topRequesters = computed(() => {
+    const groups = new Map<string, { name: string; requests: number; value: number; percentage: number }>();
+    for (const i of this.issuances()) {
+      const g = groups.get(i.requester) || { name: i.requester, requests: 0, value: 0, percentage: 0 };
+      g.requests += i.quantity;
+      g.value += i.value;
+      groups.set(i.requester, g);
+    }
+    const entries = Array.from(groups.values()).sort((a, b) => b.requests - a.requests).slice(0, 5);
+    const max = entries[0]?.requests || 1;
+    return entries.map(e => ({ ...e, percentage: Math.round((e.requests / max) * 100) }));
+  });
 
   filteredIssuances = signal<Issuance[]>([]);
 
   ngOnInit(): void {
-    const heights: number[] = [];
-    for (let i = 0; i < 8; i++) {
-      heights.push(this.getRandomHeight(100, 60));
-    }
-    this.barHeights.set(heights);
     this.loadIssuanceReport();
   }
 
@@ -118,7 +127,6 @@ export class IssuanceReportComponent implements OnInit {
   filterIssuances(): void {
     const department = this.departmentFilter();
     const requester = this.requesterFilter();
-    const category = this.categoryFilter();
 
     this.filteredIssuances.set(
       this.issuances().filter(issuance => {
@@ -146,14 +154,8 @@ export class IssuanceReportComponent implements OnInit {
   generateReport(): void {
     this.isLoading.set(true);
     this.reportGenerated.set(false);
-
-    setTimeout(() => {
-      this.filterIssuances();
-      this.reportGenerated.set(true);
-      this.lastRunTime.set(new Date());
-      this.isLoading.set(false);
-      console.log('Issuance report generated successfully');
-    }, 1500);
+    this.loadIssuanceReport();
+    this.lastRunTime.set(new Date());
   }
 
   exportToExcel(): void {
@@ -225,10 +227,6 @@ export class IssuanceReportComponent implements OnInit {
       return '$' + (value / 1000).toFixed(0) + 'K';
     }
     return '$' + value.toString();
-  }
-
-  getRandomHeight(base: number, variance: number): number {
-    return base + Math.random() * variance;
   }
 }
 

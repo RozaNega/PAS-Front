@@ -37,17 +37,21 @@ export class StockOverviewComponent implements OnInit {
   stockFilters = ['All', 'In Stock', 'Low Stock', 'Out of Stock'];
 
   totalValue = computed(() => {
+
     return this.stockItems().reduce((sum, item) => sum + (item.currentStock * (item.unitPrice || 15)), 0);
+
+    return this.stockItems().reduce((sum, item) => sum + ((item.currentQuantity ?? item.currentStock ?? 0) * 10), 0); // Assuming $10 per unit for demo
+
   });
 
   lowStockCount = computed(() => {
     return this.stockItems().filter(item =>
-      item.currentStock <= item.minimumThreshold
+      (item.currentQuantity ?? item.currentStock ?? 0) <= item.minimumThreshold
     ).length;
   });
 
   outOfStockCount = computed(() => {
-    return this.stockItems().filter(item => item.currentStock === 0).length;
+    return this.stockItems().filter(item => (item.currentQuantity ?? item.currentStock ?? 0) === 0).length;
   });
 
   // Computed for bulk operations
@@ -100,15 +104,15 @@ export class StockOverviewComponent implements OnInit {
     if (this.stockFilter() !== 'All') {
       switch (this.stockFilter()) {
         case 'In Stock':
-          result = result.filter(item => item.currentStock > item.minimumThreshold);
+          result = result.filter(item => (item.currentQuantity ?? item.currentStock ?? 0) > item.minimumThreshold);
           break;
         case 'Low Stock':
           result = result.filter(item => 
-            item.currentStock > 0 && item.currentStock <= item.minimumThreshold
+            (item.currentQuantity ?? item.currentStock ?? 0) > 0 && (item.currentQuantity ?? item.currentStock ?? 0) <= item.minimumThreshold
           );
           break;
         case 'Out of Stock':
-          result = result.filter(item => item.currentStock === 0);
+          result = result.filter(item => (item.currentQuantity ?? item.currentStock ?? 0) === 0);
           break;
       }
     }
@@ -253,27 +257,30 @@ export class StockOverviewComponent implements OnInit {
       queryParams: { 
         itemId: item.itemId,
         shelfId: item.shelfId,
-        currentStock: item.currentStock 
+        currentStock: item.currentQuantity ?? item.currentStock ?? 0
       } 
     });
   }
 
   // Utility methods
   getStockStatusClass(item: InventoryStockDto): string {
-    if (item.currentStock === 0) return 'badge-danger';
-    if (item.currentStock <= item.minimumThreshold) return 'badge-warning';
+    const qty = item.currentQuantity ?? item.currentStock ?? 0;
+    if (qty === 0) return 'badge-danger';
+    if (qty <= item.minimumThreshold) return 'badge-warning';
     return 'badge-success';
   }
 
   getStockStatusText(item: InventoryStockDto): string {
-    if (item.currentStock === 0) return 'Out of Stock';
-    if (item.currentStock <= item.minimumThreshold) return 'Low Stock';
+    const qty = item.currentQuantity ?? item.currentStock ?? 0;
+    if (qty === 0) return 'Out of Stock';
+    if (qty <= item.minimumThreshold) return 'Low Stock';
     return 'In Stock';
   }
 
   getStockLevelPercentage(item: InventoryStockDto): number {
+    const qty = item.currentQuantity ?? item.currentStock ?? 0;
     if (item.maximumThreshold <= 0) return 0;
-    return Math.min((item.currentStock / item.maximumThreshold) * 100, 100);
+    return Math.min((qty / item.maximumThreshold) * 100, 100);
   }
 
   formatCurrency(amount: number): string {
@@ -338,9 +345,9 @@ export class StockOverviewComponent implements OnInit {
       'SKU': item.sku,
       'Warehouse': item.warehouseName,
       'Shelf Location': item.shelfLocation || 'N/A',
-      'Current Stock': item.currentStock,
-      'Reserved': item.reservedStock || 0,
-      'Available': item.availableStock,
+      'Current Stock': item.currentQuantity ?? item.currentStock ?? 0,
+      'Reserved': item.reservedQuantity ?? item.reservedStock ?? 0,
+      'Available': item.availableQuantity ?? item.availableStock ?? 0,
       'Min Threshold': item.minimumThreshold,
       'Max Threshold': item.maximumThreshold,
       'Unit': item.unitOfMeasure,
@@ -364,9 +371,9 @@ export class StockOverviewComponent implements OnInit {
       item.sku,
       item.warehouseName,
       item.shelfLocation || 'N/A',
-      item.currentStock,
-      item.reservedStock || 0,
-      item.availableStock,
+      item.currentQuantity ?? item.currentStock ?? 0,
+      item.reservedQuantity ?? item.reservedStock ?? 0,
+      item.availableQuantity ?? item.availableStock ?? 0,
       item.minimumThreshold,
       item.maximumThreshold,
       item.unitOfMeasure,
