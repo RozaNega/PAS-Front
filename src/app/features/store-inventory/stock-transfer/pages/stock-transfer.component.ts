@@ -66,7 +66,6 @@ export class StockTransferComponent implements OnInit {
     this.fromWarehouse() && this.toWarehouse() &&
     this.fromWarehouse() !== this.toWarehouse() &&
     this.transferReason().trim().length > 0 &&
-    this.requiredByDate().length > 0 &&
     this.selectedItems().length > 0
   );
 
@@ -227,31 +226,34 @@ export class StockTransferComponent implements OnInit {
     this.error.set(null);
     this.success.set(null);
 
-    const request = {
-      fromWarehouseId: this.fromWarehouse(),
-      toWarehouseId: this.toWarehouse(),
-      items: this.selectedItems().map(item => ({ itemId: item.itemId, quantity: item.toTransfer })),
-      reason: this.transferReason(),
-      requiredByDate: this.requiredByDate(),
-      notes: this.notes()
-    };
+    const items = this.selectedItems().map(item => ({ itemId: item.itemId, quantity: item.toTransfer }));
 
-    this.transferService.createTransfer(request).subscribe({
+    this.transferService.createTransfer(
+      this.fromWarehouse(),
+      this.toWarehouse(),
+      items,
+      this.transferReason(),
+      this.notes() || undefined
+    ).subscribe({
       next: (res) => {
         this.submitting.set(false);
         if (res.success) {
-          this.showToast('Transfer order created successfully');
+          const created = res.data?.created ?? 0;
+          const msg = created > 1
+            ? `${created} transfer records created successfully`
+            : 'Transfer record created successfully';
+          this.showToast(msg);
           setTimeout(() => {
             this.resetForm();
             this.loadTransferHistory();
           }, 2000);
         } else {
-          this.error.set(res.message || 'Failed to create transfer order');
+          this.error.set(res.message || 'Failed to create transfer');
         }
       },
       error: () => {
         this.submitting.set(false);
-        this.error.set('Failed to create transfer order. Please try again.');
+        this.error.set('Failed to create transfer. Please try again.');
       }
     });
   }

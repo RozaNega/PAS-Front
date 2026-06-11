@@ -41,16 +41,22 @@
   font-weight: 600;
 }
 
-.header-title-wrap {
-  display: grid;
-  gap: 0.05rem;
+.header-logo-link {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
 }
 
-.header-subtitle {
-  margin: 0;
-  color: var(--app-text-muted);
-  font-size: 0.72rem;
-  line-height: 1;
+.header-logo {
+  height: 40px;
+  width: auto;
+  object-fit: contain;
+}
+
+@media (min-width: 768px) {
+  .header-logo {
+    height: 56px;
+  }
 }
 
 .header-search {
@@ -118,15 +124,6 @@
   font-size: 14px;
 }
 
-.header-title {
-  margin: 0;
-  min-width: 0;
-  font-size: 1rem;
-  font-weight: 600;
-  letter-spacing: -0.015em;
-  color: #1f3048;
-}
-
 .header-actions {
   display: inline-flex;
   align-items: center;
@@ -179,10 +176,6 @@
 }
 
 @media (max-width: 1024px) {
-  .header-title {
-    font-size: 0.96rem;
-  }
-
   .back-btn span {
     display: none;
   }

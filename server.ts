@@ -306,6 +306,16 @@ export function app(): express.Express {
     res.json({ success: true, message: '', data: d.ledger, statusCode: 200 });
   });
 
+  server.get('/api/Warehouses', async (req, res) => {
+    const d = await readInventoryData();
+    const warehouses = [
+      { id: 'wh-001', warehouseName: 'Main Warehouse', locationCode: 'WH-MAIN', address: 'Building A', city: 'Addis Ababa', country: 'Ethiopia', contactPerson: '', contactPhone: '', contactEmail: '', isActive: true, createdAt: new Date().toISOString() },
+      { id: 'wh-002', warehouseName: 'Branch Warehouse A', locationCode: 'WH-BRANCH-A', address: 'Building B', city: 'Addis Ababa', country: 'Ethiopia', contactPerson: '', contactPhone: '', contactEmail: '', isActive: true, createdAt: new Date().toISOString() },
+      { id: 'wh-003', warehouseName: 'Branch Warehouse B', locationCode: 'WH-BRANCH-B', address: 'Building C', city: 'Addis Ababa', country: 'Ethiopia', contactPerson: '', contactPhone: '', contactEmail: '', isActive: true, createdAt: new Date().toISOString() },
+    ];
+    res.json({ success: true, message: '', data: warehouses, statusCode: 200 });
+  });
+
   server.post('/api/landing/contact', async (req, res) => {
     const name = String(req.body?.name ?? '').trim();
     const email = String(req.body?.email ?? '').trim();

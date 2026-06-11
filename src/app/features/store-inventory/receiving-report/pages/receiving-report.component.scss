@@ -485,3 +485,32 @@
   gap: 0.75rem;
   flex-wrap: wrap;
 }
+
+.loading-state,
+.error-state {
+  padding: 2rem;
+  text-align: center;
+  font-size: 0.875rem;
+}
+
+.loading-state {
+  color: var(--text-color-muted);
+}
+
+.error-state {
+  color: #ef4444;
+}
+
+.empty-cell {
+  text-align: center;
+  padding: 2rem !important;
+  color: var(--text-color-muted);
+  font-style: italic;
+}
+
+.text-muted {
+  color: var(--text-color-muted);
+  text-align: center;
+  margin: 0;
+  padding: 1rem 0;
+}

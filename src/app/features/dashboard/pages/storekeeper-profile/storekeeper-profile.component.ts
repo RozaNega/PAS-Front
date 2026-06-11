@@ -157,6 +157,11 @@ import { DEFAULT_AVATAR_PATH } from '../../../../core/models/stored-user.model';
                       <input type="text" [(ngModel)]="editEmployeeCode" name="employeeCode" class="form-control" />
                     </div>
                   </div>
+                  @if (saveMessage(); as msg) {
+                    <div class="form-alert" [class.success]="msg.type === 'success'" [class.error]="msg.type === 'error'">
+                      <i class="bi" [class.bi-check-circle]="msg.type === 'success'" [class.bi-exclamation-circle]="msg.type === 'error'"></i> {{ msg.text }}
+                    </div>
+                  }
                   <div class="form-actions">
                     <button type="button" class="btn btn-secondary" (click)="cancelEdit()">Cancel</button>
                     <button type="submit" class="btn btn-primary" [disabled]="saving()">
@@ -519,6 +524,7 @@ export class StorekeeperProfileComponent implements OnInit {
 
   protected readonly activeSection = signal<string>('overview');
   protected readonly saving = signal(false);
+  protected readonly saveMessage = signal<{ type: 'success' | 'error'; text: string } | null>(null);
 
   protected readonly fullName = signal('Storekeeper');
   protected readonly email = signal('');
@@ -674,6 +680,7 @@ export class StorekeeperProfileComponent implements OnInit {
     this.activeSection.set(section);
     this.passwordError.set(null);
     this.passwordSuccess.set(null);
+    this.saveMessage.set(null);
   }
 
   protected initials(): string {
@@ -709,6 +716,7 @@ export class StorekeeperProfileComponent implements OnInit {
 
   protected saveProfile(): void {
     this.saving.set(true);
+    this.saveMessage.set(null);
     this.profileService.updateProfileViaApi({
       fullName: this.editName,
       email: this.editEmail,
@@ -718,18 +726,24 @@ export class StorekeeperProfileComponent implements OnInit {
       employeeCode: this.editEmployeeCode || undefined,
     }).subscribe({
       next: (res) => {
+        this.saving.set(false);
         if (res.succeeded) {
+          this.saveMessage.set({ type: 'success', text: 'Profile saved successfully' });
           this.fullName.set(this.editName);
           this.email.set(this.editEmail);
           this.phone.set(this.editPhone || null);
           this.department.set(this.editDepartment || null);
           this.position.set(this.editPosition || null);
           this.employeeCode.set(this.editEmployeeCode || null);
+        } else {
+          this.saveMessage.set({ type: 'error', text: res.message || 'Failed to save profile' });
         }
-        this.saving.set(false);
       },
-      error: () => {
+      error: (err) => {
         this.saving.set(false);
+        const msg = err.message || 'API unavailable or invalid data';
+        this.saveMessage.set({ type: 'error', text: msg });
+        console.error('saveProfile error', err);
       },
     });
   }
@@ -764,11 +778,13 @@ export class StorekeeperProfileComponent implements OnInit {
           this.confirmPassword = '';
         } else {
           this.passwordError.set(res.message || 'Failed to update password');
+          console.warn('changePassword returned success=false:', res);
         }
       },
-      error: () => {
+      error: (err) => {
         this.changingPassword.set(false);
         this.passwordError.set('An error occurred. Please try again.');
+        console.error('changePassword error:', err);
       },
     });
   }
