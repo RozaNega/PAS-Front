@@ -1,0 +1,133 @@
+<div class="decisions-page">
+  <header class="page-hero page-hero--dark">
+    <div class="page-hero__text">
+      <h1>Decisions Dashboard</h1>
+      <p>Compliance decision overview & metrics</p>
+    </div>
+    <div class="page-hero__actions">
+      <button class="btn btn-secondary" (click)="refresh()" [disabled]="loading()"><i class="bi bi-arrow-clockwise"></i> Refresh</button>
+      <button class="btn btn-primary" (click)="exportCsv()" [disabled]="decisions().length === 0"><i class="bi bi-download"></i> Export CSV</button>
+    </div>
+  </header>
+
+  @if (loading()) {
+    <div class="loading-state"><div class="spinner"></div><p>Loading decisions...</p></div>
+  }
+  @if (error(); as err) {
+    <div class="error-state"><i class="bi bi-exclamation-triangle-fill"></i><p>{{ err }}</p><button class="btn btn-primary" (click)="refresh()"><i class="bi bi-arrow-clockwise"></i> Retry</button></div>
+  }
+
+  @if (!loading() && !error()) {
+    <div class="stats-cards">
+      <div class="stat-card stat-card--total">
+        <div class="stat-card__icon"><i class="bi bi-files"></i></div>
+        <div class="stat-card__info">
+          <span class="stat-card__value">{{ totalCount() }}</span>
+          <span class="stat-card__label">Total Requests</span>
+        </div>
+      </div>
+      <div class="stat-card stat-card--approved">
+        <div class="stat-card__icon"><i class="bi bi-check-circle"></i></div>
+        <div class="stat-card__info">
+          <span class="stat-card__value">{{ approvedCount() }}</span>
+          <span class="stat-card__label">Approved</span>
+        </div>
+      </div>
+      <div class="stat-card stat-card--rejected">
+        <div class="stat-card__icon"><i class="bi bi-x-circle"></i></div>
+        <div class="stat-card__info">
+          <span class="stat-card__value">{{ rejectedCount() }}</span>
+          <span class="stat-card__label">Rejected</span>
+        </div>
+      </div>
+      <div class="stat-card stat-card--pending">
+        <div class="stat-card__icon"><i class="bi bi-hourglass-split"></i></div>
+        <div class="stat-card__info">
+          <span class="stat-card__value">{{ pendingCount() }}</span>
+          <span class="stat-card__label">Pending</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Request #</th>
+              <th>Requester</th>
+              <th>Department</th>
+              <th>Status</th>
+              <th class="text-center">Date</th>
+              <th class="text-center">Outcome</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (d of decisions(); track d.id) {
+              <tr>
+                <td><span class="td-id">{{ d.requestNumber }}</span></td>
+                <td>
+                  <div class="td-employee">
+                    <div class="td-avatar" [style.background]="hslFromName(d.requesterName)">{{ getInitials(d.requesterName) }}</div>
+                    <span class="td-name">{{ d.requesterName }}</span>
+                  </div>
+                </td>
+                <td>{{ d.department }}</td>
+                <td><span class="td-date">{{ d.status }}</span></td>
+                <td class="text-center"><span class="td-date">{{ d.decisionDate }}</span></td>
+                <td class="text-center">
+                  <span class="badge" [class.badge--approved]="d.outcome === 'Approved'" [class.badge--rejected]="d.outcome === 'Rejected'" [class.badge--pending]="d.outcome !== 'Approved' && d.outcome !== 'Rejected'">
+                    {{ d.outcome }}
+                  </span>
+                </td>
+                <td>
+                  <button class="action-btn action-btn--view" (click)="viewDecision(d)"><i class="bi bi-eye"></i><span> View</span></button>
+                </td>
+              </tr>
+            } @empty {
+              <tr class="empty-row">
+                <td colspan="7"><div class="empty-state"><i class="bi bi-inbox"></i><p>No decisions found</p></div></td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  @if (selectedDecision(); as d) {
+    <div class="modal-backdrop" (click)="closeModal()">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h2><i class="bi bi-check2-square" style="color:#6366f1"></i> Decision Details</h2>
+          <button class="btn-close-modal" (click)="closeModal()"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <div class="modal-body">
+          <div class="modal-avatar">
+            <div class="td-avatar td-avatar--lg" [style.background]="hslFromName(d.requesterName)">{{ getInitials(d.requesterName) }}</div>
+            <div>
+              <h3>{{ d.requesterName }}</h3>
+              <span class="mono-text">{{ d.requestNumber }}</span>
+            </div>
+          </div>
+          <div class="section-title">Decision Information</div>
+          <div class="metadata-grid">
+            <div class="grid-item"><label>Request #</label><span class="mono-text">{{ d.requestNumber }}</span></div>
+            <div class="grid-item"><label>Department</label><span>{{ d.department }}</span></div>
+            <div class="grid-item"><label>Status</label><span>{{ d.status }}</span></div>
+            <div class="grid-item"><label>Decision Date</label><span>{{ d.decisionDate }}</span></div>
+            <div class="grid-item"><label>Decided By</label><span>{{ d.decidedBy }}</span></div>
+            <div class="grid-item"><label>Value</label><span>${{ d.value.toLocaleString() }}</span></div>
+            <div class="grid-item"><label>Outcome</label>
+              <span class="badge" [class.badge--approved]="d.outcome === 'Approved'" [class.badge--rejected]="d.outcome === 'Rejected'" [class.badge--pending]="d.outcome !== 'Approved' && d.outcome !== 'Rejected'">{{ d.outcome }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" (click)="closeModal()">Close</button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

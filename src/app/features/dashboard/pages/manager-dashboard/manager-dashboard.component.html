@@ -1,55 +1,65 @@
 <section class="manager-dashboard" aria-label="Manager dashboard">
   <header class="hero-banner">
-    <div class="hero-copy">
-      <p class="hero-eyebrow">Manager Dashboard</p>
-      <div class="hero-header-content">
-        <div class="hero-avatar">
-          <div class="photo-scan-container" [class.scanning]="isValidatingPhoto()">
-            @if (profilePhoto()) {
-              <img [src]="profilePhoto()" alt="Profile photo" class="avatar-img shadow-lg" />
-            } @else {
-              <div class="avatar-placeholder shadow-lg">
-                <i class="bi bi-person-fill"></i>
-              </div>
-            }
+    <div class="hero-banner__bg"></div>
+    <div class="hero-banner__content">
+      <div class="hero-copy">
+        <p class="hero-eyebrow">
+          <i class="bi bi-grid-1x2-fill"></i> Manager Dashboard
+        </p>
+        <div class="hero-header-content">
+          <div class="hero-avatar">
+            <div class="photo-scan-container" [class.scanning]="isValidatingPhoto()">
+              @if (profilePhoto()) {
+                <img [src]="profilePhoto()" alt="Profile photo" class="avatar-img" />
+              } @else {
+                <div class="avatar-placeholder">
+                  <i class="bi bi-person-fill"></i>
+                </div>
+              }
 
-            @if (isValidatingPhoto()) {
-              <div class="scan-overlay">
-                <div class="scan-line"></div>
-                <span class="scan-label">Scanning Face...</span>
-              </div>
-            }
+              @if (isValidatingPhoto()) {
+                <div class="scan-overlay">
+                  <div class="scan-line"></div>
+                  <span class="scan-label">Scanning Face...</span>
+                </div>
+              }
+            </div>
+            <div class="hero-avatar__badge">
+              <i class="bi bi-shield-check"></i>
+            </div>
+          </div>
+          <div class="hero-text">
+            <h1>{{ greeting }}, {{ managerName() }}!</h1>
+            <p class="hero-subtitle">
+              <i class="bi bi-bell"></i> You have
+              <strong>{{ pendingCount() }} pending approval(s)</strong>. New employee requests appear here after they are saved and synced.
+            </p>
           </div>
         </div>
-        <div class="hero-text">
-          <h1>👋 {{ greeting }}, {{ managerName() }}!</h1>
-          <p>Welcome</p>
+      </div>
+      <div class="dashboard-info-widget">
+        <div class="info-item">
+          <i class="bi bi-calendar3"></i>
+          <span>{{ currentDate }}</span>
         </div>
+        <div class="info-divider"></div>
+        <div class="info-item">
+          <i class="bi bi-clock"></i>
+          <span class="info-time">{{ currentTime() }}</span>
+          <span class="info-timezone">EAT</span>
+        </div>
+        <div class="info-divider"></div>
+        <div class="info-item">
+          <i class="bi bi-geo-alt-fill"></i>
+          <span>{{ currentLocation() }}</span>
+        </div>
+        @if (currentView() === 'home') {
+          <button type="button" class="profile-btn" (click)="showProfile()" title="View profile and settings">
+            <i class="bi bi-person-gear"></i>
+            <span>Settings</span>
+          </button>
+        }
       </div>
-    </div>
-    <div class="dashboard-info-widget">
-      <div class="info-item">
-        <i class="bi bi-calendar3 info-icon text-primary"></i>
-        <span class="info-text">{{ currentDate }}</span>
-      </div>
-      <div class="info-item">
-        <i class="bi bi-clock info-icon text-secondary"></i>
-        <span class="info-text">{{ currentTime() }}</span>
-      </div>
-      <div class="info-item">
-        <i class="bi bi-geo-alt-fill info-icon text-danger"></i>
-        <span class="info-text">{{ currentLocation() }}</span>
-      </div>
-      @if (currentView() === 'home') {
-        <button
-          type="button"
-          class="profile-btn"
-          (click)="showProfile()"
-          title="View profile and settings"
-        >
-          <i class="bi bi-gear"></i> Settings
-        </button>
-      }
     </div>
     @if (currentView() === 'profile') {
       <button class="btn-close-profile" (click)="hideProfile()" title="Close profile">
@@ -59,88 +69,194 @@
   </header>
 
   @if (currentView() === 'home') {
-    <section class="summary-grid" aria-label="Summary metrics">
+    <!-- KEY METRICS -->
+    <section class="metrics-grid">
       @for (card of summaryCards(); track card.title) {
-        <article class="summary-card summary-card--{{ card.tone }}">
-          <div class="summary-card__icon">
+        <article class="metric-card metric-card--{{ card.tone }}">
+          <div class="metric-card__icon">
             <i class="bi {{ card.icon }}"></i>
           </div>
-          <div class="summary-card__content">
-            <p class="summary-card__value">{{ card.value }}</p>
-            <h2>{{ card.title }}</h2>
-            <p>{{ card.description }}</p>
+          <div class="metric-card__body">
+            <p class="metric-card__value">{{ card.value }}</p>
+            <h3 class="metric-card__title">{{ card.title }}</h3>
+            <p class="metric-card__desc">{{ card.description }}</p>
+          </div>
+          <div class="metric-card__trend">
+            <span class="metric-trend metric-trend--{{ card.tone === 'warning' ? 'up' : card.tone === 'success' ? 'up' : 'down' }}">
+              <i class="bi bi-arrow-{{ card.tone === 'warning' ? 'up' : card.tone === 'success' ? 'up' : 'down' }}-short"></i>
+              {{ card.tone === 'warning' ? '12' : card.tone === 'success' ? '8' : '3' }}%
+            </span>
           </div>
         </article>
       }
     </section>
 
-    <section class="dashboard-grid">
-      <section class="panel panel--requests" aria-labelledby="pending-requests-heading">
-        <header class="panel__header">
-          <div>
-            <h2 id="pending-requests-heading">Pending Requests</h2>
+    <!-- CHARTS ROW -->
+    <section class="charts-grid">
+      <div class="panel panel--chart">
+        <div class="panel__header">
+          <div class="panel__header-left">
+            <div class="panel__icon">
+              <i class="bi bi-bar-chart-line-fill"></i>
+            </div>
+            <div>
+              <h2>Request Trends</h2>
+              <p class="panel__subtitle">IT Department - Monthly Overview</p>
+            </div>
           </div>
-          <button type="button" class="text-button" (click)="viewAllRequests()">View All</button>
-        </header>
-
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th scope="col">Request ID</th>
-                <th scope="col">Employee</th>
-                <th scope="col">Item</th>
-                <th scope="col">Quantity</th>
-                <th scope="col">Date</th>
-                <th scope="col">Priority</th>
-                <th scope="col">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (request of filteredRequests(); track request.id) {
-                <tr>
-                  <td>{{ request.requestNumber }}</td>
-                  <td>{{ request.employeeName }}</td>
-                  <td>{{ request.itemName }}</td>
-                  <td>{{ request.quantity }}</td>
-                  <td>{{ request.date }}</td>
-                  <td>
-                    <span
-                      class="priority-pill"
-                      [class.priority-pill--urgent]="request.priority === 'Urgent'"
-                      [class.priority-pill--high]="request.priority === 'High'"
-                      [class.priority-pill--medium]="request.priority === 'Medium'"
-                      [class.priority-pill--low]="request.priority === 'Low' || !request.priority"
-                    >
-                      {{ request.priority || 'Low' }}
-                    </span>
-                  </td>
-                  <td>
-                    <div class="table-actions">
-                      <button
-                        type="button"
-                        class="action-icon action-icon--approve"
-                        (click)="approveRequest(request.id)"
-                      >
-                        <span class="sr-only">Approve request {{ request.requestNumber }}</span>
-                        <i class="bi bi-check-lg"></i>
-                      </button>
-                      <button
-                        type="button"
-                        class="action-icon action-icon--reject"
-                        (click)="rejectRequest(request.id)"
-                      >
-                        <span class="sr-only">Reject request {{ request.requestNumber }}</span>
-                        <i class="bi bi-x-lg"></i>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              }
-            </tbody>
-          </table>
+          <div class="panel__header-right">
+            <span class="panel__badge panel__badge--info">This Year</span>
+          </div>
         </div>
-      </section>
+        <div class="panel__body">
+          <div echarts [options]="trendChartOptions()" class="chart-container"></div>
+        </div>
+      </div>
+
+      <div class="panel panel--chart">
+        <div class="panel__header">
+          <div class="panel__header-left">
+            <div class="panel__icon panel__icon--purple">
+              <i class="bi bi-pie-chart-fill"></i>
+            </div>
+            <div>
+              <h2>Status Distribution</h2>
+              <p class="panel__subtitle">Current Queue Overview</p>
+            </div>
+          </div>
+        </div>
+        <div class="panel__body">
+          <div echarts [options]="statusChartOptions()" class="chart-container"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PENDING REQUESTS TABLE -->
+    <section class="panel panel--table">
+      <div class="panel__header">
+        <div class="panel__header-left">
+          <div class="panel__icon panel__icon--amber">
+            <i class="bi bi-list-task"></i>
+          </div>
+          <div>
+            <h2>Pending Requests</h2>
+            <p class="panel__subtitle">{{ pendingCount() }} requests awaiting your decision</p>
+          </div>
+        </div>
+        <button type="button" class="btn-view-all" (click)="viewAllRequests()">
+          View All
+          <i class="bi bi-arrow-right"></i>
+        </button>
+      </div>
+
+      <div class="filter-bar">
+        @for (filter of filters; track filter) {
+          <button
+            type="button"
+            class="filter-chip"
+            [class.filter-chip--active]="selectedFilter() === filter"
+            (click)="setFilter(filter)"
+          >
+            {{ filter }}
+            @if (filter === 'Pending') {
+              <span class="filter-chip__count">{{ pendingCount() }}</span>
+            }
+          </button>
+        }
+      </div>
+
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th scope="col">Request ID</th>
+              <th scope="col">Employee</th>
+              <th scope="col">Item</th>
+              <th scope="col">Qty</th>
+              <th scope="col">Date</th>
+              <th scope="col">Priority</th>
+              <th scope="col">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (request of filteredRequests(); track request.id) {
+              <tr>
+                <td>
+                  <span class="td-id">{{ request.requestNumber }}</span>
+                </td>
+                <td>
+                  <div class="td-employee">
+                    <div class="td-avatar" [style.background]="'hsl(' + (request.employeeName.length * 40 % 360) + ', 70%, 85%)'">
+                      {{ request.employeeName.charAt(0) }}
+                    </div>
+                    <span class="td-name">{{ request.employeeName }}</span>
+                  </div>
+                </td>
+                <td>
+                  <span class="td-item">{{ request.itemName }}</span>
+                </td>
+                <td>
+                  <span class="td-qty">{{ request.quantity }}</span>
+                </td>
+                <td>
+                  <span class="td-date">{{ request.date }}</span>
+                </td>
+                <td>
+                  <span
+                    class="priority-pill"
+                    [class.priority-pill--urgent]="request.priority === 'Urgent'"
+                    [class.priority-pill--high]="request.priority === 'High'"
+                    [class.priority-pill--medium]="request.priority === 'Medium'"
+                    [class.priority-pill--low]="request.priority === 'Low' || !request.priority"
+                  >
+                    @if (request.priority === 'Urgent') {
+                      <i class="bi bi-exclamation-triangle-fill"></i>
+                    } @else if (request.priority === 'High') {
+                      <i class="bi bi-chevron-double-up"></i>
+                    } @else if (request.priority === 'Medium') {
+                      <i class="bi bi-dash-circle"></i>
+                    } @else {
+                      <i class="bi bi-dot"></i>
+                    }
+                    {{ request.priority || 'Low' }}
+                  </span>
+                </td>
+                <td>
+                  <div class="table-actions">
+                    <button
+                      type="button"
+                      class="action-btn action-btn--approve"
+                      (click)="approveRequest(request.id)"
+                      title="Approve {{ request.requestNumber }}"
+                    >
+                      <i class="bi bi-check-lg"></i>
+                      <span>Approve</span>
+                    </button>
+                    <button
+                      type="button"
+                      class="action-btn action-btn--reject"
+                      (click)="rejectRequest(request.id)"
+                      title="Reject {{ request.requestNumber }}"
+                    >
+                      <i class="bi bi-x-lg"></i>
+                      <span>Reject</span>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            } @empty {
+              <tr class="empty-row">
+                <td colspan="7">
+                  <div class="empty-state">
+                    <i class="bi bi-inbox"></i>
+                    <p>No {{ selectedFilter() === 'All' ? '' : selectedFilter() }} requests found</p>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
     </section>
   }
 

@@ -1,167 +1,219 @@
-import { Component } from '@angular/core';
+import { Component, signal, computed, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-
-export interface AuditSummary {
-  label: string;
-  value: string;
-  subtitle: string;
-}
-
-export interface SystemActivity {
-  timestamp: string;
-  user: string;
-  action: string;
-  entity: string;
-  entityId: string;
-  details: string;
-  status: string;
-}
-
-export interface UserActionSummary {
-  user: string;
-  create: number;
-  update: number;
-  delete: number;
-  view: number;
-  export: number;
-  login: number;
-  total: number;
-}
-
-export interface PropertyChange {
-  date: string;
-  property: string;
-  changeType: string;
-  oldValue: string;
-  newValue: string;
-  user: string;
-  status: string;
-}
-
-export interface StockMovement {
-  date: string;
-  item: string;
-  type: string;
-  quantity: string;
-  reference: string;
-  user: string;
-  status: string;
-}
-
-export interface RequisitionAudit {
-  srNumber: string;
-  requester: string;
-  value: string;
-  approver: string;
-  status: string;
-  approvalChain: string;
-  compliance: string;
-}
-
-export interface UserLoginHistory {
-  dateTime: string;
-  user: string;
-  ipAddress: string;
-  status: string;
-  location: string;
-}
-
-export interface DataExportLog {
-  dateTime: string;
-  user: string;
-  exportType: string;
-  records: string;
-  format: string;
-  status: string;
-}
+import { FormsModule } from '@angular/forms';
+import { ActivityLogsService, ActivityLogDto } from '../../../../core/services/activity-logs.service';
 
 @Component({
   selector: 'app-audit-trail-page',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './audit-trail-page.component.html',
   styleUrl: './audit-trail-page.component.scss',
 })
-export class AuditTrailPageComponent {
-  auditSummaries: AuditSummary[] = [
-    { label: 'Total Events', value: '45,678', subtitle: 'this month' },
-    { label: "Today's Events", value: '1,234', subtitle: '▲ +15%' },
-    { label: "This Week's Events", value: '8,567', subtitle: '● Same' },
-    { label: 'Most Active User', value: 'John Doe', subtitle: '(1,234 actions)' },
-    { label: 'Suspicious Activities', value: '23', subtitle: '⚠️ Flagged' },
-  ];
+export class AuditTrailPageComponent implements OnInit {
+  private readonly activityLogsService = inject(ActivityLogsService);
 
-  systemActivities: SystemActivity[] = [
-    { timestamp: 'Dec 15, 10:30:25', user: 'John Doe', action: '➕ Create', entity: 'Property', entityId: 'TAG-001', details: 'Added', status: '✅' },
-    { timestamp: 'Dec 15, 09:45:12', user: 'Sarah Smith', action: '✏️ Update', entity: 'Requisition', entityId: 'SR-123', details: 'Status', status: '✅' },
-    { timestamp: 'Dec 15, 09:30:02', user: 'System', action: '⚠️ Alert', entity: 'Stock', entityId: 'LAP-001', details: 'Low', status: '⚠️' },
-    { timestamp: 'Dec 15, 08:45:33', user: 'Mike Wilson', action: '📥 Export', entity: 'Report', entityId: 'N/A', details: 'Stock', status: '✅' },
-    { timestamp: 'Dec 15, 08:15:21', user: 'Unknown', action: '❌ Login', entity: 'User', entityId: 'admin', details: 'Failed', status: '❌' },
-  ];
+  loading = signal(false);
+  error = signal(false);
+  activityLogs = signal<ActivityLogDto[]>([]);
 
-  userActionSummaries: UserActionSummary[] = [
-    { user: 'John Doe', create: 234, update: 156, delete: 12, view: 567, export: 45, login: 89, total: 1103 },
-    { user: 'Sarah Smith', create: 89, update: 234, delete: 5, view: 890, export: 23, login: 67, total: 1308 },
-    { user: 'Mike Wilson', create: 45, update: 67, delete: 2, view: 234, export: 89, login: 45, total: 482 },
-  ];
+  searchQuery = signal('');
+  statusFilter = signal('All');
+  dateFrom = signal('');
+  dateTo = signal('');
+  currentPage = signal(1);
+  rowsPerPage = signal(15);
 
-  propertyChanges: PropertyChange[] = [
-    { date: 'Dec 15', property: 'TAG-001', changeType: 'Location', oldValue: 'IT Dept', newValue: 'Warehouse', user: 'John Doe', status: '✅' },
-    { date: 'Dec 14', property: 'TAG-002', changeType: 'Status', oldValue: 'Active', newValue: 'Inactive', user: 'Sarah Smith', status: '✅' },
-  ];
+  showDetailsModal = signal(false);
+  selectedLog = signal<ActivityLogDto | null>(null);
+  showExportDropdown = signal(false);
 
-  stockMovements: StockMovement[] = [
-    { date: 'Dec 15', item: 'Dell Laptop', type: 'Receiving', quantity: '+10', reference: 'GRN-045', user: 'John Doe', status: '✅' },
-    { date: 'Dec 14', item: 'HP Monitor', type: 'Issue', quantity: '-3', reference: 'SIV-012', user: 'Sarah Smith', status: '✅' },
-  ];
-
-  requisitionAudits: RequisitionAudit[] = [
-    { srNumber: 'SR-2024-123', requester: 'John Doe', value: '$5,348', approver: 'Sarah Smith', status: '✅', approvalChain: 'Complete', compliance: '✅ Compliant' },
-    { srNumber: 'SR-2024-122', requester: 'Peter Chen', value: '$2,800', approver: 'Pending', status: '🟡', approvalChain: 'Incomplete', compliance: '⚠️ Violation' },
-  ];
-
-  userLoginHistory: UserLoginHistory[] = [
-    { dateTime: 'Dec 15, 09:30 AM', user: 'John Doe', ipAddress: '192.168.1.100', status: '✅', location: 'Office' },
-    { dateTime: 'Dec 15, 08:15 AM', user: 'Unknown', ipAddress: '10.0.0.45', status: '❌ Failed', location: 'Unknown' },
-  ];
-
-  dataExportLogs: DataExportLog[] = [
-    { dateTime: 'Dec 15, 08:45 AM', user: 'Mike Wilson', exportType: 'Stock Report', records: '1,234', format: 'Excel', status: '✅' },
-    { dateTime: 'Dec 14, 03:30 PM', user: 'Sarah Smith', exportType: 'Audit Log', records: '5,678', format: 'PDF', status: '✅' },
-  ];
-
-  exportAuditLogs(): void {
-    console.log('Exporting audit logs');
-    alert('Audit logs exported successfully!');
+  ngOnInit(): void {
+    this.loadLogs();
   }
 
-  generateReport(): void {
-    console.log('Generating report');
-    alert('Report generated successfully!');
+  loadLogs(): void {
+    this.loading.set(true);
+    this.error.set(false);
+    this.activityLogsService.getAll().subscribe({
+      next: (logs) => {
+        this.activityLogs.set(logs);
+        this.loading.set(false);
+      },
+      error: () => {
+        this.loading.set(false);
+        this.error.set(true);
+      }
+    });
   }
 
-  exportToExcel(): void {
-    console.log('Exporting to Excel');
-    alert('Exported to Excel successfully!');
+  stats = computed(() => {
+    const all = this.activityLogs();
+    const today = new Date().toDateString();
+    return {
+      totalEvents: all.length,
+      uniqueUsers: new Set(all.map(l => l.user)).size,
+      criticalEvents: all.filter(l => l.status === 'Failure' || l.status === 'Warning').length,
+      todayEvents: all.filter(l => new Date(l.timestamp).toDateString() === today).length,
+    };
+  });
+
+  filteredLogs = computed(() => {
+    let result = [...this.activityLogs()];
+    const q = this.searchQuery().toLowerCase();
+    if (q) {
+      result = result.filter(l =>
+        l.user.toLowerCase().includes(q) ||
+        l.action.toLowerCase().includes(q) ||
+        l.actionType.toLowerCase().includes(q) ||
+        l.entityType.toLowerCase().includes(q) ||
+        l.entityId.toLowerCase().includes(q) ||
+        l.details.toLowerCase().includes(q) ||
+        l.ipAddress.toLowerCase().includes(q)
+      );
+    }
+    if (this.statusFilter() !== 'All') {
+      result = result.filter(l => l.status === this.statusFilter());
+    }
+    if (this.dateFrom()) {
+      const from = new Date(this.dateFrom()).getTime();
+      result = result.filter(l => new Date(l.timestamp).getTime() >= from);
+    }
+    if (this.dateTo()) {
+      const to = new Date(this.dateTo()).getTime() + 86400000;
+      result = result.filter(l => new Date(l.timestamp).getTime() < to);
+    }
+    result.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    return result;
+  });
+
+  pagedLogs = computed(() => {
+    const start = (this.currentPage() - 1) * this.rowsPerPage();
+    return this.filteredLogs().slice(start, start + this.rowsPerPage());
+  });
+
+  totalPages = computed(() => Math.max(1, Math.ceil(this.filteredLogs().length / this.rowsPerPage())));
+
+  displayRange = computed(() => {
+    const total = this.filteredLogs().length;
+    if (!total) return { start: 0, end: 0 };
+    return {
+      start: (this.currentPage() - 1) * this.rowsPerPage() + 1,
+      end: Math.min(this.currentPage() * this.rowsPerPage(), total)
+    };
+  });
+
+  onSearch(e: Event): void { this.searchQuery.set((e.target as HTMLInputElement).value); this.currentPage.set(1); }
+  onStatusFilter(e: Event): void { this.statusFilter.set((e.target as HTMLSelectElement).value); this.currentPage.set(1); }
+  onDateFrom(e: Event): void { this.dateFrom.set((e.target as HTMLInputElement).value); this.currentPage.set(1); }
+  onDateTo(e: Event): void { this.dateTo.set((e.target as HTMLInputElement).value); this.currentPage.set(1); }
+  onRowsPerPageChange(e: Event): void { this.rowsPerPage.set(+(e.target as HTMLSelectElement).value); this.currentPage.set(1); }
+
+  resetFilters(): void {
+    this.searchQuery.set('');
+    this.statusFilter.set('All');
+    this.dateFrom.set('');
+    this.dateTo.set('');
+    this.currentPage.set(1);
   }
 
-  exportToPdf(): void {
-    console.log('Exporting to PDF');
-    alert('Exported to PDF successfully!');
+  goToPage(page: number): void { this.currentPage.set(page); }
+
+  getActionIcon(actionType: string): string {
+    const icons: Record<string, string> = {
+      Create: 'bi-plus-circle', Update: 'bi-pencil', Delete: 'bi-trash',
+      View: 'bi-eye', Login: 'bi-key', Logout: 'bi-box-arrow-right',
+      Export: 'bi-download', Import: 'bi-upload', Approve: 'bi-check-circle',
+      Reject: 'bi-x-circle', Alert: 'bi-exclamation-triangle', Error: 'bi-x-circle'
+    };
+    return icons[actionType] || 'bi-circle';
   }
 
-  emailReport(): void {
-    console.log('Emailing report');
-    alert('Report emailed successfully!');
+  getActionClass(actionType: string): string {
+    const c: Record<string, string> = {
+      Create: 'green', Update: 'blue', Delete: 'red', View: 'gray',
+      Login: 'green', Logout: 'gray', Export: 'purple', Import: 'purple',
+      Approve: 'green', Reject: 'red', Alert: 'orange', Error: 'red'
+    };
+    return c[actionType] || 'gray';
   }
 
-  printReport(): void {
-    console.log('Printing report');
-    window.print();
+  formatDate(date: string): string {
+    if (!date) return 'N/A';
+    return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   }
 
-  scheduleReport(): void {
-    console.log('Scheduling report');
-    alert('Report scheduled successfully!');
+  formatTimestamp(date: string): string {
+    if (!date) return 'N/A';
+    const d = new Date(date);
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + ', ' +
+      d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   }
+
+  formatTimeAgo(date: string): string {
+    if (!date) return '';
+    const diff = Date.now() - new Date(date).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return 'Just now';
+    if (mins < 60) return `${mins}m ago`;
+    const hours = Math.floor(diff / 3600000);
+    if (hours < 24) return `${hours}h ago`;
+    return `${Math.floor(diff / 86400000)}d ago`;
+  }
+
+  openDetailsModal(log: ActivityLogDto): void {
+    this.selectedLog.set(log);
+    this.showDetailsModal.set(true);
+  }
+
+  closeDetailsModal(): void {
+    this.showDetailsModal.set(false);
+    this.selectedLog.set(null);
+  }
+
+  copyDetails(): void {
+    const log = this.selectedLog();
+    if (!log) return;
+    const txt = `Timestamp: ${this.formatTimestamp(log.timestamp)}\nUser: ${log.user}\nAction: ${log.action}\nAction Type: ${log.actionType}\nEntity: ${log.entityType}\nEntity ID: ${log.entityId}\nStatus: ${log.status}\nIP: ${log.ipAddress}\nDetails: ${log.details}`;
+    navigator.clipboard.writeText(txt);
+  }
+
+  exportLogs(format: string): void {
+    this.showExportDropdown.set(false);
+    const logs = this.filteredLogs();
+    if (!logs.length) return;
+
+    const headers = ['Timestamp', 'User', 'Action', 'Action Type', 'Entity Type', 'Entity ID', 'Details', 'IP Address', 'Status'];
+    const rows = logs.map(l => [
+      this.formatTimestamp(l.timestamp), l.user, l.action, l.actionType,
+      l.entityType, l.entityId, l.details, l.ipAddress, l.status
+    ]);
+
+    if (format === 'CSV') {
+      const csv = [headers, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+      this.downloadFile(csv, 'audit-trail.csv', 'text/csv');
+    } else if (format === 'Excel') {
+      const tsv = [headers, ...rows].map(r => r.map(c => String(c).replace(/\t/g, ' ')).join('\t')).join('\n');
+      this.downloadFile(tsv, 'audit-trail.xls', 'application/vnd.ms-excel');
+    } else if (format === 'JSON') {
+      const json = JSON.stringify(logs, null, 2);
+      this.downloadFile(json, 'audit-trail.json', 'application/json');
+    }
+  }
+
+  private downloadFile(content: string, filename: string, mimeType: string): void {
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  refresh(): void { this.loadLogs(); }
+
+  uniqueStatuses = computed(() => [...new Set(this.activityLogs().map(l => l.status))].sort());
+
+  Math = Math;
 }

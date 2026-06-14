@@ -12,21 +12,34 @@ import { downloadReportPdf } from '../compliance-reports/report-actions.util';
   standalone: true,
   imports: [CommonModule],
   templateUrl: './issued-sivs.component.html',
-  styleUrls: ['./issued-sivs.component.scss']
+  styleUrls: ['./_sivs-common.scss']
 })
 export class IssuedSIVsComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly managerData = inject(ManagerDataService);
 
+  protected readonly title = 'Issued SIVs';
+  protected readonly subtitle = 'SIVs that have been fulfilled and issued';
   protected readonly sivs = signal<StoreIssueVoucher[]>([]);
 
   protected selectedSiv = signal<StoreIssueVoucher | null>(null);
   protected showDetailsModal = signal(false);
 
+  get totalCount(): number { return this.sivs().length; }
+  get totalValue(): number { return this.sivs().reduce((s, v) => s + v.totalValue, 0); }
+
   ngOnInit(): void {
     this.managerData
       .getSivs()
       .subscribe((sivs) => this.sivs.set(sivs.filter((siv) => siv.status === 'Issued')));
+  }
+
+  navigateTo(path: string): void {
+    void this.router.navigate([path]);
+  }
+
+  getStatusClass(): string {
+    return 'status-badge status-badge--issued';
   }
 
   viewDetails(siv: StoreIssueVoucher): void {

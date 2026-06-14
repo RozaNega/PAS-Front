@@ -1,17 +1,181 @@
-<div class="completed-audits-container">
-  <div class="page-header"><h1>Completed Audits</h1><p class="subtitle">Finished compliance audits</p></div>
-  <div class="audits-list">
-    @for (audit of audits(); track audit.id) {
-      <div class="audit-card">
-        <div class="audit-header"><div class="audit-id">{{ audit.auditId }}</div><div class="status-badge completed">Completed</div></div>
-        <div class="audit-details">
-          <div class="detail-row"><span class="label">Type:</span><span class="value">{{ audit.type }}</span></div>
-          <div class="detail-row"><span class="label">Completed By:</span><span class="value">{{ audit.completedBy }}</span></div>
-          <div class="detail-row"><span class="label">Date:</span><span class="value">{{ audit.completedDate }}</span></div>
-          <div class="detail-row"><span class="label">Findings:</span><span class="value">{{ audit.findings }}</span></div>
-          <div class="detail-row"><span class="label">Risk Level:</span><span class="value">{{ audit.riskLevel }}</span></div>
+<div class="completed-audits">
+  <div class="hero-header">
+    <div class="hero-content">
+      <div class="hero-text">
+        <h1>Completed Audits</h1>
+        <p class="hero-subtitle">Finished compliance audits</p>
+      </div>
+      <div class="hero-actions">
+        <button class="btn btn-outline" (click)="loadAudits()" [disabled]="loading()">
+          <i class="bi bi-arrow-clockwise"></i> Refresh
+        </button>
+        <button class="btn btn-primary" (click)="exportCsv()" [disabled]="!audits().length">
+          <i class="bi bi-download"></i> Export CSV
+        </button>
+      </div>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading completed audits...</p>
+    </div>
+  }
+
+  @if (!loading() && error()) {
+    <div class="error-state">
+      <i class="bi bi-exclamation-triangle error-icon"></i>
+      <h3>Failed to load audits</h3>
+      <p>Something went wrong while fetching completed audits.</p>
+      <button class="btn btn-primary" (click)="loadAudits()">
+        <i class="bi bi-arrow-clockwise"></i> Retry
+      </button>
+    </div>
+  }
+
+  @if (!loading() && !error()) {
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-icon stat-icon-total">
+          <i class="bi bi-check2-circle"></i>
+        </div>
+        <div class="stat-info">
+          <span class="stat-value">{{ totalCompleted() }}</span>
+          <span class="stat-label">Total Completed</span>
         </div>
       </div>
-    }
-  </div>
+      <div class="stat-card">
+        <div class="stat-icon stat-icon-high">
+          <i class="bi bi-exclamation-triangle"></i>
+        </div>
+        <div class="stat-info">
+          <span class="stat-value">{{ highRiskCount() }}</span>
+          <span class="stat-label">High Risk</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon stat-icon-low">
+          <i class="bi bi-check-circle"></i>
+        </div>
+        <div class="stat-info">
+          <span class="stat-value">{{ lowRiskCount() }}</span>
+          <span class="stat-label">Low Risk</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="table-panel">
+      <div class="table-header">
+        <h2>Audit Records</h2>
+        <span class="record-count">{{ audits().length }} record(s)</span>
+      </div>
+
+      @if (!audits().length) {
+        <div class="empty-state">
+          <i class="bi bi-clipboard-check empty-icon"></i>
+          <h3>No completed audits</h3>
+          <p>There are no completed audits to display at this time.</p>
+        </div>
+      }
+
+      @if (audits().length) {
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Audit ID</th>
+                <th>Type</th>
+                <th>Completed By</th>
+                <th>Completed Date</th>
+                <th>Findings</th>
+                <th>Risk Level</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (audit of audits(); track audit.id) {
+                <tr>
+                  <td><span class="audit-id-mono">{{ audit.auditId }}</span></td>
+                  <td>{{ audit.type }}</td>
+                  <td>
+                    <div class="user-cell">
+                      <div class="avatar">{{ initials(audit.completedBy) }}</div>
+                      <span>{{ audit.completedBy }}</span>
+                    </div>
+                  </td>
+                  <td>{{ audit.completedDate }}</td>
+                  <td>{{ audit.findings }}</td>
+                  <td>
+                    <span class="risk-badge" [class.risk-high]="audit.riskLevel === 'High'" [class.risk-low]="audit.riskLevel === 'Low'">
+                      {{ audit.riskLevel }}
+                    </span>
+                  </td>
+                  <td><span class="status-badge-completed">Completed</span></td>
+                  <td>
+                    <button class="btn btn-outline btn-sm" (click)="viewAudit(audit)">
+                      <i class="bi bi-eye"></i> View
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  }
+
+  @if (selectedAudit(); as audit) {
+    <div class="modal-overlay" (click)="closeModal()">
+      <div class="modal-content" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3>Audit Details</h3>
+          <button class="btn-close" (click)="closeModal()">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="detail-label">Audit ID</span>
+              <span class="detail-value mono">{{ audit.auditId }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Type</span>
+              <span class="detail-value">{{ audit.type }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Completed By</span>
+              <span class="detail-value">{{ audit.completedBy }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Completed Date</span>
+              <span class="detail-value">{{ audit.completedDate }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Findings</span>
+              <span class="detail-value">{{ audit.findings }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Risk Level</span>
+              <span class="detail-value">
+                <span class="risk-badge" [class.risk-high]="audit.riskLevel === 'High'" [class.risk-low]="audit.riskLevel === 'Low'">
+                  {{ audit.riskLevel }}
+                </span>
+              </span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Status</span>
+              <span class="detail-value"><span class="status-badge-completed">Completed</span></span>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-primary" (click)="closeModal()">Close</button>
+        </div>
+      </div>
+    </div>
+  }
 </div>

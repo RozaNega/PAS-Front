@@ -1,16 +1,174 @@
-<div class="all-audits-container">
-  <div class="page-header"><h1>All Audits</h1><p class="subtitle">Complete audit history</p></div>
-  <div class="audits-list">
-    @for (audit of audits(); track audit.id) {
-      <div class="audit-card">
-        <div class="audit-header"><div class="audit-id">{{ audit.auditId }}</div><div class="status-badge">{{ audit.status }}</div></div>
-        <div class="audit-details">
-          <div class="detail-row"><span class="label">Type:</span><span class="value">{{ audit.type }}</span></div>
-          <div class="detail-row"><span class="label">Audited By:</span><span class="value">{{ audit.auditedBy }}</span></div>
-          <div class="detail-row"><span class="label">Date:</span><span class="value">{{ audit.auditDate }}</span></div>
-          <div class="detail-row"><span class="label">Findings:</span><span class="value">{{ audit.findings }}</span></div>
+<div class="audits-page">
+  <header class="page-hero page-hero--dark">
+    <div class="page-hero__text">
+      <h1>All Audits</h1>
+      <p>Complete audit history</p>
+    </div>
+    <div class="page-hero__actions">
+      <button class="btn btn-secondary" (click)="loadAudits()" [disabled]="loading()">
+        <i class="bi bi-arrow-clockwise"></i> Refresh
+      </button>
+      <button class="btn btn-primary" (click)="exportCsv()" [disabled]="audits().length === 0">
+        <i class="bi bi-download"></i> Export CSV
+      </button>
+    </div>
+  </header>
+
+  @if (loading()) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading audits...</p>
+    </div>
+  }
+
+  @if (error(); as errMsg) {
+    <div class="error-state">
+      <i class="bi bi-exclamation-triangle-fill"></i>
+      <p>{{ errMsg }}</p>
+      <button class="btn btn-primary" (click)="loadAudits()"><i class="bi bi-arrow-clockwise"></i> Retry</button>
+    </div>
+  }
+
+  @if (!loading() && !error()) {
+    <div class="stats-cards">
+      <div class="stat-card stat-card--total">
+        <div class="stat-card__icon"><i class="bi bi-clipboard-check"></i></div>
+        <div class="stat-card__info">
+          <span class="stat-card__value">{{ totalCount() }}</span>
+          <span class="stat-card__label">Total Audits</span>
         </div>
       </div>
-    }
-  </div>
+      <div class="stat-card stat-card--pending">
+        <div class="stat-card__icon"><i class="bi bi-hourglass-split"></i></div>
+        <div class="stat-card__info">
+          <span class="stat-card__value">{{ pendingCount() }}</span>
+          <span class="stat-card__label">Pending</span>
+        </div>
+      </div>
+      <div class="stat-card stat-card--progress">
+        <div class="stat-card__icon"><i class="bi bi-arrow-repeat"></i></div>
+        <div class="stat-card__info">
+          <span class="stat-card__value">{{ inProgressCount() }}</span>
+          <span class="stat-card__label">In Progress</span>
+        </div>
+      </div>
+      <div class="stat-card stat-card--completed">
+        <div class="stat-card__icon"><i class="bi bi-check-circle"></i></div>
+        <div class="stat-card__info">
+          <span class="stat-card__value">{{ completedCount() }}</span>
+          <span class="stat-card__label">Completed</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Audit ID</th>
+              <th>Type</th>
+              <th>Audited By</th>
+              <th>Date</th>
+              <th>Findings</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (audit of audits(); track audit.id) {
+              <tr>
+                <td><span class="td-id">{{ audit.auditId }}</span></td>
+                <td>{{ audit.type }}</td>
+                <td>
+                  <div class="td-employee">
+                    <div class="td-avatar" [style.background]="hslFromName(audit.auditedBy)">{{ getInitials(audit.auditedBy) }}</div>
+                    <span class="td-name">{{ audit.auditedBy }}</span>
+                  </div>
+                </td>
+                <td><span class="td-date">{{ audit.auditDate }}</span></td>
+                <td><strong>{{ audit.findings }}</strong></td>
+                <td>
+                  @if (audit.status === 'Pending') {
+                    <span class="status-badge status-badge--pending"><i class="bi bi-circle-fill"></i> Pending</span>
+                  } @else if (audit.status === 'In Progress') {
+                    <span class="status-badge status-badge--progress"><i class="bi bi-circle-fill"></i> In Progress</span>
+                  } @else {
+                    <span class="status-badge status-badge--completed"><i class="bi bi-circle-fill"></i> Completed</span>
+                  }
+                </td>
+                <td>
+                  <button class="action-btn action-btn--view" (click)="viewAudit(audit)">
+                    <i class="bi bi-eye"></i><span> View</span>
+                  </button>
+                </td>
+              </tr>
+            } @empty {
+              <tr class="empty-row">
+                <td colspan="7">
+                  <div class="empty-state"><i class="bi bi-inbox"></i><p>No audits found</p></div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  @if (selectedAudit(); as audit) {
+    <div class="modal-backdrop" (click)="closeModal()">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h2><i class="bi bi-clipboard-data"></i> Audit Details</h2>
+          <button class="btn-close-modal" (click)="closeModal()"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <div class="modal-body">
+          <div class="modal-avatar">
+            <div class="td-avatar td-avatar--lg" [style.background]="hslFromName(audit.auditedBy)">{{ getInitials(audit.auditedBy) }}</div>
+            <div>
+              <h3>{{ audit.auditedBy }}</h3>
+              <span class="mono-text">{{ audit.auditId }}</span>
+            </div>
+          </div>
+          <div class="section-title">Audit Information</div>
+          <div class="metadata-grid">
+            <div class="grid-item">
+              <label>Audit ID</label>
+              <span class="mono-text">{{ audit.auditId }}</span>
+            </div>
+            <div class="grid-item">
+              <label>Type</label>
+              <span>{{ audit.type }}</span>
+            </div>
+            <div class="grid-item">
+              <label>Audited By</label>
+              <span>{{ audit.auditedBy }}</span>
+            </div>
+            <div class="grid-item">
+              <label>Audit Date</label>
+              <span>{{ audit.auditDate }}</span>
+            </div>
+            <div class="grid-item">
+              <label>Findings</label>
+              <span [style.fontWeight]="700" [style.color]="audit.findings > 0 ? '#dc2626' : '#16a34a'">{{ audit.findings }}</span>
+            </div>
+            <div class="grid-item">
+              <label>Status</label>
+              @if (audit.status === 'Pending') {
+                <span class="status-badge status-badge--pending"><i class="bi bi-circle-fill"></i> Pending</span>
+              } @else if (audit.status === 'In Progress') {
+                <span class="status-badge status-badge--progress"><i class="bi bi-circle-fill"></i> In Progress</span>
+              } @else {
+                <span class="status-badge status-badge--completed"><i class="bi bi-circle-fill"></i> Completed</span>
+              }
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" (click)="closeModal()">Close</button>
+        </div>
+      </div>
+    </div>
+  }
 </div>

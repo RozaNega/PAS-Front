@@ -1,5 +1,6 @@
-import { Component, OnInit, OnDestroy, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import {
   ApiServiceRequestRow,
   ServiceRequest,
@@ -12,6 +13,18 @@ import {
 import { CurrentUserService } from '../../../../core/services/current-user.service';
 import { Subscription, take } from 'rxjs';
 import { ServiceRequestService } from '../../../requisition/service-requests/services/service-request.service';
+import { NgxEchartsDirective, provideEchartsCore } from 'ngx-echarts';
+import * as echarts from 'echarts/core';
+import { BarChart, LineChart, PieChart } from 'echarts/charts';
+import {
+  GridComponent,
+  LegendComponent,
+  TooltipComponent,
+  TitleComponent,
+} from 'echarts/components';
+import { CanvasRenderer } from 'echarts/renderers';
+
+try { echarts.use([LineChart, PieChart, BarChart, TooltipComponent, GridComponent, LegendComponent, TitleComponent, CanvasRenderer]); } catch {};
 
 export interface RequestStats {
   total: number;
@@ -37,7 +50,8 @@ export interface ValueSummary {
 @Component({
   selector: 'app-requests-summary-page',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule, NgxEchartsDirective],
+  providers: [provideEchartsCore({ echarts })],
   templateUrl: './requests-summary-page.component.html',
   styleUrls: ['./requests-summary-page.component.scss'],
 })
@@ -52,6 +66,12 @@ export class RequestsSummaryPageComponent implements OnInit, OnDestroy {
     currency: 'USD',
     maximumFractionDigits: 0,
   });
+
+  private rawRequests: ServiceRequest[] = [];
+
+  get requests(): ServiceRequest[] {
+    return this.rawRequests;
+  }
 
   stats: RequestStats = {
     total: 0,
@@ -96,6 +116,74 @@ export class RequestsSummaryPageComponent implements OnInit, OnDestroy {
     return this.stats.total === 0 ? 0 : Math.round((this.stats.rejected / this.stats.total) * 100);
   }
 
+  get completedPercentage(): number {
+    return this.stats.total === 0 ? 0 : Math.round((this.stats.completed / this.stats.total) * 100);
+  }
+
+  get trendChartOpts(): Record<string, unknown> {
+    const months = this.monthlyData.map(d => d.month);
+    const counts = this.monthlyData.map(d => d.count);
+    return {
+      tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+      grid: { left: 40, right: 16, top: 12, bottom: 36 },
+      xAxis: {
+        type: 'category',
+        data: months,
+        axisLine: { lineStyle: { color: '#e2e8f0' } },
+        axisLabel: { fontSize: 10, color: '#94a3b8' },
+      },
+      yAxis: {
+        type: 'value',
+        min: 0,
+        splitLine: { lineStyle: { color: '#f1f5f9' } },
+        axisLabel: { fontSize: 10, color: '#94a3b8' },
+      },
+      series: [{
+        name: 'Requests',
+        type: 'bar',
+        data: counts.map(c => ({
+          value: c,
+          itemStyle: {
+            color: c > 0 ? '#6366f1' : '#e2e8f0',
+            borderRadius: [4, 4, 0, 0],
+          },
+        })),
+        barWidth: '55%',
+        label: {
+          show: true,
+          position: 'top',
+          fontSize: 9,
+          fontWeight: 700,
+          color: '#64748b',
+          formatter: (p: any) => p.value > 0 ? p.value : '',
+        },
+      }],
+    };
+  }
+
+  get statusDonutOpts(): Record<string, unknown> {
+    const data = [
+      { name: 'Pending', value: this.stats.pending },
+      { name: 'Approved', value: this.stats.approved },
+      { name: 'Rejected', value: this.stats.rejected },
+      { name: 'Completed', value: this.stats.completed },
+    ].filter(d => d.value > 0);
+    const colors = ['#f59e0b', '#10b981', '#ef4444', '#6366f1'];
+    return {
+      tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+      legend: { bottom: 0, textStyle: { fontSize: 11, fontWeight: '600', color: '#64748b' } },
+      series: [{
+        type: 'pie',
+        radius: ['50%', '75%'],
+        center: ['50%', '45%'],
+        avoidLabelOverlap: false,
+        label: { show: true, position: 'center', formatter: () => `${this.stats.total}`, fontSize: 26, fontWeight: 800, color: '#1e293b' },
+        emphasis: { label: { show: true, fontSize: 30, fontWeight: 'bold' } },
+        data: data.map((d, i) => ({ ...d, itemStyle: { color: colors[i] } })),
+      }],
+    };
+  }
+
   ngOnInit(): void {
     this.syncFromApi();
     this.recomputeStats();
@@ -103,10 +191,6 @@ export class RequestsSummaryPageComponent implements OnInit, OnDestroy {
     this.requestSub = this.workflowService.getRequestUpdates().subscribe(() => {
       this.recomputeStats();
     });
-  }
-
-  get completedPercentage(): number {
-    return this.stats.total === 0 ? 0 : Math.round((this.stats.completed / this.stats.total) * 100);
   }
 
   ngOnDestroy(): void {
@@ -145,13 +229,13 @@ export class RequestsSummaryPageComponent implements OnInit, OnDestroy {
     const email = this.currentUserService.getCurrentUserValue()?.email;
     const user = this.currentUserService.getCurrentUserValue();
 
-    const requests = this.workflowService.getRequestsForEmployee(employeeId, {
+    this.rawRequests = this.workflowService.getRequestsForEmployee(employeeId, {
       email,
       fullName: user?.fullName,
       username: user?.username,
     });
-    const countedRequests = requests.filter((request) => this.isCountedRequest(request));
-    const valueRequests = requests.filter((request) => this.isValuedRequest(request));
+    const countedRequests = this.rawRequests.filter((request) => this.isCountedRequest(request));
+    const valueRequests = this.rawRequests.filter((request) => this.isValuedRequest(request));
 
     this.stats.total = countedRequests.length;
     this.stats.pending = countedRequests.filter((request) =>

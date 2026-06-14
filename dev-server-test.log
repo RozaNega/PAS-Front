@@ -1,0 +1,357 @@
+[SMTP] No credentials set — emails will be logged to console only
+Start Angular with: ng serve --proxy-config proxy.conf.json
+Dev API server listening on http://localhost:5030
+2026-06-14T10:23:27.000Z POST /api/Notifications/send-email {"to":"kidisttd12@gmail.com","subject":"Your password has been reset by administrator","body":"Dear User,\n\nYour account password has been reset by the system administrator.\n\nYour new password is: rgJu77*l!WXHr7\n\nFor security reasons, we recommend changing this password after logging in.\n\nIf you did not request this password reset, please contact your system administrator immediately.\n\nBest regards,\nPAS Administration","priority":"High"}
+[EMAIL] (mock) To: kidisttd12@gmail.com
+[EMAIL] (mock) Subject: Your password has been reset by administrator
+[EMAIL] (mock) Body:
+Dear User,
+
+Your account password has been reset by the system administrator.
+
+Your new password is: rgJu77*l!WXHr7
+
+For security reasons, we recommend changing this password after logging in.
+
+If you did not request this password reset, please contact your system administrator immediately.
+
+Best regards,
+PAS Administration
+2026-06-14T10:23:27.040Z POST /api/Auth/forgot-password {"email":"kidisttd12@gmail.com"}
+[EMAIL] (mock) To: kidisttd12@gmail.com
+[EMAIL] (mock) Subject: Password Reset Request
+[EMAIL] (mock) Body:
+Dear User,
+
+A password reset has been initiated for your account (kidisttd12@gmail.com).
+
+Your reset token is: reset-1781432607042-ogifwftz
+
+Use this token at the password reset page to set a new password.
+
+If you did not request this, please contact your administrator.
+
+Best regards,
+PAS Administration
+2026-06-14T10:24:56.335Z POST /api/Notifications/send-email {"to":"kidisttd12@gmail.com","subject":"Your password has been reset by administrator","body":"Dear User,\n\nYour account password has been reset by the system administrator.\n\nYour new password is: IgdR3VYt*WjqvB\n\nFor security reasons, we recommend changing this password after logging in.\n\nIf you did not request this password reset, please contact your system administrator immediately.\n\nBest regards,\nPAS Administration","priority":"High"}
+[EMAIL] (mock) To: kidisttd12@gmail.com
+[EMAIL] (mock) Subject: Your password has been reset by administrator
+[EMAIL] (mock) Body:
+Dear User,
+
+Your account password has been reset by the system administrator.
+
+Your new password is: IgdR3VYt*WjqvB
+
+For security reasons, we recommend changing this password after logging in.
+
+If you did not request this password reset, please contact your system administrator immediately.
+
+Best regards,
+PAS Administration
+2026-06-14T10:24:56.357Z POST /api/Auth/forgot-password {"email":"kidisttd12@gmail.com"}
+[EMAIL] (mock) To: kidisttd12@gmail.com
+[EMAIL] (mock) Subject: Password Reset Request
+[EMAIL] (mock) Body:
+Dear User,
+
+A password reset has been initiated for your account (kidisttd12@gmail.com).
+
+Your reset token is: reset-1781432696357-mrz08jlq
+
+Use this token at the password reset page to set a new password.
+
+If you did not request this, please contact your administrator.
+
+Best regards,
+PAS Administration
+2026-06-14T10:25:33.581Z POST /api/Notifications/send-email {"to":"almazylma3@gmail.com","subject":"Your password has been reset by administrator","body":"Dear User,\n\nYour account password has been reset by the system administrator.\n\nYour new password is: 4&JvwoX8vr4AGm\n\nFor security reasons, we recommend changing this password after logging in.\n\nIf you did not request this password reset, please contact your system administrator immediately.\n\nBest regards,\nPAS Administration","priority":"High"}
+[EMAIL] (mock) To: almazylma3@gmail.com
+[EMAIL] (mock) Subject: Your password has been reset by administrator
+[EMAIL] (mock) Body:
+Dear User,
+
+Your account password has been reset by the system administrator.
+
+Your new password is: 4&JvwoX8vr4AGm
+
+For security reasons, we recommend changing this password after logging in.
+
+If you did not request this password reset, please contact your system administrator immediately.
+
+Best regards,
+PAS Administration
+2026-06-14T10:25:33.593Z POST /api/Auth/forgot-password {"email":"almazylma3@gmail.com"}
+[EMAIL] (mock) To: almazylma3@gmail.com
+[EMAIL] (mock) Subject: Password Reset Request
+[EMAIL] (mock) Body:
+Dear Almaz Yilma,
+
+A password reset has been initiated for your account (almazylma3@gmail.com).
+
+Your reset token is: reset-1781432733593-e2e8hs3m
+
+Use this token at the password reset page to set a new password.
+
+If you did not request this, please contact your administrator.
+
+Best regards,
+PAS Administration
+2026-06-14T10:39:09.822Z POST /api/Notifications/send-email {"to":"kidisttd12@gmail.com","subject":"Your password has been reset by administrator","body":"Dear User,\n\nYour account password has been reset by the system administrator.\n\nYour new password is: sLR!rsWM0l9wCv\n\nFor security reasons, we recommend changing this password after logging in.\n\nIf you did not request this password reset, please contact your system administrator immediately.\n\nBest regards,\nPAS Administration","priority":"High"}
+[EMAIL] (mock) To: kidisttd12@gmail.com
+[EMAIL] (mock) Subject: Your password has been reset by administrator
+[EMAIL] (mock) Body:
+Dear User,
+
+Your account password has been reset by the system administrator.
+
+Your new password is: sLR!rsWM0l9wCv
+
+For security reasons, we recommend changing this password after logging in.
+
+If you did not request this password reset, please contact your system administrator immediately.
+
+Best regards,
+PAS Administration
+2026-06-14T10:39:09.835Z POST /api/Auth/forgot-password {"email":"kidisttd12@gmail.com"}
+[EMAIL] (mock) To: kidisttd12@gmail.com
+[EMAIL] (mock) Subject: Password Reset Request
+[EMAIL] (mock) Body:
+Dear User,
+
+A password reset has been initiated for your account (kidisttd12@gmail.com).
+
+Your reset token is: reset-1781433549835-m5teuzoi
+
+Use this token at the password reset page to set a new password.
+
+If you did not request this, please contact your administrator.
+
+Best regards,
+PAS Administration
+2026-06-14T10:41:01.074Z POST /api/Notifications/send-email {"to":"kidisttd12@gmail.com","subject":"Your password has been reset by administrator","body":"Dear User,\n\nYour account password has been reset by the system administrator.\n\nYour new password is: LvFQmi&^w0f#M9\n\nFor security reasons, we recommend changing this password after logging in.\n\nIf you did not request this password reset, please contact your system administrator immediately.\n\nBest regards,\nPAS Administration","priority":"High"}
+[EMAIL] (mock) To: kidisttd12@gmail.com
+[EMAIL] (mock) Subject: Your password has been reset by administrator
+[EMAIL] (mock) Body:
+Dear User,
+
+Your account password has been reset by the system administrator.
+
+Your new password is: LvFQmi&^w0f#M9
+
+For security reasons, we recommend changing this password after logging in.
+
+If you did not request this password reset, please contact your system administrator immediately.
+
+Best regards,
+PAS Administration
+2026-06-14T10:41:01.087Z POST /api/Auth/forgot-password {"email":"kidisttd12@gmail.com"}
+[EMAIL] (mock) To: kidisttd12@gmail.com
+[EMAIL] (mock) Subject: Password Reset Request
+[EMAIL] (mock) Body:
+Dear User,
+
+A password reset has been initiated for your account (kidisttd12@gmail.com).
+
+Your reset token is: reset-1781433661087-q4aewbdi
+
+Use this token at the password reset page to set a new password.
+
+If you did not request this, please contact your administrator.
+
+Best regards,
+PAS Administration
+2026-06-14T10:42:01.361Z POST /api/Notifications/send-email {"to":"almazylma3@gmail.com","subject":"Your password has been reset by administrator","body":"Dear User,\n\nYour account password has been reset by the system administrator.\n\nYour new password is: qwP@PUvNBk*97D\n\nFor security reasons, we recommend changing this password after logging in.\n\nIf you did not request this password reset, please contact your system administrator immediately.\n\nBest regards,\nPAS Administration","priority":"High"}
+[EMAIL] (mock) To: almazylma3@gmail.com
+[EMAIL] (mock) Subject: Your password has been reset by administrator
+[EMAIL] (mock) Body:
+Dear User,
+
+Your account password has been reset by the system administrator.
+
+Your new password is: qwP@PUvNBk*97D
+
+For security reasons, we recommend changing this password after logging in.
+
+If you did not request this password reset, please contact your system administrator immediately.
+
+Best regards,
+PAS Administration
+2026-06-14T10:42:01.375Z POST /api/Auth/forgot-password {"email":"almazylma3@gmail.com"}
+[EMAIL] (mock) To: almazylma3@gmail.com
+[EMAIL] (mock) Subject: Password Reset Request
+[EMAIL] (mock) Body:
+Dear Almaz Yilma,
+
+A password reset has been initiated for your account (almazylma3@gmail.com).
+
+Your reset token is: reset-1781433721375-0mk1lhye
+
+Use this token at the password reset page to set a new password.
+
+If you did not request this, please contact your administrator.
+
+Best regards,
+PAS Administration
+2026-06-14T10:44:20.666Z POST /api/Notifications/send-email {"to":"almazylma3@gmail.com","subject":"Your password has been reset by administrator","body":"Dear User,\n\nYour account password has been reset by the system administrator.\n\nYour new password is: sp6%N^s5J@bzR1\n\nFor security reasons, we recommend changing this password after logging in.\n\nIf you did not request this password reset, please contact your system administrator immediately.\n\nBest regards,\nPAS Administration","priority":"High"}
+[EMAIL] (mock) To: almazylma3@gmail.com
+[EMAIL] (mock) Subject: Your password has been reset by administrator
+[EMAIL] (mock) Body:
+Dear User,
+
+Your account password has been reset by the system administrator.
+
+Your new password is: sp6%N^s5J@bzR1
+
+For security reasons, we recommend changing this password after logging in.
+
+If you did not request this password reset, please contact your system administrator immediately.
+
+Best regards,
+PAS Administration
+2026-06-14T10:44:20.689Z POST /api/Auth/forgot-password {"email":"almazylma3@gmail.com"}
+[EMAIL] (mock) To: almazylma3@gmail.com
+[EMAIL] (mock) Subject: Password Reset Request
+[EMAIL] (mock) Body:
+Dear Almaz Yilma,
+
+A password reset has been initiated for your account (almazylma3@gmail.com).
+
+Your reset token is: reset-1781433860689-daj3241i
+
+Use this token at the password reset page to set a new password.
+
+If you did not request this, please contact your administrator.
+
+Best regards,
+PAS Administration
+2026-06-14T10:46:32.616Z POST /api/Notifications/send-email {"to":"almazylma3@gmail.com","subject":"Your password has been reset by administrator","body":"Dear User,\n\nYour account password has been reset by the system administrator.\n\nYour new password is: iQDzD^dSBj9q51\n\nFor security reasons, we recommend changing this password after logging in.\n\nIf you did not request this password reset, please contact your system administrator immediately.\n\nBest regards,\nPAS Administration","priority":"High"}
+[EMAIL] (mock) To: almazylma3@gmail.com
+[EMAIL] (mock) Subject: Your password has been reset by administrator
+[EMAIL] (mock) Body:
+Dear User,
+
+Your account password has been reset by the system administrator.
+
+Your new password is: iQDzD^dSBj9q51
+
+For security reasons, we recommend changing this password after logging in.
+
+If you did not request this password reset, please contact your system administrator immediately.
+
+Best regards,
+PAS Administration
+2026-06-14T10:46:32.628Z POST /api/Auth/forgot-password {"email":"almazylma3@gmail.com"}
+[EMAIL] (mock) To: almazylma3@gmail.com
+[EMAIL] (mock) Subject: Password Reset Request
+[EMAIL] (mock) Body:
+Dear Almaz Yilma,
+
+A password reset has been initiated for your account (almazylma3@gmail.com).
+
+Your reset token is: reset-1781433992629-upw37obc
+
+Use this token at the password reset page to set a new password.
+
+If you did not request this, please contact your administrator.
+
+Best regards,
+PAS Administration
+2026-06-14T10:50:08.484Z POST /api/Notifications/send-email {"to":"almazylma3@gmail.com","subject":"Your password has been reset by administrator","body":"Dear User,\n\nYour account password has been reset by the system administrator.\n\nYour new password is: FMzc4D@cq1&#qv\n\nFor security reasons, we recommend changing this password after logging in.\n\nIf you did not request this password reset, please contact your system administrator immediately.\n\nBest regards,\nPAS Administration","priority":"High"}
+[EMAIL] (mock) To: almazylma3@gmail.com
+[EMAIL] (mock) Subject: Your password has been reset by administrator
+[EMAIL] (mock) Body:
+Dear User,
+
+Your account password has been reset by the system administrator.
+
+Your new password is: FMzc4D@cq1&#qv
+
+For security reasons, we recommend changing this password after logging in.
+
+If you did not request this password reset, please contact your system administrator immediately.
+
+Best regards,
+PAS Administration
+2026-06-14T10:50:08.497Z POST /api/Auth/forgot-password {"email":"almazylma3@gmail.com"}
+[EMAIL] (mock) To: almazylma3@gmail.com
+[EMAIL] (mock) Subject: Password Reset Request
+[EMAIL] (mock) Body:
+Dear Almaz Yilma,
+
+A password reset has been initiated for your account (almazylma3@gmail.com).
+
+Your reset token is: reset-1781434208499-46hti3bq
+
+Use this token at the password reset page to set a new password.
+
+If you did not request this, please contact your administrator.
+
+Best regards,
+PAS Administration
+2026-06-14T11:03:19.189Z OPTIONS /api/Notifications/send-email {}
+2026-06-14T11:11:48.967Z GET / {}
+2026-06-14T12:26:56.585Z POST /api/Notifications/send-email {"to":"kidisttd12@gmail.com","subject":"Your password has been reset by administrator","body":"Dear User,\n\nYour account password has been reset by the system administrator.\n\nYour new password is: 7h1yPGr&sHRPjd\n\nFor security reasons, we recommend changing this password after logging in.\n\nIf you did not request this password reset, please contact your system administrator immediately.\n\nBest regards,\nPAS Administration","priority":"High"}
+[EMAIL] (mock) To: kidisttd12@gmail.com
+[EMAIL] (mock) Subject: Your password has been reset by administrator
+[EMAIL] (mock) Body:
+Dear User,
+
+Your account password has been reset by the system administrator.
+
+Your new password is: 7h1yPGr&sHRPjd
+
+For security reasons, we recommend changing this password after logging in.
+
+If you did not request this password reset, please contact your system administrator immediately.
+
+Best regards,
+PAS Administration
+2026-06-14T12:26:56.616Z POST /api/Auth/forgot-password {"email":"kidisttd12@gmail.com"}
+[EMAIL] (mock) To: kidisttd12@gmail.com
+[EMAIL] (mock) Subject: Password Reset Request
+[EMAIL] (mock) Body:
+Dear User,
+
+A password reset has been initiated for your account (kidisttd12@gmail.com).
+
+Your reset token is: reset-1781440016616-ed2yk63r
+
+Use this token at the password reset page to set a new password.
+
+If you did not request this, please contact your administrator.
+
+Best regards,
+PAS Administration
+2026-06-14T16:05:59.047Z POST /api/Notifications/send-email {"to":"kidisttd12@gmail.com","subject":"Your password has been reset by administrator","body":"Dear User,\n\nYour account password has been reset by the system administrator.\n\nYour new password is: Bef&Lp*hof6zHc\n\nFor security reasons, we recommend changing this password after logging in.\n\nIf you did not request this password reset, please contact your system administrator immediately.\n\nBest regards,\nPAS Administration","priority":"High"}
+[EMAIL] (mock) To: kidisttd12@gmail.com
+[EMAIL] (mock) Subject: Your password has been reset by administrator
+[EMAIL] (mock) Body:
+Dear User,
+
+Your account password has been reset by the system administrator.
+
+Your new password is: Bef&Lp*hof6zHc
+
+For security reasons, we recommend changing this password after logging in.
+
+If you did not request this password reset, please contact your system administrator immediately.
+
+Best regards,
+PAS Administration
+2026-06-14T16:05:59.087Z POST /api/Auth/forgot-password {"email":"kidisttd12@gmail.com"}
+[EMAIL] (mock) To: kidisttd12@gmail.com
+[EMAIL] (mock) Subject: Password Reset Request
+[EMAIL] (mock) Body:
+Dear User,
+
+A password reset has been initiated for your account (kidisttd12@gmail.com).
+
+Your reset token is: reset-1781453159087-jp4bxndf
+
+Use this token at the password reset page to set a new password.
+
+If you did not request this, please contact your administrator.
+
+Best regards,
+PAS Administration

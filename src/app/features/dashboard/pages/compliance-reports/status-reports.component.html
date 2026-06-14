@@ -1,55 +1,127 @@
-<div class="status-reports-container">
-  <div class="page-header">
-    <h1>Compliance Status</h1>
-    <p class="subtitle">Compliance system status logs &amp; performance indicators</p>
-  </div>
+<div class="reports-page">
+  <header class="page-hero page-hero--dark">
+    <div class="page-hero__text">
+      <h1>Compliance Status</h1>
+      <p>Real-time compliance system status logs &amp; performance indicators</p>
+    </div>
+    <div class="page-hero__actions">
+      <button class="btn btn-secondary" (click)="refresh()" [disabled]="loading()">
+        <i class="bi bi-arrow-clockwise"></i> Refresh
+      </button>
+      <button class="btn btn-primary" (click)="exportToCsv()" [disabled]="reports().length === 0">
+        <i class="bi bi-download"></i> Export CSV
+      </button>
+    </div>
+  </header>
 
-  <div class="reports-list">
-    @for (report of reports(); track report.id) {
-      <div class="report-card">
-        <div class="report-header">
-          <div class="report-name">
-            <i class="bi bi-shield-check-fill file-icon"></i>
-            {{ report.reportName }}
-          </div>
-          <span class="badge" style="background: #d1fae5; color: #065f46;">
-            Score: {{ report.complianceScore }}%
-          </span>
-        </div>
-        <div class="report-details">
-          <div class="detail-row"><span class="label">Generated:</span><span class="value">{{ report.generatedDate }}</span></div>
-          <div class="detail-row"><span class="label">Total Items:</span><span class="value">{{ report.totalItems }}</span></div>
-          <div class="detail-row"><span class="label">Compliant:</span><span class="value text-success">{{ report.compliantItems }}</span></div>
-          <div class="detail-row"><span class="label">Non-Compliant:</span><span class="value text-danger">{{ report.nonCompliantItems }}</span></div>
-        </div>
-        <div class="report-actions">
-          <button type="button" class="btn btn-secondary" (click)="downloadReport(report)" [disabled]="downloadingReportId() !== null">
-            @if (downloadingReportId() === report.id) {
-              <span class="spinner"></span> Downloading {{ downloadProgress() }}%
-            } @else {
-              <i class="bi bi-file-pdf"></i> Download PDF
-            }
-          </button>
-          <button type="button" class="btn btn-primary" (click)="viewReport(report)">
-            <i class="bi bi-eye"></i> View
-          </button>
+  @if (loading()) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading status reports...</p>
+    </div>
+  }
+
+  @if (error(); as errMsg) {
+    <div class="error-state">
+      <i class="bi bi-exclamation-triangle-fill"></i>
+      <p>{{ errMsg }}</p>
+      <button class="btn btn-primary" (click)="refresh()"><i class="bi bi-arrow-clockwise"></i> Retry</button>
+    </div>
+  }
+
+  @if (!loading() && !error()) {
+    <div class="stats-cards">
+      <div class="stat-card stat-card--total">
+        <div class="stat-card__icon"><i class="bi bi-boxes"></i></div>
+        <div class="stat-card__info">
+          <span class="stat-card__value">{{ totalItems() }}</span>
+          <span class="stat-card__label">Total Items</span>
         </div>
       </div>
-    }
-  </div>
+      <div class="stat-card stat-card--compliant">
+        <div class="stat-card__icon"><i class="bi bi-check-circle-fill"></i></div>
+        <div class="stat-card__info">
+          <span class="stat-card__value">{{ compliantItems() }}</span>
+          <span class="stat-card__label">Compliant</span>
+        </div>
+      </div>
+      <div class="stat-card stat-card--noncompliant">
+        <div class="stat-card__icon"><i class="bi bi-x-circle-fill"></i></div>
+        <div class="stat-card__info">
+          <span class="stat-card__value">{{ nonCompliantItems() }}</span>
+          <span class="stat-card__label">Non-Compliant</span>
+        </div>
+      </div>
+      <div class="stat-card" [class.stat-card--good]="score() >= 80" [class.stat-card--warn]="score() >= 50 && score() < 80" [class.stat-card--bad]="score() < 50">
+        <div class="stat-card__icon"><i class="bi bi-shield-check"></i></div>
+        <div class="stat-card__info">
+          <span class="stat-card__value">{{ score() }}%</span>
+          <span class="stat-card__label">Score</span>
+        </div>
+      </div>
+    </div>
 
-  <!-- Merged View Modal -->
+    <div class="panel">
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Report Name</th>
+              <th>Generated Date</th>
+              <th>Total Items</th>
+              <th>Compliant</th>
+              <th>Non-Compliant</th>
+              <th>Score</th>
+              <th>Auditor</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (r of reports(); track r.id) {
+              <tr>
+                <td><span class="td-report-name">{{ r.reportName }}</span></td>
+                <td><span class="td-date">{{ r.generatedDate }}</span></td>
+                <td>{{ r.totalItems }}</td>
+                <td class="td-compliant">{{ r.compliantItems }}</td>
+                <td class="td-noncompliant">{{ r.nonCompliantItems }}</td>
+                <td>
+                  <span class="badge" [class.badge--score-good]="r.complianceScore >= 80" [class.badge--score-warn]="r.complianceScore >= 50 && r.complianceScore < 80" [class.badge--score-bad]="r.complianceScore < 50">
+                    {{ r.complianceScore }}%
+                  </span>
+                </td>
+                <td>{{ r.complianceAuditor }}</td>
+                <td>
+                  <button class="action-btn action-btn--view" (click)="viewReport(r)">
+                    <i class="bi bi-eye"></i><span> View</span>
+                  </button>
+                  <button class="action-btn action-btn--pdf" (click)="downloadReport(r)" [disabled]="downloadingReportId() !== null">
+                    @if (downloadingReportId() === r.id) {
+                      <span class="spinner-sm"></span> {{ downloadProgress() }}%
+                    } @else {
+                      <i class="bi bi-file-pdf"></i><span> PDF</span>
+                    }
+                  </button>
+                </td>
+              </tr>
+            } @empty {
+              <tr class="empty-row">
+                <td colspan="8">
+                  <div class="empty-state"><i class="bi bi-inbox"></i><p>No status reports found</p></div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
   @if (activeViewReport(); as rep) {
     <div class="modal-backdrop" (click)="closeModal()">
       <div class="modal-card" (click)="$event.stopPropagation()">
         <div class="modal-header">
-          <h2>
-            <i class="bi bi-shield-check-fill text-primary"></i> 
-            Compliance Status Details
-          </h2>
-          <button class="btn-close-modal" (click)="closeModal()" aria-label="Close modal">
-            <i class="bi bi-x-lg"></i>
-          </button>
+          <h2><i class="bi bi-shield-check-fill"></i> Compliance Status Details</h2>
+          <button class="btn-close-modal" (click)="closeModal()"><i class="bi bi-x-lg"></i></button>
         </div>
         <div class="modal-body">
           <div class="section-title">General Information</div>
@@ -68,15 +140,14 @@
             </div>
             <div class="grid-item">
               <label>Historical Audit Reference</label>
-              <span class="mono-text" style="font-size: 0.8rem;">{{ rep.lastAuditRef }}</span>
+              <span class="mono-text">{{ rep.lastAuditRef }}</span>
             </div>
           </div>
-
           <div class="section-title">Compliance Evaluation Metrics</div>
           <div class="metadata-grid">
             <div class="grid-item">
               <label>Overall Compliance Score</label>
-              <span class="text-success" style="font-weight: 800; font-size: 1.1rem;">{{ rep.complianceScore }}% score</span>
+              <span class="badge" [class.badge--score-good]="rep.complianceScore >= 80" [class.badge--score-warn]="rep.complianceScore >= 50 && rep.complianceScore < 80" [class.badge--score-bad]="rep.complianceScore < 50">{{ rep.complianceScore }}% score</span>
             </div>
             <div class="grid-item">
               <label>Total Assets Evaluated</label>
@@ -84,26 +155,24 @@
             </div>
             <div class="grid-item">
               <label>Perfectly Compliant Assets</label>
-              <span class="text-success" style="font-weight: 700;">{{ rep.compliantItems }} devices</span>
+              <span class="text-success">{{ rep.compliantItems }} devices</span>
             </div>
             <div class="grid-item">
               <label>Non-Compliant Items</label>
-              <span class="text-danger" style="font-weight: 700;">{{ rep.nonCompliantItems }} devices</span>
+              <span class="text-danger">{{ rep.nonCompliantItems }} devices</span>
             </div>
           </div>
-
           <div class="section-title">General Summary &amp; Corrective Steps</div>
-          <div style="background: var(--surface-section); border-left: 4px solid var(--primary-color); padding: 1rem; border-radius: 0 8px 8px 0; margin-bottom: 1.25rem;">
-            <p style="margin: 0; font-size: 0.9rem; line-height: 1.5; color: var(--text-color);">
+          <div class="summary-box">
+            <p class="summary-text">
               <strong>Auditor Analysis: </strong>{{ rep.generalSummary }}
             </p>
-            <div style="margin-top: 0.6rem; font-size: 0.85rem; color: #b91c1c; font-weight: 600;">
+            <div class="corrective-action">
               <strong>Corrective Action Plan: </strong>{{ rep.actionsRequired }}
             </div>
           </div>
-
           <div class="info-note">
-            <i class="bi bi-shield-fill-check text-success"></i>
+            <i class="bi bi-shield-fill-check"></i>
             <span>This status check satisfies international asset verification protocol compliance criteria.</span>
           </div>
         </div>

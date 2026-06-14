@@ -1,15 +1,158 @@
-<div class="approval-decisions-container">
-  <div class="page-header"><h1>Approval Decisions</h1><p class="subtitle">Monitor approval decisions</p></div>
-  <div class="decisions-list">
-    @for (decision of decisions(); track decision.id) {
-      <div class="decision-card">
-        <div class="decision-header"><div class="request-number">{{ decision.requestNumber }}</div><div class="status-badge approved">Approved</div></div>
-        <div class="decision-details">
-          <div class="detail-row"><span class="label">Approver:</span><span class="value">{{ decision.approver }} ({{ decision.department }})</span></div>
-          <div class="detail-row"><span class="label">Approved Date:</span><span class="value">{{ decision.approvedDate }}</span></div>
-          <div class="detail-row"><span class="label">Value:</span><span class="value">${{ decision.value.toLocaleString() }}</span></div>
+<div class="approvals-page">
+  <header class="page-hero page-hero--dark">
+    <div class="page-hero__text">
+      <h1>Approval Decisions</h1>
+      <p>Monitor approved requests & decisions</p>
+    </div>
+    <div class="page-hero__actions">
+      <button class="btn btn-secondary" (click)="refresh()" [disabled]="loading()">
+        <i class="bi bi-arrow-clockwise"></i> Refresh
+      </button>
+      <button class="btn btn-primary" (click)="exportCsv()" [disabled]="approvals().length === 0">
+        <i class="bi bi-download"></i> Export CSV
+      </button>
+    </div>
+  </header>
+
+  @if (loading()) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading approvals...</p>
+    </div>
+  }
+
+  @if (error(); as errMsg) {
+    <div class="error-state">
+      <i class="bi bi-exclamation-triangle-fill"></i>
+      <p>{{ errMsg }}</p>
+      <button class="btn btn-primary" (click)="refresh()"><i class="bi bi-arrow-clockwise"></i> Retry</button>
+    </div>
+  }
+
+  @if (!loading() && !error()) {
+    <div class="stats-cards">
+      <div class="stat-card stat-card--total">
+        <div class="stat-card__icon"><i class="bi bi-clipboard-check"></i></div>
+        <div class="stat-card__info">
+          <span class="stat-card__value">{{ totalApprovals() }}</span>
+          <span class="stat-card__label">Total Approvals</span>
         </div>
       </div>
-    }
-  </div>
+      <div class="stat-card stat-card--approved">
+        <div class="stat-card__icon"><i class="bi bi-check-circle"></i></div>
+        <div class="stat-card__info">
+          <span class="stat-card__value">{{ totalApprovals() }}</span>
+          <span class="stat-card__label">Approved</span>
+        </div>
+      </div>
+      <div class="stat-card stat-card--value">
+        <div class="stat-card__icon"><i class="bi bi-cash-coin"></i></div>
+        <div class="stat-card__info">
+          <span class="stat-card__value">${{ totalValue().toLocaleString() }}</span>
+          <span class="stat-card__label">Total Value</span>
+        </div>
+      </div>
+      <div class="stat-card stat-card--completed">
+        <div class="stat-card__icon"><i class="bi bi-check-all"></i></div>
+        <div class="stat-card__info">
+          <span class="stat-card__value">{{ totalApprovals() }}</span>
+          <span class="stat-card__label">Completed</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Request #</th>
+              <th>Approver</th>
+              <th>Department</th>
+              <th>Approved Date</th>
+              <th>Value</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (approval of approvals(); track approval.id) {
+              <tr>
+                <td><span class="td-id">{{ approval.requestNumber }}</span></td>
+                <td>
+                  <div class="td-employee">
+                    <div class="td-avatar" [style.background]="hslFromName(approval.approver)">{{ getInitials(approval.approver) }}</div>
+                    <span class="td-name">{{ approval.approver }}</span>
+                  </div>
+                </td>
+                <td>{{ approval.department }}</td>
+                <td><span class="td-date">{{ approval.approvedDate }}</span></td>
+                <td><strong>${{ approval.value.toLocaleString() }}</strong></td>
+                <td>
+                  <button class="action-btn action-btn--view" (click)="viewApproval(approval)">
+                    <i class="bi bi-eye"></i><span> View</span>
+                  </button>
+                </td>
+              </tr>
+            } @empty {
+              <tr class="empty-row">
+                <td colspan="6">
+                  <div class="empty-state"><i class="bi bi-inbox"></i><p>No approvals found</p></div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  @if (selectedApproval(); as approval) {
+    <div class="modal-backdrop" (click)="closeModal()">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h2><i class="bi bi-check-circle"></i> Approval Details</h2>
+          <button class="btn-close-modal" (click)="closeModal()"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <div class="modal-body">
+          <div class="modal-avatar">
+            <div class="td-avatar td-avatar--lg" [style.background]="hslFromName(approval.approver)">{{ getInitials(approval.approver) }}</div>
+            <div>
+              <h3>{{ approval.approver }}</h3>
+              <span class="mono-text">{{ approval.requestNumber }}</span>
+            </div>
+          </div>
+          <div class="section-title">Approval Information</div>
+          <div class="metadata-grid">
+            <div class="grid-item">
+              <label>Request #</label>
+              <span class="mono-text">{{ approval.requestNumber }}</span>
+            </div>
+            <div class="grid-item">
+              <label>Approver</label>
+              <span>{{ approval.approver }}</span>
+            </div>
+            <div class="grid-item">
+              <label>Department</label>
+              <span>{{ approval.department }}</span>
+            </div>
+            <div class="grid-item">
+              <label>Approved Date</label>
+              <span>{{ approval.approvedDate }}</span>
+            </div>
+            <div class="grid-item">
+              <label>Value</label>
+              <span><strong>${{ approval.value.toLocaleString() }}</strong></span>
+            </div>
+            <div class="grid-item">
+              <label>Status</label>
+              <span class="badge badge--approved">Approved</span>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" (click)="closeModal()">Close</button>
+        </div>
+      </div>
+    </div>
+  }
 </div>

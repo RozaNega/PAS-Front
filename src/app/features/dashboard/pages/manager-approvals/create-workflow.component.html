@@ -1,28 +1,76 @@
-<div class="create-workflow-container">
-  <div class="page-header">
-    <h1>Create Workflow</h1>
-    <p class="subtitle">Create a new approval workflow</p>
+<div class="page">
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero__text">
+      <h1>Create Workflow</h1>
+      <p>Define a new approval workflow process</p>
+    </div>
   </div>
 
+  <!-- Sub-nav -->
+  <div class="sub-nav">
+    <button class="sub-nav__link" (click)="navigateTo('/manager/workflows/all')">
+      <i class="pi pi-th-large"></i> All Workflows
+    </button>
+    <button class="sub-nav__link sub-nav__link--active" (click)="navigateTo('/manager/workflows/create')">
+      <i class="pi pi-plus-circle"></i> Create Workflow
+    </button>
+    <button class="sub-nav__link" (click)="navigateTo('/manager/workflows/approvers')">
+      <i class="pi pi-users"></i> Approver Matrix
+    </button>
+  </div>
+
+  <!-- Form Card -->
   <div class="form-card">
     <form [formGroup]="workflowForm" (ngSubmit)="submit()">
-      <div class="form-field">
-        <label for="name">Workflow Name *</label>
-        <input id="name" type="text" formControlName="name" placeholder="Enter workflow name" />
-        <div class="error-message" *ngIf="submitted() && workflowForm.get('name')?.errors?.['required']">Name is required</div>
+      <div class="form-card__header">
+        <i class="pi pi-sliders-h"></i> Workflow Details
       </div>
 
       <div class="form-field">
-        <label for="description">Description *</label>
-        <textarea id="description" formControlName="description" rows="3" placeholder="Describe the workflow"></textarea>
-        <div class="error-message" *ngIf="submitted() && workflowForm.get('description')?.errors?.['required']">Description is required</div>
+        <label for="name">Workflow Name <span class="required">*</span></label>
+        <input
+          id="name"
+          type="text"
+          formControlName="name"
+          placeholder="e.g. IT Equipment Approval"
+          [class.invalid]="submitted() && workflowForm.get('name')?.invalid"
+        />
+        @if (submitted() && workflowForm.get('name')?.errors?.['required']) {
+          <span class="field-error">Workflow name is required</span>
+        }
+        @if (submitted() && workflowForm.get('name')?.errors?.['minlength']) {
+          <span class="field-error">Name must be at least 3 characters</span>
+        }
+      </div>
+
+      <div class="form-field">
+        <label for="description">Description <span class="required">*</span></label>
+        <textarea
+          id="description"
+          formControlName="description"
+          rows="4"
+          placeholder="Describe the purpose and process of this workflow..."
+          [class.invalid]="submitted() && workflowForm.get('description')?.invalid"
+        ></textarea>
+        @if (submitted() && workflowForm.get('description')?.errors?.['required']) {
+          <span class="field-error">Description is required</span>
+        }
+        @if (submitted() && workflowForm.get('description')?.errors?.['minlength']) {
+          <span class="field-error">Description must be at least 10 characters</span>
+        }
       </div>
 
       <div class="form-actions">
-        <button type="button" class="btn btn-secondary" (click)="cancel()" [disabled]="loading()">Cancel</button>
-        <button type="submit" class="btn btn-primary" [disabled]="loading()">
-          <span *ngIf="loading()">Creating...</span>
-          <span *ngIf="!loading()">Create Workflow</span>
+        <button type="button" class="btn btn--ghost" (click)="cancel()" [disabled]="loading()">
+          <i class="pi pi-times"></i> Cancel
+        </button>
+        <button type="submit" class="btn btn--primary" [disabled]="loading()">
+          @if (loading()) {
+            <div class="spinner-sm"></div> Creating...
+          } @else {
+            <i class="pi pi-check"></i> Create Workflow
+          }
         </button>
       </div>
     </form>

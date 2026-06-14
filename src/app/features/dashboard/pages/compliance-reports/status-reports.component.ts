@@ -27,34 +27,64 @@ interface StatusReport {
 export class StatusReportsComponent {
   private readonly workflowService = inject(WorkflowService);
 
+  readonly loading = signal(true);
+  readonly error = signal<string | null>(null);
 
   protected readonly reports = computed<StatusReport[]>(() => {
-    const reqs = this.workflowService.getAllRequests();
-    if (reqs.length === 0) return [];
+    try {
+      this.error.set(null);
+      const reqs = this.workflowService.getAllRequests();
+      if (reqs.length === 0) return [];
 
-    const totalItems = reqs.reduce((sum, r) => sum + r.items.length, 0);
-    const compliant = reqs.filter(r => ['Completed', 'Manager Approved', 'Admin Approved'].includes(r.status))
-                          .reduce((sum, r) => sum + r.items.length, 0);
-    const nonCompliant = reqs.filter(r => ['Manager Rejected', 'Admin Rejected', 'Cancelled'].includes(r.status))
-                             .reduce((sum, r) => sum + r.items.length, 0);
-    
-    const score = totalItems > 0 ? Math.round((compliant / totalItems) * 100) : 100;
+      const totalItems = reqs.reduce((sum, r) => sum + r.items.length, 0);
+      const compliant = reqs.filter(r => ['Completed', 'Manager Approved', 'Admin Approved'].includes(r.status))
+                            .reduce((sum, r) => sum + r.items.length, 0);
+      const nonCompliant = reqs.filter(r => ['Manager Rejected', 'Admin Rejected', 'Cancelled'].includes(r.status))
+                               .reduce((sum, r) => sum + r.items.length, 0);
 
-    const liveReport: StatusReport = {
-      id: 'live-status-1',
-      reportName: 'Backend Compliance Status',
-      generatedDate: new Date().toISOString().split('T')[0],
-      complianceScore: score,
-      totalItems: totalItems,
-      compliantItems: compliant,
-      nonCompliantItems: nonCompliant,
-      complianceAuditor: 'Backend data',
-      generalSummary: `Live analysis of ${totalItems} requested assets. Overall policy adherence remains stable.`,
-      lastAuditRef: 'AUD-LIVE-TRACK',
-      actionsRequired: nonCompliant > 0 ? `${nonCompliant} rejected assets isolated for disposal audit.` : 'All assets compliant'
-    };
+      const score = totalItems > 0 ? Math.round((compliant / totalItems) * 100) : 100;
 
-    return [liveReport];
+      const liveReport: StatusReport = {
+        id: 'live-status-1',
+        reportName: 'Backend Compliance Status',
+        generatedDate: new Date().toISOString().split('T')[0],
+        complianceScore: score,
+        totalItems: totalItems,
+        compliantItems: compliant,
+        nonCompliantItems: nonCompliant,
+        complianceAuditor: 'Backend data',
+        generalSummary: `Live analysis of ${totalItems} requested assets. Overall policy adherence remains stable.`,
+        lastAuditRef: 'AUD-LIVE-TRACK',
+        actionsRequired: nonCompliant > 0 ? `${nonCompliant} rejected assets isolated for disposal audit.` : 'All assets compliant'
+      };
+
+      this.loading.set(false);
+      return [liveReport];
+    } catch {
+      this.error.set('Failed to load status reports');
+      this.loading.set(false);
+      return [];
+    }
+  });
+
+  protected readonly totalItems = computed(() => {
+    const r = this.reports()[0];
+    return r ? r.totalItems : 0;
+  });
+
+  protected readonly compliantItems = computed(() => {
+    const r = this.reports()[0];
+    return r ? r.compliantItems : 0;
+  });
+
+  protected readonly nonCompliantItems = computed(() => {
+    const r = this.reports()[0];
+    return r ? r.nonCompliantItems : 0;
+  });
+
+  protected readonly score = computed(() => {
+    const r = this.reports()[0];
+    return r ? r.complianceScore : 0;
   });
 
   readonly activeViewReport = signal<StatusReport | null>(null);
@@ -87,6 +117,38 @@ export class StatusReportsComponent {
     }, 80);
   }
 
+  refresh(): void {
+    this.loading.set(true);
+    this.error.set(null);
+    this.workflowService.getAllRequests();
+    setTimeout(() => this.reports(), 300);
+  }
+
+  exportToCsv(): void {
+    const reports = this.reports();
+    if (reports.length === 0) return;
+    const rows = reports.map(r => ({
+      'Report Name': r.reportName,
+      'Generated Date': r.generatedDate,
+      'Total Items': r.totalItems,
+      'Compliant': r.compliantItems,
+      'Non-Compliant': r.nonCompliantItems,
+      'Score (%)': r.complianceScore,
+      'Auditor': r.complianceAuditor,
+    }));
+    const headers = Object.keys(rows[0]);
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => headers.map(h => (row as any)[h]).join(',')),
+    ].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `compliance-status-${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+  }
+
   private buildDetails(report: StatusReport): ReportDetailRow[] {
     return [
       { label: 'Report Name', value: report.reportName },
@@ -106,7 +168,3 @@ export class StatusReportsComponent {
     this.activeViewReport.set(null);
   }
 }
-
-
-
-

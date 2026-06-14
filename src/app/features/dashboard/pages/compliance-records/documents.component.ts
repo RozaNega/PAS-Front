@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, inject } from '@angular/core';
+import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ComplianceDataService } from '../../../../core/services/compliance-data.service';
 import { ServiceRequestDto } from '../../../../core/services/requisitions.service';
@@ -12,7 +12,6 @@ interface Document {
   uploadedBy: string;
   fileSize: string;
   fileType: string;
-  // Additional details
   hash: string;
   retentionPeriod: string;
   classification: 'Confidential' | 'Internal' | 'Public';
@@ -34,11 +33,67 @@ export class DocumentsComponent implements OnInit {
   private readonly complianceData = inject(ComplianceDataService);
 
   protected readonly documents = signal<Document[]>([]);
+  protected readonly loading = signal(true);
+  protected readonly error = signal<string | null>(null);
+  readonly activeViewDoc = signal<Document | null>(null);
+  readonly downloadingDocId = signal<string | null>(null);
+  readonly downloadProgress = signal<number>(0);
+
+  protected readonly stats = computed(() => ({
+    total: this.documents().length,
+    verified: this.documents().filter(d => d.status === 'Verified').length,
+    pending: this.documents().filter(d => d.status === 'Pending Review').length,
+    archived: this.documents().filter(d => d.status === 'Archived').length,
+  }));
 
   ngOnInit(): void {
-    this.complianceData.getServiceRequests().subscribe((requests) => {
-      this.documents.set(requests.map((request) => this.toDocument(request)));
+    this.loadData();
+  }
+
+  private loadData(): void {
+    this.loading.set(true);
+    this.error.set(null);
+    this.complianceData.getServiceRequests().subscribe({
+      next: (requests) => {
+        this.documents.set(requests.map(r => this.toDocument(r)));
+        this.loading.set(false);
+      },
+      error: () => {
+        this.error.set('Failed to load documents. Please try again.');
+        this.loading.set(false);
+      },
     });
+  }
+
+  protected refresh(): void {
+    if (this.loading()) return;
+    this.loadData();
+  }
+
+  protected exportData(): void {
+    const docs = this.documents();
+    if (docs.length === 0) return;
+    const headers = ['Document Name', 'Entity Type', 'Entity ID', 'Uploaded By', 'Uploaded Date', 'Classification', 'Status'];
+    const rows = docs.map(d =>
+      [d.documentName, d.entityType, d.entityId, d.uploadedBy, d.uploadedDate, d.classification, d.status]
+        .map(v => `"${v}"`).join(',')
+    );
+    const csv = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `documents_export_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  protected getInitials(name: string): string {
+    const parts = name.split(' ').filter(Boolean);
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
   }
 
   private toDocument(request: ServiceRequestDto): Document {
@@ -81,9 +136,6 @@ export class DocumentsComponent implements OnInit {
   private toDateOnly(value?: string): string {
     return value ? new Date(value).toISOString().split('T')[0] : '';
   }
-  readonly activeViewDoc = signal<Document | null>(null);
-  readonly downloadingDocId = signal<string | null>(null);
-  readonly downloadProgress = signal<number>(0);
 
   private generateSimpleHash(str: string): string {
     let hash = 0;
@@ -128,7 +180,6 @@ export class DocumentsComponent implements OnInit {
     const contentWidth = pageWidth - leftMargin * 2;
     let cursorY = 22;
 
-    // Header bar style
     pdf.setFillColor(15, 23, 42);
     pdf.rect(0, 0, pageWidth, 34, 'F');
     pdf.setTextColor(255, 255, 255);
@@ -139,7 +190,6 @@ export class DocumentsComponent implements OnInit {
     pdf.setFontSize(11);
     pdf.text(`Document Ref: ${docItem.documentName}`, leftMargin, 27);
 
-    // Section 1: Core Metadata
     cursorY = 48;
     pdf.setTextColor(15, 23, 42);
     pdf.setFontSize(12);
@@ -177,12 +227,11 @@ export class DocumentsComponent implements OnInit {
       pdf.setTextColor(15, 23, 42);
       const wrappedVal = pdf.splitTextToSize(String(r.value), contentWidth - 48);
       pdf.text(wrappedVal, leftMargin + 48, cursorY + 6);
-      
+
       const lineCount = wrappedVal.length;
       cursorY += (lineCount * 5) + 3;
     });
 
-    // Section 2: Document Description
     cursorY += 4;
     if (cursorY + 22 > pdf.internal.pageSize.getHeight() - 18) {
       pdf.addPage();
@@ -200,7 +249,6 @@ export class DocumentsComponent implements OnInit {
     pdf.text(descWrapped, leftMargin, cursorY);
     cursorY += (descWrapped.length * 5) + 6;
 
-    // Section 3: Paper Contents
     if (cursorY + 30 > pdf.internal.pageSize.getHeight() - 18) {
       pdf.addPage();
       cursorY = 20;
@@ -213,13 +261,12 @@ export class DocumentsComponent implements OnInit {
 
     pdf.setFillColor(248, 250, 252);
     pdf.setDrawColor(226, 232, 240);
-    
-    // Draw box for paper log
+
     const boxStartY = cursorY - 2;
     pdf.setFont('courier', 'normal');
     pdf.setFontSize(9);
     pdf.setTextColor(51, 65, 85);
-    
+
     docItem.mockContent.forEach(line => {
       if (cursorY + 8 > pdf.internal.pageSize.getHeight() - 18) {
         pdf.rect(leftMargin - 2, boxStartY, contentWidth + 4, cursorY - boxStartY, 'S');
@@ -232,7 +279,6 @@ export class DocumentsComponent implements OnInit {
 
     pdf.rect(leftMargin - 2, boxStartY, contentWidth + 4, cursorY - boxStartY - 2, 'S');
 
-    // Footnote
     cursorY += 8;
     if (cursorY + 12 > pdf.internal.pageSize.getHeight() - 18) {
       pdf.addPage();
@@ -251,8 +297,6 @@ export class DocumentsComponent implements OnInit {
   }
 
   getDisplayName(documentName: string): string {
-    // Remove file extension for display
     return documentName.replace(/\.(pdf|doc|docx|txt|xlsx|xls)$/i, '');
   }
 }
-

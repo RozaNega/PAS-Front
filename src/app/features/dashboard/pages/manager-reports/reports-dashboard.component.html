@@ -1,0 +1,403 @@
+<div class="page">
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero__text">
+      <h1>Reports Dashboard</h1>
+      <p>Approval decisions, department requests, and issuance reports</p>
+    </div>
+    <button class="hero__btn" (click)="downloadCurrentView()">
+      <i class="pi pi-download"></i> Export PDF
+    </button>
+  </div>
+
+  <!-- Tab Navigation -->
+  <div class="tabs">
+    <button class="tabs__link" [class.tabs__link--active]="activeTab() === 'approval'" (click)="setActiveTab('approval')">
+      <i class="pi pi-check-square"></i> Approval Reports
+    </button>
+    <button class="tabs__link" [class.tabs__link--active]="activeTab() === 'requests'" (click)="setActiveTab('requests')">
+      <i class="pi pi-file"></i> Department Requests
+    </button>
+    <button class="tabs__link" [class.tabs__link--active]="activeTab() === 'issuance'" (click)="setActiveTab('issuance')">
+      <i class="pi pi-arrow-right-arrow-left"></i> Issuance Report
+    </button>
+  </div>
+
+  @if (isLoading()) {
+    <div class="state-box">
+      <div class="spinner"></div>
+      <p>Loading report data...</p>
+    </div>
+  } @else {
+    <!-- ════════════════════ APPROVAL TAB ════════════════════ -->
+    @if (activeTab() === 'approval') {
+      <!-- Stats -->
+      <div class="stats">
+        <div class="stats__card">
+          <div class="stats__icon stats__icon--primary"><i class="pi pi-check-circle"></i></div>
+          <div class="stats__info">
+            <span class="stats__label">Approved</span>
+            <span class="stats__value">{{ approvalStats().approved }}</span>
+          </div>
+        </div>
+        <div class="stats__card">
+          <div class="stats__icon stats__icon--danger"><i class="pi pi-times-circle"></i></div>
+          <div class="stats__info">
+            <span class="stats__label">Rejected</span>
+            <span class="stats__value">{{ approvalStats().rejected }}</span>
+          </div>
+        </div>
+        <div class="stats__card">
+          <div class="stats__icon stats__icon--info"><i class="pi pi-chart-bar"></i></div>
+          <div class="stats__info">
+            <span class="stats__label">Approval Rate</span>
+            <span class="stats__value">{{ approvalStats().rate }}%</span>
+          </div>
+        </div>
+        <div class="stats__card">
+          <div class="stats__icon stats__icon--total"><i class="pi pi-calculator"></i></div>
+          <div class="stats__info">
+            <span class="stats__label">Total Decisions</span>
+            <span class="stats__value">{{ approvalStats().total }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Charts Row -->
+      <div class="charts-grid">
+        <div class="panel panel--chart">
+          <div class="panel__header"><span>Approval Distribution</span></div>
+          <div class="chart-wrap"><div echarts [options]="approvalPieOptions()" class="chart-box"></div></div>
+        </div>
+        <div class="panel panel--chart">
+          <div class="panel__header"><span>Approved vs Rejected Value by Month</span></div>
+          <div class="chart-wrap"><div echarts [options]="approvalBarOptions()" class="chart-box"></div></div>
+        </div>
+      </div>
+
+      <!-- Data Table -->
+      <div class="panel">
+        <div class="panel__header">
+          <span>Approval Decisions</span>
+          <div class="panel__actions">
+            <button class="btn btn--sm" (click)="viewDetails('approval', 'Approval Decisions - Full Details')">
+              <i class="pi pi-eye"></i> View Details
+            </button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Request #</th>
+                <th>Requester</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (r of approvedRows().slice(0, 20); track r.id) {
+                <tr>
+                  <td class="td-mono">{{ r.requestNumber }}</td>
+                  <td>
+                    <div class="td-employee">
+                      <div class="td-avatar" [style.background]="getAvatarColor(r.requesterName)">{{ getInitials(r.requesterName) }}</div>
+                      <span class="td-name">{{ r.requesterName }}</span>
+                    </div>
+                  </td>
+                  <td class="td-value">${{ r.estimatedValue | number }}</td>
+                  <td><span [class]="getStatusClass(r.status)"><i [class]="getStatusIcon(r.status)"></i> {{ r.status }}</span></td>
+                  <td class="td-date">{{ r.approvedDate || r.requestedDate }}</td>
+                </tr>
+              }
+              @for (r of rejectedRows().slice(0, 20); track r.id) {
+                <tr>
+                  <td class="td-mono">{{ r.requestNumber }}</td>
+                  <td>
+                    <div class="td-employee">
+                      <div class="td-avatar" [style.background]="getAvatarColor(r.requesterName)">{{ getInitials(r.requesterName) }}</div>
+                      <span class="td-name">{{ r.requesterName }}</span>
+                    </div>
+                  </td>
+                  <td class="td-value">${{ r.estimatedValue | number }}</td>
+                  <td><span [class]="getStatusClass(r.status)"><i [class]="getStatusIcon(r.status)"></i> {{ r.status }}</span></td>
+                  <td class="td-date">{{ r.rejectedDate || r.requestedDate }}</td>
+                </tr>
+              }
+              @empty {
+                <tr class="empty-row">
+                  <td colspan="5">
+                    <div class="empty-state"><i class="pi pi-inbox"></i><p>No approval data found</p></div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    }
+
+    <!-- ════════════════════ REQUESTS TAB ════════════════════ -->
+    @if (activeTab() === 'requests') {
+      <div class="stats">
+        <div class="stats__card">
+          <div class="stats__icon stats__icon--total"><i class="pi pi-file"></i></div>
+          <div class="stats__info">
+            <span class="stats__label">Total Requests</span>
+            <span class="stats__value">{{ requestStats().total }}</span>
+          </div>
+        </div>
+        <div class="stats__card">
+          <div class="stats__icon stats__icon--warn"><i class="pi pi-clock"></i></div>
+          <div class="stats__info">
+            <span class="stats__label">Pending</span>
+            <span class="stats__value">{{ requestStats().pending }}</span>
+          </div>
+        </div>
+        <div class="stats__card">
+          <div class="stats__icon stats__icon--primary"><i class="pi pi-check-circle"></i></div>
+          <div class="stats__info">
+            <span class="stats__label">Approved</span>
+            <span class="stats__value">{{ requestStats().approved }}</span>
+          </div>
+        </div>
+        <div class="stats__card">
+          <div class="stats__icon stats__icon--info"><i class="pi pi-dollar"></i></div>
+          <div class="stats__info">
+            <span class="stats__label">Total Value</span>
+            <span class="stats__value">${{ requestStats().value | number }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Charts Row -->
+      <div class="charts-grid">
+        <div class="panel panel--chart">
+          <div class="panel__header"><span>Request Status Distribution</span></div>
+          <div class="chart-wrap"><div echarts [options]="requestPieOptions()" class="chart-box"></div></div>
+        </div>
+        <div class="panel panel--chart">
+          <div class="panel__header"><span>Request Value by Department</span></div>
+          <div class="chart-wrap"><div echarts [options]="requestBarOptions()" class="chart-box"></div></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel__header">
+          <span>Service Requests</span>
+          <div class="panel__actions">
+            <button class="btn btn--sm" (click)="viewDetails('requests', 'Department Requests - Full List')">
+              <i class="pi pi-eye"></i> View Details
+            </button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Request #</th>
+                <th>Requester</th>
+                <th>Department</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (r of allRequestRows().slice(0, 50); track r.id) {
+                <tr>
+                  <td class="td-mono">{{ r.requestNumber }}</td>
+                  <td>
+                    <div class="td-employee">
+                      <div class="td-avatar" [style.background]="getAvatarColor(r.requesterName)">{{ getInitials(r.requesterName) }}</div>
+                      <span class="td-name">{{ r.requesterName }}</span>
+                    </div>
+                  </td>
+                  <td>{{ r.department }}</td>
+                  <td class="td-value">${{ r.estimatedValue | number }}</td>
+                  <td><span [class]="getStatusClass(r.status)"><i [class]="getStatusIcon(r.status)"></i> {{ r.status }}</span></td>
+                  <td class="td-date">{{ r.requestedDate }}</td>
+                </tr>
+              }
+              @empty {
+                <tr class="empty-row">
+                  <td colspan="6">
+                    <div class="empty-state"><i class="pi pi-inbox"></i><p>No request data found</p></div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    }
+
+    <!-- ════════════════════ ISSUANCE TAB ════════════════════ -->
+    @if (activeTab() === 'issuance') {
+      <div class="stats">
+        <div class="stats__card">
+          <div class="stats__icon stats__icon--total"><i class="pi pi-file"></i></div>
+          <div class="stats__info">
+            <span class="stats__label">Total SIVs</span>
+            <span class="stats__value">{{ issuanceStats().total }}</span>
+          </div>
+        </div>
+        <div class="stats__card">
+          <div class="stats__icon stats__icon--primary"><i class="pi pi-box"></i></div>
+          <div class="stats__info">
+            <span class="stats__label">Items Issued</span>
+            <span class="stats__value">{{ issuanceStats().items }}</span>
+          </div>
+        </div>
+        <div class="stats__card">
+          <div class="stats__icon stats__icon--info"><i class="pi pi-dollar"></i></div>
+          <div class="stats__info">
+            <span class="stats__label">Total Value</span>
+            <span class="stats__value">${{ issuanceStats().value | number }}</span>
+          </div>
+        </div>
+        <div class="stats__card">
+          <div class="stats__icon stats__icon--warn"><i class="pi pi-chart-bar"></i></div>
+          <div class="stats__info">
+            <span class="stats__label">Avg Value / SIV</span>
+            <span class="stats__value">${{ (issuanceStats().total > 0 ? (issuanceStats().value / issuanceStats().total) : 0) | number }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Charts Row -->
+      <div class="charts-grid">
+        <div class="panel panel--chart">
+          <div class="panel__header"><span>SIV Status Distribution</span></div>
+          <div class="chart-wrap"><div echarts [options]="issuancePieOptions()" class="chart-box"></div></div>
+        </div>
+        <div class="panel panel--chart">
+          <div class="panel__header"><span>Issuance Value by Month</span></div>
+          <div class="chart-wrap"><div echarts [options]="issuanceBarOptions()" class="chart-box"></div></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel__header">
+          <span>Store Issue Vouchers</span>
+          <div class="panel__actions">
+            <button class="btn btn--sm" (click)="viewDetails('issuance', 'Issuance Report - Full List')">
+              <i class="pi pi-eye"></i> View Details
+            </button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>SIV #</th>
+                <th>Request #</th>
+                <th>Requester</th>
+                <th>Department</th>
+                <th>Items</th>
+                <th>Value</th>
+                <th>Status</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (v of sivRows().slice(0, 50); track v.id) {
+                <tr>
+                  <td class="td-mono">{{ v.sivNumber }}</td>
+                  <td class="td-mono" style="color:#64748b;">{{ v.requestNumber }}</td>
+                  <td>
+                    <div class="td-employee">
+                      <div class="td-avatar" [style.background]="getAvatarColor(v.requesterName)">{{ getInitials(v.requesterName) }}</div>
+                      <span class="td-name">{{ v.requesterName }}</span>
+                    </div>
+                  </td>
+                  <td>{{ v.department }}</td>
+                  <td class="td-value">{{ v.totalItems }}</td>
+                  <td class="td-value">${{ v.totalValue | number }}</td>
+                  <td><span [class]="getStatusClass(v.status)"><i [class]="getStatusIcon(v.status)"></i> {{ v.status }}</span></td>
+                  <td class="td-date">{{ v.issueDate }}</td>
+                </tr>
+              }
+              @empty {
+                <tr class="empty-row">
+                  <td colspan="8">
+                    <div class="empty-state"><i class="pi pi-inbox"></i><p>No issuance data found</p></div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    }
+  }
+
+  <!-- ════════════════════ DETAIL MODAL ════════════════════ -->
+  @if (showModal()) {
+    <div class="modal-overlay" (click)="closeModal()">
+      <div class="modal-content" (click)="$event.stopPropagation()">
+        <div class="modal-content__header">
+          <h2><i class="pi pi-file" style="margin-right:.4rem;color:#6366f1;"></i> {{ modalTitle() }}</h2>
+          <button class="close-btn" (click)="closeModal()"><i class="pi pi-times"></i></button>
+        </div>
+        <div class="modal-content__body">
+          @if (modalType() === 'approval') {
+            <div class="detail-section">
+              <h3 class="detail-section__title">Approved Requests ({{ approvedRows().length }})</h3>
+              <table class="items-table">
+                <thead><tr><th>Request #</th><th>Requester</th><th>Amount</th><th>Date</th></tr></thead>
+                <tbody>
+                  @for (r of approvedRows(); track r.id) {
+                    <tr><td class="td-mono">{{ r.requestNumber }}</td><td>{{ r.requesterName }}</td><td class="td-value">${{ r.estimatedValue | number }}</td><td class="td-date">{{ r.approvedDate || r.requestedDate }}</td></tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+            <div class="detail-section">
+              <h3 class="detail-section__title">Rejected Requests ({{ rejectedRows().length }})</h3>
+              <table class="items-table">
+                <thead><tr><th>Request #</th><th>Requester</th><th>Amount</th><th>Date</th><th>Reason</th></tr></thead>
+                <tbody>
+                  @for (r of rejectedRows(); track r.id) {
+                    <tr><td class="td-mono">{{ r.requestNumber }}</td><td>{{ r.requesterName }}</td><td class="td-value">${{ r.estimatedValue | number }}</td><td class="td-date">{{ r.rejectedDate || r.requestedDate }}</td><td>{{ r.rejectionReason || 'N/A' }}</td></tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+          @if (modalType() === 'requests') {
+            <div class="detail-section">
+              <h3 class="detail-section__title">All Requests ({{ allRequestRows().length }})</h3>
+              <table class="items-table">
+                <thead><tr><th>Request #</th><th>Requester</th><th>Department</th><th>Status</th><th>Amount</th><th>Date</th></tr></thead>
+                <tbody>
+                  @for (r of allRequestRows(); track r.id) {
+                    <tr><td class="td-mono">{{ r.requestNumber }}</td><td>{{ r.requesterName }}</td><td>{{ r.department }}</td><td><span [class]="getStatusClass(r.status)"><i [class]="getStatusIcon(r.status)"></i> {{ r.status }}</span></td><td class="td-value">${{ r.estimatedValue | number }}</td><td class="td-date">{{ r.requestedDate }}</td></tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+          @if (modalType() === 'issuance') {
+            <div class="detail-section">
+              <h3 class="detail-section__title">Store Issue Vouchers ({{ sivRows().length }})</h3>
+              <table class="items-table">
+                <thead><tr><th>SIV #</th><th>Requester</th><th>Department</th><th>Items</th><th>Value</th><th>Date</th></tr></thead>
+                <tbody>
+                  @for (v of sivRows(); track v.id) {
+                    <tr><td class="td-mono">{{ v.sivNumber }}</td><td>{{ v.requesterName }}</td><td>{{ v.department }}</td><td>{{ v.totalItems }}</td><td class="td-value">${{ v.totalValue | number }}</td><td class="td-date">{{ v.issueDate }}</td></tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </div>
+        <div class="modal-content__footer">
+          <button class="modal-btn modal-btn--secondary" (click)="closeModal()"><i class="pi pi-times"></i> Close</button>
+          <button class="modal-btn modal-btn--primary" (click)="downloadCurrentView()"><i class="pi pi-download"></i> Export PDF</button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

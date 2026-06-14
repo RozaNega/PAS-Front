@@ -77,7 +77,35 @@ export class ApprovalWorkflowService {
   }
 
   getAllWorkflows(): Observable<{ succeeded: boolean; data: WorkflowResponse[] }> {
-    const endpoint = this.workflowEndpoint || 'Workflows';
+    if (this.workflowEndpoint) {
+      return this.tryGetWorkflows(this.workflowEndpoint);
+    }
+    const endpoints = ['Workflows', 'Workflow', 'ApprovalWorkflows', 'ApprovalWorkflow'];
+    return this.tryGetEndpoints(endpoints, 0);
+  }
+
+  private tryGetEndpoints(endpoints: string[], index: number): Observable<{ succeeded: boolean; data: WorkflowResponse[] }> {
+    if (index >= endpoints.length) {
+      return of({ succeeded: false, data: [] });
+    }
+    const endpoint = endpoints[index];
+    return this.tryGetWorkflows(endpoint).pipe(
+      map((response) => {
+        if (response.succeeded) {
+          this.workflowEndpoint = endpoint;
+        }
+        return response;
+      }),
+      catchError((error) => {
+        if (error.status === 404) {
+          return this.tryGetEndpoints(endpoints, index + 1);
+        }
+        return throwError(() => error);
+      })
+    );
+  }
+
+  private tryGetWorkflows(endpoint: string): Observable<{ succeeded: boolean; data: WorkflowResponse[] }> {
     return this.apiService.get<WorkflowResponse[]>(endpoint).pipe(
       map((response) => ({
         succeeded: response.success,

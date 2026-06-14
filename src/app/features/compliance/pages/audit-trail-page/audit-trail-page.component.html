@@ -1,274 +1,238 @@
-<div class="audit-trail-page">
-  <div class="page-header">
-    <h1>Audit Trail</h1>
-    <button class="export-btn" (click)="exportAuditLogs()">Export All</button>
+<section class="audit-trail-page">
+  <header class="hero-header">
+    <div class="hero-content">
+      <div class="hero-icon">
+        <i class="bi bi-shield-check"></i>
+      </div>
+      <div class="hero-text">
+        <h1>Audit Trail</h1>
+        <p>Monitor all system activities, user actions, and data changes across the platform</p>
+      </div>
+    </div>
+    <div class="hero-actions">
+      <span class="total-badge">{{ activityLogs().length }} entries</span>
+      <div class="dropdown-wrapper">
+        <button type="button" class="action-btn secondary" (click)="showExportDropdown.set(!showExportDropdown())">
+          <i class="bi bi-download"></i> Export
+          <i class="bi bi-chevron-down"></i>
+        </button>
+        @if (showExportDropdown()) {
+          <div class="dropdown-menu">
+            <button type="button" (click)="exportLogs('CSV')"><i class="bi bi-file-earmark-csv"></i> CSV</button>
+            <button type="button" (click)="exportLogs('Excel')"><i class="bi bi-file-earmark-excel"></i> Excel</button>
+            <button type="button" (click)="exportLogs('JSON')"><i class="bi bi-file-earmark-code"></i> JSON</button>
+          </div>
+        }
+      </div>
+      <button type="button" class="action-btn secondary" (click)="refresh()" [class.spinning]="loading()">
+        <i class="bi bi-arrow-clockwise"></i> Refresh
+      </button>
+    </div>
+  </header>
+
+  <div class="filter-bar">
+    <div class="filter-group">
+      <div class="filter-field">
+        <i class="bi bi-search"></i>
+        <input type="text" placeholder="Search by user, action, entity..." [value]="searchQuery()" (input)="onSearch($event)">
+      </div>
+      <div class="filter-field">
+        <i class="bi bi-shield-check"></i>
+        <select [value]="statusFilter()" (change)="onStatusFilter($event)">
+          <option value="All">All Status</option>
+          @for (s of uniqueStatuses(); track s) {
+            <option [value]="s">{{ s }}</option>
+          }
+        </select>
+      </div>
+      <div class="filter-field date-field">
+        <i class="bi bi-calendar3"></i>
+        <input type="date" [value]="dateFrom()" (change)="onDateFrom($event)" placeholder="From date">
+      </div>
+      <div class="filter-field date-field">
+        <i class="bi bi-calendar3"></i>
+        <input type="date" [value]="dateTo()" (change)="onDateTo($event)" placeholder="To date">
+      </div>
+    </div>
+    <button type="button" class="btn-filter" (click)="resetFilters()"><i class="bi bi-x-circle"></i> Clear</button>
   </div>
 
-  <!-- Filters -->
-  <div class="filters-section">
-    <div class="filter-row">
-      <input type="text" placeholder="Search by user, action, entity..." />
-      <select>
-        <option>Date: [Dec 01, 2024] to [Dec 15, 2024]</option>
-      </select>
-      <select>
-        <option>User: [All Users ▼]</option>
-      </select>
-      <select>
-        <option>Action: [All Actions ▼]</option>
-      </select>
-      <select>
-        <option>Entity: [All Entities ▼]</option>
-      </select>
-      <select>
-        <option>Status: [All ▼]</option>
-      </select>
-      <button class="filters-btn">Advanced Filters ▼</button>
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon purple"><i class="bi bi-journal-text"></i></div>
+      <div class="stat-info">
+        <span class="stat-label">Total Events</span>
+        <span class="stat-value">{{ stats().totalEvents }}</span>
+        <span class="stat-trend">All recorded events</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon blue"><i class="bi bi-people"></i></div>
+      <div class="stat-info">
+        <span class="stat-label">Unique Users</span>
+        <span class="stat-value">{{ stats().uniqueUsers }}</span>
+        <span class="stat-trend">Distinct actors</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon red"><i class="bi bi-exclamation-triangle"></i></div>
+      <div class="stat-info">
+        <span class="stat-label">Critical Events</span>
+        <span class="stat-value">{{ stats().criticalEvents }}</span>
+        <span class="stat-trend negative">Requires attention</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon green"><i class="bi bi-graph-up-arrow"></i></div>
+      <div class="stat-info">
+        <span class="stat-label">Today's Events</span>
+        <span class="stat-value">{{ stats().todayEvents }}</span>
+        <span class="stat-trend positive">{{ stats().todayEvents > 0 ? 'Active today' : 'No events today' }}</span>
+      </div>
     </div>
   </div>
 
-  <!-- Audit Summary -->
-  <div class="summary-section">
-    <h2>📊 AUDIT SUMMARY</h2>
-    <div class="summary-cards">
-      @for (summary of auditSummaries; track summary.label) {
-        <div class="summary-card">
-          <div class="summary-label">{{ summary.label }}</div>
-          <div class="summary-value">{{ summary.value }}</div>
-          <div class="summary-subtitle">{{ summary.subtitle }}</div>
-        </div>
+  @if (loading()) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading audit trail data...</p>
+    </div>
+  } @else if (error()) {
+    <div class="error-state">
+      <i class="bi bi-exclamation-octagon"></i>
+      <h3>Failed to Load Data</h3>
+      <p>There was an error loading the audit trail. Please try again.</p>
+      <button type="button" class="action-btn secondary" (click)="refresh()"><i class="bi bi-arrow-clockwise"></i> Retry</button>
+    </div>
+  } @else if (filteredLogs().length === 0) {
+    <div class="empty-state">
+      <i class="bi bi-search"></i>
+      <h3>{{ activityLogs().length === 0 ? 'No Audit Data' : 'No Results Found' }}</h3>
+      <p>{{ activityLogs().length === 0 ? 'No audit trail records are available yet.' : 'Try adjusting your search or filter criteria.' }}</p>
+      @if (activityLogs().length > 0) {
+        <button type="button" class="action-btn secondary" (click)="resetFilters()"><i class="bi bi-x-circle"></i> Clear Filters</button>
       }
     </div>
-  </div>
-
-  <!-- System Activity Log -->
-  <div class="activity-section">
-    <h2>📋 SYSTEM ACTIVITY LOG</h2>
-    <div class="activity-table">
-      <table>
-        <thead>
-          <tr>
-            <th>Timestamp</th>
-            <th>User</th>
-            <th>Action</th>
-            <th>Entity</th>
-            <th>Entity ID</th>
-            <th>Details</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (activity of systemActivities; track activity.timestamp) {
+  } @else {
+    <div class="panel">
+      <div class="panel-header">
+        <h3><i class="bi bi-list-columns"></i> Activity Logs</h3>
+        <span class="result-count">{{ filteredLogs().length }} result(s)</span>
+      </div>
+      <div class="panel-body no-padding">
+        <table class="data-table">
+          <thead>
             <tr>
-              <td>{{ activity.timestamp }}</td>
-              <td>{{ activity.user }}</td>
-              <td>{{ activity.action }}</td>
-              <td>{{ activity.entity }}</td>
-              <td>{{ activity.entityId }}</td>
-              <td>{{ activity.details }}</td>
-              <td>{{ activity.status }}</td>
+              <th>Timestamp</th>
+              <th>User</th>
+              <th>Action</th>
+              <th>Entity Type</th>
+              <th>Entity ID</th>
+              <th>Details</th>
+              <th>Status</th>
+              <th></th>
             </tr>
-          }
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            @for (log of pagedLogs(); track log.id) {
+              <tr>
+                <td>
+                  <div class="time-cell">
+                    <span class="time-main">{{ formatDate(log.timestamp) }}</span>
+                    <span class="time-sub">{{ formatTimeAgo(log.timestamp) }}</span>
+                  </div>
+                </td>
+                <td>
+                  <div class="user-badge">
+                    <div class="user-avatar-sm">{{ log.user.split(' ').map(n => n[0]).join('').substring(0, 2) }}</div>
+                    <span>{{ log.user }}</span>
+                  </div>
+                </td>
+                <td>
+                  <span class="action-badge" [class]="'action-' + getActionClass(log.actionType)">
+                    <i [class]="getActionIcon(log.actionType)"></i>
+                    {{ log.action }}
+                  </span>
+                </td>
+                <td><span class="entity-tag">{{ log.entityType }}</span></td>
+                <td class="mono">{{ log.entityId }}</td>
+                <td class="details-cell" title="{{ log.details }}">{{ log.details }}</td>
+                <td>
+                  <span class="status-badge" [class.success]="log.status === 'Success'" [class.danger]="log.status === 'Failure'" [class.warning]="log.status === 'Warning'">
+                    <span class="status-dot"></span> {{ log.status }}
+                  </span>
+                </td>
+                <td>
+                  <button type="button" class="view-btn" (click)="openDetailsModal(log)" title="View details"><i class="bi bi-eye"></i></button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
     </div>
-    <div class="pagination">
-      <span>Showing 1-25 of 45,678 entries</span>
-      <span class="pagination-controls">1  2  3  →  1,828</span>
-    </div>
-  </div>
 
-  <!-- User Actions Summary -->
-  <div class="user-actions-section">
-    <h2>👤 USER ACTIONS SUMMARY</h2>
-    <div class="user-actions-table">
-      <table>
-        <thead>
-          <tr>
-            <th>User</th>
-            <th>Create</th>
-            <th>Update</th>
-            <th>Delete</th>
-            <th>View</th>
-            <th>Export</th>
-            <th>Login</th>
-            <th>Total</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (summary of userActionSummaries; track summary.user) {
-            <tr>
-              <td>{{ summary.user }}</td>
-              <td>{{ summary.create }}</td>
-              <td>{{ summary.update }}</td>
-              <td>{{ summary.delete }}</td>
-              <td>{{ summary.view }}</td>
-              <td>{{ summary.export }}</td>
-              <td>{{ summary.login }}</td>
-              <td>{{ summary.total }}</td>
-            </tr>
-          }
-        </tbody>
-      </table>
+    <div class="pagination-bar">
+      <div class="pagination-info">Showing {{ displayRange().start }}–{{ displayRange().end }} of {{ filteredLogs().length }}</div>
+      <div class="pagination-controls">
+        <button class="page-btn" [disabled]="currentPage() === 1" (click)="goToPage(currentPage() - 1)"><i class="bi bi-chevron-left"></i></button>
+        @for (page of [].constructor(totalPages()); track $index) {
+          <button class="page-btn" [class.active]="currentPage() === $index + 1" (click)="goToPage($index + 1)">{{ $index + 1 }}</button>
+        }
+        <button class="page-btn" [disabled]="currentPage() === totalPages()" (click)="goToPage(currentPage() + 1)"><i class="bi bi-chevron-right"></i></button>
+      </div>
+      <div class="rows-per-page">
+        <select [value]="rowsPerPage()" (change)="onRowsPerPageChange($event)">
+          <option>10</option><option>15</option><option>25</option><option>50</option>
+        </select> per page
+      </div>
     </div>
-  </div>
+  }
+</section>
 
-  <!-- Property Changes -->
-  <div class="property-section">
-    <h2>🏢 PROPERTY CHANGES</h2>
-    <div class="property-table">
-      <table>
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Property</th>
-            <th>Change Type</th>
-            <th>Old Value</th>
-            <th>New Value</th>
-            <th>User</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (change of propertyChanges; track change.property) {
-            <tr>
-              <td>{{ change.date }}</td>
-              <td>{{ change.property }}</td>
-              <td>{{ change.changeType }}</td>
-              <td>{{ change.oldValue }}</td>
-              <td>{{ change.newValue }}</td>
-              <td>{{ change.user }}</td>
-              <td>{{ change.status }}</td>
-            </tr>
-          }
-        </tbody>
-      </table>
+@if (showDetailsModal() && selectedLog(); as log) {
+  <div class="modal-overlay" (click)="closeDetailsModal()">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-header-left">
+          <div class="modal-action-icon" [class]="'action-' + getActionClass(log.actionType)">
+            <i [class]="getActionIcon(log.actionType)"></i>
+          </div>
+          <div>
+            <h3>Activity Details</h3>
+            <p>{{ log.action }}</p>
+          </div>
+        </div>
+        <button type="button" class="modal-close" (click)="closeDetailsModal()"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="detail-section">
+          <h4><i class="bi bi-info-circle"></i> Basic Information</h4>
+          <div class="detail-grid">
+            <div class="detail-item"><span class="label">Timestamp</span><span class="value">{{ formatTimestamp(log.timestamp) }}</span></div>
+            <div class="detail-item"><span class="label">User</span><span class="value">{{ log.user }}</span></div>
+            <div class="detail-item"><span class="label">IP Address</span><span class="value mono">{{ log.ipAddress }}</span></div>
+            <div class="detail-item"><span class="label">Status</span><span class="value"><span class="status-badge" [class.success]="log.status === 'Success'" [class.danger]="log.status === 'Failure'" [class.warning]="log.status === 'Warning'"><span class="status-dot"></span> {{ log.status }}</span></span></div>
+          </div>
+        </div>
+        <div class="detail-section">
+          <h4><i class="bi bi-lightning"></i> Action Details</h4>
+          <div class="detail-grid">
+            <div class="detail-item"><span class="label">Action</span><span class="value">{{ log.action }}</span></div>
+            <div class="detail-item"><span class="label">Action Type</span><span class="value"><span class="action-badge" [class]="'action-' + getActionClass(log.actionType)"><i [class]="getActionIcon(log.actionType)"></i> {{ log.actionType }}</span></span></div>
+            <div class="detail-item"><span class="label">Entity Type</span><span class="value">{{ log.entityType }}</span></div>
+            <div class="detail-item"><span class="label">Entity ID</span><span class="value mono">{{ log.entityId }}</span></div>
+          </div>
+        </div>
+        <div class="detail-section">
+          <h4><i class="bi bi-card-text"></i> Description</h4>
+          <p class="detail-description">{{ log.details }}</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="action-btn secondary" (click)="copyDetails()"><i class="bi bi-clipboard"></i> Copy Details</button>
+        <button type="button" class="action-btn secondary" (click)="closeDetailsModal()">Close</button>
+      </div>
     </div>
   </div>
-
-  <!-- Stock Movements -->
-  <div class="stock-section">
-    <h2>📦 STOCK MOVEMENTS</h2>
-    <div class="stock-table">
-      <table>
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Item</th>
-            <th>Type</th>
-            <th>Quantity</th>
-            <th>Reference</th>
-            <th>User</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (movement of stockMovements; track movement.item) {
-            <tr>
-              <td>{{ movement.date }}</td>
-              <td>{{ movement.item }}</td>
-              <td>{{ movement.type }}</td>
-              <td>{{ movement.quantity }}</td>
-              <td>{{ movement.reference }}</td>
-              <td>{{ movement.user }}</td>
-              <td>{{ movement.status }}</td>
-            </tr>
-          }
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- Requisition Audit -->
-  <div class="requisition-section">
-    <h2>📝 REQUISITION AUDIT</h2>
-    <div class="requisition-table">
-      <table>
-        <thead>
-          <tr>
-            <th>SR #</th>
-            <th>Requester</th>
-            <th>Value</th>
-            <th>Approver</th>
-            <th>Status</th>
-            <th>Approval Chain</th>
-            <th>Compliance</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (audit of requisitionAudits; track audit.srNumber) {
-            <tr>
-              <td>{{ audit.srNumber }}</td>
-              <td>{{ audit.requester }}</td>
-              <td>{{ audit.value }}</td>
-              <td>{{ audit.approver }}</td>
-              <td>{{ audit.status }}</td>
-              <td>{{ audit.approvalChain }}</td>
-              <td>{{ audit.compliance }}</td>
-            </tr>
-          }
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- User Login History -->
-  <div class="login-section">
-    <h2>🔐 USER LOGIN HISTORY</h2>
-    <div class="login-table">
-      <table>
-        <thead>
-          <tr>
-            <th>Date/Time</th>
-            <th>User</th>
-            <th>IP Address</th>
-            <th>Status</th>
-            <th>Location</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (login of userLoginHistory; track login.dateTime) {
-            <tr>
-              <td>{{ login.dateTime }}</td>
-              <td>{{ login.user }}</td>
-              <td>{{ login.ipAddress }}</td>
-              <td>{{ login.status }}</td>
-              <td>{{ login.location }}</td>
-            </tr>
-          }
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- Data Export Log -->
-  <div class="export-log-section">
-    <h2>📊 DATA EXPORT LOG</h2>
-    <div class="export-log-table">
-      <table>
-        <thead>
-          <tr>
-            <th>Date/Time</th>
-            <th>User</th>
-            <th>Export Type</th>
-            <th>Records</th>
-            <th>Format</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (log of dataExportLogs; track log.dateTime) {
-            <tr>
-              <td>{{ log.dateTime }}</td>
-              <td>{{ log.user }}</td>
-              <td>{{ log.exportType }}</td>
-              <td>{{ log.records }}</td>
-              <td>{{ log.format }}</td>
-              <td>{{ log.status }}</td>
-            </tr>
-          }
-        </tbody>
-      </table>
-    </div>
-  </div>
-</div>
+}

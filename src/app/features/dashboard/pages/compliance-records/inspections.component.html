@@ -1,52 +1,161 @@
-<div class="inspections-container">
-  <div class="page-header">
-    <h1>Inspections</h1>
-    <p class="subtitle">Goods inspection records &amp; QA compliance tracking</p>
+<div class="inspections-page">
+  <div class="hero-section">
+    <div class="hero-content">
+      <div class="hero-text">
+        <h1 class="hero-title">Inspections</h1>
+        <p class="hero-subtitle">Goods inspection records &amp; QA compliance tracking</p>
+      </div>
+      <div class="hero-actions">
+        <button class="btn btn-hero" (click)="loadInspections()" [disabled]="loading()">
+          <i class="bi bi-arrow-clockwise"></i> Refresh
+        </button>
+        <button class="btn btn-hero btn-hero-primary" (click)="exportCsv()" [disabled]="exporting() || inspections().length === 0">
+          @if (exporting()) {
+            <span class="spinner-sm"></span> Exporting...
+          } @else {
+            <i class="bi bi-download"></i> Export
+          }
+        </button>
+      </div>
+    </div>
   </div>
 
-  <div class="inspections-list">
-    @for (inspection of inspections(); track inspection.id) {
-      <div class="inspection-card">
-        <div class="inspection-header">
-          <div class="inspection-number">
-            <i class="bi bi-shield-check file-icon"></i>
-            {{ inspection.inspectionNumber }}
-          </div>
-          <div class="status-badge" [class.pending]="inspection.status === 'Pending'" [class.passed]="inspection.status === 'Passed'" [class.failed]="inspection.status === 'Failed'">
-            {{ inspection.status }}
-          </div>
+  @if (loading()) {
+    <div class="state-container">
+      <div class="spinner-lg"></div>
+      <p>Loading inspection records...</p>
+    </div>
+  } @else if (error()) {
+    <div class="state-container error-state">
+      <i class="bi bi-exclamation-triangle-fill error-icon"></i>
+      <p>Failed to load inspection records</p>
+      <button class="btn btn-hero btn-hero-primary" (click)="loadInspections()">
+        <i class="bi bi-arrow-clockwise"></i> Retry
+      </button>
+    </div>
+  } @else {
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-icon stat-icon-total">
+          <i class="bi bi-clipboard-check"></i>
         </div>
-        <div class="inspection-details">
-          <div class="detail-row"><span class="label">GRN Number:</span><span class="value">{{ inspection.receivingNoteNumber }}</span></div>
-          <div class="detail-row"><span class="label">Inspection Date:</span><span class="value">{{ inspection.inspectionDate }}</span></div>
-          <div class="detail-row"><span class="label">Inspector:</span><span class="value">{{ inspection.inspector }}</span></div>
-          <div class="detail-row"><span class="label">Items Inspected:</span><span class="value">{{ inspection.itemsInspected }}</span></div>
-          <div class="detail-row"><span class="label">Passed:</span><span class="value">{{ inspection.itemsPassed }}</span></div>
-          <div class="detail-row"><span class="label">Failed:</span><span class="value">{{ inspection.itemsFailed }}</span></div>
+        <div class="stat-info">
+          <span class="stat-value">{{ totalCount() }}</span>
+          <span class="stat-label">Total Inspections</span>
         </div>
-        <div class="inspection-actions">
-          <button class="btn btn-secondary" (click)="onDownload(inspection)" [disabled]="downloadingInspectionId() !== null">
-            @if (downloadingInspectionId() === inspection.id) {
-              <span class="spinner"></span> Downloading {{ downloadProgress() }}%
-            } @else {
-              <i class="bi bi-file-pdf"></i> Download PDF
-            }
-          </button>
-          <button class="btn btn-primary" (click)="onView(inspection)">
-            <i class="bi bi-eye"></i> View
-          </button>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon stat-icon-passed">
+          <i class="bi bi-check-circle"></i>
+        </div>
+        <div class="stat-info">
+          <span class="stat-value">{{ passedCount() }}</span>
+          <span class="stat-label">Passed</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon stat-icon-failed">
+          <i class="bi bi-x-circle"></i>
+        </div>
+        <div class="stat-info">
+          <span class="stat-value">{{ failedCount() }}</span>
+          <span class="stat-label">Failed</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon stat-icon-pending">
+          <i class="bi bi-hourglass-split"></i>
+        </div>
+        <div class="stat-info">
+          <span class="stat-value">{{ pendingCount() }}</span>
+          <span class="stat-label">Pending</span>
+        </div>
+      </div>
+    </div>
+
+    @if (inspections().length === 0) {
+      <div class="state-container">
+        <i class="bi bi-inbox empty-icon"></i>
+        <p>No inspection records found</p>
+      </div>
+    } @else {
+      <div class="table-panel">
+        <div class="table-header">
+          <div class="table-header-left">
+            <i class="bi bi-table"></i>
+            <span>Inspection Records</span>
+          </div>
+          <span class="table-count">{{ inspections().length }} record(s)</span>
+        </div>
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Inspection #</th>
+                <th>GRN Number</th>
+                <th>Inspector</th>
+                <th>Date</th>
+                <th>Items</th>
+                <th>Status</th>
+                <th class="th-actions">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (inspection of inspections(); track inspection.id) {
+                <tr>
+                  <td>
+                    <span class="mono-text">{{ inspection.inspectionNumber }}</span>
+                  </td>
+                  <td>
+                    <span class="mono-text">{{ inspection.receivingNoteNumber }}</span>
+                  </td>
+                  <td>
+                    <div class="inspector-cell">
+                      <span class="avatar-initials">{{ getInitials(inspection.inspector) }}</span>
+                      <span>{{ inspection.inspector }}</span>
+                    </div>
+                  </td>
+                  <td>{{ inspection.inspectionDate }}</td>
+                  <td>
+                    <div class="items-cell">
+                      <span class="items-total">{{ inspection.itemsInspected }}</span>
+                      <span class="items-passed">+{{ inspection.itemsPassed }}</span>
+                      <span class="items-failed">-{{ inspection.itemsFailed }}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="status-badge" [class.status-pending]="inspection.status === 'Pending'" [class.status-passed]="inspection.status === 'Passed'" [class.status-failed]="inspection.status === 'Failed'">
+                      <i class="bi" [class.bi-clock]="inspection.status === 'Pending'" [class.bi-check-circle-fill]="inspection.status === 'Passed'" [class.bi-x-circle-fill]="inspection.status === 'Failed'"></i>
+                      {{ inspection.status }}
+                    </span>
+                  </td>
+                  <td class="td-actions">
+                    <button class="btn btn-sm btn-outline" (click)="onView(inspection)" title="View details">
+                      <i class="bi bi-eye"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline" (click)="onDownload(inspection)" [disabled]="downloadingInspectionId() !== null" title="Download PDF">
+                      @if (downloadingInspectionId() === inspection.id) {
+                        <span class="spinner-sm"></span>
+                      } @else {
+                        <i class="bi bi-file-pdf"></i>
+                      }
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
         </div>
       </div>
     }
-  </div>
+  }
 
-  <!-- Merged View Checklist & Deep QA Parameters Modal Overlay -->
   @if (activeViewInspection(); as insp) {
     <div class="modal-backdrop" (click)="closeModal()">
       <div class="modal-card view-insp-modal" (click)="$event.stopPropagation()">
         <div class="modal-header">
           <h2>
-            <i class="bi bi-clipboard2-pulse-fill text-primary"></i> 
+            <i class="bi bi-clipboard2-pulse-fill text-primary"></i>
             QA Inspection File: {{ insp.inspectionNumber }}
           </h2>
           <button class="btn-close-modal" (click)="closeModal()" aria-label="Close modal">
@@ -54,12 +163,12 @@
           </button>
         </div>
         <div class="modal-body">
-          <div class="insp-status-strip" [class.passed]="insp.status === 'Passed'">
+          <div class="insp-status-strip" [class.passed]="insp.status === 'Passed'" [class.failed]="insp.status === 'Failed'">
             <div class="strip-text">
               <strong>Status:</strong> {{ insp.status }} | Passed {{ insp.itemsPassed }}/{{ insp.itemsInspected }} items checked
             </div>
           </div>
-          
+
           <div class="section-title">Standard Operating QA Checklist</div>
           <div class="checklist-section">
             <ul class="checklist-ul">
@@ -79,7 +188,6 @@
             <p class="notes-para">{{ insp.notes }}</p>
           </div>
 
-          <!-- Deep QA Parameters Section merged here -->
           <div class="section-title">Deep QA Audit Parameters</div>
           <div class="metadata-grid">
             <div class="grid-item">

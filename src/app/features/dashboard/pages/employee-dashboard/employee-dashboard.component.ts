@@ -13,7 +13,7 @@ import {
 import { toSignal } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, NavigationEnd, RouterLink } from '@angular/router';
+import { Router, NavigationEnd } from '@angular/router';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { PasApiService } from '../../../../shared/services/pas-api.service';
@@ -54,6 +54,18 @@ import { ProfileService } from '../../../../core/services/profile.service';
 import { PhotoPersistenceService } from '../../../../core/services/photo-persistence.service';
 import { ToastService } from '../../../../core/services/toast.service';
 import { PhotoDebugUtil } from '../../../../core/utils/photo-debug.util';
+import { NgxEchartsDirective, provideEchartsCore } from 'ngx-echarts';
+import * as echarts from 'echarts/core';
+import { BarChart, LineChart, PieChart } from 'echarts/charts';
+import {
+  GridComponent,
+  LegendComponent,
+  TooltipComponent,
+  TitleComponent,
+} from 'echarts/components';
+import { CanvasRenderer } from 'echarts/renderers';
+
+try { echarts.use([LineChart, PieChart, BarChart, TooltipComponent, GridComponent, LegendComponent, TitleComponent, CanvasRenderer]); } catch {};
 
 type DashboardView =
   | 'home'
@@ -63,7 +75,9 @@ type DashboardView =
   | 'my-activity'
   | 'profile'
   | 'notifications'
-  | 'catalog-items';
+  | 'catalog-items'
+  | 'catalog'
+  | 'create-request';
 
 interface RequestHistoryRow {
   year: number;
@@ -104,7 +118,8 @@ interface RequestSummarySnapshot {
 @Component({
   selector: 'app-employee-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, NgxEchartsDirective],
+  providers: [provideEchartsCore({ echarts })],
   templateUrl: './employee-dashboard.component.html',
   styleUrl: './employee-dashboard.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -545,6 +560,8 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
       type: this.mapNotificationType(n.type, n.title),
       requestId: n.requestId || 'N/A',
       message: n.message,
+      title: n.title || this.mapNotificationType(n.type, n.title),
+      description: n.message,
       date: new Date(n.createdDate).toLocaleString('en-US', {
         month: 'short',
         day: 'numeric',
@@ -553,10 +570,25 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
         minute: '2-digit',
         hour12: true,
       }),
+      createdAt: n.createdDate,
       read: n.isRead,
+      unread: !n.isRead,
       sivId: n.type === 'success' && n.title.includes('Completed') ? 'SIV-NEW' : undefined,
     };
   }
+
+  /** Status check helpers for the template */
+  isApprovedStatus(s: string): boolean {
+    return EmployeeDashboardComponent.APPROVED_STATUSES.includes(s as any);
+  }
+  isPendingStatus(s: string): boolean {
+    return EmployeeDashboardComponent.PENDING_STATUSES.includes(s as any);
+  }
+  isRejectedStatus(s: string): boolean {
+    return EmployeeDashboardComponent.REJECTED_STATUSES.includes(s as any);
+  }
+  isStatusDraft(s: string): boolean { return s === 'Draft'; }
+  isStatusCancelled(s: string): boolean { return s === 'Cancelled'; }
 
   // Settings Signals
   protected readonly notificationSettings = signal({
@@ -1386,7 +1418,10 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
   }
 
   // Template Helpers
+  private _overrideView: DashboardView | null = null;
+
   get currentView(): DashboardView {
+    if (this._overrideView) return this._overrideView;
     const url = this.router.url;
     if (url.includes('/new-request')) return 'new-request';
     if (url.includes('/my-requests-summary')) return 'my-requests-summary';
@@ -1408,6 +1443,8 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
       profile: 'My Profile',
       notifications: 'Notifications',
       'catalog-items': 'Available Items',
+      catalog: 'Catalog',
+      'create-request': 'Create Request',
     };
     return titles[this.currentView];
   }
@@ -1422,6 +1459,8 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
       'my-requests-summary': '',
       'my-activity': '',
       notifications: '',
+      catalog: 'Browse catalog items',
+      'create-request': 'Submit a new request',
     };
     return subtitles[this.currentView];
   }
@@ -1541,4 +1580,438 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
     { label: 'Return Materials', icon: '📦', route: '/employee/returns' },
     { label: 'Available Items', icon: '🔍', route: '/employee/dashboard/catalog-items' },
   ];
+
+  // =========================================================================
+  // NEW BRIDGING PROPERTIES & METHODS FOR POLISHED EMPLOYEE DASHBOARD UI
+  // =========================================================================
+
+  /** Employee data bag for the hero banner */
+  get employeeData() {
+    const p = this.userProfile();
+    const user = this.currentUserService.getCurrentUserValue();
+    return {
+      firstName: p.fullName?.split(' ')[0] || user?.fullName?.split(' ')[0] || 'Employee',
+      lastName: p.fullName?.split(' ').slice(1).join(' ') || user?.fullName?.split(' ').slice(1).join(' ') || '',
+      email: p.email || user?.email || '',
+      department: p.department || user?.department || '',
+      position: p.position || user?.position || '',
+      phone: p.phone || user?.phone || '',
+      employeeId: p.employeeCode || user?.employeeCode || '',
+      joinDate: p.joinDate || '',
+      profileImageUrl: this.profilePhoto() as string | null,
+      isOnline: true,
+    };
+  }
+
+  get todayDate(): Date { return new Date(); }
+
+  /** Flat summary stats object for template binding */
+  get summaryStats() {
+    const s = this.requestSummary();
+    const total = s.total + s.pending + s.approved + s.rejected + s.completed;
+    return {
+      totalRequests: total || s.total,
+      approvedRequests: s.approved,
+      pendingRequests: s.pending,
+      rejectedRequests: s.rejected,
+      draftRequests: 0,
+      percentChange: 0,
+    };
+  }
+
+  get approvalRate(): number {
+    const s = this.requestSummary();
+    return s.total > 0 ? Math.round((s.approved / s.total) * 100) : 0;
+  }
+
+  get pendingUrgentCount(): number {
+    return this.workflowRequests().filter(
+      (r) => EmployeeDashboardComponent.PENDING_STATUSES.includes(r.status) && r.priority === 'Urgent'
+    ).length;
+  }
+
+  get monthlyTrend() { return this.requestTrendData(); }
+
+  /** ECharts options: Request Trend (multi-line area chart) */
+  get trendChartOpts(): Record<string, unknown> {
+    const data = this.requestTrendData();
+    const months = data.map(d => d.month);
+    const submitted = data.map(d => d.submitted);
+    const approved = data.map(d => d.approved);
+    return {
+      tooltip: { trigger: 'axis' },
+      legend: { data: ['Submitted', 'Approved'], bottom: 0, icon: 'circle', textStyle: { fontSize: 11, fontWeight: '600', color: '#64748b' } },
+      grid: { left: 40, right: 16, top: 12, bottom: 36 },
+      xAxis: { type: 'category', data: months, axisLine: { lineStyle: { color: '#e2e8f0' } }, axisLabel: { fontSize: 10, color: '#94a3b8' } },
+      yAxis: { type: 'value', min: 0, splitLine: { lineStyle: { color: '#f1f5f9' } }, axisLabel: { fontSize: 10, color: '#94a3b8' } },
+      series: [
+        {
+          name: 'Submitted',
+          type: 'line',
+          smooth: true,
+          data: submitted,
+          lineStyle: { color: '#6366f1', width: 3 },
+          itemStyle: { color: '#6366f1' },
+          areaStyle: { color: 'rgba(99,102,241,0.12)' },
+          symbol: 'circle',
+          symbolSize: 7,
+        },
+        {
+          name: 'Approved',
+          type: 'line',
+          smooth: true,
+          data: approved,
+          lineStyle: { color: '#10b981', width: 2, type: 'dashed' },
+          itemStyle: { color: '#10b981' },
+          areaStyle: { color: 'rgba(16,185,129,0.08)' },
+          symbol: 'diamond',
+          symbolSize: 6,
+        },
+      ],
+    };
+  }
+
+  /** 12-month breakdown data for the current year (bar chart) */
+  readonly yearlyBreakdownData = computed(() => {
+    const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const currentYear = new Date().getFullYear();
+    const buckets = new Map<string, number>();
+
+    for (const m of monthNames) buckets.set(m, 0);
+
+    this.workflowRequests().forEach(r => {
+      const d = new Date(r.submittedDate);
+      if (d.getFullYear() !== currentYear) return;
+      const key = monthNames[d.getMonth()];
+      buckets.set(key, (buckets.get(key) || 0) + 1);
+    });
+
+    return monthNames.map(m => ({ month: m, count: buckets.get(m) || 0 }));
+  });
+
+  /** ECharts options: Monthly Breakdown bar chart (12 months) */
+  get monthlyBarChartOpts(): Record<string, unknown> {
+    const data = this.yearlyBreakdownData();
+    const maxVal = Math.max(1, ...data.map(d => d.count));
+    return {
+      tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+      grid: { left: 36, right: 16, top: 10, bottom: 24 },
+      xAxis: {
+        type: 'category',
+        data: data.map(d => d.month),
+        axisLine: { lineStyle: { color: '#e2e8f0' } },
+        axisLabel: { fontSize: 9, color: '#94a3b8' },
+      },
+      yAxis: {
+        type: 'value',
+        min: 0,
+        max: maxVal + 1,
+        splitLine: { lineStyle: { color: '#f1f5f9' } },
+        axisLabel: { fontSize: 9, color: '#94a3b8' },
+      },
+      series: [{
+        type: 'bar',
+        data: data.map(d => ({
+          value: d.count,
+          itemStyle: {
+            color: d.count > 0 ? '#6366f1' : '#e2e8f0',
+            borderRadius: [4, 4, 0, 0],
+          },
+        })),
+        barWidth: '60%',
+        label: {
+          show: true,
+          position: 'top',
+          fontSize: 9,
+          fontWeight: 700,
+          color: '#64748b',
+          formatter: (p: any) => p.value > 0 ? p.value : '',
+        },
+      }],
+    };
+  }
+
+  /** Value summary data (mock from requests) */
+  readonly valueSummary = computed(() => {
+    const approved = this.workflowRequests().filter(r =>
+      EmployeeDashboardComponent.APPROVED_STATUSES.includes(r.status)
+    );
+    const totalValue = approved.reduce((sum, r) => {
+      const cost = (r as any).totalCost ?? 0;
+      return sum + (typeof cost === 'number' ? cost : 0);
+    }, 0);
+    const avgValue = approved.length > 0 ? Math.round(totalValue / approved.length) : 0;
+    const highest = approved.length > 0
+      ? Math.max(...approved.map(r => (r as any).totalCost ?? 0))
+      : 0;
+    const highestSr = totalValue > 0
+      ? (approved.find(r => (r as any).totalCost === highest)?.srNumber ?? approved[0]?.srNumber ?? 'N/A')
+      : (approved[0]?.srNumber ?? 'N/A');
+
+    return { totalValue, avgValue, highestValue: highest, highestSr };
+  });
+
+  /** ECharts options: Status Distribution (donut) */
+  get statusDonutOpts(): Record<string, unknown> {
+    const s = this.requestSummary();
+    const data = [
+      { name: 'Pending', value: s.pending },
+      { name: 'Approved', value: s.approved },
+      { name: 'Rejected', value: s.rejected },
+      { name: 'Completed', value: s.completed },
+    ].filter(d => d.value > 0);
+    const colors = ['#f59e0b', '#10b981', '#ef4444', '#6366f1'];
+    return {
+      tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+      legend: { bottom: 0, textStyle: { fontSize: 11, fontWeight: '600', color: '#64748b' } },
+      series: [{
+        type: 'pie',
+        radius: ['50%', '75%'],
+        center: ['50%', '45%'],
+        avoidLabelOverlap: false,
+        label: { show: true, position: 'center', formatter: () => `${s.total}`, fontSize: 26, fontWeight: 800, color: '#1e293b' },
+        emphasis: { label: { show: true, fontSize: 30, fontWeight: 'bold' } },
+        data: data.map((d, i) => ({ ...d, itemStyle: { color: colors[i] } })),
+      }],
+    };
+  }
+
+  // ===== VIEW SWITCHING (SPA) =====
+  switchView(view: string): void {
+    this._overrideView = view as DashboardView;
+    this.cdr.markForCheck();
+  }
+
+  // ===== MY REQUESTS =====
+  requestSearchTerm: string = '';
+  requestFilterStatus: string = '';
+  requestSortBy: string = 'dateDesc';
+
+  get myRequests() { return this.workflowRequests(); }
+
+  get filteredRequests() {
+    let list = this.myRequests;
+    const term = this.requestSearchTerm.toLowerCase().trim();
+    if (term) {
+      list = list.filter(r =>
+        r.srNumber.toLowerCase().includes(term) ||
+        r.items.some(i => i.name.toLowerCase().includes(term))
+      );
+    }
+    if (this.requestFilterStatus) {
+      if (this.requestFilterStatus === 'Pending') {
+        list = list.filter(r => EmployeeDashboardComponent.PENDING_STATUSES.includes(r.status));
+      } else if (this.requestFilterStatus === 'Approved') {
+        list = list.filter(r => EmployeeDashboardComponent.APPROVED_STATUSES.includes(r.status));
+      } else if (this.requestFilterStatus === 'Rejected') {
+        list = list.filter(r => EmployeeDashboardComponent.REJECTED_STATUSES.includes(r.status));
+      } else {
+        list = list.filter(r => r.status === this.requestFilterStatus);
+      }
+    }
+    if (this.requestSortBy === 'dateAsc') {
+      list = [...list].sort((a, b) => new Date(a.submittedDate).getTime() - new Date(b.submittedDate).getTime());
+    } else if (this.requestSortBy === 'dateDesc') {
+      list = [...list].sort((a, b) => new Date(b.submittedDate).getTime() - new Date(a.submittedDate).getTime());
+    } else if (this.requestSortBy === 'type') {
+      list = [...list].sort((a, b) => ((a as any).requestType || '').localeCompare((b as any).requestType || ''));
+    }
+    return list;
+  }
+
+  filterMyRequests(): void { this.cdr.markForCheck(); }
+
+  // ===== CATALOG =====
+  catalogSearchTerm: string = '';
+  catalogFilterCategory: string = '';
+
+  get filteredCatalog() { return this.filteredCatalogItems(); }
+
+  get catalogCategories(): string[] {
+    const cats = new Set(this.baseCatalogItems().map(i => i.category).filter(Boolean));
+    return Array.from(cats);
+  }
+
+  filterCatalog(): void { this.cdr.markForCheck(); }
+
+  requestCatalogItem(item: any): void {
+    alert(`Requesting: ${item.name || item.itemName || 'Item'}`);
+  }
+
+  // ===== NOTIFICATIONS =====
+  notificationSearchTerm: string = '';
+  notificationFilterType: string = '';
+
+  get notificationTypes(): string[] {
+    const types = new Set(this.workflowNotifications().map(n => this.mapNotificationType(n.type, n.title)));
+    return Array.from(types);
+  }
+
+  get displayedNotifications() {
+    let list = this.workflowNotifications().map(n => this.mapWorkflowNotification(n));
+    const term = this.notificationSearchTerm.toLowerCase().trim();
+    if (term) {
+      list = list.filter(n => n.message.toLowerCase().includes(term) || n.requestId.toLowerCase().includes(term));
+    }
+    if (this.notificationFilterType) {
+      list = list.filter(n => n.type === this.notificationFilterType);
+    }
+    return list;
+  }
+
+  filterNotifications(): void { this.cdr.markForCheck(); }
+
+  acknowledgeNotification(notif: any): void {
+    this.markNotificationAsRead(notif.id);
+  }
+
+  get unreadNotifications(): number { return this.unreadCount(); }
+  get hasUnreadNotifications(): boolean { return this.unreadCount() > 0; }
+
+  // ===== REQUEST DETAILS MODAL =====
+  showRequestModal: boolean = false;
+  selectedRequest: any = null;
+
+  viewRequestDetails(req: any): void {
+    this.selectedRequest = req;
+    this.showRequestModal = true;
+  }
+
+  closeRequestModal(): void {
+    this.showRequestModal = false;
+    this.selectedRequest = null;
+  }
+
+  // ===== DRAFT =====
+  newRequest: any = { requestType: 'Supply Request', requiredDate: '', description: '' };
+
+  saveDraft(): void {
+    alert('Request saved as draft.');
+  }
+
+  // ===== PROFILE EDITING =====
+  editingProfile: boolean = false;
+  editForm: any = {};
+
+  toggleEditProfile(): void {
+    this.editingProfile = !this.editingProfile;
+    if (this.editingProfile) {
+      const p = this.employeeData;
+      this.editForm = { firstName: p.firstName, lastName: p.lastName, email: p.email, phone: p.phone, department: p.department, position: p.position };
+    }
+  }
+
+  saveProfile(): void {
+    const currentUser = this.currentUserService.getCurrentUserValue();
+    if (currentUser) {
+      this.currentUserService.updateUser({
+        fullName: `${this.editForm.firstName} ${this.editForm.lastName}`.trim(),
+        email: this.editForm.email,
+        phone: this.editForm.phone,
+        department: this.editForm.department,
+        position: this.editForm.position,
+      } as any);
+    }
+    this.editingProfile = false;
+    alert('Profile updated successfully!');
+    this.cdr.markForCheck();
+  }
+
+  // ===== PHOTO UPLOAD (INLINE) =====
+  photoUploadMethod: string = '';
+  showPhotoUpload: boolean = false;
+  photoPreview: string | null = null;
+  scanningPhoto: boolean = false;
+  uploadingPhoto: boolean = false;
+
+  selectPhotoUploadMethod(method: string): void {
+    this.photoUploadMethod = method;
+    if (method === 'file') {
+      document.querySelector<HTMLInputElement>('.file-input-hidden')?.click();
+    } else if (method === 'camera') {
+      this.startCamera();
+    } else if (method === 'scan') {
+      this.scanningPhoto = true;
+      setTimeout(() => { this.scanningPhoto = false; this.photoPreview = 'scan-result-placeholder'; this.cdr.markForCheck(); }, 2000);
+    }
+    this.cdr.markForCheck();
+  }
+
+  onPhotoSelected(event: any): void {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => { this.photoPreview = e.target?.result as string; this.cdr.markForCheck(); };
+    reader.readAsDataURL(file);
+  }
+
+  cancelPhotoUpload(): void {
+    this.photoPreview = null;
+    this.showPhotoUpload = false;
+    this.photoUploadMethod = '';
+    this.stopCamera();
+  }
+
+  saveProfilePhoto(): void {
+    if (!this.photoPreview) return;
+    this.uploadingPhoto = true;
+    // Simulate upload
+    setTimeout(() => {
+      this.uploadingPhoto = false;
+      this.showPhotoUpload = false;
+      this.photoPreview = null;
+      alert('Profile photo updated!');
+      this.cdr.markForCheck();
+    }, 1500);
+  }
+
+  // ===== NOTIFICATION PREFS =====
+  notificationPrefs: { label: string; key: string; enabled: boolean }[] = [
+    { label: 'Email me when a request is approved', key: 'emailOnApproval', enabled: true },
+    { label: 'Email me when a request is rejected', key: 'emailOnRejection', enabled: true },
+    { label: 'Email me when items are ready for pickup', key: 'emailOnReady', enabled: true },
+    { label: 'Weekly summary of my requests', key: 'weeklySummary', enabled: false },
+    { label: 'Monthly digest of all activity', key: 'monthlyDigest', enabled: false },
+  ];
+
+  saveNotificationPrefs(): void {
+    const settings: any = {};
+    this.notificationPrefs.forEach(p => { settings[p.key] = p.enabled; });
+    this.notificationSettings.set(settings);
+    this.saveNotificationSettings();
+    alert('Notification preferences saved!');
+  }
+
+  // ===== 2FA (wrapper) =====
+  get twoFAEnabled(): boolean { return this.twoFactorEnabled(); }
+  set twoFAEnabled(v: boolean) { this.twoFactorEnabled.set(v); }
+
+  get twoFAMethod(): string { return this.twoFactorMethod(); }
+  set twoFAMethod(v: string) { this.twoFactorMethod.set(v as any); }
+
+  get twoFAPhone(): string { return this.twoFactorPhone(); }
+  set twoFAPhone(v: string) { this.twoFactorPhone.set(v); }
+
+  twoFAPhoneVerified: boolean = false;
+  twoFAVerificationCode: string = '';
+
+  get twoFAVerificationRequired(): boolean { return this.twoFactorVerificationSent(); }
+  show2FASettings: boolean = false;
+
+  saveTwoFAPhone(): void {
+    this.saveTwoFactorPhone();
+  }
+
+  verifyTwoFACode(): void {
+    this.verifyTwoFactorCode();
+    if (this.twoFactorSetupComplete()) this.twoFAPhoneVerified = true;
+  }
+
+  resendTwoFACode(): void {
+    this.resendVerificationCode();
+  }
+
+  markAllNotificationsAsRead(): void {
+    this.markAllAsRead();
+  }
 }

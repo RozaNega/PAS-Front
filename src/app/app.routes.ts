@@ -295,6 +295,10 @@ export const routes: Routes = [
         path: 'users/activity',
         loadComponent: () => import('./features/user-management/pages/activity-logs/activity-logs.component').then(m => m.ActivityLogsComponent),
       },
+      {
+        path: 'users/reset-password',
+        loadComponent: () => import('./features/user-management/pages/reset-password/reset-password.component').then(m => m.AdminResetPasswordComponent),
+      },
     ],
   },
   {
@@ -707,25 +711,26 @@ export const routes: Routes = [
           ),
       },
       {
-        path: 'reports/approval',
+        path: 'reports/dashboard',
         loadComponent: () =>
-          import('./features/dashboard/pages/manager-reports/approval-reports.component').then(
-            (m) => m.ApprovalReportsComponent,
+          import('./features/dashboard/pages/manager-reports/reports-dashboard.component').then(
+            (m) => m.ReportsDashboardComponent,
           ),
+      },
+      {
+        path: 'reports/approval',
+        redirectTo: '/manager/reports/dashboard',
+        pathMatch: 'full',
       },
       {
         path: 'reports/requests',
-        loadComponent: () =>
-          import('./features/dashboard/pages/manager-reports/request-reports.component').then(
-            (m) => m.RequestReportsComponent,
-          ),
+        redirectTo: '/manager/reports/dashboard',
+        pathMatch: 'full',
       },
       {
         path: 'reports/sivs',
-        loadComponent: () =>
-          import('./features/dashboard/pages/manager-reports/siv-reports.component').then(
-            (m) => m.SIVReportsComponent,
-          ),
+        redirectTo: '/manager/reports/dashboard',
+        pathMatch: 'full',
       },
       {
         path: 'reports/inventory',
@@ -882,6 +887,13 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/dashboard/pages/compliance-reports/inspection-reports.component').then(
             (m) => m.InspectionReportsComponent,
+          ),
+      },
+      {
+        path: 'decisions',
+        loadComponent: () =>
+          import('./features/dashboard/pages/compliance-decisions/decisions.component').then(
+            (m) => m.DecisionsComponent,
           ),
       },
       {

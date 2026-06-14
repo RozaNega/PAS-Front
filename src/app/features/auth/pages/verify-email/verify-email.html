@@ -1,0 +1,36 @@
+<section class="auth-page" aria-labelledby="verify-title">
+  <article class="auth-card">
+    <img
+      class="auth-logo"
+      ngSrc="/assets/images/africom-logo.png"
+      width="540"
+      height="140"
+      alt="AFRICOM Technologies"
+      priority
+    />
+    <h1 id="verify-title">Email Verification</h1>
+
+    @if (state() === 'loading') {
+      <div class="verify-status">
+        <span class="verify-spinner"></span>
+        <p class="auth-subtitle">Verifying your email address...</p>
+      </div>
+    }
+
+    @if (state() === 'success') {
+      <div class="verify-status verify-status--success">
+        <i class="bi bi-check-circle-fill verify-icon"></i>
+        <p class="auth-subtitle">{{ message() }}</p>
+        <a class="btn-primary" routerLink="/auth/login">Go to Login</a>
+      </div>
+    }
+
+    @if (state() === 'error') {
+      <div class="verify-status verify-status--error">
+        <i class="bi bi-x-circle-fill verify-icon"></i>
+        <p class="auth-subtitle">{{ message() }}</p>
+        <a class="btn-secondary" routerLink="/auth/login">Back to Login</a>
+      </div>
+    }
+  </article>
+</section>

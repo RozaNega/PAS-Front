@@ -1,31 +1,70 @@
-<div class="rejected-requests-container">
-  <div class="page-header">
-    <h1>Rejected Requests</h1>
-    <p class="subtitle">Requests that were not approved</p>
+<div class="requests-page">
+  <header class="page-hero">
+    <div class="page-hero__text">
+      <h1>{{ title }}</h1>
+      <p>{{ subtitle }}</p>
+    </div>
+    <span class="page-hero__badge"><i class="bi bi-x-circle"></i> {{ totalCount }} rejected</span>
+  </header>
+
+  <nav class="sub-nav">
+    <button class="sub-nav__link" (click)="navigateTo('/manager/requests/all')">All</button>
+    <button class="sub-nav__link" (click)="navigateTo('/manager/requests/pending')">Pending</button>
+    <button class="sub-nav__link" (click)="navigateTo('/manager/requests/approved')">Approved</button>
+    <button class="sub-nav__link sub-nav__link--active" (click)="navigateTo('/manager/requests/rejected')">Rejected</button>
+    <button class="sub-nav__link" (click)="navigateTo('/manager/requests/issued')">Issued</button>
+  </nav>
+
+  <div class="stats-bar">
+    <span class="stats-bar__item"><i class="bi bi-x-circle"></i> Total Rejected: <strong>{{ totalCount }}</strong></span>
   </div>
 
-  <div class="requests-list">
-    @for (req of requests(); track req.id) {
-      <div class="request-card">
-        <div class="request-header">
-          <div class="request-number">{{ req.requestNumber }}</div>
-          <div class="status-badge rejected">Rejected</div>
-        </div>
-        <div class="request-body">
-          <p class="description">{{ req.description }}</p>
-          <div class="rejection-reason">
-            <i class="bi bi-exclamation-triangle"></i>
-            <span><strong>Reason:</strong> {{ req.rejectionReason }}</span>
-          </div>
-          <div class="request-details">
-            <div class="detail-row"><span class="label">Requester:</span><span class="value">{{ req.requesterName }} ({{ req.department }})</span></div>
-            <div class="detail-row"><span class="label">Items:</span><span class="value">{{ req.itemCount }}</span></div>
-            <div class="detail-row"><span class="label">Value:</span><span class="value">${{ req.estimatedValue.toLocaleString() }}</span></div>
-            <div class="detail-row"><span class="label">Rejected By:</span><span class="value">{{ req.rejectedBy }}</span></div>
-            <div class="detail-row"><span class="label">Rejected Date:</span><span class="value">{{ req.rejectedDate }}</span></div>
-          </div>
-        </div>
-      </div>
-    }
+  <div class="panel">
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Request ID</th>
+            <th>Requester</th>
+            <th>Department</th>
+            <th>Priority</th>
+            <th>Items</th>
+            <th>Value</th>
+            <th>Rejection Reason</th>
+            <th>Rejected Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (r of requests(); track r.id) {
+            <tr>
+              <td><span class="td-id">{{ r.requestNumber }}</span></td>
+              <td>
+                <div class="td-employee">
+                  <div class="td-avatar" [style.background]="'hsl(' + (r.requesterName.length * 40 % 360) + ', 65%, 88%)'">{{ r.requesterName.charAt(0) }}</div>
+                  <span class="td-name">{{ r.requesterName }}</span>
+                </div>
+              </td>
+              <td><span style="color:#64748b;">{{ r.department }}</span></td>
+              <td><span [class]="getPriorityClass(r.priority)">{{ r.priority }}</span></td>
+              <td><strong>{{ r.itemCount }}</strong></td>
+              <td><span class="td-value">${{ r.estimatedValue.toLocaleString() }}</span></td>
+              <td>
+                <div class="info-callout info-callout--rejected">
+                  <i class="bi bi-exclamation-triangle-fill"></i>
+                  <span>{{ r.rejectionReason }}</span>
+                </div>
+              </td>
+              <td><span class="td-date">{{ r.rejectedDate }}</span></td>
+            </tr>
+          } @empty {
+            <tr class="empty-row">
+              <td colspan="8">
+                <div class="empty-state"><i class="bi bi-inbox"></i><p>No rejected requests</p></div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
   </div>
 </div>

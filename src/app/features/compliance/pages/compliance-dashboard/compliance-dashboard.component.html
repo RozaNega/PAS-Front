@@ -1,175 +1,195 @@
-<div class="compliance-dashboard">
-  <!-- Hero Banner -->
-  <header class="hero-banner">
-    <div class="hero-copy">
-      <p class="hero-eyebrow">Compliance Officer Dashboard</p>
-      <div class="hero-header-content">
-        <div class="hero-avatar">
-          <div class="photo-scan-container" [class.scanning]="isValidatingPhoto()">
-            @if (profilePhoto()) {
-              <img [src]="profilePhoto()" alt="Profile photo" class="avatar-img shadow-lg" />
-            } @else {
-              <div class="avatar-placeholder shadow-lg">
-                <i class="bi bi-person-fill"></i>
-              </div>
-            }
-
-            @if (isValidatingPhoto()) {
-              <div class="scan-overlay">
-                <div class="scan-line"></div>
-                <span class="scan-label">Scanning Face...</span>
-              </div>
-            }
-          </div>
-        </div>
-        <div class="hero-text">
-          <h1>👋 {{ greeting }}, {{ officerName() }}!</h1>
-          <p>Monitor compliance score, risk summary, and violation trends</p>
-        </div>
-      </div>
-    </div>
-    <div class="dashboard-info-widget">
-      <div class="info-item">
-        <i class="bi bi-calendar3 info-icon text-primary"></i>
-        <span class="info-text">{{ currentDateStr }}</span>
-      </div>
-      <div class="info-item">
-        <i class="bi bi-clock info-icon text-secondary"></i>
-        <span class="info-text">{{ currentTime() }}</span>
-      </div>
-      <div class="info-item">
-        <i class="bi bi-geo-alt-fill info-icon text-danger"></i>
-        <span class="info-text">{{ currentLocation() }}</span>
-      </div>
-    </div>
-  </header>
-
-  <!-- Compliance Overview -->
-  <div class="overview-section">
-    <div class="overview-card">
-      <div class="overview-header">
-        <span class="overview-title">Compliance Overview</span>
-      </div>
-      <div class="overview-content">
-        <p>System Status: 🟢 All Systems Operational | Last Audit: Dec 14, 2024 | Next Audit: Jan 15, 2025</p>
-      </div>
-    </div>
-  </div>
-
-  <!-- Compliance Score -->
-  <div class="score-section">
-    <h2>🎯 COMPLIANCE SCORE</h2>
-    <div class="score-container">
-      <div class="score-circle">
-        <div class="score-value">{{ currentScore }}%</div>
-        <div class="score-label">{{ scoreLabel }}</div>
-      </div>
-      <div class="score-breakdown">
-        @for (score of complianceScores; track score.category) {
-          <div class="score-item">
-            <div class="score-label">{{ score.category }}</div>
-            <div class="score-bar">
-              <div class="score-fill" [style.width.%]="score.percentage"></div>
-            </div>
-            <div class="score-percentage">{{ score.percentage }}%</div>
-          </div>
+<div class="page">
+  <!-- ═══════ HERO ═══════ -->
+  <div class="hero">
+    <div class="hero__left">
+      <div class="hero__avatar">
+        @if (profilePhoto()) {
+          <img [src]="profilePhoto()" alt="Profile" class="hero__avatar-img" />
+        } @else {
+          <div class="hero__avatar-placeholder"><i class="pi pi-user"></i></div>
         }
       </div>
-    </div>
-  </div>
-
-  <!-- Risk Summary -->
-  <div class="risk-section">
-    <h2>⚠️ RISK SUMMARY</h2>
-    <div class="risk-cards">
-      @for (risk of riskSummary; track risk.severity) {
-        <div class="risk-card">
-          <div class="risk-title">{{ risk.severity }} Violations</div>
-          <div class="risk-count">{{ risk.count }}</div>
-          <div class="risk-open">🔴 Open: {{ risk.open }}</div>
-        </div>
-      }
-      <div class="risk-card risk-total">
-        <div class="risk-title">Total Violations</div>
-        <div class="risk-count">{{ totalViolations }}</div>
-        <div class="risk-trend">▼ -15%</div>
+      <div class="hero__text">
+        <span class="hero__eyebrow">Compliance Officer Dashboard</span>
+        <h1>{{ greeting }}, {{ officerName() }}!</h1>
+        <p>Monitor compliance score, risk summary, and violation trends</p>
       </div>
     </div>
-  </div>
-
-  <!-- Violation Trends -->
-  <div class="trends-section">
-    <h2>📉 VIOLATION TRENDS (Last 6 months)</h2>
-    <div class="trends-legend">
-      <span class="legend-item"><span class="legend-dot critical"></span> Critical</span>
-      <span class="legend-item"><span class="legend-dot high"></span> High</span>
-      <span class="legend-item"><span class="legend-dot medium"></span> Medium</span>
-      <span class="legend-item"><span class="legend-dot low"></span> Low</span>
-    </div>
-    <div class="trends-chart">
-      <svg viewBox="0 0 600 200" class="trends-svg">
-        <!-- Grid lines -->
-        <line x1="50" y1="20" x2="580" y2="20" stroke="#e5e7eb" stroke-width="1" />
-        <line x1="50" y1="60" x2="580" y2="60" stroke="#e5e7eb" stroke-width="1" />
-        <line x1="50" y1="100" x2="580" y2="100" stroke="#e5e7eb" stroke-width="1" />
-        <line x1="50" y1="140" x2="580" y2="140" stroke="#e5e7eb" stroke-width="1" />
-        <line x1="50" y1="180" x2="580" y2="180" stroke="#e5e7eb" stroke-width="1" />
-
-        <!-- Y-axis labels -->
-        <text x="40" y="25" text-anchor="end" font-size="10">12</text>
-        <text x="40" y="65" text-anchor="end" font-size="10">10</text>
-        <text x="40" y="105" text-anchor="end" font-size="10">8</text>
-        <text x="40" y="145" text-anchor="end" font-size="10">6</text>
-        <text x="40" y="185" text-anchor="end" font-size="10">4</text>
-
-        <!-- X-axis labels -->
-        <text x="50" y="195" text-anchor="middle" font-size="10">Jul</text>
-        <text x="140" y="195" text-anchor="middle" font-size="10">Aug</text>
-        <text x="230" y="195" text-anchor="middle" font-size="10">Sep</text>
-        <text x="320" y="195" text-anchor="middle" font-size="10">Oct</text>
-        <text x="410" y="195" text-anchor="middle" font-size="10">Nov</text>
-        <text x="500" y="195" text-anchor="middle" font-size="10">Dec</text>
-
-        <!-- Critical line -->
-        <polyline fill="none" stroke="#ef4444" stroke-width="2" points="50,130 140,140 230,140 320,150 410,150 500,150" />
-        <!-- High line -->
-        <polyline fill="none" stroke="#f97316" stroke-width="2" points="50,110 140,120 230,110 320,120 410,130 500,130" />
-        <!-- Medium line -->
-        <polyline fill="none" stroke="#eab308" stroke-width="2" points="50,90 140,100 230,110 320,100 410,110 500,110" />
-        <!-- Low line -->
-        <polyline fill="none" stroke="#22c55e" stroke-width="2" points="50,70 140,80 230,90 320,100 410,110 500,120" />
-      </svg>
+    <div class="hero__info">
+      <span><i class="pi pi-calendar"></i> {{ currentDateStr }}</span>
+      <span><i class="pi pi-clock"></i> {{ currentTime() }}</span>
+      <span><i class="pi pi-map-marker"></i> {{ currentLocation() }}</span>
     </div>
   </div>
 
-  <!-- Recent Activity -->
-  <div class="activity-section">
-    <h2>🔔 RECENT ACTIVITY</h2>
-    <div class="activity-list">
-      @for (activity of recentActivities; track activity.description) {
-        <div class="activity-item">
-          <span class="activity-icon">{{ activity.icon }}</span>
-          <span class="activity-date">{{ activity.date }}</span>
-          <span class="activity-description">{{ activity.description }}</span>
+  <!-- ═══════ OVERVIEW ═══════ -->
+  <div class="overview-bar">
+    <i class="pi pi-shield" style="color:#22c55e;"></i>
+    <span>System Status: <strong style="color:#16a34a;">All Systems Operational</strong></span>
+    <span class="overview-bar__sep">|</span>
+    <span>Last Audit: Dec 14, 2024</span>
+    <span class="overview-bar__sep">|</span>
+    <span>Next Audit: Jan 15, 2025</span>
+  </div>
+
+  @if (isLoading()) {
+    <div class="state-box">
+      <div class="spinner"></div>
+      <p>Loading compliance data...</p>
+    </div>
+  } @else {
+    <!-- ═══════ COMPLIANCE SCORE + RISK ═══════ -->
+    <div class="grid-2col">
+      <!-- Compliance Score -->
+      <div class="panel">
+        <div class="panel__header">
+          <span><i class="pi pi-flag" style="margin-right:.4rem;"></i> Compliance Score</span>
+          <span class="panel__badge" [style.background]="currentScore >= 90 ? '#dcfce7' : currentScore >= 75 ? '#fef3c7' : '#fee2e2'" [style.color]="currentScore >= 90 ? '#16a34a' : currentScore >= 75 ? '#d97706' : '#dc2626'">{{ scoreLabel }}</span>
         </div>
-      }
-    </div>
-    <div class="activity-footer">
-      <a href="#" class="view-all-link" (click)="viewAllActivity($event)">View All Activity →</a>
-    </div>
-  </div>
-
-  <!-- Quick Stats -->
-  <div class="stats-section">
-    <h2>📊 QUICK STATS</h2>
-    <div class="stats-grid">
-      @for (stat of quickStats; track stat.label) {
-        <div class="stat-card">
-          <div class="stat-label">{{ stat.label }}</div>
-          <div class="stat-value">{{ stat.value }}</div>
-          <div class="stat-subtitle">{{ stat.subtitle }}</div>
+        <div class="panel__body panel__body--score">
+          <div class="score-gauge">
+            <div echarts [options]="gaugeOption" class="gauge-chart"></div>
+            <div class="score-gauge__overlay">
+              <span class="score-gauge__value">{{ currentScore }}%</span>
+              <span class="score-gauge__label">Overall Score</span>
+            </div>
+          </div>
+          <div class="score-breakdown">
+            <div echarts [options]="scorePieOption" class="pie-chart"></div>
+          </div>
         </div>
-      }
+      </div>
+
+      <!-- Risk Summary -->
+      <div class="panel">
+        <div class="panel__header">
+          <span><i class="pi pi-exclamation-triangle" style="margin-right:.4rem;"></i> Risk Summary</span>
+          <span class="panel__badge panel__badge--total">Total: {{ totalViolations }}</span>
+        </div>
+        <div class="panel__body">
+          <div class="risk-grid">
+            @for (risk of riskSummary; track risk.severity) {
+              <div class="risk-card" [class.risk-card--critical]="risk.severity === 'Critical'"
+                [class.risk-card--high]="risk.severity === 'High'"
+                [class.risk-card--medium]="risk.severity === 'Medium'"
+                [class.risk-card--low]="risk.severity === 'Low'">
+                <div class="risk-card__header">
+                  <span class="risk-card__dot" [class.risk-card__dot--critical]="risk.severity === 'Critical'"
+                    [class.risk-card__dot--high]="risk.severity === 'High'"
+                    [class.risk-card__dot--medium]="risk.severity === 'Medium'"
+                    [class.risk-card__dot--low]="risk.severity === 'Low'"></span>
+                  <span class="risk-card__title">{{ risk.severity }}</span>
+                </div>
+                <div class="risk-card__value">{{ risk.count }}</div>
+                <div class="risk-card__open">🔴 Open: {{ risk.open }}</div>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
     </div>
-  </div>
+
+    <!-- ═══════ VIOLATION TRENDS ═══════ -->
+    <div class="panel">
+      <div class="panel__header">
+        <span><i class="pi pi-chart-line" style="margin-right:.4rem;"></i> Violation Trends (Last 6 months)</span>
+      </div>
+      <div class="panel__body">
+        <div echarts [options]="trendLineOption" class="trend-chart"></div>
+      </div>
+    </div>
+
+    <!-- ═══════ RECENT ACTIVITY + QUICK STATS ═══════ -->
+    <div class="grid-2col">
+      <!-- Recent Activity -->
+      <div class="panel">
+        <div class="panel__header">
+          <span><i class="pi pi-bell" style="margin-right:.4rem;"></i> Recent Activity</span>
+          <button class="btn btn--sm" (click)="viewAllActivity()">View All <i class="pi pi-arrow-right" style="font-size:.55rem;"></i></button>
+        </div>
+        <div class="panel__body panel__body--no-pad">
+          @if (recentActivities.length === 0) {
+            <div class="empty-state" style="padding:2rem 1rem;">
+              <i class="pi pi-inbox"></i><p>No recent activity</p>
+            </div>
+          } @else {
+            <div class="activity-list">
+              @for (a of recentActivities; track a.description) {
+                <div class="activity-item">
+                  <div class="activity-item__icon"><i class="pi pi-info-circle"></i></div>
+                  <div class="activity-item__content">
+                    <span class="activity-item__time">{{ a.date }}</span>
+                    <span class="activity-item__desc">{{ a.description }}</span>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Quick Stats -->
+      <div class="panel">
+        <div class="panel__header">
+          <span><i class="pi pi-chart-bar" style="margin-right:.4rem;"></i> Quick Stats</span>
+        </div>
+        <div class="panel__body">
+          <div class="qstats-grid">
+            @for (s of quickStats; track s.label) {
+              <div class="qstat-card">
+                <div class="qstat-card__value">{{ s.value }}</div>
+                <div class="qstat-card__label">{{ s.label }}</div>
+                <div class="qstat-card__sub">{{ s.subtitle }}</div>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════ OVERSIGHT REQUESTS ═══════ -->
+    @if (oversightRequests().length > 0) {
+      <div class="panel">
+        <div class="panel__header">
+          <span><i class="pi pi-eye" style="margin-right:.4rem;"></i> Compliance Oversight ({{ oversightRequests().length }})</span>
+        </div>
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>SR #</th>
+                <th>Requester</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th>Pending Days</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (r of oversightRequests(); track r.id) {
+                <tr>
+                  <td class="td-mono">{{ r.srNumber }}</td>
+                  <td>
+                    <div class="td-employee">
+                      <span class="td-name">{{ r.employeeName || 'N/A' }}</span>
+                    </div>
+                  </td>
+                  <td class="td-value">${{ (r.estimatedCost || 0) | number }}</td>
+                  <td><span class="badge badge--warn"><i class="pi pi-clock"></i> {{ r.status }}</span></td>
+                  <td class="td-date">{{ pendingDays(r) }} days</td>
+                  <td>
+                    <div class="table-actions">
+                      <button class="action-btn action-btn--approve" (click)="approveRequest(r)" title="Approve"><i class="pi pi-check"></i></button>
+                      <button class="action-btn action-btn--reject" (click)="rejectRequest(r)" title="Reject"><i class="pi pi-times"></i></button>
+                      <button class="action-btn action-btn--info" (click)="remindManager(r)" title="Remind Manager"><i class="pi pi-bell"></i></button>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    }
+  }
 </div>

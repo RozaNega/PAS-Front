@@ -12,6 +12,9 @@ import type { IncomingHttpHeaders } from 'node:http';
 import type { Request, Response, NextFunction } from 'express';
 import { promises as fs } from 'node:fs';
 import { randomUUID } from 'node:crypto';
+import { createTransport, type Transporter } from 'nodemailer';
+import { readFileSync, existsSync } from 'node:fs';
+import { resolve } from 'node:path';
 
 const browserDistFolder = join(import.meta.dirname, '../browser');
 const workspaceAssetsFolder = join(process.cwd(), 'src', 'assets');
@@ -67,6 +70,90 @@ const dashboardStatisticsResponse = {
     ],
   },
 };
+
+// ---------- SMTP / Email setup ----------
+const _envPath = resolve(process.cwd(), '.env');
+if (existsSync(_envPath)) {
+  const _content = readFileSync(_envPath, 'utf8');
+  for (const _line of _content.split('\n')) {
+    const _t = _line.trim();
+    if (!_t || _t.startsWith('#')) continue;
+    const _eq = _t.indexOf('=');
+    if (_eq === -1) continue;
+    const _k = _t.slice(0, _eq).trim();
+    let _v = _t.slice(_eq + 1).trim();
+    if ((_v.startsWith('"') && _v.endsWith('"')) || (_v.startsWith("'") && _v.endsWith("'"))) _v = _v.slice(1, -1);
+    if (!process.env[_k]) process.env[_k] = _v;
+  }
+}
+
+let _transporter: Transporter | null = null;
+if (process.env['SMTP_USER'] && process.env['SMTP_PASS']) {
+  _transporter = createTransport({
+    host: process.env['SMTP_HOST'] || 'smtp.gmail.com',
+    port: parseInt(process.env['SMTP_PORT'] || '587', 10),
+    secure: process.env['SMTP_PORT'] === '465',
+    auth: { user: process.env['SMTP_USER'], pass: process.env['SMTP_PASS'] },
+    tls: { rejectUnauthorized: false },
+  });
+  _transporter.verify()
+    .then(() => console.log('[server.ts] SMTP verified for', process.env['SMTP_USER']))
+    .catch((err: Error) => console.error('[server.ts] SMTP verify failed:', err.message));
+}
+
+async function _sendEmail(to: string, subject: string, body: string): Promise<{ messageId: string }> {
+  const from = process.env['SMTP_FROM'] || process.env['SMTP_USER'] || 'noreply@afrocom.com';
+  if (_transporter) {
+    const info = await _transporter.sendMail({ from, to, subject, text: body });
+    console.log('[server.ts] Email sent to', to, '- ID:', info.messageId);
+    return info;
+  }
+  console.log('[server.ts] --- EMAIL (no SMTP) ---');
+  console.log('To:', to, 'Subject:', subject);
+  return { messageId: 'console-' + Date.now() };
+}
+
+app.post('/api/Notifications/send-email', async (req, res, next) => {
+  try {
+    const { to, subject, body } = req.body || {};
+    if (!to || !subject || !body) { res.status(400).json({ success: false, message: 'Missing to, subject, body' }); return; }
+    await _sendEmail(to, subject, body);
+    res.json({ success: true, message: 'Email sent' });
+  } catch (err: unknown) {
+    res.status(500).json({ success: false, message: err instanceof Error ? err.message : 'Error' });
+  }
+});
+
+app.post('/api/Notifications', async (req, res) => {
+  try {
+    const { to, subject, body } = req.body || {};
+    if (!to || !subject || !body) { res.status(400).json({ success: false, message: 'Missing to, subject, body' }); return; }
+    await _sendEmail(to, subject, body);
+    res.json({ success: true, message: 'Notification sent' });
+  } catch (err: unknown) {
+    res.status(500).json({ success: false, message: err instanceof Error ? err.message : 'Error' });
+  }
+});
+
+app.get('/api/Notifications', async (_req, res) => {
+  res.json({ success: true, data: [] });
+});
+
+app.post('/api/Auth/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body || {};
+    if (!email) { res.status(400).json({ success: false, message: 'Email required' }); return; }
+    const link = `http://localhost:4200/reset-password?token=mock-${Date.now()}&email=${encodeURIComponent(email)}`;
+    await _sendEmail(email, 'Password Reset Request', `Click: ${link}`);
+    res.json({ success: true, message: 'Reset link sent', data: { token: 'mock-' + Date.now() } });
+  } catch (err: unknown) {
+    res.status(500).json({ success: false, message: err instanceof Error ? err.message : 'Error' });
+  }
+});
+
+app.post('/api/Auth/reset-password', async (_req, res) => {
+  res.json({ success: true, message: 'Password reset successful' });
+});
 
 /**
  * Forward `/api/*` to the real PAS backend (same role as `proxy.conf.json` during `ng serve`).

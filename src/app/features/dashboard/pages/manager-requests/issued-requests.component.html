@@ -1,31 +1,72 @@
-<div class="issued-requests-container">
-  <div class="page-header">
-    <h1>Issued Requests</h1>
-    <p class="subtitle">Requests that have been fulfilled</p>
+<div class="requests-page">
+  <header class="page-hero">
+    <div class="page-hero__text">
+      <h1>{{ title }}</h1>
+      <p>{{ subtitle }}</p>
+    </div>
+    <span class="page-hero__badge"><i class="bi bi-check2-all"></i> {{ totalCount }} issued</span>
+  </header>
+
+  <nav class="sub-nav">
+    <button class="sub-nav__link" (click)="navigateTo('/manager/requests/all')">All</button>
+    <button class="sub-nav__link" (click)="navigateTo('/manager/requests/pending')">Pending</button>
+    <button class="sub-nav__link" (click)="navigateTo('/manager/requests/approved')">Approved</button>
+    <button class="sub-nav__link" (click)="navigateTo('/manager/requests/rejected')">Rejected</button>
+    <button class="sub-nav__link sub-nav__link--active" (click)="navigateTo('/manager/requests/issued')">Issued</button>
+  </nav>
+
+  <div class="stats-bar">
+    <span class="stats-bar__item"><i class="bi bi-check2-all"></i> Total Issued: <strong>{{ totalCount }}</strong></span>
+    <span class="stats-bar__divider"></span>
+    <span class="stats-bar__item"><i class="bi bi-currency-dollar"></i> Total Value: <strong>${{ totalValue.toLocaleString() }}</strong></span>
   </div>
 
-  <div class="requests-list">
-    @for (req of requests(); track req.id) {
-      <div class="request-card">
-        <div class="request-header">
-          <div class="request-number">{{ req.requestNumber }}</div>
-          <div class="status-badge issued">Issued</div>
-        </div>
-        <div class="request-body">
-          <p class="description">{{ req.description }}</p>
-          <div class="siv-info">
-            <i class="bi bi-file-text"></i>
-            <span><strong>SIV:</strong> {{ req.sivNumber }}</span>
-          </div>
-          <div class="request-details">
-            <div class="detail-row"><span class="label">Requester:</span><span class="value">{{ req.requesterName }} ({{ req.department }})</span></div>
-            <div class="detail-row"><span class="label">Items:</span><span class="value">{{ req.itemCount }}</span></div>
-            <div class="detail-row"><span class="label">Value:</span><span class="value">${{ req.estimatedValue.toLocaleString() }}</span></div>
-            <div class="detail-row"><span class="label">Issued By:</span><span class="value">{{ req.issuedBy }}</span></div>
-            <div class="detail-row"><span class="label">Issued Date:</span><span class="value">{{ req.issuedDate }}</span></div>
-          </div>
-        </div>
-      </div>
-    }
+  <div class="panel">
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Request ID</th>
+            <th>Requester</th>
+            <th>Department</th>
+            <th>Priority</th>
+            <th>Items</th>
+            <th>Value</th>
+            <th>SIV Number</th>
+            <th>Issued Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (r of requests(); track r.id) {
+            <tr>
+              <td><span class="td-id">{{ r.requestNumber }}</span></td>
+              <td>
+                <div class="td-employee">
+                  <div class="td-avatar" [style.background]="'hsl(' + (r.requesterName.length * 40 % 360) + ', 65%, 88%)'">{{ r.requesterName.charAt(0) }}</div>
+                  <span class="td-name">{{ r.requesterName }}</span>
+                </div>
+              </td>
+              <td><span style="color:#64748b;">{{ r.department }}</span></td>
+              <td><span [class]="getPriorityClass(r.priority)">{{ r.priority }}</span></td>
+              <td><strong>{{ r.itemCount }}</strong></td>
+              <td><span class="td-value">${{ r.estimatedValue.toLocaleString() }}</span></td>
+              <td>
+                <div class="info-callout info-callout--issued">
+                  <i class="bi bi-file-text"></i>
+                  <span><strong>{{ r.sivNumber || '—' }}</strong></span>
+                </div>
+              </td>
+              <td><span class="td-date">{{ r.issuedDate || '—' }}</span></td>
+            </tr>
+          } @empty {
+            <tr class="empty-row">
+              <td colspan="8">
+                <div class="empty-state"><i class="bi bi-inbox"></i><p>No issued requests</p></div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
   </div>
 </div>

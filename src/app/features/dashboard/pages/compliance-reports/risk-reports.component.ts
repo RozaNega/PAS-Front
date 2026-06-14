@@ -27,6 +27,12 @@ interface RiskReport {
 export class RiskReportsComponent {
   private readonly workflowService = inject(WorkflowService);
 
+  readonly loading = signal(true);
+  readonly error = signal<string | null>(null);
+
+  constructor() {
+    setTimeout(() => this.loading.set(false), 600);
+  }
 
   protected readonly reports = computed<RiskReport[]>(() => {
     const reqs = this.workflowService.getAllRequests();
@@ -55,9 +61,39 @@ export class RiskReportsComponent {
     return [liveReport];
   });
 
+  readonly totalItems = computed(() => this.reports().reduce((s, r) => s + r.highRiskItems + r.mediumRiskItems + r.lowRiskItems, 0));
+  readonly highRiskCount = computed(() => this.reports().reduce((s, r) => s + r.highRiskItems, 0));
+  readonly mediumRiskCount = computed(() => this.reports().reduce((s, r) => s + r.mediumRiskItems, 0));
+  readonly lowRiskCount = computed(() => this.reports().reduce((s, r) => s + r.lowRiskItems, 0));
+
   readonly activeViewReport = signal<RiskReport | null>(null);
   readonly downloadingReportId = signal<string | null>(null);
   readonly downloadProgress = signal<number>(0);
+
+  refreshReports(): void {
+    this.loading.set(true);
+    this.error.set(null);
+    setTimeout(() => this.loading.set(false), 500);
+  }
+
+  exportCsv(): void {
+    const rows = this.reports();
+    if (!rows.length) return;
+
+    const headers = ['Report Name', 'Risk Level', 'Generated Date', 'High Risk Items', 'Medium Risk Items', 'Low Risk Items', 'Safety Index'];
+    const csvRows = rows.map(r => [
+      r.reportName, r.riskLevel, r.generatedDate, r.highRiskItems, r.mediumRiskItems, r.lowRiskItems, r.safetyIndex
+    ].join(','));
+
+    const csv = [headers.join(','), ...csvRows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'risk-reports.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
 
   viewReport(report: RiskReport): void {
     this.activeViewReport.set(report);
@@ -104,7 +140,3 @@ export class RiskReportsComponent {
     this.activeViewReport.set(null);
   }
 }
-
-
-
-

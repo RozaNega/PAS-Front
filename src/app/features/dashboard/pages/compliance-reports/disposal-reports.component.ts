@@ -42,6 +42,9 @@ export class DisposalReportsComponent implements OnInit {
   byReason = signal<DisposalByReason[]>([]);
   byMonth = signal<DisposalByMonth[]>([]);
   loading = signal(false);
+  error = signal<string | null>(null);
+  isModalOpen = signal(false);
+  selectedDetail = signal<'summary' | 'reason' | 'month'>('summary');
 
   ngOnInit(): void {
     this.loadReport();
@@ -49,13 +52,23 @@ export class DisposalReportsComponent implements OnInit {
 
   loadReport(): void {
     this.loading.set(true);
+    this.error.set(null);
     this.disposalService.getAll({ pageSize: 9999 }).subscribe({
       next: (res) => {
         const items = (res.data as any)?.items || [];
-        this.buildReport(items);
+        if (items.length === 0) {
+          this.summary.set(null);
+          this.byReason.set([]);
+          this.byMonth.set([]);
+        } else {
+          this.buildReport(items);
+        }
         this.loading.set(false);
       },
-      error: () => this.loading.set(false),
+      error: (err) => {
+        this.loading.set(false);
+        this.error.set(err?.message || 'Failed to load disposal records');
+      },
     });
   }
 
@@ -86,7 +99,7 @@ export class DisposalReportsComponent implements OnInit {
       existing.totalValue += Number(d.totalValue) || 0;
       byReasonMap.set(r, existing);
     });
-    this.byReason.set([...byReasonMap.values()]);
+    this.byReason.set(Array.from(byReasonMap.values()));
 
     const byMonthMap = new Map<string, DisposalByMonth>();
     const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -100,6 +113,34 @@ export class DisposalReportsComponent implements OnInit {
       existing.totalValue += Number(d.totalValue) || 0;
       byMonthMap.set(m, existing);
     });
-    this.byMonth.set([...byMonthMap.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([_, v]) => v));
+    this.byMonth.set(Array.from(byMonthMap.entries()).sort((a, b) => a[0].localeCompare(b[0])).map(([_, v]) => v));
+  }
+
+  formatCurrency(val: number): string {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(val);
+  }
+
+  openModal(section: 'summary' | 'reason' | 'month'): void {
+    this.selectedDetail.set(section);
+    this.isModalOpen.set(true);
+  }
+
+  closeModal(): void {
+    this.isModalOpen.set(false);
+  }
+
+  exportCsv(): void {
+    const s = this.summary();
+    if (!s) return;
+    const rows: string[] = ['Section,Label,Count,Quantity,Value'];
+    this.byReason().forEach(r => rows.push(`By Reason,${r.reason},${r.count},${r.totalQuantity},${r.totalValue}`));
+    this.byMonth().forEach(m => rows.push(`By Month,${m.label} (${m.month}),${m.value},${m.totalQuantity},${m.totalValue}`));
+    const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'disposal-report.csv';
+    a.click();
+    URL.revokeObjectURL(url);
   }
 }

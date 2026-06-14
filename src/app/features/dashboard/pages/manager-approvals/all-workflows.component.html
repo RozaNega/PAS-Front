@@ -1,71 +1,103 @@
-<div class="all-workflows-container">
-  <div class="page-header">
-    <div class="header-content">
-      <div>
-        <h1>All Workflows</h1>
-        <p class="subtitle">Manage approval workflows</p>
-      </div>
-      <div class="header-actions">
-        <button class="btn btn-secondary" (click)="refreshWorkflows()" [disabled]="loading()">
-          <i class="bi bi-arrow-clockwise"></i> Refresh
-        </button>
-        <button class="btn btn-primary" (click)="createWorkflow()">
-          <i class="bi bi-plus-circle"></i> Create Workflow
-        </button>
-      </div>
+<div class="page">
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero__text">
+      <h1>All Workflows</h1>
+      <p>Manage approval workflows</p>
+    </div>
+    <div class="hero__actions">
+      <button class="btn btn--ghost" (click)="refreshWorkflows()" [disabled]="loading()">
+        <i class="pi pi-refresh"></i> Refresh
+      </button>
+      <button class="btn btn--primary" (click)="createWorkflow()">
+        <i class="pi pi-plus"></i> Create Workflow
+      </button>
     </div>
   </div>
 
+  <!-- Sub-nav -->
+  <div class="sub-nav">
+    <button class="sub-nav__link sub-nav__link--active" (click)="navigateTo('/manager/workflows/all')">
+      <i class="pi pi-th-large"></i> All Workflows
+    </button>
+    <button class="sub-nav__link" (click)="navigateTo('/manager/workflows/create')">
+      <i class="pi pi-plus-circle"></i> Create Workflow
+    </button>
+    <button class="sub-nav__link" (click)="navigateTo('/manager/workflows/approvers')">
+      <i class="pi pi-users"></i> Approver Matrix
+    </button>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-bar">
+    <span class="stats-bar__item"><i class="pi pi-sitemap"></i> <strong>{{ totalCount }}</strong> Workflows</span>
+    <span class="stats-bar__divider"></span>
+    <span class="stats-bar__item"><i class="pi pi-clock"></i> <strong>{{ workflows().filter(w => !w.createdAt).length }}</strong> Pending Approval</span>
+  </div>
+
+  <!-- Body -->
   @if (loading()) {
-    <div class="loading-state">
+    <div class="state-box">
       <div class="spinner"></div>
       <p>Loading workflows...</p>
     </div>
   } @else if (error()) {
-    <div class="error-state">
-      <i class="bi bi-exclamation-triangle"></i>
+    <div class="state-box state-box--error">
+      <i class="pi pi-exclamation-triangle"></i>
       <p>{{ error() }}</p>
-      <button class="btn btn-primary" (click)="refreshWorkflows()">Try Again</button>
+      <button class="btn btn--primary" (click)="refreshWorkflows()">Try Again</button>
     </div>
-  } @else if (workflows().length === 0) {
-    <div class="empty-state">
-      <i class="bi bi-diagram-3"></i>
+  } @else if (totalCount === 0) {
+    <div class="state-box">
+      <i class="pi pi-sitemap" style="font-size: 3rem; opacity: .35;"></i>
       <h3>No workflows found</h3>
       <p>Create your first approval workflow to get started</p>
-      <button class="btn btn-primary" (click)="createWorkflow()">
-        <i class="bi bi-plus-circle"></i> Create Workflow
+      <button class="btn btn--primary" (click)="createWorkflow()">
+        <i class="pi pi-plus"></i> Create Workflow
       </button>
     </div>
   } @else {
-    <div class="workflows-list">
-      @for (workflow of workflows(); track workflow.id) {
-        <div class="workflow-card">
-          <div class="workflow-header">
-            <div class="workflow-info">
-              <h3 class="workflow-name">{{ workflow.workflowName || 'Unnamed Workflow' }}</h3>
-              <p class="workflow-description">{{ workflow.description || 'No description' }}</p>
-            </div>
-            <div class="workflow-actions">
-              <button class="btn-icon" (click)="editWorkflow(workflow.id)" title="Edit">
-                <i class="bi bi-pencil"></i>
-              </button>
-              <button class="btn-icon btn-danger" (click)="deleteWorkflow(workflow.id)" title="Delete">
-                <i class="bi bi-trash"></i>
-              </button>
-            </div>
-          </div>
-          <div class="workflow-meta">
-            <div class="meta-item">
-              <i class="bi bi-calendar"></i>
-              <span>Created: {{ workflow.createdAt | date:'short' }}</span>
-            </div>
-            <div class="meta-item">
-              <i class="bi bi-person"></i>
-              <span>By: {{ workflow.createdBy || 'System' }}</span>
-            </div>
-          </div>
-        </div>
-      }
+    <div class="panel">
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Workflow Name</th>
+              <th>Description</th>
+              <th>Created</th>
+              <th>Created By</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (w of workflows(); track w.id) {
+              <tr>
+                <td>
+                  <div class="cell-workflow">
+                    <div class="cell-workflow__avatar" [style.background]="getAvatarColor(w.workflowName || 'W')">
+                      {{ getInitials(w.workflowName || 'W') }}
+                    </div>
+                    <span class="cell-workflow__name">{{ w.workflowName || 'Unnamed Workflow' }}</span>
+                  </div>
+                </td>
+                <td class="cell-desc">{{ w.description || 'No description' }}</td>
+                <td class="cell-date">{{ w.createdAt | date:'mediumDate' }}</td>
+                <td class="cell-user">{{ w.createdBy || 'System' }}</td>
+                <td>
+                  <div class="table-actions">
+                    <button class="action-btn action-btn--edit" (click)="editWorkflow(w.id)" title="Edit">
+                      <i class="pi pi-pencil"></i> <span>Edit</span>
+                    </button>
+                    <button class="action-btn action-btn--delete" (click)="deleteWorkflow(w.id)" title="Delete">
+                      <i class="pi pi-trash"></i> <span>Delete</span>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
     </div>
   }
 </div>

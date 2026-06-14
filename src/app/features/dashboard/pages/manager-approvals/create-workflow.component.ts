@@ -24,63 +24,36 @@ export class CreateWorkflowComponent {
     description: ['', [Validators.required, Validators.minLength(10)]],
   });
 
+  protected navigateTo(path: string): void {
+    void this.router.navigate([path]);
+  }
+
   protected submit(): void {
     this.submitted.set(true);
     
-    if (this.workflowForm.invalid) {
-      alert('Please fill in all required fields correctly.');
-      return;
-    }
+    if (this.workflowForm.invalid) return;
     
     this.loading.set(true);
     
     const workflowData = {
-      workflowName: this.workflowForm.value.name!,  // Map 'name' to 'workflowName'
+      workflowName: this.workflowForm.value.name!,
       description: this.workflowForm.value.description!
     };
     
-    console.log('🔄 Creating workflow with data:', workflowData);
-    
     this.workflowService.createWorkflow(workflowData).subscribe({
       next: (response) => {
-        console.log('✅ Workflow creation response:', response);
         this.loading.set(false);
         if (response.succeeded) {
-          alert('Workflow created successfully!');
           this.workflowForm.reset();
           this.submitted.set(false);
-          // Navigate to all workflows page
-          this.router.navigate(['/manager/workflows/all']);
+          this.navigateTo('/manager/workflows/all');
         } else {
-          console.error('❌ Workflow creation failed:', response.message);
           alert(`Failed to create workflow: ${response.message}`);
         }
       },
-      error: (error) => {
+      error: () => {
         this.loading.set(false);
-        console.error('❌ Error creating workflow:', {
-          status: error.status,
-          statusText: error.statusText,
-          message: error.message,
-          error: error.error,
-          url: error.url
-        });
-        
-        let errorMessage = 'An error occurred while creating the workflow.';
-        
-        if (error.status === 404) {
-          errorMessage = 'Workflow API endpoint not found. Please check the backend configuration.';
-        } else if (error.status === 401) {
-          errorMessage = 'Unauthorized. Please log in again.';
-        } else if (error.status === 400) {
-          errorMessage = error.error?.message || 'Invalid workflow data. Please check your input.';
-        } else if (error.status === 500) {
-          errorMessage = 'Server error. Please contact the administrator.';
-        } else if (error.error?.message) {
-          errorMessage = error.error.message;
-        }
-        
-        alert(errorMessage + '\n\nCheck the browser console for more details.');
+        alert('An error occurred while creating the workflow. Please try again.');
       }
     });
   }
@@ -88,6 +61,6 @@ export class CreateWorkflowComponent {
   protected cancel(): void {
     this.workflowForm.reset();
     this.submitted.set(false);
-    this.router.navigate(['/manager/workflows/all']);
+    this.navigateTo('/manager/workflows/all');
   }
 }

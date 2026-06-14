@@ -114,7 +114,7 @@
         transform: translateY(-2px);
         box-shadow: 0 8px 20px -6px rgba(79, 70, 229, 0.5);
       }
-      
+
       &:disabled {
         opacity: 0.5;
         cursor: not-allowed;
@@ -233,9 +233,9 @@
   background: #ffffff;
   border-radius: 14px;
   border: 1px solid #e2e8f0;
+  border-left: 5px solid #6366f1;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
-  border-left: 5px solid transparent;
 
   &:hover {
     transform: translateY(-2px);
@@ -251,12 +251,6 @@
     }
   }
 
-  /* Left Borders by status type */
-  &.border-left-info { border-left-color: #3b82f6; }
-  &.border-left-success { border-left-color: #10b981; }
-  &.border-left-warning { border-left-color: #f59e0b; }
-  &.border-left-danger { border-left-color: #ef4444; }
-
   .card-body {
     padding: 1.5rem;
   }
@@ -269,29 +263,11 @@
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+    background: rgba(99, 102, 241, 0.09);
+    color: #6366f1;
 
     i {
       font-size: 1.25rem;
-    }
-
-    &.info {
-      background: rgba(59, 130, 246, 0.09);
-      color: #3b82f6;
-    }
-
-    &.success {
-      background: rgba(16, 185, 129, 0.09);
-      color: #10b981;
-    }
-
-    &.warning {
-      background: rgba(245, 158, 11, 0.09);
-      color: #f59e0b;
-    }
-
-    &.error {
-      background: rgba(239, 68, 68, 0.09);
-      color: #ef4444;
     }
   }
 
@@ -418,6 +394,11 @@
     font-size: 2.5rem;
   }
 
+  .error-icon {
+    background: #fef2f2;
+    color: #ef4444;
+  }
+
   h3 {
     margin: 0;
     font-size: 1.35rem;
@@ -431,6 +412,16 @@
     max-width: 360px;
     line-height: 1.5;
   }
+}
+
+/* Loading spinner animation */
+.spin {
+  animation: fa-spin 2s infinite linear;
+}
+
+@keyframes fa-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 /* Keyframes pulse animation for unread count badge */

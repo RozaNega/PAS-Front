@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../../core/services/api.service';
 import { DisposalRecordsService, DisposalRecordDto } from '../../../../core/services/disposal-records.service';
+import { WorkflowService } from '../../../../core/services/workflow.service';
 
 interface SelectedItem {
   itemId: string;
@@ -15,6 +16,7 @@ interface SelectedItem {
 
 interface DisplayItem {
   id: string;
+  itemMasterId: string;
   itemName: string;
   sku: string;
   currentStock: number;
@@ -35,6 +37,8 @@ export class DisposalComponent implements OnInit {
   private apiService = inject(ApiService);
 
   private disposalService = inject(DisposalRecordsService);
+
+  private workflowService = inject(WorkflowService);
 
   searchTerm = signal('');
   reason = signal('');
@@ -101,7 +105,8 @@ export class DisposalComponent implements OnInit {
       console.warn('[Disposal] No items found in response', JSON.stringify(res).substring(0, 500));
     }
     return raw.map((x: any) => ({
-      id: x.id || x.Id || x.itemId || x.ItemId || '',
+      id: x.id || x.Id || '',
+      itemMasterId: x.itemId || x.ItemId || x.id || x.Id || '',
       itemName: x.itemName || x.ItemName || x.name || x.Name || '',
       sku: x.sku || x.Sku || '',
       currentStock: Number(x.currentStock ?? x.CurrentStock ?? x.stockQuantity ?? x.StockQuantity ?? 0),
@@ -125,7 +130,7 @@ export class DisposalComponent implements OnInit {
   }
 
   toggleItem(item: DisplayItem): void {
-    const key = item.id;
+    const key = item.itemMasterId;
     const existing = this.selectedItems().find((x) => x.itemId === key);
     if (existing) {
       this.selectedItems.set(this.selectedItems().filter((x) => x.itemId !== existing.itemId));
@@ -145,7 +150,7 @@ export class DisposalComponent implements OnInit {
   }
 
   isSelected(item: DisplayItem): boolean {
-    return this.selectedItems().some((x) => x.itemId === item.id);
+    return this.selectedItems().some((x) => x.itemId === item.itemMasterId);
   }
 
   updateQuantity(itemId: string, qty: number): void {
@@ -182,6 +187,15 @@ export class DisposalComponent implements OnInit {
       next: (res) => {
         this.submitting.set(false);
         if (res.success !== false) {
+          this.workflowService.createNotification({
+            recipientId: '',
+            recipientRole: 'Admin',
+            type: 'info',
+            title: 'Disposal Created',
+            message: `${this.selectedItems().length} item(s) submitted for disposal. Reason: ${this.reason().trim()}`,
+            actionRequired: true,
+            actionUrl: '/admin/dashboard',
+          });
           this.showNotification('Disposal created successfully. Admin has been notified.', 'success');
           this.selectedItems.set([]);
           this.reason.set('');
@@ -190,9 +204,10 @@ export class DisposalComponent implements OnInit {
           this.showNotification(res.message || 'Failed to create disposal', 'error');
         }
       },
-      error: () => {
+      error: (err) => {
         this.submitting.set(false);
-        this.showNotification('Failed to create disposal', 'error');
+        const msg = err?.error?.title || err?.error?.message || err?.message || 'Failed to create disposal';
+        this.showNotification(msg, 'error');
       },
     });
   }

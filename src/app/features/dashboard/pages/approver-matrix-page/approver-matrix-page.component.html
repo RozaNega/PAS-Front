@@ -1,186 +1,265 @@
-<div class="approver-matrix-page">
-  <div class="page-header">
-    <h1>Approver Matrix</h1>
+<div class="page">
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero__text">
+      <h1>Approver Matrix</h1>
+      <p>Approval hierarchy, levels, limits, and substitute approvers</p>
+    </div>
   </div>
 
-  <!-- Department Hierarchy -->
-  <div class="hierarchy-section">
-    <h2>🏢 DEPARTMENT HIERARCHY</h2>
-    <div class="hierarchy-tree">
-      <div class="tree-node">
-        <div class="node-box">VP of Operations<br/>Approval: $50,000+</div>
-        <div class="tree-connector"></div>
-        <div class="tree-children">
-          <div class="tree-node">
-            <div class="node-box">IT Director<br/>Approval: $25K</div>
-            <div class="tree-connector"></div>
-            <div class="tree-children">
-              <div class="tree-node">
-                <div class="node-box">IT Manager<br/>Approval: $10K</div>
-                <div class="tree-connector"></div>
-                <div class="tree-children">
-                  <div class="tree-node">
-                    <div class="node-box">Team Lead<br/>Approval: $5K</div>
-                  </div>
-                </div>
-              </div>
+  <!-- Sub-nav -->
+  <div class="sub-nav">
+    <button class="sub-nav__link" (click)="navigateTo('/manager/workflows/all')">
+      <i class="pi pi-th-large"></i> All Workflows
+    </button>
+    <button class="sub-nav__link" (click)="navigateTo('/manager/workflows/create')">
+      <i class="pi pi-plus-circle"></i> Create Workflow
+    </button>
+    <button class="sub-nav__link sub-nav__link--active" (click)="navigateTo('/manager/workflows/approvers')">
+      <i class="pi pi-users"></i> Approver Matrix
+    </button>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-bar">
+    <span class="stats-bar__item"><i class="pi pi-sitemap"></i> <strong>{{ approvalLevels.length }}</strong> Approval Levels</span>
+    <span class="stats-bar__divider"></span>
+    <span class="stats-bar__item"><i class="pi pi-users"></i> <strong>{{ substituteApprovers.length }}</strong> Substitutes</span>
+    <span class="stats-bar__divider"></span>
+    <span class="stats-bar__item"><i class="pi pi-shield"></i> <strong>{{ approvalLimits.length }}</strong> Limit Tiers</span>
+    <span class="stats-bar__divider"></span>
+    <span class="stats-bar__item"><i class="pi pi-tag"></i> <strong>{{ authorityData.length }}</strong> Request Types</span>
+  </div>
+
+  <!-- ─── 1. DEPARTMENT HIERARCHY ─────────────────────── -->
+  <div class="card">
+    <div class="card__header">
+      <i class="pi pi-sitemap"></i> Department Hierarchy
+    </div>
+    <div class="card__body card__body--hierarchy">
+      <div class="tree">
+        @for (node of hierarchyData; track node.role) {
+          <div class="tree__node">
+            <div class="tree__box" [style.background]="node.color + '18'" [style.borderColor]="node.color" [style.color]="node.color">
+              <strong>{{ node.role }}</strong>
+              <span>{{ node.limit }}</span>
             </div>
+            @if (node.children.length) {
+              <div class="tree__connector-v"></div>
+              <div class="tree__children">
+                @for (c1 of node.children; track c1.role) {
+                  <div class="tree__node">
+                    <div class="tree__box" [style.background]="c1.color + '18'" [style.borderColor]="c1.color" [style.color]="c1.color">
+                      <strong>{{ c1.role }}</strong>
+                      <span>{{ c1.limit }}</span>
+                    </div>
+                    @if (c1.children.length) {
+                      <div class="tree__connector-v"></div>
+                      <div class="tree__children">
+                        @for (c2 of c1.children; track c2.role) {
+                          <div class="tree__node">
+                            <div class="tree__box" [style.background]="c2.color + '18'" [style.borderColor]="c2.color" [style.color]="c2.color">
+                              <strong>{{ c2.role }}</strong>
+                              <span>{{ c2.limit }}</span>
+                            </div>
+                            @if (c2.children.length) {
+                              <div class="tree__connector-v"></div>
+                              <div class="tree__children">
+                                @for (c3 of c2.children; track c3.role) {
+                                  <div class="tree__node">
+                                    <div class="tree__box" [style.background]="c3.color + '18'" [style.borderColor]="c3.color" [style.color]="c3.color">
+                                      <strong>{{ c3.role }}</strong>
+                                      <span>{{ c3.limit }}</span>
+                                    </div>
+                                    @if (c3.children.length) {
+                                      <div class="tree__connector-v"></div>
+                                      <div class="tree__children">
+                                        @for (c4 of c3.children; track c4.role) {
+                                          <div class="tree__node">
+                                            <div class="tree__box" [style.background]="c4.color + '18'" [style.borderColor]="c4.color" [style.color]="c4.color">
+                                              <strong>{{ c4.role }}</strong>
+                                              <span>{{ c4.limit }}</span>
+                                            </div>
+                                          </div>
+                                        }
+                                      </div>
+                                    }
+                                  </div>
+                                }
+                              </div>
+                            }
+                          </div>
+                        }
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            }
           </div>
-        </div>
+        }
       </div>
     </div>
   </div>
 
-  <!-- Approval Levels -->
-  <div class="levels-section">
-    <h2>📊 APPROVAL LEVELS</h2>
-    <div class="table-container">
-      <table class="levels-table">
-        <thead>
-          <tr>
-            <th>Level</th>
-            <th>Role</th>
-            <th>Approval Limit</th>
-            <th>Escalation To</th>
-            <th>SLA</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (level of approvalLevels; track level.level) {
+  <!-- ─── 2. APPROVAL LEVELS ──────────────────────────── -->
+  <div class="card">
+    <div class="card__header">
+      <i class="pi pi-list"></i> Approval Levels
+    </div>
+    <div class="card__body">
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
             <tr>
-              <td>{{ level.level }}</td>
-              <td>{{ level.role }}</td>
-              <td>{{ level.approvalLimit }}</td>
-              <td>{{ level.escalationTo }}</td>
-              <td>{{ level.sla }}</td>
-              <td>
-                <button class="btn btn-sm btn-outline" (click)="viewLevel(level.level)">👁️</button>
-                <button class="btn btn-sm btn-outline" (click)="editLevel(level.level)">Edit</button>
-              </td>
+              <th>Level</th>
+              <th>Role</th>
+              <th>Approval Limit</th>
+              <th>Escalation To</th>
+              <th>SLA</th>
+              <th>Actions</th>
             </tr>
-          }
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            @for (level of approvalLevels; track level.level) {
+              <tr>
+                <td>
+                  <span class="level-badge">{{ level.level }}</span>
+                </td>
+                <td><span class="cell-role">{{ level.role }}</span></td>
+                <td class="cell-money">{{ level.approvalLimit }}</td>
+                <td><span class="cell-esc">{{ level.escalationTo }}</span></td>
+                <td class="cell-sla">{{ level.sla }}</td>
+                <td>
+                  <div class="table-actions">
+                    <button class="action-btn action-btn--edit" (click)="editLevel(level.level)">
+                      <i class="pi pi-pencil"></i> <span>Edit</span>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 
-  <!-- Substitute Approvers -->
-  <div class="substitute-section">
-    <h2>🔄 SUBSTITUTE APPROVERS <button class="btn btn-link" (click)="addSubstitute()">Add Substitute Approver</button></h2>
-    <div class="table-container">
-      <table class="substitute-table">
-        <thead>
-          <tr>
-            <th>Role</th>
-            <th>Primary Approver</th>
-            <th>Substitute Approver</th>
-            <th>Status</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (sub of substituteApprovers; track sub.role) {
+  <!-- ─── 3. SUBSTITUTE APPROVERS ─────────────────────── -->
+  <div class="card">
+    <div class="card__header">
+      <i class="pi pi-user-plus"></i> Substitute Approvers
+      <div class="card__header__spacer"></div>
+      <button class="btn btn--sm" (click)="addSubstitute()">
+        <i class="pi pi-plus"></i> Add Substitute
+      </button>
+    </div>
+    <div class="card__body">
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
             <tr>
-              <td>{{ sub.role }}</td>
-              <td>{{ sub.primaryApprover }}</td>
-              <td>{{ sub.substituteApprover }}</td>
-              <td>{{ sub.status }}</td>
-              <td>
-                <button class="btn btn-sm btn-outline" (click)="viewSubstitute(sub.role)">👁️</button>
-                <button class="btn btn-sm btn-outline" (click)="editSubstitute(sub.role)">Edit</button>
-              </td>
+              <th>Role</th>
+              <th>Primary Approver</th>
+              <th>Substitute Approver</th>
+              <th>Status</th>
+              <th>Actions</th>
             </tr>
-          }
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            @for (sub of substituteApprovers; track sub.role) {
+              <tr>
+                <td><span class="cell-role">{{ sub.role }}</span></td>
+                <td class="cell-name">{{ sub.primaryApprover }}</td>
+                <td class="cell-name">{{ sub.substituteApprover }}</td>
+                <td>
+                  @if (sub.status === 'Active') {
+                    <span class="badge badge--active"><i class="pi pi-circle-fill"></i> Active</span>
+                  } @else {
+                    <span class="badge badge--inactive"><i class="pi pi-circle-fill"></i> Inactive</span>
+                  }
+                </td>
+                <td>
+                  <div class="table-actions">
+                    <button class="action-btn action-btn--edit" (click)="editSubstitute(sub.role)">
+                      <i class="pi pi-pencil"></i> <span>Edit</span>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 
-  <!-- Authority Matrix -->
-  <div class="authority-section">
-    <h2>📋 AUTHORITY MATRIX</h2>
-    <div class="table-container">
-      <table class="authority-table">
-        <thead>
-          <tr>
-            <th>Request Type</th>
-            <th>&lt;$1K</th>
-            <th>$1K-$5K</th>
-            <th>$5K-$10K</th>
-            <th>$10K-$25K</th>
-            <th>$25K-$50K</th>
-            <th>&gt;$50K</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>Hardware</td>
-            <td>Team</td>
-            <td>Manager</td>
-            <td>Director</td>
-            <td>Director</td>
-            <td>VP</td>
-            <td>CEO</td>
-          </tr>
-          <tr>
-            <td>Software</td>
-            <td>Team</td>
-            <td>Manager</td>
-            <td>Manager</td>
-            <td>Director</td>
-            <td>VP</td>
-            <td>CEO</td>
-          </tr>
-          <tr>
-            <td>Supplies</td>
-            <td>Auto</td>
-            <td>Team</td>
-            <td>Manager</td>
-            <td>Director</td>
-            <td>VP</td>
-            <td>CEO</td>
-          </tr>
-          <tr>
-            <td>Training</td>
-            <td>Team</td>
-            <td>Manager</td>
-            <td>Manager</td>
-            <td>Director</td>
-            <td>VP</td>
-            <td>CEO</td>
-          </tr>
-        </tbody>
-      </table>
+  <!-- ─── 4. AUTHORITY MATRIX ─────────────────────────── -->
+  <div class="card">
+    <div class="card__header">
+      <i class="pi pi-th-large"></i> Authority Matrix
+      <span class="card__header__hint">Approval authority by request type and value</span>
+    </div>
+    <div class="card__body">
+      <div class="table-wrap">
+        <table class="table table--heatmap">
+          <thead>
+            <tr>
+              <th>Request Type</th>
+              @for (lvl of authorityData[0].levels; track lvl.threshold) {
+                <th class="th-center">{{ lvl.threshold }}</th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of authorityData; track row.requestType) {
+              <tr>
+                <td class="cell-type">{{ row.requestType }}</td>
+                @for (cell of row.levels; track cell.threshold) {
+                  <td class="td-center">
+                    <span class="authority-pill" [style.background]="getApproverColor(cell.approver) + '18'" [style.color]="getApproverColor(cell.approver)" [style.borderColor]="getApproverColor(cell.approver) + '40'">
+                      {{ cell.approver }}
+                    </span>
+                  </td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 
-  <!-- Approval Limits by Role -->
-  <div class="limits-section">
-    <h2>💰 APPROVAL LIMITS BY ROLE</h2>
-    <div class="table-container">
-      <table class="limits-table">
-        <thead>
-          <tr>
-            <th>Role</th>
-            <th>Per Request</th>
-            <th>Monthly Limit</th>
-            <th>Annual Limit</th>
-            <th>Requires Justification</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (limit of approvalLimits; track limit.role) {
+  <!-- ─── 5. APPROVAL LIMITS BY ROLE ──────────────────── -->
+  <div class="card">
+    <div class="card__header">
+      <i class="pi pi-dollar"></i> Approval Limits by Role
+    </div>
+    <div class="card__body">
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
             <tr>
-              <td>{{ limit.role }}</td>
-              <td>{{ limit.perRequest }}</td>
-              <td>{{ limit.monthlyLimit }}</td>
-              <td>{{ limit.annualLimit }}</td>
-              <td>{{ limit.requiresJustification }}</td>
+              <th>Role</th>
+              <th>Per Request</th>
+              <th>Monthly Limit</th>
+              <th>Annual Limit</th>
+              <th>Requires Justification</th>
             </tr>
-          }
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            @for (limit of approvalLimits; track limit.role) {
+              <tr>
+                <td><span class="cell-role">{{ limit.role }}</span></td>
+                <td class="cell-money">{{ limit.perRequest }}</td>
+                <td class="cell-money">{{ limit.monthlyLimit }}</td>
+                <td class="cell-money">{{ limit.annualLimit }}</td>
+                <td class="cell-just">{{ limit.requiresJustification }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 </div>

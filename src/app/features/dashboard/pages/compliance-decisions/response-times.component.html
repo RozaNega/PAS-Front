@@ -1,15 +1,156 @@
-<div class="response-times-container">
-  <div class="page-header"><h1>Response Times</h1><p class="subtitle">Approver response time metrics</p></div>
-  <div class="response-times-list">
-    @for (rt of responseTimes(); track rt.id) {
-      <div class="response-time-card">
-        <div class="rt-header"><div class="approver">{{ rt.approver }} ({{ rt.department }})</div><div class="rate-badge">{{ rt.onTimeRate }}%</div></div>
-        <div class="rt-details">
-          <div class="detail-row"><span class="label">Avg Response:</span><span class="value">{{ rt.avgResponseTime }}</span></div>
-          <div class="detail-row"><span class="label">Total Decisions:</span><span class="value">{{ rt.totalDecisions }}</span></div>
-          <div class="detail-row"><span class="label">On-Time Rate:</span><span class="value">{{ rt.onTimeRate }}%</span></div>
+<div class="responsetimes-page">
+  <header class="page-hero page-hero--dark">
+    <div class="page-hero__text">
+      <h1>Response Times</h1>
+      <p>Approver response time metrics & performance</p>
+    </div>
+    <div class="page-hero__actions">
+      <button class="btn btn-secondary" (click)="refresh()" [disabled]="loading()"><i class="bi bi-arrow-clockwise"></i> Refresh</button>
+      <button class="btn btn-primary" (click)="exportCsv()" [disabled]="responseTimes().length === 0"><i class="bi bi-download"></i> Export CSV</button>
+    </div>
+  </header>
+
+  @if (loading()) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading response times...</p>
+    </div>
+  }
+
+  @if (error(); as errMsg) {
+    <div class="error-state">
+      <i class="bi bi-exclamation-triangle-fill"></i>
+      <p>{{ errMsg }}</p>
+      <button class="btn btn-primary" (click)="refresh()"><i class="bi bi-arrow-clockwise"></i> Retry</button>
+    </div>
+  }
+
+  @if (!loading() && !error()) {
+    <div class="stats-cards">
+      <div class="stat-card stat-card--approvers">
+        <div class="stat-card__icon"><i class="bi bi-people"></i></div>
+        <div class="stat-card__info">
+          <span class="stat-card__value">{{ totalApprovers() }}</span>
+          <span class="stat-card__label">Approvers</span>
         </div>
       </div>
-    }
-  </div>
+      <div class="stat-card stat-card--decisions">
+        <div class="stat-card__icon"><i class="bi bi-clipboard-check"></i></div>
+        <div class="stat-card__info">
+          <span class="stat-card__value">{{ totalDecisions() }}</span>
+          <span class="stat-card__label">Total Decisions</span>
+        </div>
+      </div>
+      <div class="stat-card stat-card--rate">
+        <div class="stat-card__icon"><i class="bi bi-hourglass-split"></i></div>
+        <div class="stat-card__info">
+          <span class="stat-card__value">{{ avgOnTimeRate() }}%</span>
+          <span class="stat-card__label">Avg On-Time Rate</span>
+        </div>
+      </div>
+      <div class="stat-card stat-card--fastest">
+        <div class="stat-card__icon"><i class="bi bi-lightning-fill"></i></div>
+        <div class="stat-card__info">
+          <span class="stat-card__value">{{ fastestApprover() }}</span>
+          <span class="stat-card__label">Fastest Approver</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Approver</th>
+              <th>Department</th>
+              <th class="text-center">Total Decisions</th>
+              <th class="text-center">Avg Response</th>
+              <th class="text-center">On-Time Rate</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of responseTimes(); track item.id) {
+              <tr>
+                <td>
+                  <div class="td-employee">
+                    <div class="td-avatar" [style.background]="hslFromName(item.approver)">{{ getInitials(item.approver) }}</div>
+                    <span class="td-name">{{ item.approver }}</span>
+                  </div>
+                </td>
+                <td>{{ item.department }}</td>
+                <td class="text-center">{{ item.totalDecisions }}</td>
+                <td class="text-center">{{ item.avgResponseTime }}</td>
+                <td class="text-center">
+                  <span class="badge"
+                    [class.badge--good]="item.onTimeRate >= 80"
+                    [class.badge--warn]="item.onTimeRate >= 50 && item.onTimeRate < 80"
+                    [class.badge--bad]="item.onTimeRate < 50">
+                    {{ item.onTimeRate }}%
+                  </span>
+                </td>
+                <td>
+                  <button class="action-btn action-btn--view" (click)="viewItem(item)"><i class="bi bi-eye"></i><span> View</span></button>
+                </td>
+              </tr>
+            } @empty {
+              <tr class="empty-row">
+                <td colspan="6">
+                  <div class="empty-state"><i class="bi bi-inbox"></i><p>No response time data found</p></div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  @if (selectedItem(); as item) {
+    <div class="modal-backdrop" (click)="closeModal()">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h2><i class="bi bi-clock-history" style="color:#6366f1"></i> Approver Performance</h2>
+          <button class="btn-close-modal" (click)="closeModal()"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <div class="modal-body">
+          <div class="modal-avatar">
+            <div class="td-avatar td-avatar--lg" [style.background]="hslFromName(item.approver)">{{ getInitials(item.approver) }}</div>
+            <div>
+              <h3>{{ item.approver }}</h3>
+              <span>{{ item.department }}</span>
+            </div>
+          </div>
+          <div class="section-title">Performance Metrics</div>
+          <div class="metadata-grid">
+            <div class="grid-item">
+              <label>Department</label>
+              <span>{{ item.department }}</span>
+            </div>
+            <div class="grid-item">
+              <label>Total Decisions</label>
+              <span>{{ item.totalDecisions }}</span>
+            </div>
+            <div class="grid-item">
+              <label>Avg Response Time</label>
+              <span>{{ item.avgResponseTime }}</span>
+            </div>
+            <div class="grid-item">
+              <label>On-Time Rate</label>
+              <span class="badge"
+                [class.badge--good]="item.onTimeRate >= 80"
+                [class.badge--warn]="item.onTimeRate >= 50 && item.onTimeRate < 80"
+                [class.badge--bad]="item.onTimeRate < 50">
+                {{ item.onTimeRate }}%
+              </span>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" (click)="closeModal()">Close</button>
+        </div>
+      </div>
+    </div>
+  }
 </div>

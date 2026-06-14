@@ -308,6 +308,24 @@ export class AuthService {
     );
   }
 
+  verifyEmail(token: string): Observable<{ succeeded: boolean; message: string }> {
+    return this.apiService.get<any>(`Auth/verify-email?token=${token}`).pipe(
+      map((response) => ({
+        succeeded: response.success,
+        message: response.message || (response.success ? 'Email verified' : 'Verification failed'),
+      })),
+    );
+  }
+
+  resendVerification(email: string): Observable<{ succeeded: boolean; message: string }> {
+    return this.apiService.post<any>('Auth/resend-verification', { email }).pipe(
+      map((response) => ({
+        succeeded: response.success,
+        message: response.message || 'Verification email resent',
+      })),
+    );
+  }
+
   enable2FA(
     method: 'sms' | 'email' | 'app',
     contactInfo?: string,

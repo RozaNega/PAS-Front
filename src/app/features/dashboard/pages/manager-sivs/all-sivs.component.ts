@@ -1,5 +1,6 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import {
   ManagerDataService,
   ManagerSivRow as StoreIssueVoucher,
@@ -11,18 +12,34 @@ import { downloadReportPdf } from '../compliance-reports/report-actions.util';
   standalone: true,
   imports: [CommonModule],
   templateUrl: './all-sivs.component.html',
-  styleUrls: ['./all-sivs.component.scss']
+  styleUrls: ['./_sivs-common.scss']
 })
 export class AllSIVsComponent implements OnInit {
   private readonly managerData = inject(ManagerDataService);
+  private readonly router = inject(Router);
 
+  protected readonly title = 'All SIVs';
+  protected readonly subtitle = 'Store Issue Vouchers — complete list';
   protected readonly sivs = signal<StoreIssueVoucher[]>([]);
 
   protected selectedSiv = signal<StoreIssueVoucher | null>(null);
   protected showDetailsModal = signal(false);
 
+  get totalCount(): number { return this.sivs().length; }
+  get pendingCount(): number { return this.sivs().filter(s => s.status === 'Pending').length; }
+  get issuedCount(): number { return this.sivs().filter(s => s.status === 'Issued').length; }
+  get totalValue(): number { return this.sivs().reduce((s, v) => s + v.totalValue, 0); }
+
   ngOnInit(): void {
     this.managerData.getSivs().subscribe((sivs) => this.sivs.set(sivs));
+  }
+
+  navigateTo(path: string): void {
+    void this.router.navigate([path]);
+  }
+
+  getStatusClass(s: string): string {
+    return s === 'Issued' ? 'status-badge status-badge--issued' : 'status-badge status-badge--pending';
   }
 
   viewDetails(siv: StoreIssueVoucher): void {
