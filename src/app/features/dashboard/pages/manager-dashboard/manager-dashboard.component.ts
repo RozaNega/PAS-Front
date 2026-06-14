@@ -12,7 +12,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CurrentUserService } from '../../../../core/services/current-user.service';
-import { UserProfile } from '../../../../types/dashboard.types';
+import { UserProfile, RequestTrendData } from '../../../../types/dashboard.types';
 import { Router } from '@angular/router';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { SignalRService } from '../../../../core/services/signalr.service';
@@ -28,6 +28,18 @@ import { catchError } from 'rxjs/operators';
 import { EmployeesService } from '../../../../core/services/employees.service';
 import { UsersService } from '../../../../core/services/users.service';
 import { ServiceRequestService } from '../../../requisition/service-requests/services/service-request.service';
+import { NgxEchartsDirective, provideEchartsCore } from 'ngx-echarts';
+import * as echarts from 'echarts/core';
+import { BarChart, PieChart, LineChart } from 'echarts/charts';
+import {
+  GridComponent,
+  LegendComponent,
+  TooltipComponent,
+  TitleComponent,
+} from 'echarts/components';
+import { CanvasRenderer } from 'echarts/renderers';
+
+try { echarts.use([BarChart, PieChart, LineChart, TooltipComponent, GridComponent, LegendComponent, TitleComponent, CanvasRenderer]); } catch {};
 
 type RequestStatus = 'Pending' | 'Approved' | 'Rejected';
 type RequestFilter = 'All' | RequestStatus;
@@ -77,7 +89,8 @@ interface ApprovalItem {
 @Component({
   selector: 'app-manager-dashboard',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, NgxEchartsDirective],
+  providers: [provideEchartsCore({ echarts })],
   templateUrl: './manager-dashboard.component.html',
   styleUrl: './manager-dashboard.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -270,6 +283,169 @@ export class ManagerDashboardComponent implements OnInit, OnDestroy {
         description: 'This month',
       },
     ];
+  });
+
+  readonly pendingCount = computed(() =>
+    this.requests().filter((r) => r.status === 'Pending').length,
+  );
+
+  readonly monthlyTrendData = computed(() => {
+    const requests = this.workflowRequests();
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const submitted = new Array(12).fill(0);
+    const approved = new Array(12).fill(0);
+    const rejected = new Array(12).fill(0);
+
+    requests.forEach((req) => {
+      const d = new Date(req.submittedDate);
+      const m = d.getMonth();
+      if (m >= 0 && m <= 11) {
+        submitted[m]++;
+        if (['Manager Approved', 'Admin Approved', 'Compliance Review', 'Completed'].includes(req.status)) {
+          approved[m]++;
+        } else if (['Manager Rejected', 'Admin Rejected'].includes(req.status)) {
+          rejected[m]++;
+        }
+      }
+    });
+
+    return { months, submitted, approved, rejected };
+  });
+
+  readonly trendChartOptions = computed(() => {
+    const data = this.monthlyTrendData();
+    return {
+      tooltip: {
+        trigger: 'axis',
+        axisPointer: { type: 'shadow' },
+        backgroundColor: 'rgba(255,255,255,0.95)',
+        borderColor: '#e2e8f0',
+        borderWidth: 1,
+        textStyle: { color: '#334155', fontSize: 12 },
+      },
+      legend: {
+        data: ['Submitted', 'Approved', 'Rejected'],
+        bottom: 0,
+        textStyle: { color: '#64748b', fontSize: 12 },
+        icon: 'circle',
+        itemWidth: 8,
+        itemHeight: 8,
+      },
+      grid: { left: '3%', right: '3%', bottom: '22%', top: '3%', containLabel: true },
+      xAxis: {
+        type: 'category',
+        data: data.months,
+        axisLine: { lineStyle: { color: '#e2e8f0' } },
+        axisLabel: { color: '#94a3b8', fontWeight: 500, fontSize: 11 },
+        axisTick: { show: false },
+      },
+      yAxis: {
+        type: 'value',
+        minInterval: 1,
+        splitLine: { lineStyle: { color: '#f1f5f9', type: 'dashed' } },
+        axisLabel: { color: '#94a3b8', fontSize: 11 },
+      },
+      series: [
+        {
+          name: 'Submitted',
+          type: 'bar',
+          stack: 'total',
+          data: data.submitted,
+          itemStyle: {
+            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+              { offset: 0, color: '#818cf8' },
+              { offset: 1, color: '#6366f1' },
+            ]),
+            borderRadius: [2, 2, 0, 0],
+          },
+          emphasis: { itemStyle: { color: '#4f46e5' } },
+        },
+        {
+          name: 'Approved',
+          type: 'bar',
+          stack: 'total',
+          data: data.approved,
+          itemStyle: {
+            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+              { offset: 0, color: '#4ade80' },
+              { offset: 1, color: '#22c55e' },
+            ]),
+            borderRadius: [2, 2, 0, 0],
+          },
+          emphasis: { itemStyle: { color: '#16a34a' } },
+        },
+        {
+          name: 'Rejected',
+          type: 'bar',
+          stack: 'total',
+          data: data.rejected,
+          itemStyle: {
+            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+              { offset: 0, color: '#f87171' },
+              { offset: 1, color: '#ef4444' },
+            ]),
+            borderRadius: [2, 2, 0, 0],
+          },
+          emphasis: { itemStyle: { color: '#dc2626' } },
+        },
+      ],
+    };
+  });
+
+  readonly statusChartOptions = computed(() => {
+    const slices = this.overviewSlices();
+    return {
+      tooltip: {
+        trigger: 'item',
+        backgroundColor: 'rgba(255,255,255,0.95)',
+        borderColor: '#e2e8f0',
+        borderWidth: 1,
+        textStyle: { color: '#334155', fontSize: 12 },
+        formatter: (params: any) =>
+          `${params.name}: <strong>${params.value}</strong> (${params.percent}%)`,
+      },
+      legend: {
+        orient: 'vertical',
+        right: '5%',
+        top: 'center',
+        textStyle: { color: '#64748b', fontSize: 12 },
+        icon: 'circle',
+        itemWidth: 10,
+        itemHeight: 10,
+      },
+      series: [
+        {
+          type: 'pie',
+          radius: ['45%', '72%'],
+          center: ['35%', '50%'],
+          avoidLabelOverlap: true,
+          padAngle: 2,
+          itemStyle: { borderRadius: 6, borderColor: '#fff', borderWidth: 2 },
+          label: { show: false },
+          emphasis: {
+            label: { show: true, fontSize: 14, fontWeight: 'bold' },
+            itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: 'rgba(0,0,0,0.15)' },
+          },
+          labelLine: { show: false },
+          data: slices.map((s) => ({
+            value: s.value,
+            name: s.label,
+            itemStyle: { color: s.color },
+          })),
+        },
+      ],
+    };
+  });
+
+  readonly requestTrendData = computed<RequestTrendData[]>(() => {
+    const data = this.monthlyTrendData();
+    return data.months.map((month, i) => ({
+      month,
+      submitted: data.submitted[i],
+      approved: data.approved[i],
+      completed: 0,
+      rejected: data.rejected[i],
+    }));
   });
 
   readonly overviewSlices = computed<OverviewSlice[]>(() => {

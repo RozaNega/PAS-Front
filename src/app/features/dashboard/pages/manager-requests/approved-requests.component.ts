@@ -1,5 +1,6 @@
 import { Component, OnInit, OnDestroy, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import { Subscription, take } from 'rxjs';
 import { WorkflowService, ApiServiceRequestRow } from '../../../../core/services/workflow.service';
 import { CurrentUserService } from '../../../../core/services/current-user.service';
@@ -10,15 +11,21 @@ import { ServiceRequestService } from '../../../requisition/service-requests/ser
   standalone: true,
   imports: [CommonModule],
   templateUrl: './approved-requests.component.html',
-  styleUrls: ['./approved-requests.component.scss'],
+  styleUrls: ['./_requests-common.scss'],
 })
 export class ApprovedRequestsComponent implements OnInit, OnDestroy {
   private readonly workflowService = inject(WorkflowService);
   private readonly currentUserService = inject(CurrentUserService);
   private readonly serviceRequestService = inject(ServiceRequestService);
+  private readonly router = inject(Router);
   private readonly subs: Subscription[] = [];
 
+  protected readonly title = 'Approved Requests';
+  protected readonly subtitle = 'Requests that have been approved and are ready for processing';
   protected readonly requests = signal<any[]>([]);
+
+  get totalCount(): number { return this.requests().length; }
+  get totalValue(): number { return this.requests().reduce((s, r) => s + (r.estimatedValue || 0), 0); }
 
   ngOnInit(): void {
     this.syncFromApi();
@@ -46,9 +53,7 @@ export class ApprovedRequestsComponent implements OnInit, OnDestroy {
           });
           this.loadRequests();
         },
-        error: () => {
-          this.loadRequests();
-        },
+        error: () => { this.loadRequests(); },
       });
   }
 
@@ -71,5 +76,16 @@ export class ApprovedRequestsComponent implements OnInit, OnDestroy {
         approvedBy: req.managerName || 'Manager',
       })),
     );
+  }
+
+  navigateTo(path: string): void {
+    void this.router.navigate([path]);
+  }
+
+  getPriorityClass(p: string): string {
+    if (p === 'Urgent') return 'td-priority td-priority--urgent';
+    if (p === 'High') return 'td-priority td-priority--high';
+    if (p === 'Medium') return 'td-priority td-priority--medium';
+    return 'td-priority td-priority--low';
   }
 }

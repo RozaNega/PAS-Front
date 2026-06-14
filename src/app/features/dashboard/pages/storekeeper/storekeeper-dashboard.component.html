@@ -386,6 +386,61 @@
   </div>
 </section>
 
+<!-- Workflow Stock Verification Section -->
+<section class="panel">
+  <div class="panel-header">
+    <div class="panel-header-left">
+      <i class="bi bi-shield-exclamation" style="color: #8b5cf6;"></i>
+      <h3>Workflow Stock Verification Requests</h3>
+      <span class="count-badge purple">{{ workflowPendingVerifications().length }}</span>
+    </div>
+    <button type="button" class="action-btn secondary small" (click)="loadWorkflowPendingVerifications()" [disabled]="loadingWorkflowVerifications()">
+      <i class="bi bi-arrow-repeat"></i> {{ loadingWorkflowVerifications() ? 'Loading...' : 'Refresh' }}
+    </button>
+  </div>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>SR Number</th>
+          <th>Employee</th>
+          <th>Department</th>
+          <th>Item</th>
+          <th>Qty</th>
+          <th>Priority</th>
+          <th>Date</th>
+          <th class="text-right">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (req of workflowPendingVerifications(); track req.id) {
+          <tr>
+            <td><span class="mono">{{ req.srNumber }}</span></td>
+            <td>{{ req.employeeName }}</td>
+            <td>{{ req.department || '—' }}</td>
+            <td>{{ req.items[0]?.name || '—' }}</td>
+            <td class="text-center">{{ req.items[0]?.quantity || 0 }}</td>
+            <td><span class="priority-tag" [style.background]="getVerificationUrgencyColor(req.priority) + '18'" [style.color]="getVerificationUrgencyColor(req.priority)">{{ req.priority }}</span></td>
+            <td class="text-nowrap">{{ req.submittedDate | date:'shortDate' }}</td>
+            <td class="text-right">
+              <div class="btn-group">
+                <button type="button" class="action-btn success small" (click)="verifyStockWorkflow(req.id)" title="Stock Available">
+                  <i class="bi bi-check-lg"></i> Verify
+                </button>
+                <button type="button" class="action-btn danger small" (click)="markStockInsufficientWorkflow(req.id)" title="Stock Insufficient">
+                  <i class="bi bi-x-lg"></i> Insufficient
+                </button>
+              </div>
+            </td>
+          </tr>
+        } @empty {
+          <tr><td colspan="8" class="empty-state">No workflow requests pending stock verification</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</section>
+
 <!-- Workflow Requests Section -->
 <section class="panel workflow-panel">
   <div class="panel-header">

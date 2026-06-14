@@ -1,43 +1,146 @@
 <div class="documents-container">
-  <div class="page-header">
-    <h1>Documents</h1>
-    <p class="subtitle">Compliance documents repository &amp; digital storage</p>
+  <div class="hero-section">
+    <div class="hero-content">
+      <h1 class="hero-title">Documents</h1>
+      <p class="hero-subtitle">Compliance documents repository &amp; digital storage</p>
+    </div>
+    <div class="hero-actions">
+      <button class="btn btn-hero-outline" (click)="exportData()" [disabled]="documents().length === 0">
+        <i class="bi bi-download"></i> Export
+      </button>
+      <button class="btn btn-hero" (click)="refresh()" [disabled]="loading()">
+        <i class="bi bi-arrow-clockwise"></i> Refresh
+      </button>
+    </div>
   </div>
 
-  <div class="documents-list">
-    @for (doc of documents(); track doc.id) {
-      <div class="document-card">
-        <div class="document-header">
-          <div class="document-name">
-            <i class="bi bi-file-earmark-pdf-fill file-icon"></i>
-            {{ getDisplayName(doc.documentName) }}
-          </div>
-          <div class="file-type-badge">{{ doc.fileType }}</div>
-        </div>
-        <div class="document-details">
-          <div class="detail-row"><span class="label">Entity Type:</span><span class="value">{{ doc.entityType }}</span></div>
-          <div class="detail-row"><span class="label">Entity ID:</span><span class="value">{{ doc.entityId }}</span></div>
-          <div class="detail-row"><span class="label">Uploaded By:</span><span class="value">{{ doc.uploadedBy }}</span></div>
-          <div class="detail-row"><span class="label">Uploaded Date:</span><span class="value">{{ doc.uploadedDate }}</span></div>
-          <div class="detail-row"><span class="label">File Size:</span><span class="value">{{ doc.fileSize }}</span></div>
-        </div>
-        <div class="document-actions">
-          <button class="btn btn-secondary" (click)="onDownload(doc)" [disabled]="downloadingDocId() !== null">
-            @if (downloadingDocId() === doc.id) {
-              <span class="spinner"></span> Downloading {{ downloadProgress() }}%
-            } @else {
-              <i class="bi bi-file-pdf"></i> Download PDF
-            }
-          </button>
-          <button class="btn btn-primary" (click)="onView(doc)">
-            <i class="bi bi-eye"></i> View
-          </button>
-        </div>
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-icon stat-icon-total"><i class="bi bi-files"></i></div>
+      <div class="stat-info">
+        <span class="stat-value">{{ stats().total }}</span>
+        <span class="stat-label">Total Documents</span>
       </div>
-    }
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon stat-icon-verified"><i class="bi bi-shield-check"></i></div>
+      <div class="stat-info">
+        <span class="stat-value">{{ stats().verified }}</span>
+        <span class="stat-label">Verified</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon stat-icon-pending"><i class="bi bi-clock"></i></div>
+      <div class="stat-info">
+        <span class="stat-value">{{ stats().pending }}</span>
+        <span class="stat-label">Pending Review</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon stat-icon-archived"><i class="bi bi-archive"></i></div>
+      <div class="stat-info">
+        <span class="stat-value">{{ stats().archived }}</span>
+        <span class="stat-label">Archived</span>
+      </div>
+    </div>
   </div>
 
-  <!-- Merged View Document & Advanced Details Modal Overlay -->
+  @if (loading()) {
+    <div class="state-container">
+      <div class="spinner-lg"></div>
+      <p class="state-text">Loading documents...</p>
+    </div>
+  } @else if (error(); as errMsg) {
+    <div class="state-container error-state">
+      <i class="bi bi-exclamation-triangle state-icon"></i>
+      <p class="state-text">{{ errMsg }}</p>
+      <button class="btn btn-primary" (click)="refresh()">
+        <i class="bi bi-arrow-counterclockwise"></i> Retry
+      </button>
+    </div>
+  } @else if (documents().length === 0) {
+    <div class="state-container empty-state">
+      <i class="bi bi-archive state-icon"></i>
+      <p class="state-text">No documents found</p>
+      <p class="state-subtext">Service request records will appear here once available.</p>
+    </div>
+  } @else {
+    <div class="table-panel">
+      <div class="table-panel-header">
+        <div class="table-panel-title">
+          <i class="bi bi-table"></i> Document Records
+        </div>
+        <span class="table-panel-count">{{ documents().length }} record{{ documents().length !== 1 ? 's' : '' }}</span>
+      </div>
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Document Name</th>
+              <th>Entity Type</th>
+              <th>Entity ID</th>
+              <th>Uploaded By</th>
+              <th>Uploaded Date</th>
+              <th>Classification</th>
+              <th>Status</th>
+              <th class="actions-col">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (doc of documents(); track doc.id) {
+              <tr>
+                <td>
+                  <div class="doc-name-cell">
+                    <i class="bi bi-file-earmark-pdf-fill doc-icon"></i>
+                    <span class="doc-name-text">{{ getDisplayName(doc.documentName) }}</span>
+                  </div>
+                </td>
+                <td><span class="entity-badge">{{ doc.entityType }}</span></td>
+                <td><span class="entity-id-text">{{ doc.entityId }}</span></td>
+                <td>
+                  <div class="uploader-cell">
+                    <span class="avatar-initials">{{ getInitials(doc.uploadedBy) }}</span>
+                    <span class="uploader-name">{{ doc.uploadedBy }}</span>
+                  </div>
+                </td>
+                <td><span class="date-text">{{ doc.uploadedDate }}</span></td>
+                <td>
+                  <span class="badge badge-classification"
+                    [class.confidential]="doc.classification === 'Confidential'"
+                    [class.internal]="doc.classification === 'Internal'"
+                    [class.public]="doc.classification === 'Public'">
+                    {{ doc.classification }}
+                  </span>
+                </td>
+                <td>
+                  <span class="badge badge-status"
+                    [class.verified]="doc.status === 'Verified'"
+                    [class.pending-review]="doc.status === 'Pending Review'"
+                    [class.archived]="doc.status === 'Archived'">
+                    {{ doc.status }}
+                  </span>
+                </td>
+                <td class="actions-col">
+                  <button class="btn-icon btn-icon-view" (click)="onView(doc)" title="View document">
+                    <i class="bi bi-eye"></i>
+                  </button>
+                  <button class="btn-icon btn-icon-download" (click)="onDownload(doc)"
+                    [disabled]="downloadingDocId() !== null" title="Download PDF">
+                    @if (downloadingDocId() === doc.id) {
+                      <span class="spinner-sm"></span>
+                    } @else {
+                      <i class="bi bi-file-pdf"></i>
+                    }
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
   @if (activeViewDoc(); as doc) {
     <div class="modal-backdrop" (click)="closeModal()">
       <div class="modal-card view-doc-modal" (click)="$event.stopPropagation()">
@@ -59,7 +162,6 @@
             </span>
           </div>
 
-          <!-- Document Contents Section -->
           <div class="section-title">Document Content</div>
           <div class="document-paper">
             <div class="paper-watermark">PAS SECURITY CERTIFIED</div>
@@ -67,11 +169,10 @@
               <p class="paper-line">{{ line }}</p>
             }
           </div>
-          
+
           <div class="section-title">Description</div>
           <p class="doc-desc-para">{{ doc.description }}</p>
 
-          <!-- Merged Metadata Details Section -->
           <div class="section-title">Technical Metadata &amp; Compliance Details</div>
           <div class="metadata-grid">
             <div class="grid-item">
@@ -101,7 +202,7 @@
               <span>{{ doc.entityType }} [ID: {{ doc.entityId }}]</span>
             </div>
           </div>
-          
+
           <div class="info-note">
             <i class="bi bi-shield-fill-exclamation text-info"></i>
             <span>This metadata is digitally cryptographed and mapped to audit trail actions.</span>

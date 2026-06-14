@@ -1,0 +1,31 @@
+@import '../../shared/auth-styles.css';
+
+.verify-status {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem 0;
+  text-align: center;
+}
+
+.verify-spinner {
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 3px solid #e2e8f0;
+  border-top-color: var(--auth-primary);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+.verify-icon {
+  font-size: 3rem;
+}
+
+.verify-status--success .verify-icon {
+  color: var(--success);
+}
+
+.verify-status--error .verify-icon {
+  color: var(--error);
+}

@@ -1,122 +1,180 @@
-<div class="issued-sivs-container">
-  <div class="page-header">
-    <h1>Issued SIVs</h1>
-    <p class="subtitle">SIVs that have been issued</p>
+<div class="sivs-page">
+  <!-- Hero -->
+  <div class="page-hero">
+    <div class="page-hero__text">
+      <h1>{{ title }}</h1>
+      <p>{{ subtitle }}</p>
+    </div>
+    <div class="page-hero__badge">
+      <i class="pi pi-check-circle"></i>
+      {{ totalCount }} issued
+    </div>
   </div>
 
-  <div class="sivs-list">
-    @for (siv of sivs(); track siv.id) {
-      <div class="siv-card">
-        <div class="siv-header">
-          <div class="siv-number">{{ siv.sivNumber }}</div>
-          <div class="status-badge issued">Issued</div>
-        </div>
-        <div class="siv-details">
-          <div class="detail-row"><span class="label">Request Number:</span><span class="value">{{ siv.requestNumber }}</span></div>
-          <div class="detail-row"><span class="label">Requester:</span><span class="value">{{ siv.requesterName }} ({{ siv.department }})</span></div>
-          <div class="detail-row"><span class="label">Total Items:</span><span class="value">{{ siv.totalItems }}</span></div>
-          <div class="detail-row"><span class="label">Total Value:</span><span class="value">${{ siv.totalValue.toLocaleString() }}</span></div>
-          <div class="detail-row"><span class="label">Issue Date:</span><span class="value">{{ siv.issueDate }}</span></div>
-          <div class="detail-row"><span class="label">Issued By:</span><span class="value">{{ siv.issuedBy }}</span></div>
-        </div>
-        <div class="siv-actions">
-          <button class="btn btn-secondary" (click)="viewDetails(siv)">
-            <i class="bi bi-eye"></i> View Details
-          </button>
-          <button class="btn btn-primary" (click)="downloadPdf(siv)">
-            <i class="bi bi-download"></i> Download PDF
-          </button>
+  <!-- Sub-nav -->
+  <div class="sub-nav">
+    <button class="sub-nav__link" (click)="navigateTo('/manager/sivs/all')">
+      <i class="pi pi-th-large"></i> All SIVs
+    </button>
+    <button class="sub-nav__link" (click)="navigateTo('/manager/sivs/pending')">
+      <i class="pi pi-clock"></i> Pending
+    </button>
+    <button class="sub-nav__link sub-nav__link--active" (click)="navigateTo('/manager/sivs/issued')">
+      <i class="pi pi-check-circle"></i> Issued
+    </button>
+  </div>
+
+  <!-- Stats bar -->
+  <div class="stats-bar">
+    <span class="stats-bar__item"><i class="pi pi-check-circle"></i> <strong>{{ totalCount }}</strong> Issued</span>
+    <span class="stats-bar__divider"></span>
+    <span class="stats-bar__item"><i class="pi pi-dollar"></i> <strong>${{ totalValue | number }}</strong> Total Value</span>
+  </div>
+
+  <!-- Table -->
+  <div class="panel">
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>SIV No</th>
+            <th>Request No</th>
+            <th>Requester</th>
+            <th>Department</th>
+            <th>Items</th>
+            <th>Value</th>
+            <th>Status</th>
+            <th>Issue Date</th>
+            <th>Issued By</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngIf="totalCount === 0" class="empty-row">
+            <td colspan="10">
+              <div class="empty-state">
+                <i class="pi pi-inbox"></i>
+                <p>No issued SIVs</p>
+              </div>
+            </td>
+          </tr>
+          <tr *ngFor="let siv of sivs()">
+            <td class="td-id">{{ siv.sivNumber }}</td>
+            <td class="td-id" style="color:#64748b; font-weight:500;">{{ siv.requestNumber }}</td>
+            <td>
+              <div class="td-employee">
+                <div class="td-avatar" [style.background]="'#' + (siv.requesterName.charCodeAt(0) * 1234567).toString(16).slice(-6)">
+                  {{ siv.requesterName.charAt(0) }}
+                </div>
+                <span class="td-name">{{ siv.requesterName }}</span>
+              </div>
+            </td>
+            <td>{{ siv.department }}</td>
+            <td class="td-value">{{ siv.totalItems }}</td>
+            <td class="td-value">${{ siv.totalValue | number }}</td>
+            <td><span [class]="getStatusClass()"><i class="pi pi-circle-fill"></i> Issued</span></td>
+            <td class="td-date">{{ siv.issueDate }}</td>
+            <td class="td-date">{{ siv.issuedBy || '—' }}</td>
+            <td>
+              <div class="table-actions">
+                <button class="action-btn action-btn--view" (click)="viewDetails(siv)">
+                  <i class="pi pi-eye"></i> <span>View</span>
+                </button>
+                <button class="action-btn action-btn--download" (click)="downloadPdf(siv)">
+                  <i class="pi pi-download"></i> <span>PDF</span>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Detail Modal -->
+<div class="modal-overlay" *ngIf="showDetailsModal()" (click)="closeDetailsModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-content__header">
+      <h2><i class="pi pi-file" style="margin-right: .4rem; color:#6366f1;"></i> {{ selectedSiv()?.sivNumber }}</h2>
+      <button class="close-btn" (click)="closeDetailsModal()"><i class="pi pi-times"></i></button>
+    </div>
+    <div class="modal-content__body">
+      <!-- General Info -->
+      <div class="detail-section">
+        <h3 class="detail-section-title">SIV Information</h3>
+        <div class="detail-grid">
+          <div class="detail-item">
+            <span class="label">SIV Number</span>
+            <span class="value">{{ selectedSiv()?.sivNumber }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Request Number</span>
+            <span class="value">{{ selectedSiv()?.requestNumber }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Requester</span>
+            <span class="value">{{ selectedSiv()?.requesterName }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Department</span>
+            <span class="value">{{ selectedSiv()?.department }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Status</span>
+            <span class="value"><span [class]="getStatusClass()"><i class="pi pi-circle-fill"></i> Issued</span></span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Issue Date</span>
+            <span class="value">{{ selectedSiv()?.issueDate }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Issued By</span>
+            <span class="value">{{ selectedSiv()?.issuedBy || 'N/A' }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Total Value</span>
+            <span class="value" style="font-weight:700; color:#16a34a;">${{ selectedSiv()?.totalValue | number }}</span>
+          </div>
         </div>
       </div>
-    }
-  </div>
 
-  <!-- Details Modal -->
-  @if (showDetailsModal() && selectedSiv()) {
-    <div class="modal-overlay" (click)="closeDetailsModal()">
-      <div class="modal-content" (click)="$event.stopPropagation()">
-        <div class="modal-header">
-          <h2>SIV Details - {{ selectedSiv()!.sivNumber }}</h2>
-          <button class="close-btn" (click)="closeDetailsModal()">
-            <i class="bi bi-x-lg"></i>
-          </button>
-        </div>
-        <div class="modal-body">
-          <div class="detail-section">
-            <h3>General Information</h3>
-            <div class="detail-grid">
-              <div class="detail-item">
-                <span class="label">SIV Number:</span>
-                <span class="value">{{ selectedSiv()!.sivNumber }}</span>
-              </div>
-              <div class="detail-item">
-                <span class="label">Request Number:</span>
-                <span class="value">{{ selectedSiv()!.requestNumber }}</span>
-              </div>
-              <div class="detail-item">
-                <span class="label">Requester:</span>
-                <span class="value">{{ selectedSiv()!.requesterName }}</span>
-              </div>
-              <div class="detail-item">
-                <span class="label">Department:</span>
-                <span class="value">{{ selectedSiv()!.department }}</span>
-              </div>
-              <div class="detail-item">
-                <span class="label">Status:</span>
-                <span class="value">
-                  <span class="status-badge issued">{{ selectedSiv()!.status }}</span>
-                </span>
-              </div>
-              <div class="detail-item">
-                <span class="label">Issue Date:</span>
-                <span class="value">{{ selectedSiv()!.issueDate }}</span>
-              </div>
-              <div class="detail-item">
-                <span class="label">Issued By:</span>
-                <span class="value">{{ selectedSiv()!.issuedBy }}</span>
-              </div>
-            </div>
-          </div>
-
-          @if (selectedSiv()!.items && selectedSiv()!.items!.length > 0) {
-            <div class="detail-section">
-              <h3>Items</h3>
-              <table class="items-table">
-                <thead>
-                  <tr>
-                    <th>Item Name</th>
-                    <th>Quantity</th>
-                    <th>Unit Price</th>
-                    <th>Total Price</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @for (item of selectedSiv()!.items; track item.itemName) {
-                    <tr>
-                      <td>{{ item.itemName }}</td>
-                      <td>{{ item.quantity }}</td>
-                      <td>${{ item.unitPrice.toLocaleString() }}</td>
-                      <td>${{ item.totalPrice.toLocaleString() }}</td>
-                    </tr>
-                  }
-                </tbody>
-                <tfoot>
-                  <tr>
-                    <td colspan="3"><strong>Total</strong></td>
-                    <td><strong>${{ selectedSiv()!.totalValue.toLocaleString() }}</strong></td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-          }
-        </div>
-        <div class="modal-footer">
-          <button class="btn btn-primary" (click)="downloadPdf(selectedSiv()!)">
-            <i class="bi bi-download"></i> Download PDF
-          </button>
-          <button class="btn btn-secondary" (click)="closeDetailsModal()">Close</button>
-        </div>
+      <!-- Items -->
+      <div class="detail-section">
+        <h3 class="detail-section-title">Items ({{ selectedSiv()?.totalItems }})</h3>
+        <table class="items-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Item Name</th>
+              <th>Quantity</th>
+              <th>Unit Price</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of selectedSiv()?.items || []; let i = index">
+              <td style="color:#94a3b8; font-weight:600;">{{ i + 1 }}</td>
+              <td style="font-weight:600;">{{ item.itemName }}</td>
+              <td>{{ item.quantity }}</td>
+              <td>${{ item.unitPrice | number }}</td>
+              <td class="td-value">${{ item.totalPrice | number }}</td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="4" style="text-align:right;">Total Value</td>
+              <td class="td-value">${{ selectedSiv()?.totalValue | number }}</td>
+            </tr>
+          </tfoot>
+        </table>
       </div>
     </div>
-  }
+    <div class="modal-content__footer">
+      <button class="modal-btn modal-btn--secondary" (click)="closeDetailsModal()">Close</button>
+      <button class="modal-btn modal-btn--primary" (click)="downloadPdf(selectedSiv()!)">
+        <i class="pi pi-download"></i> Download PDF
+      </button>
+    </div>
+  </div>
 </div>

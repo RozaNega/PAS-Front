@@ -1,93 +1,117 @@
-<div class="requests-summary-page">
+<div class="summary-page">
+  <!-- Page Header -->
   <div class="page-header">
-    <h1>My Requests Summary</h1>
-  </div>
-
-  <!-- Requests Overview -->
-  <div class="overview-section">
-    <h2>📊 REQUESTS OVERVIEW</h2>
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-title">Total Requests</div>
-        <div class="stat-subtitle">(All Time)</div>
-        <div class="stat-value">{{ stats.total }}</div>
-        <div class="stat-trend">this year</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-title">Pending</div>
-        <div class="stat-subtitle">Approval</div>
-        <div class="stat-value">{{ stats.pending }}</div>
-        <div class="stat-trend">🔴 Urgent: {{ stats.urgent }}</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-title">Approved</div>
-        <div class="stat-subtitle"></div>
-        <div class="stat-value">{{ stats.approved }}</div>
-        <div class="stat-trend">🟢 Ready</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-title">Rejected</div>
-        <div class="stat-subtitle"></div>
-        <div class="stat-value">{{ stats.rejected }}</div>
-        <div class="stat-trend">🔴 Rejected</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-title">Completed</div>
-        <div class="stat-subtitle"></div>
-        <div class="stat-value">{{ stats.completed }}</div>
-        <div class="stat-trend">✅ Done</div>
-      </div>
+    <div>
+      <h1>My Requests Summary</h1>
+      <p>Year-over-year breakdown of all your service requests</p>
     </div>
   </div>
 
-  <!-- Status Breakdown Chart -->
-  <div class="chart-section">
-    <h2>📈 STATUS BREAKDOWN CHART</h2>
-    <div class="chart-container">
-      <div
-        class="pie-chart"
-        [style.--approved-pct]="approvedPercentage"
-        [style.--pending-pct]="pendingPercentage"
-        [style.--rejected-pct]="rejectedPercentage"
-      >
-        <div class="pie-chart-inner">
-          <div class="pie-title">Total: {{ stats.total }}</div>
-          <div class="pie-item">🟢 Approved: {{ stats.approved }}</div>
-          <div class="pie-item">🟡 Pending: {{ stats.pending }}</div>
-          <div class="pie-item">🔴 Rejected: {{ stats.rejected }}</div>
-          <div class="pie-item">✅ Completed: {{ stats.completed }}</div>
-        </div>
+  <!-- KPI Cards -->
+  <div class="card-grid-5">
+    <div class="summary-card summary-card--blue">
+      <div class="card-header">
+        <p class="card-title">Total Requests</p>
+        <p class="card-subtitle">All time</p>
       </div>
+      <p class="card-value">{{ stats.total }}</p>
+      <p class="card-trend">{{ stats.total > 0 ? stats.total + ' this year' : 'No requests this year' }}</p>
+    </div>
+    <div class="summary-card summary-card--green">
+      <div class="card-header">
+        <p class="card-title">Approved</p>
+        <p class="card-subtitle">{{ approvedPercentage }}% approval rate</p>
+      </div>
+      <p class="card-value">{{ stats.approved }}</p>
+      <p class="card-trend">
+        <span class="trend-badge trend-badge--green">{{ stats.approved }} approved</span>
+      </p>
+    </div>
+    <div class="summary-card summary-card--amber">
+      <div class="card-header">
+        <p class="card-title">Pending</p>
+        <p class="card-subtitle">Awaiting review</p>
+      </div>
+      <p class="card-value">{{ stats.pending }}</p>
+      <p class="card-trend">
+        <span *ngIf="stats.urgent > 0" class="trend-badge trend-badge--urgent">🔴 {{ stats.urgent }} urgent</span>
+        <span *ngIf="stats.urgent === 0">No urgent items</span>
+      </p>
+    </div>
+    <div class="summary-card summary-card--rose">
+      <div class="card-header">
+        <p class="card-title">Rejected</p>
+        <p class="card-subtitle">Not approved</p>
+      </div>
+      <p class="card-value">{{ stats.rejected }}</p>
+      <p class="card-trend">
+        <span *ngIf="stats.rejected > 0" class="trend-badge trend-badge--rose">{{ stats.rejected }} rejected</span>
+        <span *ngIf="stats.rejected === 0">None rejected</span>
+      </p>
+    </div>
+    <div class="summary-card summary-card--green">
+      <div class="card-header">
+        <p class="card-title">Completed</p>
+        <p class="card-subtitle">Fulfilled</p>
+      </div>
+      <p class="card-value">{{ stats.completed }}</p>
+      <p class="card-trend">
+        <span *ngIf="stats.completed > 0" class="trend-badge trend-badge--green">✅ {{ stats.completed }} done</span>
+        <span *ngIf="stats.completed === 0">None completed</span>
+      </p>
     </div>
   </div>
 
-  <!-- Requests by Month -->
-  <div class="monthly-section">
-    <h2>📊 REQUESTS BY MONTH ({{ summaryYear }})</h2>
-    <div class="monthly-grid">
-      @for (data of monthlyData; track data.month) {
-        <div class="monthly-item">
-          <span class="month-label">{{ data.month }}: {{ data.count }}</span>
-        </div>
-      }
-    </div>
+  <!-- Charts Grid -->
+  <div class="charts-grid">
+    <section class="chart-section">
+      <div class="section-header-row">
+        <h4 class="section-title">📊 Requests by Month ({{ summaryYear }})</h4>
+      </div>
+      <p class="summary-caption">Total requests submitted per month</p>
+      <div class="chart-box">
+        <div echarts [options]="trendChartOpts" style="width:100%;height:280px;"></div>
+      </div>
+    </section>
+    <section class="chart-section">
+      <div class="section-header-row">
+        <h4 class="section-title">📈 Status Breakdown</h4>
+      </div>
+      <p class="summary-caption">All requests by current status</p>
+      <div class="chart-box">
+        <div echarts [options]="statusDonutOpts" style="width:100%;height:280px;"></div>
+      </div>
+    </section>
   </div>
 
   <!-- Value Summary -->
-  <div class="value-section">
-    <h2>💰 VALUE SUMMARY</h2>
-    <div class="value-card">
-      <div class="value-item">
-        <strong>Total Value of Approved Requests:</strong> {{ valueSummary.totalValue }}
+  <section class="value-panel">
+    <div class="panel-header">
+      <h3>💰 Value Summary</h3>
+    </div>
+    <div class="value-summary-grid">
+      <div class="value-card">
+        <span class="value-card-icon">💰</span>
+        <div class="value-card-body">
+          <p class="value-card-label">Total Value (Approved)</p>
+          <p class="value-card-amount">{{ valueSummary.totalValue }}</p>
+        </div>
       </div>
-      <div class="value-item">
-        <strong>Average Value per Request:</strong> {{ valueSummary.averageValue }}
+      <div class="value-card">
+        <span class="value-card-icon">📊</span>
+        <div class="value-card-body">
+          <p class="value-card-label">Average Value</p>
+          <p class="value-card-amount">{{ valueSummary.averageValue }}</p>
+        </div>
       </div>
-      <div class="value-item">
-        <strong>Highest Value Request:</strong> {{ valueSummary.highestValue }} ({{
-          valueSummary.highestValueRequest
-        }})
+      <div class="value-card">
+        <span class="value-card-icon">🏆</span>
+        <div class="value-card-body">
+          <p class="value-card-label">Highest Value Request</p>
+          <p class="value-card-amount">{{ valueSummary.highestValue }}</p>
+          <p class="value-card-sub">({{ valueSummary.highestValueRequest }})</p>
+        </div>
       </div>
     </div>
-  </div>
+  </section>
 </div>

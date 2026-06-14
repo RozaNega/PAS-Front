@@ -133,34 +133,44 @@ export class StockLedgerComponent implements OnInit {
     this.downloadFile(content, 'stock-ledger.csv', 'text/csv;charset=utf-8;');
   }
 
-  getTransactionIcon(type: LedgerTransactionType): string {
-    switch (type) {
-      case 'IN':
-        return '📥';
-      case 'OUT':
-        return '📤';
-      case 'ADJUSTMENT':
-        return '🔧';
-      case 'TRANSFER':
-        return '🔄';
-      default:
-        return '📋';
-    }
-  }
-
   getTransactionClass(type: LedgerTransactionType): string {
     switch (type) {
       case 'IN':
-        return 'transaction-in';
+        return 'row--in';
       case 'OUT':
-        return 'transaction-out';
+        return 'row--out';
       case 'ADJUSTMENT':
-        return 'transaction-adjustment';
+        return 'row--adjust';
       case 'TRANSFER':
-        return 'transaction-transfer';
+        return 'row--transfer';
       default:
         return '';
     }
+  }
+
+  getBadgeClass(type: LedgerTransactionType): string {
+    switch (type) {
+      case 'IN':
+        return 'badge--in';
+      case 'OUT':
+        return 'badge--out';
+      case 'ADJUSTMENT':
+        return 'badge--adjust';
+      case 'TRANSFER':
+        return 'badge--transfer';
+      default:
+        return 'badge--other';
+    }
+  }
+
+  getQtyClass(qty: number): string {
+    if (qty > 0) return 'qty--pos';
+    if (qty < 0) return 'qty--neg';
+    return 'qty--zero';
+  }
+
+  qtyDisplay(qty: number): string {
+    return qty > 0 ? `+${qty}` : `${qty}`;
   }
 
   loadData(): void {

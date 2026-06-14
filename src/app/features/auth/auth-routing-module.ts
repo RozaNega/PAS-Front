@@ -8,6 +8,7 @@ import { Models } from './models/models';
 import { Register } from './pages/register/register';
 import { ResetPassword } from './pages/reset-password/reset-password';
 import { Services } from './services/services';
+import { VerifyEmail } from './pages/verify-email/verify-email';
 
 
 const routes: Routes = [
@@ -40,6 +41,11 @@ const routes: Routes = [
         path: 'reset-password',
         component: ResetPassword,
         data: { animation: 'reset' },
+      },
+      {
+        path: 'verify-email',
+        component: VerifyEmail,
+        data: { animation: 'verify-email' },
       },
       {
         path: 'models',

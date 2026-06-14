@@ -1,9 +1,17 @@
 import express from 'express';
 import fs from 'fs/promises';
-import { existsSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
 import { resolve } from 'path';
+import nodemailer from 'nodemailer';
 
 const app = express();
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type,Authorization');
+  if (req.method === 'OPTIONS') return res.sendStatus(204);
+  next();
+});
 app.use(express.json());
 // simple request logger for debugging
 app.use((req, res, next) => {
@@ -233,5 +241,105 @@ app.get('/api/StockLedger', async (req, res) => {
   res.json({ success: true, message: '', data: d.ledger, statusCode: 200 });
 });
 
-const port = process.env.PORT || 5030;
+// ---------- Email + Auth endpoints ----------
+
+const envPath = resolve(process.cwd(), '.env');
+if (existsSync(envPath)) {
+  const envContent = readFileSync(envPath, 'utf8');
+  for (const line of envContent.split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+    const eqIdx = trimmed.indexOf('=');
+    if (eqIdx === -1) continue;
+    const key = trimmed.slice(0, eqIdx).trim();
+    let val = trimmed.slice(eqIdx + 1).trim();
+    if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+      val = val.slice(1, -1);
+    }
+    if (!process.env[key]) process.env[key] = val;
+  }
+}
+
+let transporter = null;
+if (process.env.SMTP_USER && process.env.SMTP_PASS) {
+  transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST || 'smtp.gmail.com',
+    port: parseInt(process.env.SMTP_PORT || '587', 10),
+    secure: process.env.SMTP_PORT === '465',
+    auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+    tls: { rejectUnauthorized: false },
+  });
+  transporter.verify()
+    .then(() => console.log('SMTP verified for', process.env.SMTP_USER))
+    .catch((err) => console.error('SMTP verify failed:', err.message));
+}
+
+async function sendEmail({ to, subject, body }) {
+  const from = process.env.SMTP_FROM || process.env.SMTP_USER || 'noreply@afrocom.com';
+  if (transporter) {
+    const info = await transporter.sendMail({ from, to, subject, text: body });
+    console.log('Email sent to', to, '- ID:', info.messageId);
+    return info;
+  }
+  console.log('--- EMAIL (logged, no SMTP) ---');
+  console.log('To:', to, 'Subject:', subject);
+  console.log('Body:', body);
+  console.log('--- END ---');
+  return { messageId: 'console-' + Date.now() };
+}
+
+app.post('/api/Notifications/send-email', async (req, res) => {
+  try {
+    const { to, subject, body } = req.body || {};
+    if (!to || !subject || !body) return res.status(400).json({ success: false, message: 'Missing to, subject, body' });
+    const info = await sendEmail({ to, subject, body });
+    res.json({ success: true, message: 'Email sent', data: { messageId: info.messageId } });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+app.post('/api/Notifications', async (req, res) => {
+  try {
+    const { to, subject, body } = req.body || {};
+    if (!to || !subject || !body) return res.status(400).json({ success: false, message: 'Missing to, subject, body' });
+    const info = await sendEmail({ to, subject, body });
+    res.json({ success: true, message: 'Notification sent', data: { messageId: info.messageId } });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+app.get('/api/Notifications', async (req, res) => {
+  res.json({ success: true, data: [], statusCode: 200 });
+});
+
+app.post('/api/Auth/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body || {};
+    if (!email) return res.status(400).json({ success: false, message: 'Email required' });
+    const resetLink = `http://localhost:4200/reset-password?token=mock-${Date.now()}&email=${encodeURIComponent(email)}`;
+    await sendEmail({ to: email, subject: 'Password Reset Request', body: `Click: ${resetLink}` });
+    res.json({ success: true, message: 'Reset link sent', data: { token: 'mock-' + Date.now() } });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+app.post('/api/Auth/reset-password', async (req, res) => {
+  res.json({ success: true, message: 'Password reset successful' });
+});
+
+app.post('/api/Auth/login', async (req, res) => {
+  res.json({ success: true, message: 'Mock login' });
+});
+
+// Debug: log unmatched routes
+app.use((req, res) => {
+  console.log('*** UNMATCHED ***', req.method, req.originalUrl);
+  console.log('Registered routes: POST /api/Notifications/send-email');
+  res.status(404).json({ success: false, message: `No handler for ${req.method} ${req.originalUrl}` });
+});
+
+const port = process.env.PORT || 5028;
 app.listen(port, () => console.log(`Dev API server listening on http://localhost:${port}`));

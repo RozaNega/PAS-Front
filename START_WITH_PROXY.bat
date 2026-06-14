@@ -40,7 +40,13 @@ echo.
 echo 📝 Important:
 echo   - Frontend will run on: http://localhost:4200
 echo   - Backend should be on: http://localhost:5028
-echo   - API calls to /api will be proxied to backend
+echo   - API calls to /api are proxied to backend
+echo   - Email/auth calls go to email service on port 5030
+echo.
+echo ⚠️  Make sure you also start the email service:
+echo      Open a SEPARATE terminal and run:
+echo        node email-service.mjs
+echo      or double-click START_EMAIL_SERVICE.bat
 echo.
 echo Press Ctrl+C to stop the server
 echo.

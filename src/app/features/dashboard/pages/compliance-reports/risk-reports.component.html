@@ -1,55 +1,137 @@
-<div class="risk-reports-container">
-  <div class="page-header">
-    <h1>Risk Reports</h1>
-    <p class="subtitle">Compliance risk assessment &amp; mitigation planning</p>
-  </div>
+<div class="reports-page">
+  <header class="page-hero page-hero--dark">
+    <div class="page-hero__text">
+      <h1>Risk Reports</h1>
+      <p>Compliance risk assessment &amp; mitigation planning</p>
+    </div>
+    <div class="page-hero__actions">
+      <button class="btn btn-secondary" (click)="refreshReports()" [disabled]="loading()">
+        <i class="bi bi-arrow-clockwise"></i> Refresh
+      </button>
+      <button class="btn btn-primary" (click)="exportCsv()" [disabled]="reports().length === 0">
+        <i class="bi bi-download"></i> Export CSV
+      </button>
+    </div>
+  </header>
 
-  <div class="reports-list">
-    @for (report of reports(); track report.id) {
-      <div class="report-card">
-        <div class="report-header">
-          <div class="report-name">
-            <i class="bi bi-exclamation-triangle-fill file-icon"></i>
-            {{ report.reportName }}
-          </div>
-          <span class="badge" [class.badge-warning]="report.riskLevel === 'Medium'" [class.badge-danger]="report.riskLevel === 'High'" style="background: #fef3c7; color: #92400e;">
-            {{ report.riskLevel }} Risk
-          </span>
-        </div>
-        <div class="report-details">
-          <div class="detail-row"><span class="label">Generated:</span><span class="value">{{ report.generatedDate }}</span></div>
-          <div class="detail-row"><span class="label">High Risk:</span><span class="value text-danger">{{ report.highRiskItems }}</span></div>
-          <div class="detail-row"><span class="label">Medium Risk:</span><span class="value text-warning">{{ report.mediumRiskItems }}</span></div>
-          <div class="detail-row"><span class="label">Low Risk:</span><span class="value text-success">{{ report.lowRiskItems }}</span></div>
-        </div>
-        <div class="report-actions">
-          <button type="button" class="btn btn-secondary" (click)="downloadReport(report)" [disabled]="downloadingReportId() !== null">
-            @if (downloadingReportId() === report.id) {
-              <span class="spinner"></span> Downloading {{ downloadProgress() }}%
-            } @else {
-              <i class="bi bi-file-pdf"></i> Download PDF
-            }
-          </button>
-          <button type="button" class="btn btn-primary" (click)="viewReport(report)">
-            <i class="bi bi-eye"></i> View
-          </button>
+  @if (loading()) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading risk reports...</p>
+    </div>
+  }
+
+  @if (error(); as errMsg) {
+    <div class="error-state">
+      <i class="bi bi-exclamation-triangle-fill"></i>
+      <p>{{ errMsg }}</p>
+      <button class="btn btn-primary" (click)="refreshReports()"><i class="bi bi-arrow-clockwise"></i> Retry</button>
+    </div>
+  }
+
+  @if (!loading() && !error()) {
+    <div class="stats-cards">
+      <div class="stat-card stat-card--total">
+        <div class="stat-card__icon"><i class="bi bi-list-check"></i></div>
+        <div class="stat-card__info">
+          <span class="stat-card__value">{{ totalItems() }}</span>
+          <span class="stat-card__label">Total Items</span>
         </div>
       </div>
-    }
-  </div>
+      <div class="stat-card stat-card--high">
+        <div class="stat-card__icon"><i class="bi bi-exclamation-triangle-fill"></i></div>
+        <div class="stat-card__info">
+          <span class="stat-card__value">{{ highRiskCount() }}</span>
+          <span class="stat-card__label">High Risk</span>
+        </div>
+      </div>
+      <div class="stat-card stat-card--medium">
+        <div class="stat-card__icon"><i class="bi bi-exclamation-circle-fill"></i></div>
+        <div class="stat-card__info">
+          <span class="stat-card__value">{{ mediumRiskCount() }}</span>
+          <span class="stat-card__label">Medium Risk</span>
+        </div>
+      </div>
+      <div class="stat-card stat-card--low">
+        <div class="stat-card__icon"><i class="bi bi-check-circle-fill"></i></div>
+        <div class="stat-card__info">
+          <span class="stat-card__value">{{ lowRiskCount() }}</span>
+          <span class="stat-card__label">Low Risk</span>
+        </div>
+      </div>
+    </div>
 
-  <!-- Merged View Modal -->
+    <div class="panel">
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Report Name</th>
+              <th>Risk Level</th>
+              <th>Generated Date</th>
+              <th class="text-center">High</th>
+              <th class="text-center">Medium</th>
+              <th class="text-center">Low</th>
+              <th>Safety Index</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (report of reports(); track report.id) {
+              <tr>
+                <td>
+                  <i class="bi bi-exclamation-triangle-fill" style="color:#f59e0b;margin-right:0.5rem;"></i>
+                  {{ report.reportName }}
+                </td>
+                <td>
+                  @if (report.riskLevel === 'High') {
+                    <span class="badge badge--high">{{ report.riskLevel }}</span>
+                  } @else if (report.riskLevel === 'Medium') {
+                    <span class="badge badge--medium">{{ report.riskLevel }}</span>
+                  } @else {
+                    <span class="badge badge--low">{{ report.riskLevel }}</span>
+                  }
+                </td>
+                <td><span class="td-date">{{ report.generatedDate }}</span></td>
+                <td class="text-center"><strong>{{ report.highRiskItems }}</strong></td>
+                <td class="text-center"><strong>{{ report.mediumRiskItems }}</strong></td>
+                <td class="text-center"><strong>{{ report.lowRiskItems }}</strong></td>
+                <td>{{ report.safetyIndex }}</td>
+                <td>
+                  <button class="action-btn action-btn--view" (click)="viewReport(report)" title="View details">
+                    <i class="bi bi-eye"></i>
+                  </button>
+                  <button class="action-btn action-btn--pdf" (click)="downloadReport(report)" [disabled]="downloadingReportId() !== null" title="Download PDF">
+                    @if (downloadingReportId() === report.id) {
+                      <span class="spinner"></span>
+                    } @else {
+                      <i class="bi bi-file-pdf"></i>
+                    }
+                  </button>
+                </td>
+              </tr>
+            } @empty {
+              <tr class="empty-row">
+                <td colspan="8">
+                  <div class="empty-state">
+                    <i class="bi bi-inbox"></i>
+                    <p>No risk reports available</p>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
   @if (activeViewReport(); as rep) {
     <div class="modal-backdrop" (click)="closeModal()">
       <div class="modal-card" (click)="$event.stopPropagation()">
         <div class="modal-header">
-          <h2>
-            <i class="bi bi-exclamation-triangle-fill text-primary"></i> 
-            Risk Assessment Details
-          </h2>
-          <button class="btn-close-modal" (click)="closeModal()" aria-label="Close modal">
-            <i class="bi bi-x-lg"></i>
-          </button>
+          <h2><i class="bi bi-exclamation-triangle-fill" style="color:#f59e0b;"></i> Risk Assessment Details</h2>
+          <button class="btn-close-modal" (click)="closeModal()"><i class="bi bi-x-lg"></i></button>
         </div>
         <div class="modal-body">
           <div class="section-title">General Information</div>
@@ -67,43 +149,51 @@
               <span>{{ rep.riskAssessor }}</span>
             </div>
             <div class="grid-item">
-              <label>General Risk Tier</label>
-              <span class="text-warning" style="font-weight: 700;">{{ rep.riskLevel }} Tier</span>
+              <label>Risk Level</label>
+              @if (rep.riskLevel === 'High') {
+                <span class="badge badge--high">{{ rep.riskLevel }}</span>
+              } @else if (rep.riskLevel === 'Medium') {
+                <span class="badge badge--medium">{{ rep.riskLevel }}</span>
+              } @else {
+                <span class="badge badge--low">{{ rep.riskLevel }}</span>
+              }
             </div>
           </div>
 
-          <div class="section-title">Granular Item Risk Levels</div>
+          <div class="section-title">Risk Breakdown</div>
           <div class="metadata-grid">
             <div class="grid-item">
-              <label>High Risk Violations</label>
-              <span class="text-danger" style="font-weight: 700;">{{ rep.highRiskItems }} items</span>
+              <label>High Risk Items</label>
+              <span style="color:#dc2626;font-weight:700;">{{ rep.highRiskItems }} items</span>
             </div>
             <div class="grid-item">
-              <label>Medium Risk Flagged</label>
-              <span class="text-warning" style="font-weight: 700;">{{ rep.mediumRiskItems }} items</span>
+              <label>Medium Risk Items</label>
+              <span style="color:#ea580c;font-weight:700;">{{ rep.mediumRiskItems }} items</span>
             </div>
             <div class="grid-item">
-              <label>Low Risk / Normal</label>
-              <span class="text-success" style="font-weight: 700;">{{ rep.lowRiskItems }} items</span>
+              <label>Low Risk Items</label>
+              <span style="color:#16a34a;font-weight:700;">{{ rep.lowRiskItems }} items</span>
             </div>
             <div class="grid-item">
-              <label>Safety Index Rating</label>
-              <span class="text-success" style="font-weight: 700;">{{ rep.safetyIndex }}</span>
+              <label>Safety Index</label>
+              <span style="color:#16a34a;font-weight:700;">{{ rep.safetyIndex }}</span>
             </div>
           </div>
 
-          <div class="section-title">Active Mitigation Strategy</div>
-          <div style="background: var(--surface-section); border-left: 4px solid var(--primary-color); padding: 1rem; border-radius: 0 8px 8px 0; margin-bottom: 1.25rem;">
-            <p style="margin: 0; font-size: 0.9rem; line-height: 1.5; color: var(--text-color);">
-              <strong>Strategy: </strong>{{ rep.mitigationStrategy }}
-            </p>
-            <div style="margin-top: 0.5rem; font-size: 0.85rem; color: var(--text-color-muted);">
-              <strong>Next Assessment Audit Scheduled: </strong>{{ rep.nextReviewDate }}
+          <div class="section-title">Mitigation &amp; Review</div>
+          <div class="metadata-grid">
+            <div class="grid-item" style="grid-column:1/-1;">
+              <label>Mitigation Strategy</label>
+              <span>{{ rep.mitigationStrategy }}</span>
+            </div>
+            <div class="grid-item">
+              <label>Next Review Date</label>
+              <span>{{ rep.nextReviewDate }}</span>
             </div>
           </div>
 
           <div class="info-note">
-            <i class="bi bi-shield-fill-exclamation text-warning"></i>
+            <i class="bi bi-shield-fill-exclamation" style="color:#d97706;"></i>
             <span>All high risk assets are isolated under mandatory physical supervision protocols.</span>
           </div>
         </div>

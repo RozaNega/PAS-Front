@@ -1,72 +1,252 @@
-<div class="disposal-reports-container">
-  <div class="page-header">
-    <h1>Disposal Reports</h1>
-    <p class="subtitle">Compliance disposal audits &amp; asset write-off tracking</p>
-  </div>
+<div class="reports-page">
+  <header class="page-hero page-hero--dark">
+    <div class="page-hero__text">
+      <h1>Disposal Reports</h1>
+      <p>Compliance disposal audits &amp; asset write-off tracking</p>
+    </div>
+    <div class="page-hero__actions">
+      <button class="btn btn-secondary" (click)="loadReport()" [disabled]="loading()">
+        <i class="bi bi-arrow-clockwise"></i> Refresh
+      </button>
+      <button class="btn btn-primary" (click)="exportCsv()" [disabled]="!summary() || loading()">
+        <i class="bi bi-download"></i> Export CSV
+      </button>
+    </div>
+  </header>
 
   @if (loading()) {
-    <div class="loading-state"><div class="spinner"></div><span>Loading report data...</span></div>
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading disposal report data...</p>
+    </div>
   }
 
-  @if (!loading() && summary(); as s) {
-    <div class="summary-cards">
-      <div class="summary-card">
-        <i class="bi bi-trash3"></i>
-        <span class="card-value">{{ s.totalDisposals }}</span>
-        <span class="card-label">Total Disposals</span>
+  @if (error(); as errMsg) {
+    <div class="error-state">
+      <i class="bi bi-exclamation-triangle-fill"></i>
+      <p>{{ errMsg }}</p>
+      <button class="btn btn-primary" (click)="loadReport()"><i class="bi bi-arrow-clockwise"></i> Retry</button>
+    </div>
+  }
+
+  @if (!loading() && !error() && !summary()) {
+    <div class="empty-state">
+      <i class="bi bi-inbox"></i>
+      <p>No disposal records found</p>
+    </div>
+  }
+
+  @if (!loading() && !error() && summary(); as s) {
+    <div class="stats-cards stats-cards--6">
+      <div class="stat-card stat-card--disposals">
+        <div class="stat-card__icon"><i class="bi bi-trash3"></i></div>
+        <div class="stat-card__info">
+          <span class="stat-card__value">{{ s.totalDisposals }}</span>
+          <span class="stat-card__label">Total Disposals</span>
+        </div>
       </div>
-      <div class="summary-card">
-        <i class="bi bi-box-seam"></i>
-        <span class="card-value">{{ s.totalQuantity }}</span>
-        <span class="card-label">Items Disposed</span>
+      <div class="stat-card stat-card--items">
+        <div class="stat-card__icon"><i class="bi bi-box-seam"></i></div>
+        <div class="stat-card__info">
+          <span class="stat-card__value">{{ s.totalQuantity }}</span>
+          <span class="stat-card__label">Items Disposed</span>
+        </div>
       </div>
-      <div class="summary-card">
-        <i class="bi bi-cash-stack"></i>
-        <span class="card-value">{{ s.totalEstimatedValue }}</span>
-        <span class="card-label">Estimated Value</span>
+      <div class="stat-card stat-card--value">
+        <div class="stat-card__icon"><i class="bi bi-cash-stack"></i></div>
+        <div class="stat-card__info">
+          <span class="stat-card__value">{{ formatCurrency(s.totalEstimatedValue) }}</span>
+          <span class="stat-card__label">Est. Value</span>
+        </div>
       </div>
-      <div class="summary-card">
-        <i class="bi bi-clock"></i>
-        <span class="card-value">{{ s.pendingApprovals }}</span>
-        <span class="card-label">Pending</span>
+      <div class="stat-card stat-card--pending">
+        <div class="stat-card__icon"><i class="bi bi-clock"></i></div>
+        <div class="stat-card__info">
+          <span class="stat-card__value">{{ s.pendingApprovals }}</span>
+          <span class="stat-card__label">Pending</span>
+        </div>
       </div>
-      <div class="summary-card">
-        <i class="bi bi-check-circle"></i>
-        <span class="card-value">{{ s.approvedDisposals }}</span>
-        <span class="card-label">Completed</span>
+      <div class="stat-card stat-card--completed">
+        <div class="stat-card__icon"><i class="bi bi-check-circle"></i></div>
+        <div class="stat-card__info">
+          <span class="stat-card__value">{{ s.approvedDisposals }}</span>
+          <span class="stat-card__label">Completed</span>
+        </div>
       </div>
-      <div class="summary-card">
-        <i class="bi bi-x-circle"></i>
-        <span class="card-value">{{ s.rejectedDisposals }}</span>
-        <span class="card-label">Rejected</span>
+      <div class="stat-card stat-card--rejected">
+        <div class="stat-card__icon"><i class="bi bi-x-circle"></i></div>
+        <div class="stat-card__info">
+          <span class="stat-card__value">{{ s.rejectedDisposals }}</span>
+          <span class="stat-card__label">Rejected</span>
+        </div>
       </div>
     </div>
 
-    <div class="report-sections">
-      <div class="section">
-        <h2><i class="bi bi-bar-chart"></i> Disposal by Reason</h2>
+    <div class="tables-row">
+      <div class="panel">
+        <div class="panel__header">
+          <h2><i class="bi bi-bar-chart"></i> Disposal by Reason</h2>
+          <button class="btn btn-sm btn-ghost" (click)="openModal('reason')" [disabled]="byReason().length === 0">
+            <i class="bi bi-arrows-fullscreen"></i>
+          </button>
+        </div>
         @if (byReason().length === 0) {
-          <p class="empty-text">No data available</p>
-        }
-        @for (item of byReason(); track item.reason) {
-          <div class="stat-row">
-            <span class="stat-label">{{ item.reason }}</span>
-            <span class="stat-value">{{ item.count }} disposals, {{ item.totalQuantity }} items</span>
+          <div class="panel__empty">No data available</div>
+        } @else {
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Reason</th>
+                  <th class="text-center">Count</th>
+                  <th class="text-center">Total Quantity</th>
+                  <th class="text-center">Total Value</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (item of byReason(); track item.reason) {
+                  <tr>
+                    <td>{{ item.reason }}</td>
+                    <td class="text-center">{{ item.count }}</td>
+                    <td class="text-center">{{ item.totalQuantity }}</td>
+                    <td class="text-center">{{ formatCurrency(item.totalValue) }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
           </div>
         }
       </div>
 
-      <div class="section">
-        <h2><i class="bi bi-calendar3"></i> Disposal by Month</h2>
+      <div class="panel">
+        <div class="panel__header">
+          <h2><i class="bi bi-calendar3"></i> Disposal by Month</h2>
+          <button class="btn btn-sm btn-ghost" (click)="openModal('month')" [disabled]="byMonth().length === 0">
+            <i class="bi bi-arrows-fullscreen"></i>
+          </button>
+        </div>
         @if (byMonth().length === 0) {
-          <p class="empty-text">No data available</p>
-        }
-        @for (item of byMonth(); track item.month) {
-          <div class="stat-row">
-            <span class="stat-label">{{ item.label }} ({{ item.month }})</span>
-            <span class="stat-value">{{ item.value }} disposals, {{ item.totalQuantity }} items</span>
+          <div class="panel__empty">No data available</div>
+        } @else {
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Month</th>
+                  <th class="text-center">Count</th>
+                  <th class="text-center">Total Quantity</th>
+                  <th class="text-center">Total Value</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (item of byMonth(); track item.month) {
+                  <tr>
+                    <td>{{ item.label }} ({{ item.month }})</td>
+                    <td class="text-center">{{ item.value }}</td>
+                    <td class="text-center">{{ item.totalQuantity }}</td>
+                    <td class="text-center">{{ formatCurrency(item.totalValue) }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
           </div>
         }
+      </div>
+    </div>
+  }
+
+  @if (isModalOpen()) {
+    <div class="modal-backdrop" (click)="closeModal()">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h2>
+            @if (selectedDetail() === 'reason') { <i class="bi bi-bar-chart"></i> Disposal by Reason — Full View }
+            @else if (selectedDetail() === 'month') { <i class="bi bi-calendar3"></i> Disposal by Month — Full View }
+            @else { <i class="bi bi-info-circle"></i> Report Summary }
+          </h2>
+          <button class="btn-close-modal" (click)="closeModal()"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <div class="modal-body">
+          @if (selectedDetail() === 'summary') {
+            @if (summary(); as s) {
+              <div class="metadata-grid">
+                <div class="grid-item">
+                  <label>Total Disposals</label>
+                  <span>{{ s.totalDisposals }}</span>
+                </div>
+                <div class="grid-item">
+                  <label>Total Items</label>
+                  <span>{{ s.totalItems }}</span>
+                </div>
+                <div class="grid-item">
+                  <label>Total Quantity</label>
+                  <span>{{ s.totalQuantity }}</span>
+                </div>
+                <div class="grid-item">
+                  <label>Estimated Value</label>
+                  <span>{{ formatCurrency(s.totalEstimatedValue) }}</span>
+                </div>
+                <div class="grid-item">
+                  <label>Avg Value / Item</label>
+                  <span>{{ formatCurrency(s.averageValuePerItem) }}</span>
+                </div>
+                <div class="grid-item">
+                  <label>Pending Approvals</label>
+                  <span>{{ s.pendingApprovals }}</span>
+                </div>
+                <div class="grid-item">
+                  <label>Completed</label>
+                  <span>{{ s.approvedDisposals }}</span>
+                </div>
+                <div class="grid-item">
+                  <label>Rejected</label>
+                  <span>{{ s.rejectedDisposals }}</span>
+                </div>
+              </div>
+            }
+          }
+          @if (selectedDetail() === 'reason') {
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr><th>Reason</th><th class="text-center">Count</th><th class="text-center">Total Quantity</th><th class="text-center">Total Value</th></tr>
+                </thead>
+                <tbody>
+                  @for (item of byReason(); track item.reason) {
+                    <tr>
+                      <td>{{ item.reason }}</td>
+                      <td class="text-center">{{ item.count }}</td>
+                      <td class="text-center">{{ item.totalQuantity }}</td>
+                      <td class="text-center">{{ formatCurrency(item.totalValue) }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+          @if (selectedDetail() === 'month') {
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr><th>Month</th><th class="text-center">Count</th><th class="text-center">Total Quantity</th><th class="text-center">Total Value</th></tr>
+                </thead>
+                <tbody>
+                  @for (item of byMonth(); track item.month) {
+                    <tr>
+                      <td>{{ item.label }} ({{ item.month }})</td>
+                      <td class="text-center">{{ item.value }}</td>
+                      <td class="text-center">{{ item.totalQuantity }}</td>
+                      <td class="text-center">{{ formatCurrency(item.totalValue) }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" (click)="closeModal()">Close</button>
+        </div>
       </div>
     </div>
   }

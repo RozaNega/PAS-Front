@@ -1,116 +1,134 @@
-<div class="audit-reports-container">
-  <div class="page-header">
-    <h1>Audit Reports</h1>
-    <p class="subtitle">Compliance audit reports &amp; operational review details</p>
-  </div>
+<div class="reports-page">
+  <header class="page-hero page-hero--dark">
+    <div class="page-hero__text">
+      <h1>Audit Reports</h1>
+      <p>Compliance audit reports &amp; operational review details</p>
+    </div>
+    <div class="page-hero__actions">
+      <button class="btn btn-secondary" (click)="refresh()" [disabled]="loading()"><i class="bi bi-arrow-clockwise"></i> Refresh</button>
+      <button class="btn btn-primary" (click)="exportCsv()" [disabled]="reports().length === 0"><i class="bi bi-download"></i> Export CSV</button>
+    </div>
+  </header>
 
-  <div class="reports-list">
-    @for (report of reports(); track report.id) {
-      <div class="report-card">
-        <div class="report-header">
-          <div class="report-name">
-            <i class="bi bi-file-earmark-spreadsheet-fill file-icon"></i>
-            {{ report.reportName }}
-          </div>
-        </div>
-        <div class="report-details">
-          <div class="detail-row"><span class="label">Generated:</span><span class="value">{{ report.generatedDate }}</span></div>
-          <div class="detail-row"><span class="label">Total Audits:</span><span class="value">{{ report.totalAudits }}</span></div>
-          <div class="detail-row"><span class="label">Completed:</span><span class="value">{{ report.completedAudits }}</span></div>
-          <div class="detail-row"><span class="label">Findings:</span><span class="value text-danger">{{ report.findings }}</span></div>
-        </div>
-        <div class="report-actions">
-          <button type="button" class="btn btn-secondary" (click)="downloadReport(report)" [disabled]="downloadingReportId() !== null">
-            @if (downloadingReportId() === report.id) {
-              <span class="spinner"></span> Downloading {{ downloadProgress() }}%
-            } @else {
-              <i class="bi bi-file-pdf"></i> Download PDF
-            }
-          </button>
-          <button type="button" class="btn btn-primary" (click)="viewReport(report)">
-            <i class="bi bi-eye"></i> View
-          </button>
+  @if (loading()) {
+    <div class="loading-state"><div class="spinner"></div><p>Loading audit reports...</p></div>
+  }
+
+  @if (error(); as err) {
+    <div class="error-state"><i class="bi bi-exclamation-triangle-fill"></i><p>{{ err }}</p><button class="btn btn-primary" (click)="refresh()"><i class="bi bi-arrow-clockwise"></i> Retry</button></div>
+  }
+
+  @if (!loading() && !error()) {
+    <div class="stats-cards">
+      <div class="stat-card stat-card--total">
+        <div class="stat-card__icon stat-card__icon--total"><i class="bi bi-clipboard-check"></i></div>
+        <div class="stat-card__body">
+          <span class="stat-card__value">{{ totalAudits() }}</span>
+          <span class="stat-card__label">Total Audits</span>
         </div>
       </div>
-    }
-  </div>
+      <div class="stat-card stat-card--completed">
+        <div class="stat-card__icon stat-card__icon--completed"><i class="bi bi-check-circle"></i></div>
+        <div class="stat-card__body">
+          <span class="stat-card__value">{{ completedAudits() }}</span>
+          <span class="stat-card__label">Completed</span>
+        </div>
+      </div>
+      <div class="stat-card stat-card--findings">
+        <div class="stat-card__icon stat-card__icon--findings"><i class="bi bi-exclamation-diamond"></i></div>
+        <div class="stat-card__body">
+          <span class="stat-card__value">{{ totalFindings() }}</span>
+          <span class="stat-card__label">Findings</span>
+        </div>
+      </div>
+      <div class="stat-card stat-card--compliance">
+        <div class="stat-card__icon stat-card__icon--compliance"><i class="bi bi-shield-check"></i></div>
+        <div class="stat-card__body">
+          <span class="stat-card__value">{{ compliancePercent() }}%</span>
+          <span class="stat-card__label">Compliance Level</span>
+        </div>
+      </div>
+    </div>
 
-  <!-- Merged View Modal -->
+    <div class="panel">
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Report Name</th>
+              <th>Generated Date</th>
+              <th class="text-center">Total</th>
+              <th class="text-center">Completed</th>
+              <th class="text-center">Findings</th>
+              <th>Compliance</th>
+              <th>Status</th>
+              <th class="text-center">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (report of reports(); track report.id) {
+              <tr>
+                <td><i class="bi bi-file-earmark-spreadsheet" style="color:#3b82f6;margin-right:0.5rem"></i><strong>{{ report.reportName }}</strong></td>
+                <td><span class="td-date">{{ report.generatedDate }}</span></td>
+                <td class="text-center">{{ report.totalAudits }}</td>
+                <td class="text-center">{{ report.completedAudits }}</td>
+                <td class="text-center">{{ report.findings }}</td>
+                <td>
+                  @let pct = getCompliancePercent(report);
+                  <span class="badge" [class.badge--high]="pct >= 80" [class.badge--medium]="pct >= 50 && pct < 80" [class.badge--low]="pct < 50">
+                    {{ report.complianceLevel }}
+                  </span>
+                </td>
+                <td>
+                  <span class="badge" [class.badge--draft]="report.status === 'Draft'" [class.badge--finalized]="report.status === 'Finalized'" [class.badge--approved]="report.status === 'Approved'">
+                    {{ report.status }}
+                  </span>
+                </td>
+                <td class="text-center">
+                  <button class="action-btn action-btn--view" (click)="viewReport(report)" title="View"><i class="bi bi-eye"></i></button>
+                  <button class="action-btn action-btn--pdf" (click)="downloadReport(report)" [disabled]="downloadingReportId() !== null" title="PDF">
+                    @if (downloadingReportId() === report.id) { <span class="spinner-sm"></span> } @else { <i class="bi bi-file-pdf"></i> }
+                  </button>
+                </td>
+              </tr>
+            } @empty {
+              <tr class="empty-row"><td colspan="8"><div class="empty-state"><i class="bi bi-inbox"></i><p>No audit reports found</p></div></td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
   @if (activeViewReport(); as rep) {
     <div class="modal-backdrop" (click)="closeModal()">
       <div class="modal-card" (click)="$event.stopPropagation()">
         <div class="modal-header">
-          <h2>
-            <i class="bi bi-file-earmark-spreadsheet-fill text-primary"></i> 
-            Audit Report Details
-          </h2>
-          <button class="btn-close-modal" (click)="closeModal()" aria-label="Close modal">
-            <i class="bi bi-x-lg"></i>
-          </button>
+          <h2><i class="bi bi-file-earmark-spreadsheet-fill" style="color:#6366f1"></i> Audit Report Details</h2>
+          <button class="btn-close-modal" (click)="closeModal()"><i class="bi bi-x-lg"></i></button>
         </div>
         <div class="modal-body">
           <div class="section-title">General Information</div>
           <div class="metadata-grid">
-            <div class="grid-item">
-              <label>Report Name</label>
-              <span>{{ rep.reportName }}</span>
-            </div>
-            <div class="grid-item">
-              <label>Scope Period</label>
-              <span>{{ rep.scopePeriod }}</span>
-            </div>
-            <div class="grid-item">
-              <label>Generated Date</label>
-              <span>{{ rep.generatedDate }}</span>
-            </div>
-            <div class="grid-item">
-              <label>Lead Auditor</label>
-              <span>{{ rep.auditorName }}</span>
-            </div>
+            <div class="grid-item"><label>Report Name</label><span>{{ rep.reportName }}</span></div>
+            <div class="grid-item"><label>Scope Period</label><span>{{ rep.scopePeriod }}</span></div>
+            <div class="grid-item"><label>Generated Date</label><span class="td-date">{{ rep.generatedDate }}</span></div>
+            <div class="grid-item"><label>Lead Auditor</label><span>{{ rep.auditorName }}</span></div>
           </div>
-
           <div class="section-title">Audit Metrics</div>
           <div class="metadata-grid">
-            <div class="grid-item">
-              <label>Total Audits Scheduled</label>
-              <span>{{ rep.totalAudits }}</span>
-            </div>
-            <div class="grid-item">
-              <label>Successfully Completed</label>
-              <span>{{ rep.completedAudits }}</span>
-            </div>
-            <div class="grid-item">
-              <label>Compliance Level Score</label>
-              <span class="text-success" style="font-weight: 700;">{{ rep.complianceLevel }}</span>
-            </div>
-            <div class="grid-item">
-              <label>Major Non-Compliance Findings</label>
-              <span class="text-danger" style="font-weight: 700;">{{ rep.findings }}</span>
-            </div>
+            <div class="grid-item"><label>Total Audits</label><span>{{ rep.totalAudits }}</span></div>
+            <div class="grid-item"><label>Completed</label><span>{{ rep.completedAudits }}</span></div>
+            <div class="grid-item"><label>Compliance Level</label><span style="color:#16a34a;font-weight:700">{{ rep.complianceLevel }}</span></div>
+            <div class="grid-item"><label>Findings</label><span style="color:#dc2626;font-weight:700">{{ rep.findings }}</span></div>
           </div>
-
-          <div class="section-title">Audit Summary &amp; Status</div>
-          <div style="background: var(--surface-section); border-left: 4px solid var(--primary-color); padding: 1rem; border-radius: 0 8px 8px 0; margin-bottom: 1.25rem;">
-            <p style="margin: 0 0 0.5rem 0; font-size: 0.9rem; line-height: 1.5; color: var(--text-color);">
-              The operational review has concluded that the asset management controls align with regional procedures. 
-              The minor finding items have been flagged for corrective action.
-            </p>
-            <div>
-              <strong>Current Status: </strong>
-              <span class="badge" style="background: #d1fae5; color: #065f46;">{{ rep.status }}</span>
-            </div>
-          </div>
-
-          <div class="info-note">
-            <i class="bi bi-shield-fill-check text-success"></i>
-            <span>This compliance summary report is automatically verified and logged in the digital archives.</span>
-          </div>
+          <div class="section-title">Status</div>
+          <span class="badge" [class.badge--draft]="rep.status === 'Draft'" [class.badge--finalized]="rep.status === 'Finalized'" [class.badge--approved]="rep.status === 'Approved'">{{ rep.status }}</span>
+          <div class="info-note" style="margin-top:1.5rem"><i class="bi bi-shield-fill-check" style="color:#10b981"></i><span>This compliance summary report is automatically verified and logged in the digital archives.</span></div>
         </div>
         <div class="modal-footer">
           <button class="btn btn-secondary" (click)="closeModal()">Close</button>
-          <button class="btn btn-primary" (click)="downloadReport(rep)">
-            <i class="bi bi-file-pdf"></i> Download PDF
-          </button>
+          <button class="btn btn-primary" (click)="downloadReport(rep)"><i class="bi bi-file-pdf"></i> Download PDF</button>
         </div>
       </div>
     </div>

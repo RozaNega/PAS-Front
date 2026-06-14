@@ -1,48 +1,75 @@
-<div class="pending-requests-container">
-  <div class="page-header">
-    <h1>Pending Requests</h1>
-    <p class="subtitle">Requests awaiting approval</p>
+<div class="requests-page">
+  <header class="page-hero">
+    <div class="page-hero__text">
+      <h1>{{ title }}</h1>
+      <p>{{ subtitle }}</p>
+    </div>
+    <span class="page-hero__badge"><i class="bi bi-clock-history"></i> {{ totalCount }} pending</span>
+  </header>
+
+  <nav class="sub-nav">
+    <button class="sub-nav__link" (click)="navigateTo('/manager/requests/all')">All</button>
+    <button class="sub-nav__link sub-nav__link--active" (click)="navigateTo('/manager/requests/pending')">Pending</button>
+    <button class="sub-nav__link" (click)="navigateTo('/manager/requests/approved')">Approved</button>
+    <button class="sub-nav__link" (click)="navigateTo('/manager/requests/rejected')">Rejected</button>
+    <button class="sub-nav__link" (click)="navigateTo('/manager/requests/issued')">Issued</button>
+  </nav>
+
+  <div class="stats-bar">
+    <span class="stats-bar__item"><i class="bi bi-clock-history"></i> Total Pending: <strong>{{ totalCount }}</strong></span>
+    <span class="stats-bar__divider"></span>
+    <span class="stats-bar__item"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#ef4444;"></span> Urgent/High: <strong>{{ urgentCount }}</strong></span>
+    <span class="stats-bar__item"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#f59e0b;"></span> Medium: <strong>{{ mediumCount }}</strong></span>
+    <span class="stats-bar__divider"></span>
+    <span class="stats-bar__item"><i class="bi bi-currency-dollar"></i> Est. Value: <strong>${{ totalValue.toLocaleString() }}</strong></span>
   </div>
 
-  <div class="requests-list">
-    @for (req of requests(); track req.id) {
-      <div class="request-card">
-        <div class="request-header">
-          <div class="request-number">{{ req.srNumber }}</div>
-          <div
-            class="priority-badge"
-            [class.urgent]="req.priority === 'Urgent'"
-            [class.high]="req.priority === 'High'"
-            [class.medium]="req.priority === 'Medium'"
-          >
-            {{ req.priority }}
-          </div>
-        </div>
-        <div class="request-body">
-          <p class="description">{{ req.justification }}</p>
-          <div class="request-details">
-            <div class="detail-row">
-              <span class="label">Requester:</span
-              ><span class="value">{{ req.employeeName }} ({{ req.department }})</span>
-            </div>
-            <div class="detail-row">
-              <span class="label">Items:</span><span class="value">{{ req.items.length }}</span>
-            </div>
-            <div class="detail-row">
-              <span class="label">Value:</span
-              ><span class="value">${{ (req.estimatedCost ?? 0).toLocaleString() }}</span>
-            </div>
-            <div class="detail-row">
-              <span class="label">Required Date:</span
-              ><span class="value">{{ req.requiredDate }}</span>
-            </div>
-          </div>
-        </div>
-        <div class="request-actions">
-          <button class="btn-approve" (click)="approveRequest(req.id)">Approve</button>
-          <button class="btn-reject" (click)="rejectRequest(req.id)">Reject</button>
-        </div>
-      </div>
-    }
+  <div class="panel">
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Request ID</th>
+            <th>Employee</th>
+            <th>Department</th>
+            <th>Priority</th>
+            <th>Items</th>
+            <th>Value</th>
+            <th>Required</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (r of requests(); track r.id) {
+            <tr>
+              <td><span class="td-id">{{ r.srNumber }}</span></td>
+              <td>
+                <div class="td-employee">
+                  <div class="td-avatar" [style.background]="'hsl(' + (r.employeeName.length * 40 % 360) + ', 65%, 88%)'">{{ r.employeeName.charAt(0) }}</div>
+                  <span class="td-name">{{ r.employeeName }}</span>
+                </div>
+              </td>
+              <td><span style="color:#64748b;">{{ r.department }}</span></td>
+              <td><span [class]="getPriorityClass(r.priority)"><i class="bi bi-exclamation-triangle-fill"></i> {{ r.priority }}</span></td>
+              <td><strong>{{ r.items.length }}</strong></td>
+              <td><span class="td-value">${{ (r.estimatedCost || 0).toLocaleString() }}</span></td>
+              <td><span class="td-date">{{ r.requiredDate | date:'shortDate' }}</span></td>
+              <td>
+                <div class="table-actions">
+                  <button class="action-btn action-btn--approve" (click)="approveRequest(r.id)" title="Approve"><i class="bi bi-check-lg"></i><span>Approve</span></button>
+                  <button class="action-btn action-btn--reject" (click)="rejectRequest(r.id)" title="Reject"><i class="bi bi-x-lg"></i><span>Reject</span></button>
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr class="empty-row">
+              <td colspan="8">
+                <div class="empty-state"><i class="bi bi-check2-circle"></i><p>No pending requests</p></div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
   </div>
 </div>

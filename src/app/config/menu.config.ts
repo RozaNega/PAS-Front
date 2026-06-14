@@ -49,6 +49,7 @@ export const adminMenuConfig: MenuItem[] = [
       { label: 'Employees', route: '/admin/users/employees', permissions: ['view_employees'] },
       { label: 'Roles & Permissions', route: '/admin/users/roles', permissions: ['view_roles'] },
       { label: 'Activity Logs', route: '/admin/users/activity', permissions: ['view_audit_log'] },
+      { label: 'Reset Password', route: '/admin/users/reset-password', permissions: ['view_users'] },
     ],
   },
   {
@@ -214,6 +215,7 @@ export const complianceMenuConfig: MenuItem[] = [
     label: 'Decisions',
     icon: 'bi bi-check2-square',
     children: [
+      { label: 'All Decisions', route: '/compliance-officer/decisions' },
       { label: 'Approvals', route: '/compliance-officer/decisions/approvals' },
       { label: 'Rejections', route: '/compliance-officer/decisions/rejections' },
       { label: 'Response Times', route: '/compliance-officer/decisions/response-times' },
@@ -335,12 +337,10 @@ export const managerMenuConfig: MenuItem[] = [
     icon: 'bi bi-bar-chart-fill',
     children: [
       {
-        label: 'Approval Reports',
-        route: '/manager/reports/approval',
+        label: 'Reports Dashboard',
+        route: '/manager/reports/dashboard',
         icon: 'bi bi-file-earmark-bar-graph',
       },
-      { label: 'Department Request Reports', route: '/manager/reports/requests', icon: 'bi bi-file-text' },
-      { label: 'Issuance Report', route: '/manager/reports/sivs', icon: 'bi bi-file-text' },
       { label: 'Stock Reports', route: '/manager/reports/inventory', icon: 'bi bi-boxes' },
     ],
   },

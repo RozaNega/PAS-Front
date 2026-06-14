@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, inject } from '@angular/core';
+import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ComplianceDataService } from '../../../../core/services/compliance-data.service';
 import { InspectionDto } from '../../../../core/services/inspections.service';
@@ -18,7 +18,6 @@ interface Inspection {
   itemsInspected: number;
   itemsPassed: number;
   itemsFailed: number;
-  // Additional details
   supplierName: string;
   warehouseLocation: string;
   calibrationDate: string;
@@ -40,11 +39,60 @@ export class InspectionsComponent implements OnInit {
   private readonly complianceData = inject(ComplianceDataService);
 
   protected readonly inspections = signal<Inspection[]>([]);
+  protected readonly loading = signal(true);
+  protected readonly error = signal(false);
+  protected readonly exporting = signal(false);
+
+  protected readonly totalCount = computed(() => this.inspections().length);
+  protected readonly passedCount = computed(() => this.inspections().filter(i => i.status === 'Passed').length);
+  protected readonly failedCount = computed(() => this.inspections().filter(i => i.status === 'Failed').length);
+  protected readonly pendingCount = computed(() => this.inspections().filter(i => i.status === 'Pending').length);
 
   ngOnInit(): void {
-    this.complianceData.getInspections().subscribe((records) => {
-      this.inspections.set(records.map((record) => this.toInspection(record)));
+    this.loadInspections();
+  }
+
+  protected loadInspections(): void {
+    this.loading.set(true);
+    this.error.set(false);
+    this.complianceData.getInspections().subscribe({
+      next: (records) => {
+        this.inspections.set(records.map((record) => this.toInspection(record)));
+        this.loading.set(false);
+      },
+      error: () => {
+        this.loading.set(false);
+        this.error.set(true);
+      },
     });
+  }
+
+  protected getInitials(name: string): string {
+    return name
+      .split(' ')
+      .map(part => part[0])
+      .filter(Boolean)
+      .slice(0, 2)
+      .join('')
+      .toUpperCase();
+  }
+
+  protected async exportCsv(): Promise<void> {
+    this.exporting.set(true);
+    const data = this.inspections();
+    const header = 'Inspection Number,GRN Number,Inspector,Date,Status,Items Inspected,Items Passed,Items Failed';
+    const rows = data.map(i =>
+      `"${i.inspectionNumber}","${i.receivingNoteNumber}","${i.inspector}","${i.inspectionDate}","${i.status}",${i.itemsInspected},${i.itemsPassed},${i.itemsFailed}`
+    );
+    const csv = [header, ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `inspections_export_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    this.exporting.set(false);
   }
 
   private toInspection(record: InspectionDto): Inspection {
@@ -124,7 +172,6 @@ export class InspectionsComponent implements OnInit {
     const contentWidth = pageWidth - leftMargin * 2;
     let cursorY = 22;
 
-    // Header bar style
     pdf.setFillColor(15, 23, 42);
     pdf.rect(0, 0, pageWidth, 34, 'F');
     pdf.setTextColor(255, 255, 255);
@@ -135,7 +182,6 @@ export class InspectionsComponent implements OnInit {
     pdf.setFontSize(11);
     pdf.text(`QA Report: ${inspection.inspectionNumber} | Status: ${inspection.status}`, leftMargin, 27);
 
-    // Section 1: General Info Metadata
     cursorY = 48;
     pdf.setTextColor(15, 23, 42);
     pdf.setFontSize(12);
@@ -178,12 +224,11 @@ export class InspectionsComponent implements OnInit {
       pdf.setTextColor(15, 23, 42);
       const wrappedVal = pdf.splitTextToSize(String(r.value), contentWidth - 48);
       pdf.text(wrappedVal, leftMargin + 48, cursorY + 6);
-      
+
       const lineCount = wrappedVal.length;
       cursorY += (lineCount * 5) + 3;
     });
 
-    // Section 2: Operating QA Checklist
     cursorY += 4;
     if (cursorY + 30 > pdf.internal.pageSize.getHeight() - 18) {
       pdf.addPage();
@@ -202,7 +247,7 @@ export class InspectionsComponent implements OnInit {
         pdf.addPage();
         cursorY = 20;
       }
-      
+
       const statusMark = item.passed ? '[PASSED]' : '[FAILED]';
       pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(item.passed ? 22 : 220, item.passed ? 163 : 38, item.passed ? 74 : 38);
@@ -212,11 +257,10 @@ export class InspectionsComponent implements OnInit {
       pdf.setTextColor(51, 65, 85);
       const wrappedTask = pdf.splitTextToSize(item.task, contentWidth - 25);
       pdf.text(wrappedTask, leftMargin + 22, cursorY);
-      
+
       cursorY += (wrappedTask.length * 5) + 3;
     });
 
-    // Section 3: Notes & Findings
     cursorY += 4;
     if (cursorY + 22 > pdf.internal.pageSize.getHeight() - 18) {
       pdf.addPage();
@@ -235,7 +279,6 @@ export class InspectionsComponent implements OnInit {
     pdf.text(notesWrapped, leftMargin, cursorY);
     cursorY += (notesWrapped.length * 5) + 6;
 
-    // Footnote
     if (cursorY + 12 > pdf.internal.pageSize.getHeight() - 18) {
       pdf.addPage();
       cursorY = 20;
@@ -252,4 +295,3 @@ export class InspectionsComponent implements OnInit {
     this.activeViewInspection.set(null);
   }
 }
-

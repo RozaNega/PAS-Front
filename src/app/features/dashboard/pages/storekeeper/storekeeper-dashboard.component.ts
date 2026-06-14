@@ -120,9 +120,13 @@ export class StorekeeperDashboardComponent implements OnInit {
   readonly workflowNotifications = signal<NotificationMessage[]>([]);
 
 
-  // Stock verification queue
+  // Stock verification queue (API-based)
   readonly pendingVerifications = signal<ServiceRequestDto[]>([]);
   readonly loadingVerifications = signal(false);
+
+  // Stock verification queue (workflow-based)
+  readonly workflowPendingVerifications = signal<ServiceRequest[]>([]);
+  readonly loadingWorkflowVerifications = signal(false);
 
   // Disposal
   readonly recentDisposals = signal<DisposalRecordDto[]>([]);
@@ -160,12 +164,18 @@ export class StorekeeperDashboardComponent implements OnInit {
     this.setupWorkflowSubscriptions();
     this.loadWorkflowData();
     this.loadPendingVerifications();
+    this.loadWorkflowPendingVerifications();
     this.loadDisposalData();
   }
 
   private setupWorkflowSubscriptions(): void {
-    this.workflowService.getRequestUpdates().subscribe(() => this.loadWorkflowData());
-    this.workflowService.getNotificationUpdates().subscribe(() => this.loadWorkflowData());
+    this.workflowService.getRequestUpdates().subscribe(() => {
+      this.loadWorkflowData();
+      this.loadWorkflowPendingVerifications();
+    });
+    this.workflowService.getNotificationUpdates().subscribe(() => {
+      this.loadWorkflowData();
+    });
   }
 
   private loadWorkflowData(): void {
@@ -208,6 +218,33 @@ export class StorekeeperDashboardComponent implements OnInit {
 
   refreshPendingVerifications(): void {
     this.loadPendingVerifications();
+  }
+
+  loadWorkflowPendingVerifications(): void {
+    this.loadingWorkflowVerifications.set(true);
+    const pending = this.workflowService.getRequestsForStockVerification();
+    this.workflowPendingVerifications.set(pending);
+    this.loadingWorkflowVerifications.set(false);
+  }
+
+  verifyStockWorkflow(requestId: string): void {
+    if (!confirm('Confirm stock is available for this workflow request?')) return;
+    const storekeeperName = 'Storekeeper';
+    this.workflowService.confirmStockAvailable(requestId, storekeeperName, 'Stock confirmed available');
+    this.verificationNotifications.set({ type: 'success', message: 'Stock verified successfully' });
+    this.loadWorkflowPendingVerifications();
+    this.loadWorkflowData();
+  }
+
+  markStockInsufficientWorkflow(requestId: string): void {
+    const notes = prompt('Enter notes about the insufficient stock:');
+    if (notes === null) return;
+    if (!confirm('Mark stock as insufficient for this workflow request?')) return;
+    const storekeeperName = 'Storekeeper';
+    this.workflowService.confirmStockInsufficient(requestId, storekeeperName, notes || undefined);
+    this.verificationNotifications.set({ type: 'success', message: 'Marked as insufficient' });
+    this.loadWorkflowPendingVerifications();
+    this.loadWorkflowData();
   }
 
   loadDisposalData(): void {

@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ComplianceDataService } from '../../../../core/services/compliance-data.service';
 import { ServiceRequestDto } from '../../../../core/services/requisitions.service';
@@ -21,12 +21,101 @@ interface ResponseTime {
 })
 export class ResponseTimesComponent implements OnInit {
   private readonly complianceData = inject(ComplianceDataService);
+
   protected readonly responseTimes = signal<ResponseTime[]>([]);
+  protected readonly loading = signal(true);
+  protected readonly error = signal<string | null>(null);
+  protected readonly selectedItem = signal<ResponseTime | null>(null);
+
+  protected readonly totalApprovers = computed(() => this.responseTimes().length);
+  protected readonly totalDecisions = computed(() => this.responseTimes().reduce((sum, r) => sum + r.totalDecisions, 0));
+  protected readonly avgOnTimeRate = computed(() => {
+    const items = this.responseTimes();
+    return items.length > 0 ? Math.round(items.reduce((sum, r) => sum + r.onTimeRate, 0) / items.length) : 0;
+  });
+  protected readonly fastestApprover = computed(() => {
+    const items = this.responseTimes();
+    if (items.length === 0) return 'N/A';
+    let best = items[0];
+    let bestHours = this.parseHours(best.avgResponseTime);
+    for (let i = 1; i < items.length; i++) {
+      const h = this.parseHours(items[i].avgResponseTime);
+      if (h < bestHours) {
+        bestHours = h;
+        best = items[i];
+      }
+    }
+    return best.approver;
+  });
 
   ngOnInit(): void {
-    this.complianceData.getServiceRequests().subscribe((requests) => {
-      this.responseTimes.set(this.buildResponseTimes(requests));
+    this.loadData();
+  }
+
+  loadData(): void {
+    this.loading.set(true);
+    this.error.set(null);
+    this.complianceData.getServiceRequests().subscribe({
+      next: (requests) => {
+        const data = this.buildResponseTimes(requests);
+        this.responseTimes.set(data);
+        this.loading.set(false);
+      },
+      error: () => {
+        this.error.set('Failed to load response times. Please try again.');
+        this.loading.set(false);
+      }
     });
+  }
+
+  viewItem(item: ResponseTime): void {
+    this.selectedItem.set(item);
+  }
+
+  closeModal(): void {
+    this.selectedItem.set(null);
+  }
+
+  refresh(): void {
+    this.loadData();
+  }
+
+  exportCsv(): void {
+    const rows = this.responseTimes();
+    if (rows.length === 0) return;
+    const esc = (v: string | number) => `"${String(v).replace(/"/g, '""')}"`;
+    const headers = ['Approver', 'Department', 'Total Decisions', 'Avg Response Time', 'On-Time Rate'];
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(r => [esc(r.approver), esc(r.department), esc(r.totalDecisions), esc(r.avgResponseTime), esc(`${r.onTimeRate}%`)].join(','))
+    ].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `response-times-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  protected getInitials(name: string): string {
+    return name.split(' ').map(p => p.charAt(0)).join('').toUpperCase().slice(0, 2);
+  }
+
+  protected hslFromName(name: string): string {
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) {
+      hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return `hsl(${Math.abs(hash) % 360}, 65%, 88%)`;
+  }
+
+  private parseHours(value: string): number {
+    const minsMatch = value.match(/(\d+)\s*mins?/);
+    if (minsMatch) return parseInt(minsMatch[1], 10) / 60;
+    const hoursMatch = value.match(/([\d.]+)\s*hours?/);
+    if (hoursMatch) return parseFloat(hoursMatch[1]);
+    return 0;
   }
 
   private buildResponseTimes(requests: ServiceRequestDto[]): ResponseTime[] {

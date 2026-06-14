@@ -1,118 +1,182 @@
 <div class="notifications-page">
   <div class="page-header">
-    <h1>Notifications ({{ unreadCount }})</h1>
-    <button class="btn btn-primary" (click)="markAllAsRead()" [disabled]="unreadCount === 0">Mark All Read</button>
+    <div class="page-header-left">
+      <h1>Notifications</h1>
+      @if (unreadCount > 0) {
+        <span class="unread-badge">{{ unreadCount }} unread</span>
+      }
+    </div>
+    <button class="btn btn-primary" (click)="markAllAsRead()" [disabled]="unreadCount === 0">
+      <i class="bi bi-check2-all"></i> Mark All Read
+    </button>
   </div>
 
-  <!-- Search and Filter -->
   <div class="search-filter-section">
     <div class="search-bar">
-      <input type="text" [(ngModel)]="searchQuery" placeholder="Search notifications..." />
+      <i class="bi bi-search search-icon"></i>
+      <input type="text" [(ngModel)]="searchQuery" placeholder="Search notifications..." (input)="onSearchInput()" />
     </div>
-    <div class="filter-controls">
-      <select
-        [(ngModel)]="filterType"
-        aria-label="Notification type filter"
-        title="Notification type filter"
-      >
-        <option value="all">All Types</option>
-        <option value="approved">Approved</option>
-        <option value="completed">Completed</option>
-        <option value="submitted">Submitted</option>
-        <option value="rejected">Rejected</option>
-      </select>
-      <button class="btn btn-secondary" (click)="markAllAsRead()" [disabled]="unreadCount === 0">Mark All as Read</button>
+    <div class="filter-tabs">
+      @for (type of filterTypes; track type.value) {
+        <button
+          class="filter-tab"
+          [class.active]="filterType === type.value"
+          (click)="setFilter(type.value)"
+        >
+          {{ type.label }}
+        </button>
+      }
     </div>
   </div>
 
-  <!-- All Notifications -->
-  <div class="notifications-section">
-    <h2>📬 ALL NOTIFICATIONS</h2>
-    <div class="notifications-list">
-      @for (notification of filteredNotifications; track notification.id) {
-        <div class="notification-card" [class.unread]="!notification.isRead">
-          <div class="notification-header">
-            <span class="notification-icon">{{ getNotificationIcon(notification.message) }}</span>
-            <span class="notification-title">{{ notification.message.substring(0, 50) }}...</span>
-            <span class="notification-time">{{ formatDate(notification.sentDate) }}</span>
-          </div>
-          <p class="notification-message">{{ notification.message }}</p>
-          <div class="notification-actions">
-            <button
-              type="button"
-              class="btn btn-sm btn-primary"
-              (click)="viewRequest(notification.requestId); $event.stopPropagation()"
-            >
-              View Details
-            </button>
-            @if (!notification.isRead) {
-              <button
-                type="button"
-                class="btn btn-sm btn-success"
-                (click)="markAsRead(notification.id); $event.stopPropagation()"
-              >
-                Mark Read
-              </button>
-            }
-            <button
-              type="button"
-              class="btn btn-sm btn-outline-danger"
-              (click)="dismiss(notification.id); $event.stopPropagation()"
-            >
-              Dismiss
-            </button>
-          </div>
-        </div>
-      }
-    </div>
-    <div class="pagination">
-      <span
-        >Showing 1-{{ filteredNotifications.length }} of
-        {{ notifications.length }} notifications</span
-      >
-      <div class="pagination-controls">
-        <button class="btn btn-sm btn-secondary" disabled>1</button>
-        <button class="btn btn-sm btn-secondary">2</button>
-        <button class="btn btn-sm btn-secondary">3</button>
-        <button class="btn btn-sm btn-secondary">→</button>
+  <div class="content-grid">
+    <div class="notifications-section">
+      <div class="section-header">
+        <h2><i class="bi bi-bell-fill"></i> ALL NOTIFICATIONS</h2>
       </div>
-    </div>
-  </div>
 
-  <!-- Request Updates -->
-  <div class="request-updates-section">
-    <h2>
-      📋 REQUEST UPDATES ({{ requestUpdates.length }})
-      <button class="btn btn-link" (click)="viewAllRequestUpdates()">View All</button>
-    </h2>
-    <div class="request-updates-list">
-      @for (update of requestUpdates; track update.srNumber) {
-        <div class="request-update-card">
-          <span class="sr-number">{{ update.srNumber }}</span>
-          <span class="status">{{ update.status }}</span>
-          <span class="date">({{ update.submittedDate }})</span>
+      @if (paginatedNotifications.length === 0) {
+        <div class="empty-state">
+          <i class="bi bi-inbox"></i>
+          <p>No notifications found</p>
         </div>
-      }
-    </div>
-  </div>
-
-  <!-- System Alerts -->
-  <div class="system-alerts-section">
-    <h2>
-      ⚠️ SYSTEM ALERTS ({{ systemAlerts.length }}) <button class="btn btn-link" (click)="viewAllSystemAlerts()">View All</button>
-    </h2>
-    <div class="system-alerts-list">
-      @if (systemAlerts.length === 0) {
-        <p class="no-alerts">No system alerts at this time.</p>
       } @else {
-        @for (alert of systemAlerts; track alert.id) {
-          <div class="system-alert-card">
-            <span class="alert-type">{{ alert.type }}</span>
-            <span class="alert-message">{{ alert.message }}</span>
-            <span class="alert-date">{{ alert.date }}</span>
+        <div class="notifications-list">
+          @for (notification of paginatedNotifications; track notification.id) {
+            <div class="notification-card" [class]="'notification-card--' + getNotificationColor(notification.message)" [class.unread]="!notification.isRead">
+              <div class="notification-indicator"></div>
+              <div class="notification-body">
+                <div class="notification-header">
+                  <span class="notification-type-badge" [class]="'badge--' + getNotificationColor(notification.message)">
+                    {{ getNotificationType(notification.message) }}
+                  </span>
+                  <span class="notification-time">{{ formatDate(notification.sentDate) }}</span>
+                  @if (!notification.isRead) {
+                    <span class="unread-dot"></span>
+                  }
+                </div>
+                <p class="notification-title">{{ getNotificationTitle(notification.message) }}</p>
+                <p class="notification-message">{{ notification.message }}</p>
+                <div class="notification-actions">
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-outline"
+                    (click)="viewRequest(notification.requestId); $event.stopPropagation()"
+                  >
+                    <i class="bi bi-eye"></i> View Details
+                  </button>
+                  @if (!notification.isRead) {
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-ghost"
+                      (click)="markAsRead(notification.id); $event.stopPropagation()"
+                    >
+                      <i class="bi bi-check2"></i> Mark Read
+                    </button>
+                  }
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-ghost btn-ghost--danger"
+                    (click)="dismiss(notification.id); $event.stopPropagation()"
+                  >
+                    <i class="bi bi-x-lg"></i> Dismiss
+                  </button>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+
+        @if (totalPages > 1) {
+          <div class="pagination">
+            <span class="pagination-info">Showing {{ paginationStart }}-{{ paginationEnd }} of {{ totalNotifications }}</span>
+            <div class="pagination-controls">
+              <button class="btn btn-sm btn-ghost" [disabled]="currentPage === 1" (click)="goToPage(currentPage - 1)">
+                <i class="bi bi-chevron-left"></i>
+              </button>
+              @for (page of pageNumbers; track page) {
+                <button
+                  class="btn btn-sm"
+                  [class.btn-primary]="page === currentPage"
+                  [class.btn-ghost]="page !== currentPage"
+                  (click)="goToPage(page)"
+                >
+                  {{ page }}
+                </button>
+              }
+              <button class="btn btn-sm btn-ghost" [disabled]="currentPage === totalPages" (click)="goToPage(currentPage + 1)">
+                <i class="bi bi-chevron-right"></i>
+              </button>
+            </div>
           </div>
         }
       }
     </div>
+
+    <aside class="side-panel">
+      <div class="request-updates-section">
+        <div class="section-header">
+          <h2><i class="bi bi-clipboard-check"></i> REQUEST UPDATES</h2>
+          @if (requestUpdates.length > 0) {
+            <span class="section-badge">{{ requestUpdates.length }}</span>
+          }
+        </div>
+        @if (requestUpdates.length === 0) {
+          <div class="empty-state empty-state--sm">
+            <p>No request updates</p>
+          </div>
+        } @else {
+          <div class="request-updates-list">
+            @for (update of requestUpdates; track update.srNumber) {
+              <div class="request-update-card" (click)="viewRequestBySr(update.srNumber)">
+                <div class="update-left">
+                  <span class="sr-number">{{ update.srNumber }}</span>
+                  <span class="update-date">{{ update.submittedDate }}</span>
+                </div>
+                <span class="status-badge" [class]="'status-badge--' + getStatusClass(update.status)">
+                  {{ update.status }}
+                </span>
+              </div>
+            }
+          </div>
+        }
+        <button class="btn btn-link" (click)="viewAllRequestUpdates()">
+          View All Requests <i class="bi bi-arrow-right"></i>
+        </button>
+      </div>
+
+      <div class="system-alerts-section">
+        <div class="section-header">
+          <h2><i class="bi bi-exclamation-triangle"></i> SYSTEM ALERTS</h2>
+          @if (systemAlerts.length > 0) {
+            <span class="section-badge">{{ systemAlerts.length }}</span>
+          }
+        </div>
+        @if (systemAlerts.length === 0) {
+          <div class="empty-state empty-state--sm">
+            <i class="bi bi-shield-check"></i>
+            <p>No system alerts at this time.</p>
+          </div>
+        } @else {
+          <div class="system-alerts-list">
+            @for (alert of systemAlerts; track alert.id) {
+              <div class="system-alert-card" [class]="'system-alert-card--' + alert.type">
+                <div class="alert-header">
+                  <i class="bi" [class.bi-info-circle]="alert.type === 'info'"
+                            [class.bi-exclamation-circle]="alert.type === 'warning'"
+                            [class.bi-x-octagon]="alert.type === 'error'"></i>
+                  <span class="alert-type">{{ alert.type }}</span>
+                </div>
+                <p class="alert-message">{{ alert.message }}</p>
+                <span class="alert-date">{{ alert.date }}</span>
+              </div>
+            }
+          </div>
+        }
+        <button class="btn btn-link" (click)="viewAllSystemAlerts()">
+          View All Alerts <i class="bi bi-arrow-right"></i>
+        </button>
+      </div>
+    </aside>
   </div>
 </div>

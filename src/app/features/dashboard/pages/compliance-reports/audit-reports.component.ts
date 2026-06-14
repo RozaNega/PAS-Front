@@ -26,6 +26,8 @@ interface AuditReport {
 export class AuditReportsComponent {
   private readonly workflowService = inject(WorkflowService);
 
+  readonly loading = signal(false);
+  readonly error = signal<string | null>(null);
 
   protected readonly reports = computed<AuditReport[]>(() => {
     const reqs = this.workflowService.getAllRequests();
@@ -56,9 +58,75 @@ export class AuditReportsComponent {
     return [liveReport];
   });
 
+  protected readonly totalAudits = computed(() =>
+    this.reports().reduce((s, r) => s + r.totalAudits, 0)
+  );
+
+  protected readonly completedAudits = computed(() =>
+    this.reports().reduce((s, r) => s + r.completedAudits, 0)
+  );
+
+  protected readonly totalFindings = computed(() =>
+    this.reports().reduce((s, r) => s + r.findings, 0)
+  );
+
+  protected readonly compliancePercent = computed(() => {
+    const r = this.reports();
+    if (r.length === 0) return 0;
+    const total = r.reduce((s, rep) => s + rep.totalAudits, 0);
+    const completed = r.reduce((s, rep) => s + rep.completedAudits, 0);
+    return total > 0 ? Math.round((completed / total) * 100) : 0;
+  });
+
   readonly activeViewReport = signal<AuditReport | null>(null);
   readonly downloadingReportId = signal<string | null>(null);
   readonly downloadProgress = signal<number>(0);
+
+  protected getCompliancePercent(report: AuditReport): number {
+    const match = report.complianceLevel.match(/(\d+)/);
+    return match ? parseInt(match[1], 10) : 0;
+  }
+
+  refresh(): void {
+    this.loading.set(true);
+    this.error.set(null);
+    try {
+      this.workflowService.getAllRequests();
+    } catch (e) {
+      this.error.set(String(e));
+    } finally {
+      this.loading.set(false);
+    }
+  }
+
+  exportCsv(): void {
+    const rows = this.reports();
+    if (rows.length === 0) return;
+
+    const headers = ['Report Name', 'Generated Date', 'Total Audits', 'Completed', 'Findings', 'Compliance Level', 'Status'];
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(r => [
+        `"${r.reportName}"`,
+        r.generatedDate,
+        r.totalAudits,
+        r.completedAudits,
+        r.findings,
+        `"${r.complianceLevel}"`,
+        r.status
+      ].join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'audit-reports.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
 
   viewReport(report: AuditReport): void {
     this.activeViewReport.set(report);
@@ -104,7 +172,3 @@ export class AuditReportsComponent {
     this.activeViewReport.set(null);
   }
 }
-
-
-
-

@@ -21,6 +21,18 @@ import {
   ApiServiceRequestRow,
 } from '../../../../core/services/workflow.service';
 import { ServiceRequestService } from '../../../requisition/service-requests/services/service-request.service';
+import { NgxEchartsDirective, provideEchartsCore } from 'ngx-echarts';
+import * as echarts from 'echarts/core';
+import { BarChart, PieChart } from 'echarts/charts';
+import {
+  GridComponent,
+  LegendComponent,
+  TooltipComponent,
+  TitleComponent,
+} from 'echarts/components';
+import { CanvasRenderer } from 'echarts/renderers';
+
+try { echarts.use([BarChart, PieChart, TooltipComponent, GridComponent, LegendComponent, TitleComponent, CanvasRenderer]); } catch {};
 
 export interface KeyMetric {
   title: string;
@@ -40,7 +52,8 @@ export interface RequestTrendData {
 @Component({
   selector: 'app-manager-approval-dashboard',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, NgxEchartsDirective],
+  providers: [provideEchartsCore({ echarts })],
   templateUrl: './manager-approval-dashboard.component.html',
   styleUrl: './manager-approval-dashboard.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -185,6 +198,133 @@ export class ManagerApprovalDashboardComponent implements OnInit, OnDestroy {
     return rows;
   });
 
+  readonly trendChartOptions = computed(() => {
+    const data = this.requestTrendData();
+    return {
+      tooltip: {
+        trigger: 'axis',
+        axisPointer: { type: 'shadow' },
+        backgroundColor: 'rgba(255,255,255,0.95)',
+        borderColor: '#e2e8f0',
+        borderWidth: 1,
+        textStyle: { color: '#334155', fontSize: 12 },
+      },
+      legend: {
+        data: ['Submitted', 'Approved', 'Rejected'],
+        bottom: 0,
+        textStyle: { color: '#64748b', fontSize: 12 },
+        icon: 'circle',
+        itemWidth: 8,
+        itemHeight: 8,
+      },
+      grid: { left: '3%', right: '3%', bottom: '22%', top: '3%', containLabel: true },
+      xAxis: {
+        type: 'category',
+        data: data.map(d => d.month),
+        axisLine: { lineStyle: { color: '#e2e8f0' } },
+        axisLabel: { color: '#94a3b8', fontWeight: 500, fontSize: 11 },
+        axisTick: { show: false },
+      },
+      yAxis: {
+        type: 'value',
+        minInterval: 1,
+        splitLine: { lineStyle: { color: '#f1f5f9', type: 'dashed' } },
+        axisLabel: { color: '#94a3b8', fontSize: 11 },
+      },
+      series: [
+        {
+          name: 'Submitted',
+          type: 'bar',
+          stack: 'total',
+          data: data.map(d => d.submitted),
+          itemStyle: {
+            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+              { offset: 0, color: '#818cf8' },
+              { offset: 1, color: '#6366f1' },
+            ]),
+            borderRadius: [2, 2, 0, 0],
+          },
+          emphasis: { itemStyle: { color: '#4f46e5' } },
+        },
+        {
+          name: 'Approved',
+          type: 'bar',
+          stack: 'total',
+          data: data.map(d => d.approved),
+          itemStyle: {
+            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+              { offset: 0, color: '#4ade80' },
+              { offset: 1, color: '#22c55e' },
+            ]),
+            borderRadius: [2, 2, 0, 0],
+          },
+          emphasis: { itemStyle: { color: '#16a34a' } },
+        },
+        {
+          name: 'Rejected',
+          type: 'bar',
+          stack: 'total',
+          data: data.map(d => d.rejected),
+          itemStyle: {
+            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+              { offset: 0, color: '#f87171' },
+              { offset: 1, color: '#ef4444' },
+            ]),
+            borderRadius: [2, 2, 0, 0],
+          },
+          emphasis: { itemStyle: { color: '#dc2626' } },
+        },
+      ],
+    };
+  });
+
+  readonly statusChartOptions = computed(() => {
+    const pr = this.pendingRequests();
+    const mgr = this.managerQueueId();
+    const all = this.workflowService.getRequestsForManagerAll(mgr);
+    const pending = pr.length;
+    const approved = all.filter(r => r.status === 'Manager Approved').length;
+    const rejected = all.filter(r => r.status === 'Manager Rejected').length;
+    return {
+      tooltip: {
+        trigger: 'item',
+        backgroundColor: 'rgba(255,255,255,0.95)',
+        borderColor: '#e2e8f0',
+        borderWidth: 1,
+        textStyle: { color: '#334155', fontSize: 12 },
+        formatter: (params: any) => `${params.name}: <strong>${params.value}</strong> (${params.percent}%)`,
+      },
+      legend: {
+        orient: 'vertical',
+        right: '5%',
+        top: 'center',
+        textStyle: { color: '#64748b', fontSize: 12 },
+        icon: 'circle',
+        itemWidth: 10,
+        itemHeight: 10,
+      },
+      series: [{
+        type: 'pie',
+        radius: ['45%', '72%'],
+        center: ['35%', '50%'],
+        avoidLabelOverlap: true,
+        padAngle: 2,
+        itemStyle: { borderRadius: 6, borderColor: '#fff', borderWidth: 2 },
+        label: { show: false },
+        emphasis: {
+          label: { show: true, fontSize: 14, fontWeight: 'bold' },
+          itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: 'rgba(0,0,0,0.15)' },
+        },
+        labelLine: { show: false },
+        data: [
+          { value: pending, name: 'Pending', itemStyle: { color: '#f59e0b' } },
+          { value: approved, name: 'Approved', itemStyle: { color: '#22c55e' } },
+          { value: rejected, name: 'Rejected', itemStyle: { color: '#ef4444' } },
+        ],
+      }],
+    };
+  });
+
   getGreeting(): string {
     const hour = this.currentDate.getHours();
     if (hour < 12) return 'Good Morning';
@@ -289,6 +429,14 @@ export class ManagerApprovalDashboardComponent implements OnInit, OnDestroy {
   }
 
   approveRequest(requestId: string): void {
+    const request = this.workflowService.getRequestById(requestId);
+    if (!request) return;
+
+    if (request.stockVerificationStatus !== 'Verified') {
+      alert('Stock must be verified by the storekeeper before you can approve. Click "Request Verification" first.');
+      return;
+    }
+
     const managerId = this.workflowService.getDefaultManagerQueueId();
     const managerName = this.managerName();
 
@@ -324,6 +472,37 @@ export class ManagerApprovalDashboardComponent implements OnInit, OnDestroy {
       .reject({ id: requestId, reason: reason || 'Rejected via manager dashboard' })
       .pipe(take(1))
       .subscribe({ error: () => {} });
+  }
+
+  requestVerification(requestId: string): void {
+    const request = this.workflowService.getRequestById(requestId);
+    if (!request) return;
+    if (request.stockVerificationStatus !== 'Not Required' && request.stockVerificationStatus !== undefined) return;
+
+    const managerName = this.managerName();
+    this.workflowService.requestStockVerification(requestId, managerName);
+  }
+
+  getStockVerificationLabel(req: ServiceRequest): string {
+    switch (req.stockVerificationStatus) {
+      case 'Pending': return '⏳ Awaiting Storekeeper';
+      case 'Verified': return '✅ Stock Verified';
+      case 'Insufficient': return '❌ Stock Insufficient';
+      default: return '';
+    }
+  }
+
+  getStockVerificationClass(req: ServiceRequest): string {
+    switch (req.stockVerificationStatus) {
+      case 'Pending': return 'sv-pending';
+      case 'Verified': return 'sv-verified';
+      case 'Insufficient': return 'sv-insufficient';
+      default: return '';
+    }
+  }
+
+  canApprove(req: ServiceRequest): boolean {
+    return req.stockVerificationStatus === 'Verified';
   }
   viewRequestDetails(requestId: string): void {
     void this.router.navigate(['/manager/requests/all']);

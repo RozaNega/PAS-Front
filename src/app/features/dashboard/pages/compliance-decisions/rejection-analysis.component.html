@@ -1,16 +1,164 @@
-<div class="rejection-analysis-container">
-  <div class="page-header"><h1>Rejection Analysis</h1><p class="subtitle">Analyze rejected requests</p></div>
-  <div class="rejections-list">
-    @for (rejection of rejections(); track rejection.id) {
-      <div class="rejection-card">
-        <div class="rejection-header"><div class="request-number">{{ rejection.requestNumber }}</div><div class="status-badge rejected">Rejected</div></div>
-        <div class="rejection-reason"><i class="bi bi-exclamation-triangle"></i><span>{{ rejection.reason }}</span></div>
-        <div class="rejection-details">
-          <div class="detail-row"><span class="label">Rejecter:</span><span class="value">{{ rejection.rejecter }} ({{ rejection.department }})</span></div>
-          <div class="detail-row"><span class="label">Rejection Date:</span><span class="value">{{ rejection.rejectionDate }}</span></div>
-          <div class="detail-row"><span class="label">Value:</span><span class="value">${{ rejection.value.toLocaleString() }}</span></div>
+<div class="rejections-page">
+  <header class="page-hero page-hero--dark">
+    <div class="page-hero__text">
+      <h1>Rejection Analysis</h1>
+      <p>Analyze rejected requests & reasons</p>
+    </div>
+    <div class="page-hero__actions">
+      <button class="btn btn-secondary" (click)="refresh()" [disabled]="loading()">
+        <i class="bi bi-arrow-clockwise"></i> Refresh
+      </button>
+      <button class="btn btn-primary" (click)="exportCsv()" [disabled]="rejections().length === 0">
+        <i class="bi bi-download"></i> Export CSV
+      </button>
+    </div>
+  </header>
+
+  @if (loading()) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading rejections...</p>
+    </div>
+  }
+
+  @if (error(); as errMsg) {
+    <div class="error-state">
+      <i class="bi bi-exclamation-triangle-fill"></i>
+      <p>{{ errMsg }}</p>
+      <button class="btn btn-primary" (click)="refresh()"><i class="bi bi-arrow-clockwise"></i> Retry</button>
+    </div>
+  }
+
+  @if (!loading() && !error()) {
+    <div class="stats-cards">
+      <div class="stat-card stat-card--total">
+        <div class="stat-card__icon"><i class="bi bi-clipboard-x"></i></div>
+        <div class="stat-card__info">
+          <span class="stat-card__value">{{ totalRejections() }}</span>
+          <span class="stat-card__label">Total Rejections</span>
         </div>
       </div>
-    }
-  </div>
+      <div class="stat-card stat-card--rejected">
+        <div class="stat-card__icon"><i class="bi bi-slash-circle"></i></div>
+        <div class="stat-card__info">
+          <span class="stat-card__value">{{ totalRejections() }}</span>
+          <span class="stat-card__label">Rejected</span>
+        </div>
+      </div>
+      <div class="stat-card stat-card--value">
+        <div class="stat-card__icon"><i class="bi bi-currency-dollar"></i></div>
+        <div class="stat-card__info">
+          <span class="stat-card__value">${{ totalValue().toLocaleString() }}</span>
+          <span class="stat-card__label">Total Value</span>
+        </div>
+      </div>
+      <div class="stat-card stat-card--reason">
+        <div class="stat-card__icon"><i class="bi bi-chat-square-text"></i></div>
+        <div class="stat-card__info">
+          <span class="stat-card__value stat-card__value--sm">{{ topReason() }}</span>
+          <span class="stat-card__label">Top Reason</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Request #</th>
+              <th>Rejected By</th>
+              <th>Department</th>
+              <th>Date</th>
+              <th>Value</th>
+              <th>Reason</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (r of rejections(); track r.id) {
+              <tr>
+                <td><span class="td-id">{{ r.requestNumber }}</span></td>
+                <td>
+                  <div class="td-employee">
+                    <div class="td-avatar" [style.background]="hslFromName(r.rejecter)">{{ getInitials(r.rejecter) }}</div>
+                    <span class="td-name">{{ r.rejecter }}</span>
+                  </div>
+                </td>
+                <td>{{ r.department }}</td>
+                <td><span class="td-date">{{ r.rejectionDate }}</span></td>
+                <td>${{ r.value.toLocaleString() }}</td>
+                <td><span class="td-date">{{ r.reason }}</span></td>
+                <td>
+                  <button class="action-btn action-btn--view" (click)="viewRejection(r)">
+                    <i class="bi bi-eye"></i><span> View</span>
+                  </button>
+                </td>
+              </tr>
+            } @empty {
+              <tr class="empty-row">
+                <td colspan="7">
+                  <div class="empty-state"><i class="bi bi-inbox"></i><p>No rejections found</p></div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  @if (selectedRejection(); as rejection) {
+    <div class="modal-backdrop" (click)="closeModal()">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h2><i class="bi bi-slash-circle"></i> Rejection Details</h2>
+          <button class="btn-close-modal" (click)="closeModal()"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <div class="modal-body">
+          <div class="modal-avatar">
+            <div class="td-avatar td-avatar--lg" [style.background]="hslFromName(rejection.rejecter)">{{ getInitials(rejection.rejecter) }}</div>
+            <div>
+              <h3>{{ rejection.rejecter }}</h3>
+              <span class="mono-text">{{ rejection.requestNumber }}</span>
+            </div>
+          </div>
+          <div class="section-title">Rejection Information</div>
+          <div class="metadata-grid">
+            <div class="grid-item">
+              <label>Request #</label>
+              <span class="mono-text">{{ rejection.requestNumber }}</span>
+            </div>
+            <div class="grid-item">
+              <label>Department</label>
+              <span>{{ rejection.department }}</span>
+            </div>
+            <div class="grid-item">
+              <label>Rejection Date</label>
+              <span>{{ rejection.rejectionDate }}</span>
+            </div>
+            <div class="grid-item">
+              <label>Rejected By</label>
+              <span>{{ rejection.rejecter }}</span>
+            </div>
+            <div class="grid-item">
+              <label>Value</label>
+              <span>${{ rejection.value.toLocaleString() }}</span>
+            </div>
+            <div class="grid-item grid-item--full">
+              <label>Reason</label>
+              <div class="reason-box"><i class="bi bi-exclamation-triangle-fill"></i> {{ rejection.reason }}</div>
+            </div>
+            <div class="grid-item">
+              <label>Status</label>
+              <span class="badge badge--rejected">Rejected</span>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" (click)="closeModal()">Close</button>
+        </div>
+      </div>
+    </div>
+  }
 </div>

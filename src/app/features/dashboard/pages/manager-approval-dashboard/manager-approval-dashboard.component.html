@@ -1,181 +1,197 @@
-<div class="manager-approval-dashboard">
-  <!-- Hero Banner -->
-  <header class="hero-banner">
-    <div class="hero-copy">
-      <p class="hero-eyebrow">Manager Dashboard</p>
-      <div class="hero-header-content">
-        <div class="hero-avatar">
-          <div class="photo-scan-container" [class.scanning]="isValidatingPhoto()">
-            @if (profilePhoto()) {
-              <img [src]="profilePhoto()" alt="Profile photo" class="avatar-img shadow-lg" />
-            } @else {
-              <div class="avatar-placeholder shadow-lg">
-                <i class="bi bi-person-fill"></i>
-              </div>
-            }
-
-            @if (isValidatingPhoto()) {
-              <div class="scan-overlay">
-                <div class="scan-line"></div>
-                <span class="scan-label">Scanning Face...</span>
-              </div>
-            }
+<div class="manager-dashboard">
+  <!-- HERO -->
+  <header class="hero">
+    <div class="hero__bg"></div>
+    <div class="hero__inner">
+      <div class="hero__left">
+        <p class="hero__eyebrow"><i class="bi bi-grid-1x2-fill"></i> Manager Dashboard</p>
+        <div class="hero__profile">
+          <div class="hero__avatar">
+            <div class="photo-scan-container" [class.scanning]="isValidatingPhoto()">
+              @if (profilePhoto()) {
+                <img [src]="profilePhoto()" alt="Profile" class="avatar-img" />
+              } @else {
+                <div class="avatar-placeholder"><i class="bi bi-person-fill"></i></div>
+              }
+              @if (isValidatingPhoto()) {
+                <div class="scan-overlay">
+                  <div class="scan-line"></div>
+                  <span class="scan-label">Scanning Face...</span>
+                </div>
+              }
+            </div>
+            <div class="hero__avatar-badge"><i class="bi bi-shield-check"></i></div>
+          </div>
+          <div class="hero__text">
+            <h1>{{ greeting }}, {{ managerName() }}!</h1>
+            <p><i class="bi bi-bell"></i> You have <strong>{{ pendingRequests().length }} pending approval(s)</strong>. New requests appear here after syncing.</p>
           </div>
         </div>
-        <div class="hero-text">
-          <h1>👋 {{ greeting }}, {{ managerName() }}!</h1>
-          <p>
-            You have <strong>{{ pendingRequests().length }}</strong> pending approval(s). New
-            employee requests appear here after they are saved and synced.
-          </p>
-        </div>
       </div>
-    </div>
-    <div class="dashboard-info-widget">
-      <div class="info-item">
-        <i class="bi bi-calendar3 info-icon text-primary"></i>
-        <span class="info-text">{{ currentDateStr }}</span>
-      </div>
-      <div class="info-item">
-        <i class="bi bi-clock info-icon text-secondary"></i>
-        <span class="info-text">{{ currentTime() }}</span>
-      </div>
-      <div class="info-item">
-        <i class="bi bi-geo-alt-fill info-icon text-danger"></i>
-        <span class="info-text">{{ currentLocation() }}</span>
+      <div class="hero__info">
+        <div class="info-chip"><i class="bi bi-calendar3"></i> {{ currentDateStr }}</div>
+        <div class="info-divider"></div>
+        <div class="info-chip"><i class="bi bi-clock"></i> <span class="info-time">{{ currentTime() }}</span> <span class="info-tz">EAT</span></div>
+        <div class="info-divider"></div>
+        <div class="info-chip"><i class="bi bi-geo-alt-fill"></i> {{ currentLocation() }}</div>
       </div>
     </div>
   </header>
 
-  <!-- Key Metrics -->
-  <div class="metrics-section">
-    <h2>📊 KEY METRICS</h2>
-    <div class="metrics-grid">
-      @for (metric of keyMetrics(); track metric.title) {
-        <div class="metric-card metric-{{ metric.tone }}">
-          <div class="metric-title">{{ metric.title }}</div>
-          @if (metric.subtitle) {
-            <div class="metric-subtitle">{{ metric.subtitle }}</div>
-          }
-          <div class="metric-value">{{ metric.value }}</div>
-          @if (metric.trend) {
-            <div class="metric-trend">{{ metric.trend }}</div>
+  <!-- METRICS -->
+  <section class="metrics-grid">
+    @for (m of keyMetrics(); track m.title) {
+      <article class="metric-card" [class]="'metric-card--' + m.tone">
+        <div class="metric-card__icon">
+          @switch (m.tone) {
+            @case ('red') { <i class="bi bi-clock-history"></i> }
+            @case ('green') { <i class="bi bi-check-circle"></i> }
+            @case ('blue') { <i class="bi bi-files"></i> }
+            @case ('yellow') { <i class="bi bi-currency-dollar"></i> }
           }
         </div>
-      }
-    </div>
-  </div>
+        <div class="metric-card__body">
+          <p class="metric-card__value">{{ m.value }}</p>
+          <h3 class="metric-card__title">{{ m.title }}</h3>
+          <p class="metric-card__desc">{{ m.subtitle || m.trend }}</p>
+        </div>
+        <span class="metric-card__trend">
+          <i class="bi bi-arrow-{{ m.tone === 'green' || m.tone === 'blue' ? 'up' : 'down' }}-short"></i>
+        </span>
+      </article>
+    }
+  </section>
 
-  <!-- Pending Summary -->
-  <div class="pending-summary-section">
-    <h2>⏳ PENDING SUMMARY ({{ pendingRequests().length }})</h2>
-    <div class="pending-summary-card">
-      <div class="summary-item">
-        <span>🔴 Urgent / High: {{ pendingSummary().urgent }} requests</span>
-        <span>🟡 Medium: {{ pendingSummary().medium }} requests</span>
-        <span>🟢 Other: {{ pendingSummary().normal }} requests</span>
-      </div>
-      <div class="summary-item">
-        <span>Total value (est.): {{ pendingSummary().totalValue | currency }}</span>
-        <span>Avg wait: {{ pendingSummary().avgWaitDays | number: '1.1-1' }} days</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- Pending Requests -->
-  <div class="pending-requests-section">
-    <h2>
-      ⏳ PENDING REQUESTS ({{ pendingRequests().length }})
-      <button class="btn btn-link" (click)="viewAllRequests()">View All →</button>
-    </h2>
-    <div class="pending-requests-list">
-      @for (request of pendingRequests(); track request.id) {
-        <div class="request-card">
-          <div class="request-header">
-            <span class="request-icon">{{ getPriorityIcon(request.priority) }}</span>
-            <span class="request-sr">{{ request.srNumber }}</span>
-            <span class="request-requester">{{ request.employeeName }}</span>
-            <span class="request-priority">({{ request.priority }})</span>
-          </div>
-          <div class="request-details">
-            <span>Requested: {{ request.submittedDate | date: 'mediumDate' }}</span>
-            <span
-              >Items: {{ request.items.length > 0 ? request.items[0].name : 'None' }}
-              {{
-                request.items.length > 1 ? '(+' + (request.items.length - 1) + ' more)' : ''
-              }}</span
-            >
-            <span>Value: {{ request.estimatedCost || 0 | currency }}</span>
-            <span>Required: {{ request.requiredDate | date: 'shortDate' }}</span>
-          </div>
-          <div class="request-actions">
-            <button class="btn btn-sm btn-primary" (click)="approveRequest(request.id)">
-              Approve
-            </button>
-            <button class="btn btn-sm btn-secondary" (click)="rejectRequest(request.id)">
-              Reject
-            </button>
-            <button class="btn btn-sm btn-outline" (click)="viewRequestDetails(request.id)">
-              View Details
-            </button>
+  <!-- CHARTS -->
+  <section class="charts-grid">
+    <div class="panel">
+      <div class="panel__header">
+        <div class="panel__header-left">
+          <div class="panel__icon"><i class="bi bi-bar-chart-line-fill"></i></div>
+          <div>
+            <h2>Request Trends</h2>
+            <p class="panel__sub">IT Department &middot; Monthly</p>
           </div>
         </div>
-      }
-    </div>
-  </div>
-
-  <div class="request-trend-section">
-    <h2>📈 REQUEST TREND - IT Department</h2>
-    <div class="trend-chart">
-      <svg viewBox="0 0 600 200" class="trend-svg">
-        <!-- Grid lines -->
-        <line x1="50" y1="20" x2="580" y2="20" stroke="#e5e7eb" stroke-width="1" />
-        <line x1="50" y1="60" x2="580" y2="60" stroke="#e5e7eb" stroke-width="1" />
-        <line x1="50" y1="100" x2="580" y2="100" stroke="#e5e7eb" stroke-width="1" />
-        <line x1="50" y1="140" x2="580" y2="140" stroke="#e5e7eb" stroke-width="1" />
-        <line x1="50" y1="180" x2="580" y2="180" stroke="#e5e7eb" stroke-width="1" />
-
-        <!-- Y-axis labels -->
-        <text x="40" y="25" text-anchor="end" font-size="10">12</text>
-        <text x="40" y="65" text-anchor="end" font-size="10">10</text>
-        <text x="40" y="105" text-anchor="end" font-size="10">8</text>
-        <text x="40" y="145" text-anchor="end" font-size="10">6</text>
-        <text x="40" y="185" text-anchor="end" font-size="10">4</text>
-
-        <!-- X-axis labels -->
-        <text x="50" y="195" text-anchor="middle" font-size="10">Jan</text>
-        <text x="95" y="195" text-anchor="middle" font-size="10">Feb</text>
-        <text x="140" y="195" text-anchor="middle" font-size="10">Mar</text>
-        <text x="185" y="195" text-anchor="middle" font-size="10">Apr</text>
-        <text x="230" y="195" text-anchor="middle" font-size="10">May</text>
-        <text x="275" y="195" text-anchor="middle" font-size="10">Jun</text>
-        <text x="320" y="195" text-anchor="middle" font-size="10">Jul</text>
-        <text x="365" y="195" text-anchor="middle" font-size="10">Aug</text>
-        <text x="410" y="195" text-anchor="middle" font-size="10">Sep</text>
-        <text x="455" y="195" text-anchor="middle" font-size="10">Oct</text>
-        <text x="500" y="195" text-anchor="middle" font-size="10">Nov</text>
-        <text x="545" y="195" text-anchor="middle" font-size="10">Dec</text>
-
-        <!-- Submitted line -->
-        <polyline fill="none" stroke="#3b82f6" stroke-width="2" [attr.points]="submittedPoints()" />
-
-        <!-- Approved line -->
-        <polyline fill="none" stroke="#22c55e" stroke-width="2" [attr.points]="approvedPoints()" />
-
-        <!-- Rejected line -->
-        <polyline fill="none" stroke="#ef4444" stroke-width="2" [attr.points]="rejectedPoints()" />
-      </svg>
-      <div class="legend">
-        <span class="legend-item"
-          ><span class="legend-dot" style="background: #3b82f6"></span> Submitted</span
-        >
-        <span class="legend-item"
-          ><span class="legend-dot" style="background: #22c55e"></span> Approved</span
-        >
-        <span class="legend-item"
-          ><span class="legend-dot" style="background: #ef4444"></span> Rejected</span
-        >
+        <span class="panel__badge">This Year</span>
+      </div>
+      <div class="panel__body">
+        <div echarts [options]="trendChartOptions()" class="chart-container"></div>
       </div>
     </div>
+    <div class="panel">
+      <div class="panel__header">
+        <div class="panel__header-left">
+          <div class="panel__icon panel__icon--purple"><i class="bi bi-pie-chart-fill"></i></div>
+          <div>
+            <h2>Status Distribution</h2>
+            <p class="panel__sub">Queue Overview</p>
+          </div>
+        </div>
+      </div>
+      <div class="panel__body">
+        <div echarts [options]="statusChartOptions()" class="chart-container"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PENDING SUMMARY BAR -->
+  <div class="summary-bar">
+    <div class="summary-bar__item">
+      <span class="summary-bar__dot summary-bar__dot--red"></span>
+      <span>Urgent / High: <strong>{{ pendingSummary().urgent }}</strong></span>
+    </div>
+    <div class="summary-bar__item">
+      <span class="summary-bar__dot summary-bar__dot--amber"></span>
+      <span>Medium: <strong>{{ pendingSummary().medium }}</strong></span>
+    </div>
+    <div class="summary-bar__item">
+      <span class="summary-bar__dot summary-bar__dot--green"></span>
+      <span>Low: <strong>{{ pendingSummary().normal }}</strong></span>
+    </div>
+    <div class="summary-bar__divider"></div>
+    <div class="summary-bar__item">
+      <i class="bi bi-currency-dollar"></i> Est. Value: <strong>{{ pendingSummary().totalValue | currency }}</strong>
+    </div>
+    <div class="summary-bar__item">
+      <i class="bi bi-hourglass-split"></i> Avg Wait: <strong>{{ pendingSummary().avgWaitDays | number:'1.1-1' }} days</strong>
+    </div>
   </div>
+
+  <!-- PENDING REQUESTS TABLE -->
+  <section class="panel panel--table">
+    <div class="panel__header">
+      <div class="panel__header-left">
+        <div class="panel__icon panel__icon--amber"><i class="bi bi-list-task"></i></div>
+        <div>
+          <h2>Pending Requests ({{ pendingRequests().length }})</h2>
+          <p class="panel__sub">Awaiting your decision</p>
+        </div>
+      </div>
+      <button class="btn-view-all" (click)="viewAllRequests()">View All <i class="bi bi-arrow-right"></i></button>
+    </div>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+              <th>Priority</th>
+            <th>Request ID</th>
+            <th>Employee</th>
+            <th>Item</th>
+            <th>Value</th>
+            <th>Required</th>
+            <th>Stock</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (r of pendingRequests(); track r.id) {
+            <tr>
+              <td>
+                <span class="priority-dot" [style.background]="r.priority === 'Urgent' || r.priority === 'High' ? '#ef4444' : r.priority === 'Medium' ? '#f59e0b' : '#22c55e'" [title]="r.priority"></span>
+              </td>
+              <td><span class="td-id">{{ r.srNumber }}</span></td>
+              <td>
+                <div class="td-employee">
+                  <div class="td-avatar" [style.background]="'hsl(' + (r.employeeName.length * 40 % 360) + ', 65%, 88%)'">{{ r.employeeName.charAt(0) }}</div>
+                  <span class="td-name">{{ r.employeeName }}</span>
+                </div>
+              </td>
+              <td><span class="td-item">{{ r.items[0]?.name || '—' }}{{ r.items.length > 1 ? ' +' + (r.items.length-1) : '' }}</span></td>
+              <td><span class="td-value">{{ (r.estimatedCost || 0) | currency }}</span></td>
+              <td><span class="td-date">{{ r.requiredDate | date:'shortDate' }}</span></td>
+              <td>
+                @if (r.stockVerificationStatus === 'Pending') {
+                  <span class="sv-badge sv-badge-pending">⏳ Pending</span>
+                } @else if (r.stockVerificationStatus === 'Verified') {
+                  <span class="sv-badge sv-badge-verified">✅ Verified</span>
+                } @else if (r.stockVerificationStatus === 'Insufficient') {
+                  <span class="sv-badge sv-badge-insufficient">❌ Insufficient</span>
+                } @else {
+                  <span class="sv-badge sv-badge-na">—</span>
+                }
+              </td>
+              <td>
+                <div class="table-actions">
+                  @if (r.stockVerificationStatus === 'Not Required' || !r.stockVerificationStatus) {
+                    <button class="action-btn action-btn--verify" (click)="requestVerification(r.id)" title="Request Stock Verification"><i class="bi bi-shield-check"></i><span>Verify Stock</span></button>
+                  }
+                  @if (canApprove(r)) {
+                    <button class="action-btn action-btn--approve" (click)="approveRequest(r.id)" title="Approve"><i class="bi bi-check-lg"></i><span>Approve</span></button>
+                  }
+                  <button class="action-btn action-btn--reject" (click)="rejectRequest(r.id)" title="Reject"><i class="bi bi-x-lg"></i><span>Reject</span></button>
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr class="empty-row">
+              <td colspan="8">
+                <div class="empty-state"><i class="bi bi-inbox"></i><p>No pending requests</p></div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
 </div>
