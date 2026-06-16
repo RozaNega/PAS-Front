@@ -8,6 +8,7 @@ import { finalize, switchMap } from 'rxjs';
 import { LoginTransitionService } from '../../../../core/services/login-transition.service';
 import { UsersService } from '../../../../core/services/users.service';
 import { AuthService } from '../../../../core/services/auth.service';
+import { AuthApi } from '../../services/auth-api';
 
 @Component({
   selector: 'app-login',
@@ -20,6 +21,7 @@ export class Login {
   private readonly formBuilder = inject(FormBuilder);
   private readonly authService = inject(AuthService);
   private readonly usersService = inject(UsersService);
+  private readonly authApi = inject(AuthApi);
   private readonly activeRoute = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly transitionSvc = inject(LoginTransitionService);
@@ -37,18 +39,34 @@ export class Login {
   });
 
   constructor() {
-    const email = this.activeRoute.snapshot.queryParamMap.get('email');
-    if (email) {
+    // If reset-password passed the username directly, use it (no lookup needed)
+    const usernameParam = this.activeRoute.snapshot.queryParamMap.get('username');
+    if (usernameParam) {
+      this.loginForm.controls.username.setValue(usernameParam);
+      return;
+    }
+
+    const emailParam = this.activeRoute.snapshot.queryParamMap.get('email');
+    if (emailParam) {
+      // 1. Try AuthApi mock (local storage) — works even when backend is down
+      const localUser = this.authApi
+        .knownUsers()
+        .find((u: any) => u.email?.toLowerCase() === emailParam.toLowerCase());
+      if (localUser?.displayName) {
+        this.loginForm.controls.username.setValue(localUser.displayName);
+        return;
+      }
+      // 2. Try backend API (has real username field)
       this.usersService.getAll().subscribe({
         next: (response) => {
-          const users = (response.data && 'items' in response.data)
+          if (!response.success) { this.loginForm.controls.username.setValue(emailParam); return; }
+          const items = response.data && 'items' in response.data
             ? (response.data as { items: any[] }).items
-            : [];
-          const user = users.find((u: any) => u.email?.toLowerCase() === email.toLowerCase());
-          if (user?.username) {
-            this.loginForm.controls.username.setValue(user.username);
-          }
+            : Array.isArray(response.data) ? response.data : [];
+          const user = items.find((u: any) => u.email?.toLowerCase() === emailParam.toLowerCase());
+          this.loginForm.controls.username.setValue(user?.username || user?.displayName || '');
         },
+        error: () => {},
       });
     }
   }

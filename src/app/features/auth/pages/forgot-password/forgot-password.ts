@@ -26,6 +26,7 @@ export class ForgotPassword {
 
   protected readonly forgotForm = this.formBuilder.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],
+    username: [''],
   });
 
   protected submit(): void {
@@ -42,7 +43,7 @@ export class ForgotPassword {
     const raw = this.forgotForm.getRawValue();
 
     this.authService
-      .forgotPassword(raw.email)
+      .forgotPassword({ email: raw.email, username: raw.username || undefined })
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
         next: (result) => {

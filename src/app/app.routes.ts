@@ -280,6 +280,10 @@ export const routes: Routes = [
         loadComponent: () => import('./features/user-management/pages/add-user/add-user.component').then(m => m.AddUserComponent),
       },
       {
+        path: 'users/pending-registrations',
+        loadComponent: () => import('./features/user-management/pages/pending-registrations/pending-registrations.component').then(m => m.PendingRegistrationsComponent),
+      },
+      {
         path: 'users/roles',
         loadComponent: () => import('./features/user-management/pages/roles-permissions/roles-permissions.component').then(m => m.RolesPermissionsComponent),
       },

@@ -20,9 +20,23 @@ interface PasswordResetToken {
   expiresAt: string;
 }
 
+export interface PendingUser {
+  id: string;
+  username: string;
+  fullName: string;
+  email: string;
+  roleName: string;
+  department: string;
+  employeeCode: string;
+  phoneNumber?: string;
+  password: string;
+  submittedAt: string;
+}
+
 const USERS_STORAGE_KEY = 'ecx-auth-users';
 const SESSION_STORAGE_KEY = 'ecx-auth-session';
 const RESET_TOKENS_STORAGE_KEY = 'ecx-auth-reset-tokens';
+const PENDING_USERS_STORAGE_KEY = 'ecx-auth-pending-users';
 const DEMO_EMAIL = 'demo@africom.local';
 const DEMO_PASSWORD = 'Password123!';
 const DEMO_DISPLAY_NAME = 'Demo Admin';
@@ -44,6 +58,7 @@ export class AuthApi {
   private readonly usersSignal = signal<StoredUser[]>(this.loadUsers());
   private readonly sessionSignal = signal<AuthSession | null>(this.loadSession());
   private readonly resetTokensSignal = signal<PasswordResetToken[]>(this.loadResetTokens());
+  private readonly pendingUsersSignal = signal<PendingUser[]>(this.loadPendingUsers());
   private readonly initialized = this.initializeStore();
 
   readonly session = computed(() => this.sessionSignal());
@@ -54,6 +69,8 @@ export class AuthApi {
   );
   readonly accountCount = computed(() => this.usersSignal().length);
   readonly pendingResetCount = computed(() => this.resetTokensSignal().length);
+  readonly pendingRegistrations = computed(() => this.pendingUsersSignal());
+  readonly pendingRegistrationsCount = computed(() => this.pendingUsersSignal().length);
 
   login(request: LoginRequest): AuthResult {
     const email = this.normalizeEmail(request.email);
@@ -112,6 +129,79 @@ export class AuthApi {
       success: true,
       message: `Account created for ${newUser.displayName} as ${newUser.roleName}. You can sign in right away.`,
     };
+  }
+
+  registerPending(request: RegisterRequest): AuthResult {
+    const email = this.normalizeEmail(request.email);
+
+    if (this.usersSignal().some((entry) => entry.email === email)) {
+      return { success: false, message: 'An account already exists for that email address.' };
+    }
+
+    const pendingUser: PendingUser = {
+      id: this.createId('pending'),
+      username: request.displayName.toLowerCase().replace(/\s+/g, '_'),
+      fullName: request.displayName.trim(),
+      email,
+      roleName: request.roleName.trim(),
+      department: '',
+      employeeCode: '',
+      phoneNumber: request.phoneNumber?.trim() ?? '',
+      password: request.password,
+      submittedAt: new Date().toISOString(),
+    };
+
+    const nextPending = [...this.pendingUsersSignal(), pendingUser];
+    this.pendingUsersSignal.set(nextPending);
+    this.persistPendingUsers(nextPending);
+
+    return {
+      success: true,
+      message: 'Registration submitted for admin approval. You will be notified once approved.',
+    };
+  }
+
+  getPendingRegistrations(): PendingUser[] {
+    return this.pendingUsersSignal();
+  }
+
+  approvePendingRegistration(id: string): AuthResult {
+    const pending = this.pendingUsersSignal().find((p) => p.id === id);
+    if (!pending) {
+      return { success: false, message: 'Pending registration not found.' };
+    }
+
+    const newUser: StoredUser = {
+      id: this.createId('user'),
+      displayName: pending.fullName,
+      phoneNumber: pending.phoneNumber ?? '',
+      email: pending.email,
+      roleName: pending.roleName,
+      password: pending.password,
+    };
+
+    const nextUsers = [...this.usersSignal(), newUser];
+    this.usersSignal.set(nextUsers);
+    this.persistUsers(nextUsers);
+
+    const nextPending = this.pendingUsersSignal().filter((p) => p.id !== id);
+    this.pendingUsersSignal.set(nextPending);
+    this.persistPendingUsers(nextPending);
+
+    return { success: true, message: `${pending.fullName} approved as ${pending.roleName}.` };
+  }
+
+  rejectPendingRegistration(id: string): AuthResult {
+    const pending = this.pendingUsersSignal().find((p) => p.id === id);
+    if (!pending) {
+      return { success: false, message: 'Pending registration not found.' };
+    }
+
+    const nextPending = this.pendingUsersSignal().filter((p) => p.id !== id);
+    this.pendingUsersSignal.set(nextPending);
+    this.persistPendingUsers(nextPending);
+
+    return { success: true, message: `${pending.fullName}'s registration has been rejected.` };
   }
 
   requestPasswordReset(request: ForgotPasswordRequest): AuthResult {
@@ -173,9 +263,12 @@ export class AuthApi {
     this.persistUsers(nextUsers);
     this.removeResetToken(token);
 
+    const user = this.usersSignal().find((entry) => entry.email === resetRecord.email);
+
     return {
       success: true,
       message: 'Password updated. Sign in with your new credentials.',
+      data: { username: user?.displayName || user?.email },
     };
   }
 
@@ -188,9 +281,11 @@ export class AuthApi {
     this.sessionSignal.set(null);
     this.usersSignal.set([demoUser]);
     this.resetTokensSignal.set([]);
+    this.pendingUsersSignal.set([]);
     this.persistSession(null);
     this.persistUsers([demoUser]);
     this.persistResetTokens([]);
+    this.persistPendingUsers([]);
   }
 
   private initializeStore(): boolean {
@@ -357,6 +452,24 @@ export class AuthApi {
     }
 
     storage.setItem(RESET_TOKENS_STORAGE_KEY, JSON.stringify(tokens));
+  }
+
+  private loadPendingUsers(): PendingUser[] {
+    const storage = this.storage;
+    if (!storage) return [];
+    const raw = storage.getItem(PENDING_USERS_STORAGE_KEY);
+    if (!raw) return [];
+    try {
+      return JSON.parse(raw) as PendingUser[];
+    } catch {
+      return [];
+    }
+  }
+
+  private persistPendingUsers(users: PendingUser[]): void {
+    const storage = this.storage;
+    if (!storage) return;
+    storage.setItem(PENDING_USERS_STORAGE_KEY, JSON.stringify(users));
   }
 
   private get storage(): Storage | null {

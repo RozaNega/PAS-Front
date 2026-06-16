@@ -275,9 +275,9 @@ export class AuthService {
   }
 
   forgotPassword(
-    email: string,
+    request: { email: string; username?: string },
   ): Observable<{ succeeded: boolean; message: string; token?: string }> {
-    return this.apiService.post<any>('Auth/forgot-password', { email }).pipe(
+    return this.apiService.post<any>('Auth/forgot-password', request).pipe(
       map((response) => ({
         succeeded: response.success,
         message: response.message || (response.success ? 'Success' : 'Failed'),
@@ -287,11 +287,12 @@ export class AuthService {
     );
   }
 
-  resetPassword(request: any): Observable<{ succeeded: boolean; message: string }> {
+  resetPassword(request: any): Observable<{ succeeded: boolean; message: string; data?: { username?: string } }> {
     return this.apiService.post<any>('Auth/reset-password', request).pipe(
       map((response) => ({
         succeeded: response.success,
         message: response.message || (response.success ? 'Success' : 'Failed'),
+        data: response.data,
       })),
     );
   }

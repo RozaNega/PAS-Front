@@ -60,6 +60,7 @@ export class ResetPassword {
       .resetPassword({
         email: this.routeEmail(),
         token: this.resetForm.controls.token.value,
+        password: this.resetForm.controls.password.value,
         newPassword: this.resetForm.controls.password.value,
       })
       .pipe(finalize(() => this.loading.set(false)))
@@ -70,7 +71,10 @@ export class ResetPassword {
 
           if (result.succeeded) {
             const email = this.routeEmail();
-            void this.router.navigate(['/auth/login'], { queryParams: { email } });
+            const username = result.data?.username;
+            void this.router.navigate(['/auth/login'], {
+              queryParams: { email, ...(username ? { username } : {}) },
+            });
           }
         },
         error: () => {
