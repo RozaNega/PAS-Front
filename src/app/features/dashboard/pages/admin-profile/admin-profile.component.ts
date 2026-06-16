@@ -1,12 +1,16 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { AuthService, User } from '../../../../core/services/auth.service';
+import { ToastService } from '../../../../core/services/toast.service';
 import { CurrentUserService } from '../../../../core/services/current-user.service';
 import { ProfileService } from '../../../../core/services/profile.service';
+import { FaceDetectionService } from '../../../../core/services/face-detection.service';
 import { DashboardService, DashboardStatistics, RecentActivity } from '../../../../core/services/dashboard.service';
 import { ProfileSidebarComponent, ProfileNavItem } from '../../../../shared/components/profile-sidebar/profile-sidebar.component';
 import { DEFAULT_AVATAR_PATH } from '../../../../core/models/stored-user.model';
+import { finalize } from 'rxjs';
 
 @Component({
   selector: 'app-admin-profile',
@@ -113,15 +117,23 @@ import { DEFAULT_AVATAR_PATH } from '../../../../core/models/stored-user.model';
                 </div>
                 <form class="edit-form" (ngSubmit)="saveProfile()">
                   <div class="photo-upload">
-                    <div class="photo-preview" (click)="photoInput.click()">
-                      @if (avatarUrl()) {
-                        <img [src]="avatarUrl()" alt="Profile" />
-                      } @else {
-                        <div class="photo-placeholder">{{ initials() }}</div>
-                      }
-                      <div class="photo-overlay">
-                        <i class="bi bi-camera-fill"></i>
+                    <div class="photo-scan-container" [class.scanning]="isValidatingPhoto()">
+                      <div class="photo-preview" (click)="photoInput.click()">
+                        @if (avatarUrl()) {
+                          <img [src]="avatarUrl()" alt="Profile" />
+                        } @else {
+                          <div class="photo-placeholder">{{ initials() }}</div>
+                        }
+                        <div class="photo-overlay">
+                          <i class="bi bi-camera-fill"></i>
+                        </div>
                       </div>
+                      @if (isValidatingPhoto()) {
+                        <div class="scan-overlay">
+                          <div class="scan-line"></div>
+                          <span class="scan-label">Scanning Face...</span>
+                        </div>
+                      }
                     </div>
                     <input
                       #photoInput
@@ -291,15 +303,72 @@ import { DEFAULT_AVATAR_PATH } from '../../../../core/models/stored-user.model';
                   <p>Manage your account preferences and security</p>
                 </div>
                 <div class="settings-list">
-                  <div class="setting-item">
+                  <div class="setting-item twofa-admin-item">
                     <div class="setting-info">
                       <h4>Two-Factor Authentication</h4>
                       <p>Add an extra layer of security to your account</p>
                     </div>
-                    <button type="button" class="btn btn-outline-primary" (click)="toggle2FA()">
-                      <i class="bi bi-shield-check"></i> Enable 2FA
-                    </button>
+                    <div class="twofa-admin-status">
+                      <span
+                        class="status-dot-admin"
+                        [class.enabled]="twoFactorEnabled()"
+                        [class.disabled]="!twoFactorEnabled()"
+                      ></span>
+                      <span>{{ twoFactorEnabled() ? 'Enabled' : 'Disabled' }}</span>
+                    </div>
+                    @if (!twoFactorEnabled()) {
+                      <button type="button" class="btn btn-outline-primary btn-sm" (click)="enable2FA()">
+                        <i class="bi bi-shield-check"></i> Enable
+                      </button>
+                    } @else {
+                      <button type="button" class="btn btn-outline-danger btn-sm" (click)="disable2FA()">
+                        <i class="bi bi-shield-x"></i> Disable
+                      </button>
+                    }
                   </div>
+                  @if (twoFactorEnabled()) {
+                    <div class="twofa-admin-settings">
+                      <div class="twofa-admin-row">
+                        <label>Method:</label>
+                        <select [value]="twoFactorMethod()" (change)="updateTwoFactorMethod($event)" class="twofa-admin-select">
+                          <option value="email">Email</option>
+                        </select>
+                        @if (twoFactorSetupComplete()) {
+                          <span class="verified-badge">✓ Verified</span>
+                        }
+                      </div>
+                      @if (twoFactorMethod() === 'email') {
+                        <div class="twofa-admin-row">
+                          <label>Email:</label>
+                          <div class="twofa-admin-input-group">
+                            <input type="email" [value]="email()" class="form-control form-control-sm" readonly />
+                            <button
+                              class="btn btn-primary btn-sm"
+                              (click)="saveTwoFactorPhone()"
+                              [disabled]="twoFactorSending()"
+                            >
+                              {{ twoFactorSending() ? 'Sending...' : twoFactorSetupComplete() ? 'Re-send' : 'Send Code' }}
+                            </button>
+                          </div>
+                        </div>
+                      }
+                      @if (twoFactorVerificationSent()) {
+                        <div class="twofa-admin-row">
+                          <label>Code:</label>
+                          <div class="twofa-admin-input-group">
+                            <input
+                              type="text"
+                              (input)="updateTwoFactorVerificationCode($event)"
+                              placeholder="6-digit code"
+                              maxlength="6"
+                              class="form-control form-control-sm"
+                            />
+                            <button class="btn btn-success btn-sm" (click)="verifyTwoFactorCode()">Verify</button>
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  }
                   <div class="setting-item">
                     <div class="setting-info">
                       <h4>Email Notifications</h4>
@@ -543,6 +612,11 @@ import { DEFAULT_AVATAR_PATH } from '../../../../core/models/stored-user.model';
     }
     .photo-input { display: none; }
     .photo-hint { font-size: 0.8rem; color: var(--text-color-muted); margin: 0; }
+    .photo-scan-container { position: relative; display: inline-block; border-radius: 50%; overflow: hidden; }
+    .scan-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.65); display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 50%; z-index: 2; }
+    .scan-line { width: 80%; height: 2px; background: #10b981; border-radius: 2px; box-shadow: 0 0 12px rgba(16,185,129,0.6); animation: scanMove 1.2s ease-in-out infinite; }
+    .scan-label { color: #fff; font-size: 0.75rem; font-weight: 600; margin-top: 0.5rem; letter-spacing: 0.5px; }
+    @keyframes scanMove { 0%, 100% { transform: translateY(-20px); } 50% { transform: translateY(20px); } }
     .form-row {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -775,6 +849,65 @@ import { DEFAULT_AVATAR_PATH } from '../../../../core/models/stored-user.model';
       transform: translateX(20px);
     }
 
+    .twofa-admin-item {
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .twofa-admin-status {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+    .status-dot-admin {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    .status-dot-admin.enabled { background: #22c55e; }
+    .status-dot-admin.disabled { background: #94a3b8; }
+    .twofa-admin-settings {
+      padding: 0.75rem 1.25rem;
+      background: var(--surface-section);
+      border-radius: 12px;
+      border: 1px solid var(--surface-border);
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+    .twofa-admin-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .twofa-admin-row label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      min-width: 50px;
+    }
+    .twofa-admin-select {
+      padding: 0.3rem 0.5rem;
+      border-radius: 6px;
+      border: 1px solid var(--surface-border);
+      font-size: 0.8rem;
+      background: var(--surface-card);
+      color: var(--text-color);
+    }
+    .twofa-admin-input-group {
+      display: flex;
+      gap: 0.4rem;
+      flex: 1;
+    }
+    .twofa-admin-input-group input { flex: 1; min-width: 120px; }
+    .verified-badge {
+      font-size: 0.75rem;
+      color: #16a34a;
+      font-weight: 600;
+    }
+
     @media (max-width: 900px) {
       .profile-layout { flex-direction: column; }
       .profile-sidebar { width: 100%; }
@@ -785,8 +918,10 @@ import { DEFAULT_AVATAR_PATH } from '../../../../core/models/stored-user.model';
 })
 export class AdminProfileComponent implements OnInit {
   private readonly authService = inject(AuthService);
+  private readonly toastService = inject(ToastService);
   private readonly currentUserService = inject(CurrentUserService);
   private readonly profileService = inject(ProfileService);
+  private readonly faceDetectionService = inject(FaceDetectionService);
   private readonly dashboardService = inject(DashboardService);
 
   protected readonly isLoading = signal(true);
@@ -817,6 +952,7 @@ export class AdminProfileComponent implements OnInit {
 
   protected readonly profileImageUrl = signal<string | null>(null);
   protected readonly defaultAvatar = DEFAULT_AVATAR_PATH;
+  protected readonly isValidatingPhoto = signal(false);
 
   protected emailNotifications = true;
   protected loginAlerts = true;
@@ -838,6 +974,16 @@ export class AdminProfileComponent implements OnInit {
   protected changingPassword = signal(false);
   protected passwordError = signal<string | null>(null);
   protected passwordSuccess = signal<string | null>(null);
+
+  // Two-Factor Authentication
+  protected readonly twoFactorEnabled = signal(false);
+  protected readonly twoFactorMethod = signal<'email'>('email');
+  protected readonly twoFactorPhone = signal('');
+  protected readonly twoFactorVerificationSent = signal(false);
+  protected readonly twoFactorVerificationCode = signal('');
+  protected readonly twoFactorSetupComplete = signal(false);
+  protected readonly twoFactorSending = signal(false);
+  private currentCode = '';
 
   protected readonly departmentDisplay = computed(() => this.department() || 'Administration');
 
@@ -969,22 +1115,49 @@ export class AdminProfileComponent implements OnInit {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
     if (!file) return;
-    this.uploadPhoto(file);
+    this.handleFile(file);
   }
 
   protected onPhotoSelectedFromSidebar(file: File): void {
-    this.uploadPhoto(file);
+    this.handleFile(file);
   }
 
-  private uploadPhoto(file: File): void {
-    this.profileService.uploadProfilePhotoToApi(file).subscribe({
-      next: (url) => this.avatarUrl.set(this.profileService.getDisplayUrl(url)),
-      error: () => {
-        this.profileService.applyLocalProfileImageFromFile(file).subscribe({
-          next: (url) => this.avatarUrl.set(url),
-        });
-      },
-    });
+  private async handleFile(file: File): Promise<void> {
+    if (file.size > 20 * 1024 * 1024) {
+      alert('File too large. Max 20MB.');
+      return;
+    }
+
+    this.isValidatingPhoto.set(true);
+
+    try {
+      const result = await this.faceDetectionService.validateProfilePhoto(file);
+
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      this.isValidatingPhoto.set(false);
+
+      if (!result.valid) {
+        alert(`Security Alert: ${result.message}`);
+        return;
+      }
+
+      this.profileService.applyLocalProfileImageFromFile(file).subscribe({
+        next: () => {
+          this.profileService.uploadProfilePhotoToApi(file).subscribe({
+            next: (url) => this.avatarUrl.set(this.profileService.getDisplayUrl(url)),
+            error: () => {
+              console.warn('Server sync failed (photo saved locally)');
+            },
+          });
+        },
+        error: () => alert('Could not process image. Please try a smaller photo.'),
+      });
+    } catch (error) {
+      console.error('Photo validation error:', error);
+      this.isValidatingPhoto.set(false);
+      alert('Failed to analyze photo. Please try again.');
+    }
   }
 
   protected saveProfile(): void {
@@ -1053,8 +1226,104 @@ export class AdminProfileComponent implements OnInit {
     });
   }
 
-  protected toggle2FA(): void {
-    this.authService.enable2FA('email').subscribe();
+  protected enable2FA(): void {
+    this.twoFactorEnabled.set(true);
+    if (this.twoFactorSetupComplete()) {
+      this.twoFactorSetupComplete.set(false);
+      this.twoFactorVerificationSent.set(false);
+      this.twoFactorVerificationCode.set('');
+    }
+    this.toastService.info('Fill in your contact info and click Send Code to enable 2FA.');
+  }
+
+  protected disable2FA(): void {
+    this.authService.disable2FA().subscribe({
+      next: (res) => {
+        this.twoFactorEnabled.set(false);
+        this.twoFactorMethod.set('email');
+        this.twoFactorPhone.set('');
+        this.twoFactorVerificationSent.set(false);
+        this.twoFactorVerificationCode.set('');
+        this.twoFactorSetupComplete.set(false);
+        if (res.succeeded) {
+          this.toastService.success('Two-Factor Authentication has been disabled.');
+        } else {
+          this.toastService.error(res.message || 'Failed to disable 2FA.');
+        }
+      },
+      error: () => this.toastService.error('Unable to disable 2FA. Please try again.'),
+    });
+  }
+
+  protected updateTwoFactorMethod(event: Event): void {
+    this.twoFactorMethod.set('email');
+    if (this.twoFactorSetupComplete()) {
+      this.twoFactorSetupComplete.set(false);
+      this.twoFactorVerificationSent.set(false);
+      this.twoFactorVerificationCode.set('');
+    }
+  }
+
+  protected updateTwoFactorPhone(event: Event): void {
+    const target = event.target as HTMLInputElement;
+    this.twoFactorPhone.set(target.value);
+  }
+
+  protected saveTwoFactorPhone(): void {
+    const contact = this.email();
+    if (!contact) {
+      alert('Please enter a valid email address.');
+      return;
+    }
+    this.twoFactorSending.set(true);
+
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    this.currentCode = code;
+    this.authService.sendVerificationCode(contact, code).pipe(finalize(() => this.twoFactorSending.set(false))).subscribe({
+      next: (res) => {
+        if (res.succeeded) {
+          this.twoFactorVerificationSent.set(true);
+          this.toastService.success('Verification code sent! Check your inbox.');
+        } else {
+          alert(res.message || 'Failed to send verification code.');
+        }
+      },
+      error: () => {
+        alert('Unable to send verification code. Please try again.');
+      },
+    });
+  }
+
+  protected updateTwoFactorVerificationCode(event: Event): void {
+    const target = event.target as HTMLInputElement;
+    this.twoFactorVerificationCode.set(target.value);
+  }
+
+  protected verifyTwoFactorCode(): void {
+    if (this.twoFactorVerificationCode() !== this.currentCode) {
+      alert('Invalid verification code. Please check the code sent to your email and try again.');
+      return;
+    }
+    const contact = this.email();
+    this.twoFactorSending.set(true);
+    this.authService.enable2FA('email', contact).pipe(finalize(() => this.twoFactorSending.set(false))).subscribe({
+      next: (res) => {
+        if (res.succeeded) {
+          this.twoFactorSetupComplete.set(true);
+          this.toastService.success(res.message || '2FA enabled successfully!');
+        } else {
+          alert(res.message || 'Failed to enable 2FA.');
+        }
+      },
+      error: () => {
+        alert('Unable to enable 2FA. Please try again.');
+      },
+    });
+  }
+
+  protected resendVerificationCode(): void {
+    this.twoFactorVerificationCode.set('');
+    this.saveTwoFactorPhone();
   }
 
   protected toggleEmailNotifs(): void {

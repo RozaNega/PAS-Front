@@ -42,15 +42,78 @@
         </div>
         
         <div class="request-actions">
+          <button
+            class="btn"
+            [class.btn-warning]="!getStockStatus(request.id)"
+            [class.btn-success]="getStockStatus(request.id) === 'available'"
+            [class.btn-danger]="getStockStatus(request.id) === 'unavailable'"
+            [class.btn-secondary]="getStockStatus(request.id) === 'pending'"
+            [disabled]="getStockStatus(request.id) === 'pending' || getStockStatus(request.id) === 'available' || getStockStatus(request.id) === 'unavailable'"
+            (click)="checkStock(request.id)"
+          >
+            @if (!getStockStatus(request.id)) {
+              <i class="bi bi-search"></i> Check Stock
+            } @else if (getStockStatus(request.id) === 'pending') {
+              <span class="spinner-border spinner-border-sm me-1"></span> Checking...
+            } @else if (getStockStatus(request.id) === 'available') {
+              <i class="bi bi-check-circle"></i> Stock OK
+            } @else if (getStockStatus(request.id) === 'unavailable') {
+              <i class="bi bi-x-circle"></i> No Stock
+            }
+          </button>
           <button class="btn btn-secondary" (click)="viewDetails(request.id)">View Details</button>
           <button class="btn btn-secondary" (click)="reject(request.id)">Reject</button>
-          <button class="btn btn-primary" (click)="approve(request.id)">Approve</button>
+          <button class="btn btn-primary" [disabled]="getStockStatus(request.id) === 'pending' || getStockStatus(request.id) === 'unavailable'" (click)="approve(request.id)">Approve</button>
         </div>
+        @if (getStockStatus(request.id) === 'unavailable') {
+          <div class="stock-note">
+            <i class="bi bi-exclamation-triangle-fill text-danger"></i>
+            Stock unavailable
+          </div>
+        }
+        @if (getStockStatus(request.id) === 'available') {
+          <div class="stock-note stock-note--ok">
+            <i class="bi bi-check-circle-fill text-success"></i>
+            Stock confirmed
+          </div>
+        }
       </div>
     } @empty {
       <div class="empty-state">
         <i class="bi bi-check-circle"></i>
         <p>No pending approvals</p>
+      </div>
+    }
+  </div>
+</div>
+
+<!-- Notifications Panel -->
+<div class="notifications-panel">
+  <div class="panel-header">
+    <h2><i class="bi bi-bell-fill"></i> Recent Notifications</h2>
+  </div>
+  <div class="notifications-list">
+    @for (notif of workflowNotifications().slice(0, 5); track notif.id) {
+      <div class="notification-item" [class.unread]="!notif.isRead">
+        <div class="notification-icon" [class]="'notification-icon--' + notif.type">
+          <i class="bi" [class.bi-check-circle]="notif.type === 'success'" [class.bi-x-circle]="notif.type === 'error'" [class.bi-exclamation-triangle]="notif.type === 'warning'" [class.bi-info-circle]="notif.type === 'info'"></i>
+        </div>
+        <div class="notification-content">
+          <h4 class="notification-title">{{ notif.title }}</h4>
+          <p class="notification-message">{{ notif.message }}</p>
+          <time class="notification-time">{{ notif.createdDate | date: 'short' }}</time>
+        </div>
+        <div class="notification-actions">
+          @if (!notif.isRead) {
+            <button class="btn btn-sm btn-outline-secondary" (click)="markNotifAsRead(notif.id)" title="Mark as read"><i class="bi bi-check2"></i></button>
+          }
+          <button class="btn btn-sm btn-outline-danger" (click)="dismissNotif(notif.id)" title="Dismiss"><i class="bi bi-x"></i></button>
+        </div>
+      </div>
+    } @empty {
+      <div class="empty-notifications">
+        <i class="bi bi-bell-slash"></i>
+        <p>No notifications</p>
       </div>
     }
   </div>

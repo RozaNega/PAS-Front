@@ -416,26 +416,23 @@
                   <div class="form-group">
                     <label>Method</label>
                     <select [value]="twoFactorMethod()" (change)="updateTwoFactorMethod($event)">
-                      <option value="sms">SMS</option>
                       <option value="email">Email</option>
-                      <option value="app">App</option>
                     </select>
                   </div>
-                  @if (twoFactorMethod() === 'sms') {
+                  @if (twoFactorMethod() === 'email') {
                     <div class="form-group">
-                      <label>Phone Number</label>
+                      <label>Email Address</label>
                       <div class="input-with-action">
                         <input
-                          type="tel"
-                          [value]="twoFactorPhone()"
-                          (input)="updateTwoFactorPhone($event)"
-                          placeholder="+251..."
+                          type="email"
+                          [value]="userProfile().email"
+                          readonly
                         />
-                        <button (click)="saveTwoFactorPhone()">Send Code</button>
+                        <button (click)="saveTwoFactorPhone()" [disabled]="twoFactorSending()">{{ twoFactorSending() ? 'Sending...' : 'Send Code' }}</button>
                       </div>
                     </div>
                   }
-                  @if (twoFactorVerificationSent() && !twoFactorSetupComplete()) {
+                  @if (twoFactorVerificationSent()) {
                     <div class="form-group">
                       <label>Verification Code</label>
                       <div class="input-with-action">

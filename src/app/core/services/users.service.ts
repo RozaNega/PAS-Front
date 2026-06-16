@@ -87,9 +87,6 @@ export class UsersService {
 
   /**
    * Send a password-reset email to a user.
-   * Uses the existing /api/Auth/forgot-password endpoint which generates a
-   * reset token and emails it. In dev, the token is returned in the response
-   * and shown in the API logs.
    */
   resetUserPassword(payload: { email: string; userId?: string | number; username?: string }): Observable<UserApiResponse> {
     return this.http.post<UserApiResponse>('/api/Auth/forgot-password', { email: payload.email });

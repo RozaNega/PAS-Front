@@ -13,7 +13,7 @@ import {
 import { toSignal } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, NavigationEnd } from '@angular/router';
+import { Router, RouterLink, NavigationEnd } from '@angular/router';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { PasApiService } from '../../../../shared/services/pas-api.service';
@@ -24,7 +24,7 @@ import {
   ServiceRequest,
   NotificationMessage,
 } from '../../../../core/services/workflow.service';
-import { Subscription, take, filter, forkJoin, of } from 'rxjs';
+import { Subscription, take, filter, forkJoin, of, finalize } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { EmployeesService } from '../../../../core/services/employees.service';
 import { UsersService } from '../../../../core/services/users.service';
@@ -118,7 +118,7 @@ interface RequestSummarySnapshot {
 @Component({
   selector: 'app-employee-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, NgxEchartsDirective],
+  imports: [CommonModule, FormsModule, NgxEchartsDirective, RouterLink],
   providers: [provideEchartsCore({ echarts })],
   templateUrl: './employee-dashboard.component.html',
   styleUrl: './employee-dashboard.component.scss',
@@ -600,11 +600,13 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
   });
 
   protected readonly twoFactorEnabled = signal(false);
-  protected readonly twoFactorMethod = signal<'sms' | 'email' | 'app'>('sms');
+  protected readonly twoFactorMethod = signal<'email'>('email');
   protected readonly twoFactorPhone = signal('');
   protected readonly twoFactorVerificationSent = signal(false);
   protected readonly twoFactorVerificationCode = signal('');
   protected readonly twoFactorSetupComplete = signal(false);
+  protected readonly twoFactorSending = signal(false);
+  private currentCode = '';
 
   ngOnInit(): void {
     this.toastService.clearAll();
@@ -1351,21 +1353,35 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
   // 2FA Methods
   enable2FA(): void {
     this.twoFactorEnabled.set(true);
-    alert('Two-Factor Authentication configuration initiated!');
+    this.toastService.info('Fill in your contact info and click Send Code to enable 2FA.');
   }
 
   disable2FA(): void {
-    this.twoFactorEnabled.set(false);
-    this.twoFactorMethod.set('sms');
-    this.twoFactorPhone.set('');
-    this.twoFactorVerificationSent.set(false);
-    this.twoFactorVerificationCode.set('');
-    this.twoFactorSetupComplete.set(false);
-    alert('Two-Factor Authentication has been disabled!');
+    this.authService.disable2FA().subscribe({
+      next: (res) => {
+        this.twoFactorEnabled.set(false);
+        this.twoFactorMethod.set('email');
+        this.twoFactorPhone.set('');
+        this.twoFactorVerificationSent.set(false);
+        this.twoFactorVerificationCode.set('');
+        this.twoFactorSetupComplete.set(false);
+        if (res.succeeded) {
+          this.toastService.success('Two-Factor Authentication has been disabled.');
+        } else {
+          this.toastService.error(res.message || 'Failed to disable 2FA.');
+        }
+      },
+      error: () => this.toastService.error('Unable to disable 2FA. Please try again.'),
+    });
   }
 
   updateTwoFactorMethod(event: any): void {
-    this.twoFactorMethod.set(event.target.value);
+    this.twoFactorMethod.set('email');
+    if (this.twoFactorSetupComplete()) {
+      this.twoFactorSetupComplete.set(false);
+      this.twoFactorVerificationSent.set(false);
+      this.twoFactorVerificationCode.set('');
+    }
   }
 
   updateTwoFactorPhone(event: any): void {
@@ -1373,12 +1389,28 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
   }
 
   saveTwoFactorPhone(): void {
-    if (this.twoFactorPhone()) {
-      this.twoFactorVerificationSent.set(true);
-      alert('Verification code sent to ' + this.twoFactorPhone());
-    } else {
-      alert('Please enter a valid phone number.');
+    const contact = this.userProfile().email;
+    if (!contact) {
+      alert('Please enter a valid email address.');
+      return;
     }
+    this.twoFactorSending.set(true);
+
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    this.currentCode = code;
+    this.authService.sendVerificationCode(contact, code).pipe(finalize(() => this.twoFactorSending.set(false))).subscribe({
+      next: (res) => {
+        if (res.succeeded) {
+          this.twoFactorVerificationSent.set(true);
+          this.toastService.success('Verification code sent! Check your inbox.');
+        } else {
+          alert(res.message || 'Failed to send verification code.');
+        }
+      },
+      error: () => {
+        alert('Unable to send verification code. Please try again.');
+      },
+    });
   }
 
   updateTwoFactorVerificationCode(event: any): void {
@@ -1386,16 +1418,30 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
   }
 
   verifyTwoFactorCode(): void {
-    if (this.twoFactorVerificationCode() === '123456') {
-      this.twoFactorSetupComplete.set(true);
-      alert('2FA setup completed successfully!');
-    } else {
-      alert('Invalid code.');
+    if (this.twoFactorVerificationCode() !== this.currentCode) {
+      alert('Invalid verification code. Please check the code sent to your email and try again.');
+      return;
     }
+    const contact = this.userProfile().email;
+    this.twoFactorSending.set(true);
+    this.authService.enable2FA('email', contact).pipe(finalize(() => this.twoFactorSending.set(false))).subscribe({
+      next: (res) => {
+        if (res.succeeded) {
+          this.twoFactorSetupComplete.set(true);
+          this.toastService.success(res.message || '2FA enabled successfully!');
+        } else {
+          alert(res.message || 'Failed to enable 2FA.');
+        }
+      },
+      error: () => {
+        alert('Unable to enable 2FA. Please try again.');
+      },
+    });
   }
 
   resendVerificationCode(): void {
-    alert('New code sent to ' + this.twoFactorPhone());
+    this.twoFactorVerificationCode.set('');
+    this.saveTwoFactorPhone();
   }
 
   // SIV Methods

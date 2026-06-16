@@ -30,6 +30,7 @@ export class StockAdjustmentComponent implements OnInit {
   items = signal<ItemMasterListDto[]>([]);
   shelves = signal<ShelfLocationDto[]>([]);
   currentStock = signal<number | null>(null);
+  inventoryId = signal<string | null>(null);
 
   // Form
   adjustmentForm!: FormGroup;
@@ -168,11 +169,13 @@ export class StockAdjustmentComponent implements OnInit {
           if (response.success !== false && Array.isArray(response.data)) {
             const stockItem = response.data.find(item => item.itemId === itemId);
             this.currentStock.set(stockItem?.currentStock || 0);
+            this.inventoryId.set(stockItem?.id || null);
           }
         },
         error: (err) => {
           console.error('Error loading current stock:', err);
           this.currentStock.set(0);
+          this.inventoryId.set(null);
         }
       });
     }
@@ -219,22 +222,18 @@ export class StockAdjustmentComponent implements OnInit {
     this.success.set(null);
 
     const formValue = this.adjustmentForm.value;
-    const adjustmentRequest: AdjustStockRequest = {
-      itemId: formValue.itemId,
-      shelfId: formValue.shelfId,
-      adjustmentType: formValue.adjustmentType,
-      quantity: formValue.quantity,
-      reason: formValue.reason,
-      notes: formValue.notes?.trim() || undefined
-    };
 
     console.log('=== STOCK ADJUSTMENT DEBUG ===');
     console.log('Current stock:', this.currentStock());
-    console.log('Adjustment request:', JSON.stringify(adjustmentRequest, null, 2));
     console.log('Expected new stock:', newStock);
     console.log('==============================');
 
-    this.inventoryService.adjustStock(adjustmentRequest).subscribe({
+    this.inventoryService.adjustStock({
+      inventoryId: this.inventoryId() || undefined,
+      newQuantity: newStock,
+      reason: formValue.reason,
+      remarks: formValue.notes?.trim() || undefined,
+    }).subscribe({
       next: (response) => {
         console.log('=== STOCK ADJUSTMENT SUCCESS ===');
         console.log('Response:', JSON.stringify(response, null, 2));

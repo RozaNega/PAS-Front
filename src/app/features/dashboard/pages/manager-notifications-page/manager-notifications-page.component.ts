@@ -2,12 +2,15 @@ import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { finalize, timeout } from 'rxjs';
 import {
   NotificationFeatureService,
   Notification,
 } from '../../../common/notifications/services/notification-feature.service';
-import { WorkflowService, NotificationMessage } from '../../../../core/services/workflow.service';
+import { WorkflowService, UserRole, NotificationMessage } from '../../../../core/services/workflow.service';
 import { CurrentUserService } from '../../../../core/services/current-user.service';
+import { UsersService, User } from '../../../../core/services/users.service';
+import { NotificationService } from '../../../../core/services/notification.service';
 
 interface NotificationMeta {
   requestId?: string;
@@ -28,6 +31,16 @@ export class ManagerNotificationsPageComponent {
   private readonly notificationService = inject(NotificationFeatureService);
   private readonly workflowService = inject(WorkflowService);
   private readonly currentUserService = inject(CurrentUserService);
+  private readonly usersService = inject(UsersService);
+  private readonly coreNotificationService = inject(NotificationService);
+
+  users: User[] = [];
+  composeMessage = '';
+  selectedUserId = '';
+  customName = '';
+  showCustomName = false;
+  sending = false;
+  sentMessage: string | null = null;
 
   searchQuery = '';
   filterType = 'all';
@@ -37,6 +50,79 @@ export class ManagerNotificationsPageComponent {
 
   constructor() {
     this.loadNotifications();
+    this.loadUsers();
+  }
+
+  loadUsers(): void {
+    this.usersService.getAll().subscribe({
+      next: (res) => {
+        if (res.success && res.data && 'items' in res.data) {
+          this.users = (res.data as { items: User[] }).items.filter(u => u.isActive);
+        } else {
+          this.users = [];
+        }
+      },
+      error: () => {
+        this.users = [];
+      },
+    });
+  }
+
+  onUserSelect(value: string): void {
+    this.selectedUserId = value;
+    this.showCustomName = value === '__other__';
+    if (value !== '__other__') {
+      this.customName = '';
+    }
+  }
+
+  sendNotification(): void {
+    const msg = this.composeMessage.trim();
+    if (!msg) return;
+
+    let userId = this.selectedUserId;
+    if (this.showCustomName) {
+      const name = this.customName.trim();
+      if (!name) return;
+      userId = name;
+    }
+    if (!userId) return;
+
+    // Add local workflow notification so it shows up in recipient's dashboard
+    const recipient = this.users.find(u => (u.userId || String(u.id)) === userId);
+    const recipientRole = recipient ? this.mapUserRole(recipient.role) : 'Employee';
+    (this.workflowService as any).createNotification({
+      recipientId: userId,
+      recipientRole,
+      type: 'info',
+      title: 'New Notification',
+      message: msg,
+    });
+
+    // Show success and clear form immediately
+    this.composeMessage = '';
+    this.selectedUserId = '';
+    this.customName = '';
+    this.showCustomName = false;
+    this.sentMessage = 'Notification sent successfully';
+    this.sending = false;
+    this.loadNotifications();
+    setTimeout(() => this.sentMessage = null, 3000);
+
+    // Fire-and-forget the API call (best effort, no UI impact)
+    this.coreNotificationService.create({ userId, message: msg }).pipe(timeout(15000)).subscribe();
+  }
+
+  private mapUserRole(role: string): UserRole {
+    const map: Record<string, UserRole> = {
+      'Employee': 'Employee',
+      'Manager': 'Manager',
+      'Admin': 'Admin',
+      'Compliance Officer': 'Compliance',
+      'Storekeeper': 'Storekeeper',
+      'Director': 'Director',
+    };
+    return map[role] || 'Employee';
   }
 
   loadNotifications(): void {

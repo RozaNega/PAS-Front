@@ -7,7 +7,7 @@ import {
   ValidatorFn,
   Validators,
 } from '@angular/forms';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { NgOptimizedImage } from '@angular/common';
 import { finalize } from 'rxjs';
 
@@ -23,6 +23,7 @@ import { AuthService } from '../../../../core/services/auth.service';
 export class ResetPassword {
   private readonly formBuilder = inject(FormBuilder);
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly authService = inject(AuthService);
 
   protected readonly submitted = signal(false);
@@ -57,8 +58,9 @@ export class ResetPassword {
 
     this.authService
       .resetPassword({
+        email: this.routeEmail(),
         token: this.resetForm.controls.token.value,
-        password: this.resetForm.controls.password.value,
+        newPassword: this.resetForm.controls.password.value,
       })
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
@@ -67,9 +69,8 @@ export class ResetPassword {
           this.statusMessage.set(result.message || (result.succeeded ? 'Password successfully reset.' : 'Failed to reset password.'));
 
           if (result.succeeded) {
-            const token = this.resetForm.controls.token.value;
-            this.resetForm.reset({ token, password: '', confirmPassword: '' });
-            this.submitted.set(false);
+            const email = this.routeEmail();
+            void this.router.navigate(['/auth/login'], { queryParams: { email } });
           }
         },
         error: () => {

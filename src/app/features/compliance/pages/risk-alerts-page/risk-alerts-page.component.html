@@ -16,40 +16,113 @@
       </div>
     </div>
     <div class="hero-actions">
-      <button class="btn btn-secondary shadow-sm" (click)="refreshAlerts()" [disabled]="loading()">
+      <button class="btn btn-secondary shadow-sm" (click)="refreshAlerts()">
         <i class="bi bi-arrow-clockwise"></i> Sync Feeds
       </button>
-      <button class="btn btn-primary shadow-sm" (click)="markAllAsRead()" [disabled]="unreadCount() === 0 || loading()">
+      <button class="btn btn-primary shadow-sm" (click)="markAllAsRead()" [disabled]="unreadCount() === 0">
         <i class="bi bi-check-all"></i> Mark All Read
       </button>
     </div>
   </div>
+
+  <!-- Send Notification -->
+  <section class="compose-section">
+    <h4 class="compose-section__title"><i class="bi bi-send"></i> Send Notification</h4>
+    <div class="compose-section__form">
+      <textarea
+        class="compose-section__input"
+        placeholder="Write your message..."
+        [(ngModel)]="composeMessage"
+        rows="3"
+      ></textarea>
+      <select
+        class="compose-section__select"
+        [(ngModel)]="selectedUserId"
+        (ngModelChange)="onUserSelect($event)"
+      >
+        <option value="">-- Select recipient --</option>
+        @for (u of users; track u.id) {
+          <option [value]="u.userId || u.id">
+            {{ u.fullName || u.username }} ({{ u.role }})
+          </option>
+        }
+        <option value="__other__">Other (type name)</option>
+      </select>
+      @if (showCustomName) {
+        <input
+          type="text"
+          class="compose-section__input"
+          placeholder="Enter recipient name..."
+          [(ngModel)]="customName"
+        />
+      }
+      <button
+        type="button"
+        class="compose-section__btn"
+        (click)="sendNotification()"
+        [disabled]="sending || !composeMessage.trim() || (!selectedUserId && !showCustomName) || (showCustomName && !customName.trim())"
+      >
+        @if (sending) {
+          <span class="spinner"></span> Sending...
+        } @else {
+          <i class="bi bi-send-fill"></i> Send
+        }
+      </button>
+      @if (sentMessage) {
+        <p class="compose-section__sent">{{ sentMessage }}</p>
+      }
+    </div>
+  </section>
 
   <!-- Filters section -->
   <div class="filters-panel card shadow-sm">
     <div class="filters-row">
       <div class="search-bar-wrapper">
         <i class="bi bi-search search-icon"></i>
-        <input
-          type="text"
-          placeholder="Filter notifications by keywords, requester, or ID..."
+        <input 
+          type="text" 
+          placeholder="Filter notifications by keywords, requester, or ID..." 
           [(ngModel)]="searchQuery"
           class="form-control search-input"
         />
       </div>
-
+      
       <div class="filter-tabs">
-        <button
-          class="tab-btn"
-          [class.active]="filterType() === 'All'"
+        <button 
+          class="tab-btn" 
+          [class.active]="filterType() === 'All'" 
           (click)="filterType.set('All')">
-          All <span class="badge">{{ notifications().length }}</span>
+          All <span class="badge">{{ allNotifications().length }}</span>
         </button>
-        <button
-          class="tab-btn warning-tab"
-          [class.active]="filterType() === 'unread'"
+        <button 
+          class="tab-btn warning-tab" 
+          [class.active]="filterType() === 'unread'" 
           (click)="filterType.set('unread')">
           Unread <span class="badge">{{ unreadCount() }}</span>
+        </button>
+        <button 
+          class="tab-btn info-tab" 
+          [class.active]="filterType() === 'info'" 
+          (click)="filterType.set('info')">
+          Info
+        </button>
+        <button 
+          class="tab-btn warning-tab" 
+          [class.active]="filterType() === 'warning'" 
+          (click)="filterType.set('warning')">
+          Warning
+        </button>
+        <button 
+          class="tab-btn danger-tab" 
+          [class.active]="filterType() === 'error'" 
+          (click)="filterType.set('error')">
+          Danger
+        </button>
+        <button 
+          class="tab-btn success-tab" 
+          [class.active]="filterType() === 'success'" 
+          (click)="filterType.set('success')">
+          Success
         </button>
       </div>
     </div>
@@ -57,26 +130,7 @@
 
   <!-- Notification Feed list -->
   <div class="notifications-feed-list">
-    @if (loading()) {
-      <div class="empty-state-card card shadow-sm text-center">
-        <div class="empty-icon-box">
-          <i class="bi bi-arrow-repeat spin"></i>
-        </div>
-        <h3>Loading Notifications...</h3>
-        <p class="text-muted">Please wait while we fetch the latest alerts.</p>
-      </div>
-    } @else if (error()) {
-      <div class="empty-state-card card shadow-sm text-center">
-        <div class="empty-icon-box error-icon">
-          <i class="bi bi-exclamation-triangle"></i>
-        </div>
-        <h3>Something went wrong</h3>
-        <p class="text-muted">{{ error() }}</p>
-        <button class="btn btn-primary shadow-sm mt-3" (click)="refreshAlerts()">
-          <i class="bi bi-arrow-clockwise"></i> Try Again
-        </button>
-      </div>
-    } @else if (filteredNotifications().length === 0) {
+    @if (filteredNotifications().length === 0) {
       <div class="empty-state-card card shadow-sm text-center">
         <div class="empty-icon-box">
           <i class="bi bi-bell-slash"></i>
@@ -88,54 +142,66 @@
       </div>
     } @else {
       @for (notif of filteredNotifications(); track notif.id) {
-        <div
-          class="notification-card card shadow-sm mb-3"
-          [class.unread-card]="!notif.isRead">
-
+        <div 
+          class="notification-card card shadow-sm mb-3" 
+          [class.unread-card]="!notif.isRead"
+          [class.border-left-info]="notif.type === 'info'"
+          [class.border-left-success]="notif.type === 'success'"
+          [class.border-left-warning]="notif.type === 'warning'"
+          [class.border-left-danger]="notif.type === 'error'">
+          
           <div class="card-body d-flex align-items-start gap-3">
-            <div class="notif-badge-wrapper">
-              <i class="bi bi-bell-fill"></i>
+            <div class="notif-badge-wrapper" [ngClass]="notif.type">
+              <i class="bi" [ngClass]="getTypeIcon(notif.type)"></i>
             </div>
-
+            
             <div class="notif-main-content flex-grow-1">
               <div class="d-flex justify-content-between align-items-center mb-1">
                 <h5 class="notif-title m-0 d-flex align-items-center gap-2">
-                  Compliance Alert
+                  {{ notif.title }}
                   @if (!notif.isRead) {
                     <span class="unread-dot-badge">New</span>
                   }
                 </h5>
                 <span class="notif-time text-muted">
-                  <i class="bi bi-clock"></i> {{ notif.timeAgo }}
+                  <i class="bi bi-clock"></i> {{ notif.createdDate | date:'short' }}
                 </span>
               </div>
               <p class="notif-message m-0 text-secondary">
                 {{ notif.message }}
               </p>
-
-              <div class="action-alert-box mt-3 p-2 bg-light border-radius-sm d-flex justify-content-between align-items-center">
-                <span class="text-warning-dark font-weight-semibold">
-                  <i class="bi bi-shield-fill-exclamation"></i> Review required &mdash; send to manager for action
-                </span>
-                <button class="btn btn-sm btn-primary-gradient" (click)="takeAction(notif)" title="Send to Manager">
-                  <i class="bi bi-bell-fill"></i> Send to Manager
-                </button>
-              </div>
+              
+                @if (notif.actionRequired) {
+                  <div class="action-alert-box mt-3 p-2 bg-light border-radius-sm d-flex justify-content-between align-items-center">
+                    <span class="text-warning-dark font-weight-semibold">
+                      <i class="bi bi-shield-fill-exclamation"></i> Immediate review or manager nudge required
+                    </span>
+                    <button class="btn btn-sm btn-primary-gradient" (click)="takeAction(notif)" title="Send to Manager">
+                      <i class="bi bi-bell-fill"></i> Send to Manager
+                    </button>
+                  </div>
+                }
             </div>
 
             <!-- Side Action Controls -->
             <div class="notif-side-controls d-flex flex-column gap-2">
               @if (!notif.isRead) {
-                <button
-                  class="btn-control mark-read-btn"
-                  title="Mark as Read"
+                <button 
+                  class="btn-control mark-read-btn" 
+                  title="Mark as Read" 
                   (click)="markAsRead(notif.id)">
                   <i class="bi bi-check2"></i>
                 </button>
-              }
-              <button
-                class="btn-control dismiss-btn"
-                title="Dismiss Alert"
+               }
+              <button 
+                class="btn-control view-btn" 
+                title="View Details" 
+                (click)="viewAlertDetail(notif)">
+                <i class="bi bi-eye"></i>
+              </button>
+              <button 
+                class="btn-control dismiss-btn" 
+                title="Dismiss Alert" 
                 (click)="dismissNotification(notif.id)">
                 <i class="bi bi-x-lg"></i>
               </button>

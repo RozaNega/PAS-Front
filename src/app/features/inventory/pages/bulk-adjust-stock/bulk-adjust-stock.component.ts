@@ -57,16 +57,19 @@ export class BulkAdjustStockComponent implements OnInit {
     this.loading.set(true);
     this.error.set(null);
 
-    const adjustmentPromises = this.items().map(item =>
-      this.inventoryService.adjustStock({
-        itemId: item.itemId,
-        shelfId: item.shelfId,
-        adjustmentType: this.adjustmentType,
-        quantity: this.quantity,
+    const adjustmentPromises = this.items().map(item => {
+      let newQuantity: number;
+      if (this.adjustmentType === 'increase') newQuantity = (item.currentQuantity ?? item.currentStock ?? 0) + this.quantity;
+      else if (this.adjustmentType === 'decrease') newQuantity = (item.currentQuantity ?? item.currentStock ?? 0) - this.quantity;
+      else newQuantity = this.quantity;
+
+      return this.inventoryService.adjustStock({
+        inventoryId: item.id,
+        newQuantity,
         reason: this.reason,
-        notes: this.notes
-      }).toPromise()
-    );
+        remarks: this.notes,
+      }).toPromise();
+    });
 
     Promise.all(adjustmentPromises)
       .then(() => {

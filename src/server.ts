@@ -95,14 +95,17 @@ if (process.env['SMTP_USER'] && process.env['SMTP_PASS']) {
     secure: process.env['SMTP_PORT'] === '465',
     auth: { user: process.env['SMTP_USER'], pass: process.env['SMTP_PASS'] },
     tls: { rejectUnauthorized: false },
-  });
+    family: 4,
+  } as any);
   _transporter.verify()
     .then(() => console.log('[server.ts] SMTP verified for', process.env['SMTP_USER']))
     .catch((err: Error) => console.error('[server.ts] SMTP verify failed:', err.message));
 }
 
 async function _sendEmail(to: string, subject: string, body: string): Promise<{ messageId: string }> {
-  const from = process.env['SMTP_FROM'] || process.env['SMTP_USER'] || 'noreply@afrocom.com';
+  const displayName = process.env['SMTP_FROM'] || 'Africom-PAS';
+  const fromAddr = process.env['SMTP_USER'] || 'noreply@afrocom.com';
+  const from = { name: displayName, address: fromAddr };
   if (_transporter) {
     const info = await _transporter.sendMail({ from, to, subject, text: body });
     console.log('[server.ts] Email sent to', to, '- ID:', info.messageId);

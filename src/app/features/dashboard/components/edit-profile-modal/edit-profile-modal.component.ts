@@ -14,7 +14,7 @@ import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { PhotoUploadModalComponent } from '../photo-upload-modal/photo-upload-modal.component';
 import { CurrentUserService, CurrentUser } from '../../../../core/services/current-user.service';
 import { ProfileService } from '../../../../core/services/profile.service';
-import { PasApiService } from '../../../../shared/services/pas-api.service';
+import { ApiService } from '../../../../core/services/api.service';
 import { OnInit } from '@angular/core';
 import { FaceDetectionService } from '../../../../core/services/face-detection.service';
 import { firstValueFrom } from 'rxjs';
@@ -34,8 +34,8 @@ export class EditProfileModalComponent {
   private sanitizer = inject(DomSanitizer);
   private currentUserService = inject(CurrentUserService);
   private profileService = inject(ProfileService);
-  private pasApi = inject(PasApiService);
   private authService = inject(AuthService);
+  private apiService = inject(ApiService);
 
   protected readonly loading = signal(false);
 
@@ -223,12 +223,11 @@ export class EditProfileModalComponent {
     }
 
     const userObj = this.currentUserService.getCurrentUserValue();
-    let photoUrl = userObj?.profileImageUrl ?? userObj?.photoUrl;
 
     if (this.selectedFile()) {
       this.isUploadingPhoto.set(true);
       try {
-        photoUrl = await firstValueFrom(
+        await firstValueFrom(
           this.profileService.uploadProfileImage(this.selectedFile()!, userId),
         );
       } catch (err) {
@@ -239,26 +238,17 @@ export class EditProfileModalComponent {
       }
     }
 
-    const payload = {
-      ...userObj,
+    const payload: Record<string, unknown> = {
       id: userId,
       fullName: this.profile.fullName,
       name: this.profile.fullName,
-      email: this.profile.email,
-      username: this.profile.username || userObj?.username,
-      department: this.profile.department,
-      employeeCode: this.profile.employeeCode,
-      phoneNumber: this.profile.phone,
-      phone: this.profile.phone,
-      position: this.profile.position || userObj?.position,
-      joinDate: this.profile.joinDate || userObj?.joinDate,
-      isActive: true,
-      profileImageUrl: photoUrl || undefined,
-      photoUrl: photoUrl || undefined,
-      profilePicture: photoUrl || undefined,
+      username: this.profile.username || userObj?.username || '',
+      department: this.profile.department || undefined,
+      position: this.profile.position || userObj?.position || undefined,
+      employeeCode: this.profile.employeeCode || undefined,
     };
 
-    this.pasApi.updateProfile(userId, payload).subscribe({
+    this.apiService.put(`users/${userId}`, payload).subscribe({
       next: async () => {
         try {
           if (this.profile.password) {
@@ -273,14 +263,9 @@ export class EditProfileModalComponent {
           this.currentUserService.updateUser({
             fullName: this.profile.fullName,
             username: this.profile.username || userObj?.username || '',
-            email: this.profile.email,
-            employeeCode: this.profile.employeeCode,
             department: this.profile.department,
             position: this.profile.position || userObj?.position || '',
-            phone: this.profile.phone,
-            joinDate: this.profile.joinDate || userObj?.joinDate || '',
-            profileImageUrl: photoUrl || undefined,
-            photoUrl: photoUrl || undefined,
+            employeeCode: this.profile.employeeCode,
           });
 
           this.loading.set(false);
@@ -307,8 +292,7 @@ export class EditProfileModalComponent {
       error: (err) => {
         this.loading.set(false);
         console.error('Error updating profile:', err);
-        const errorMsg = (err as any).message || 'Unknown error';
-        alert(`Failed to update profile in backend: ${errorMsg}`);
+        alert('Failed to update profile. Please try again.');
       },
     });
   }

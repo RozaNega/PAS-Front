@@ -1,7 +1,9 @@
-import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule, CurrencyPipe } from '@angular/common';
 import { Router } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 
+import { CurrentUserService, CurrentUser } from '../../../../core/services/current-user.service';
 import { DashboardService, DashboardStatistics } from '../../../../core/services/dashboard.service';
 import { WorkflowService, ServiceRequest, NotificationMessage } from '../../../../core/services/workflow.service';
 import { ReceivingNotesService, ReceivingNoteListDto } from '../../../../core/services/receiving-notes.service';
@@ -9,6 +11,7 @@ import { RequisitionsService, StoreIssueVoucherDto, ServiceRequestDto as ReqServ
 import { ReportsService, ValuationByCategoryDto } from '../../../../core/services/reports.service';
 import { ServiceRequestService, ServiceRequestDto } from '../../../requisition/service-requests/services/service-request.service';
 import { DisposalRecordsService, DisposalRecordDto } from '../../../../core/services/disposal-records.service';
+import { InventoryService } from '../../../../core/services/inventory.service';
 
 import { NgxEchartsDirective, provideEchartsCore } from 'ngx-echarts';
 import * as echarts from 'echarts/core';
@@ -19,6 +22,26 @@ import { CanvasRenderer } from 'echarts/renderers';
 echarts.use([LineChart, PieChart, BarChart, TooltipComponent, GridComponent, LegendComponent, TitleComponent, CanvasRenderer]);
 
 type Priority = 'Urgent' | 'Medium' | 'Normal';
+
+interface DisplayItem {
+  id: string;
+  itemName: string;
+  sku: string;
+  currentStock: number;
+  unitPrice: number;
+  unitOfMeasure: string;
+  warehouseName: string;
+  shelfLocation: string;
+}
+
+interface DisposalSelectedItem {
+  itemId: string;
+  itemName: string;
+  sku: string;
+  quantity: number;
+  availableStock: number;
+  unitCost: number;
+}
 
 interface KPICard {
   readonly title: string;
@@ -83,7 +106,7 @@ const CATEGORY_COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899', 
 @Component({
   selector: 'app-storekeeper-dashboard',
   standalone: true,
-  imports: [NgxEchartsDirective, CommonModule, CurrencyPipe],
+  imports: [NgxEchartsDirective, CommonModule, CurrencyPipe, FormsModule],
   providers: [provideEchartsCore({ echarts })],
   templateUrl: './storekeeper-dashboard.component.html',
   styleUrl: './storekeeper-dashboard.component.scss',
@@ -97,7 +120,9 @@ export class StorekeeperDashboardComponent implements OnInit {
   private readonly requisitionsService = inject(RequisitionsService);
   private readonly reportsService = inject(ReportsService);
   private readonly srService = inject(ServiceRequestService);
+  private readonly currentUserService = inject(CurrentUserService);
   private readonly disposalService = inject(DisposalRecordsService);
+  private readonly inventoryService = inject(InventoryService);
 
   readonly isLoading = signal(false);
   readonly statistics = signal<DashboardStatistics | null>(null);
@@ -126,6 +151,30 @@ export class StorekeeperDashboardComponent implements OnInit {
   readonly recentDisposals = signal<DisposalRecordDto[]>([]);
   readonly verificationNotifications = signal<{ type: string; message: string } | null>(null);
 
+  // Inline disposal creation
+  readonly showDisposalPanel = signal(false);
+  readonly disposalLoading = signal(false);
+  readonly disposalSubmitting = signal(false);
+  readonly disposalSearchTerm = signal('');
+  readonly disposalReason = signal('');
+  readonly disposalStockItems = signal<DisplayItem[]>([]);
+  readonly disposalSelectedItems = signal<DisposalSelectedItem[]>([]);
+  readonly disposalNotification = signal<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  readonly filteredDisposalStock = computed(() => {
+    const t = this.disposalSearchTerm().toLowerCase();
+    return this.disposalStockItems().filter(
+      (x) =>
+        (x.itemName || '').toLowerCase().includes(t) ||
+        (x.sku || '').toLowerCase().includes(t) ||
+        (x.warehouseName || '').toLowerCase().includes(t),
+    );
+  });
+
+  readonly disposalTotalQty = computed(() => this.disposalSelectedItems().reduce((s, i) => s + i.quantity, 0));
+  readonly disposalTotalValue = computed(() => this.disposalSelectedItems().reduce((s, i) => s + i.quantity * (i.unitCost || 0), 0));
+
+  storekeeperName = signal('Storekeeper');
   today = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
   isScanning = false;
   scannedItem = {
@@ -136,6 +185,11 @@ export class StorekeeperDashboardComponent implements OnInit {
   };
 
   ngOnInit(): void {
+    this.currentUserService.getCurrentUser().subscribe((user: CurrentUser | null) => {
+      if (user) {
+        this.storekeeperName.set(user.fullName || user.username || 'Storekeeper');
+      }
+    });
     this.loadDashboardData();
     this.loadSectionData();
     this.setupWorkflowSubscriptions();
@@ -200,7 +254,7 @@ export class StorekeeperDashboardComponent implements OnInit {
 
   loadWorkflowPendingVerifications(): void {
     this.loadingWorkflowVerifications.set(true);
-    const pending = this.workflowService.getRequestsForStockVerification();
+    const pending = this.workflowService.getRequestsPendingStockVerification();
     this.workflowPendingVerifications.set(pending);
     this.loadingWorkflowVerifications.set(false);
   }
@@ -240,11 +294,151 @@ export class StorekeeperDashboardComponent implements OnInit {
     this.router.navigate(['/storekeeper/disposal']);
   }
 
+  toggleDisposalPanel(): void {
+    this.showDisposalPanel.set(!this.showDisposalPanel());
+    if (this.showDisposalPanel() && this.disposalStockItems().length === 0) {
+      this.loadDisposalStock();
+    }
+  }
+
+  loadDisposalStock(): void {
+    this.disposalLoading.set(true);
+    this.inventoryService.getStockOverview({ pageSize: 200 }).subscribe({
+      next: (res) => {
+        this.disposalLoading.set(false);
+        if (res.success !== false && Array.isArray(res.data)) {
+          this.disposalStockItems.set(
+            res.data.map((x) => ({
+              id: x.itemId || x.id || '',
+              itemName: x.itemName || '',
+              sku: x.sku || '',
+              currentStock: Number(x.currentQuantity ?? x.currentStock ?? 0),
+              unitPrice: Number((x as any).unitPrice || 0),
+              unitOfMeasure: x.unitOfMeasure || '',
+              warehouseName: x.warehouseName || '',
+              shelfLocation: (x as any).shelfLocation || '',
+            })),
+          );
+        } else {
+          this.disposalStockItems.set([]);
+        }
+      },
+      error: () => {
+        this.disposalLoading.set(false);
+        this.disposalStockItems.set([]);
+        this.disposalNotification.set({ message: 'Failed to load stock items', type: 'error' });
+      },
+    });
+  }
+
+  toggleDisposalItem(item: DisplayItem): void {
+    const existing = this.disposalSelectedItems().find((x) => x.itemId === item.id);
+    if (existing) {
+      this.disposalSelectedItems.set(this.disposalSelectedItems().filter((x) => x.itemId !== item.id));
+    } else {
+      const stock = item.currentStock || 0;
+      if (stock <= 0) {
+        this.disposalNotification.set({ message: `"${item.itemName}" has no available stock (0) and cannot be disposed.`, type: 'error' });
+        return;
+      }
+      this.disposalSelectedItems.set([
+        ...this.disposalSelectedItems(),
+        {
+          itemId: item.id,
+          itemName: item.itemName || '',
+          sku: item.sku || '',
+          quantity: 1,
+          availableStock: stock,
+          unitCost: item.unitPrice || 0,
+        },
+      ]);
+    }
+  }
+
+  isDisposalItemSelected(item: DisplayItem): boolean {
+    return this.disposalSelectedItems().some((x) => x.itemId === item.id);
+  }
+
+  updateDisposalQty(itemId: string, qty: number): void {
+    this.disposalSelectedItems.set(
+      this.disposalSelectedItems().map((x) =>
+        x.itemId === itemId
+          ? { ...x, quantity: x.availableStock > 0 ? Math.max(1, Math.min(qty || 1, x.availableStock)) : 0 }
+          : x,
+      ),
+    );
+  }
+
+  removeDisposalItem(itemId: string): void {
+    this.disposalSelectedItems.set(this.disposalSelectedItems().filter((x) => x.itemId !== itemId));
+  }
+
+  submitDisposal(): void {
+    if (this.disposalSelectedItems().length === 0) {
+      this.disposalNotification.set({ message: 'Select at least one item to dispose', type: 'error' });
+      return;
+    }
+    if (!this.disposalReason().trim()) {
+      this.disposalNotification.set({ message: 'Enter a reason for disposal', type: 'error' });
+      return;
+    }
+    const overstock = this.disposalSelectedItems().find((x) => x.quantity > x.availableStock);
+    if (overstock) {
+      this.disposalNotification.set({ message: `"${overstock.itemName}" — requested ${overstock.quantity} but only ${overstock.availableStock} available.`, type: 'error' });
+      return;
+    }
+    const zerostock = this.disposalSelectedItems().find((x) => x.availableStock <= 0);
+    if (zerostock) {
+      this.disposalNotification.set({ message: `"${zerostock.itemName}" has no available stock and cannot be disposed.`, type: 'error' });
+      return;
+    }
+    this.disposalSubmitting.set(true);
+    this.disposalNotification.set(null);
+    const payload = {
+      items: this.disposalSelectedItems().map((x) => ({
+        itemId: x.itemId,
+        itemName: x.itemName,
+        quantity: x.quantity,
+        reason: this.disposalReason().trim(),
+      })),
+      reason: this.disposalReason().trim(),
+    };
+    this.disposalService.create(payload).subscribe({
+      next: (res) => {
+        this.disposalSubmitting.set(false);
+        if (res.success !== false) {
+          this.disposalNotification.set({ message: 'Disposal created successfully. Admin has been notified.', type: 'success' });
+          this.disposalSelectedItems.set([]);
+          this.disposalReason.set('');
+          this.disposalSearchTerm.set('');
+          this.loadDisposalData();
+          setTimeout(() => this.disposalNotification.set(null), 4000);
+        } else {
+          this.disposalNotification.set({ message: res.message || 'Failed to create disposal', type: 'error' });
+        }
+      },
+      error: (err) => {
+        this.disposalSubmitting.set(false);
+        const msg = err?.error?.message || err?.error?.title || err?.message || 'Failed to create disposal';
+        this.disposalNotification.set({ message: msg, type: 'error' });
+      },
+    });
+  }
+
+  closeDisposalPanel(): void {
+    this.showDisposalPanel.set(false);
+    this.disposalSelectedItems.set([]);
+    this.disposalReason.set('');
+    this.disposalSearchTerm.set('');
+    this.disposalNotification.set(null);
+  }
+
   verifyStock(id: string): void {
     if (!confirm('Confirm stock is available for this request?')) return;
     this.srService.verifyStock({ id, isAvailable: true }).subscribe({
       next: (res) => {
         if (res.success) {
+          this.workflowService.respondStockVerification(id, true, this.storekeeperName());
           this.verificationNotifications.set({ type: 'success', message: 'Stock verified successfully' });
           this.loadPendingVerifications();
           this.loadWorkflowData();
@@ -269,6 +463,7 @@ export class StorekeeperDashboardComponent implements OnInit {
     this.srService.verifyStock({ id, isAvailable: false, notes: notes || undefined }).subscribe({
       next: (res) => {
         if (res.success) {
+          this.workflowService.respondStockVerification(id, false, this.storekeeperName(), notes || undefined);
           this.verificationNotifications.set({ type: 'success', message: 'Marked as insufficient' });
           this.loadPendingVerifications();
           this.loadWorkflowData();

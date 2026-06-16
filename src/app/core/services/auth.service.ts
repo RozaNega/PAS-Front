@@ -326,8 +326,28 @@ export class AuthService {
     );
   }
 
+  sendVerificationCode(
+    email: string,
+    code: string,
+  ): Observable<{ succeeded: boolean; message: string }> {
+    return this.apiService
+      .post<ApiResponseModel<any>>('Notifications/send-email', {
+        to: email,
+        subject: 'Your 2FA Verification Code',
+        body: `Your two-factor authentication verification code is: ${code}\n\nThis code expires in 10 minutes.\n\nIf you did not request this code, please ignore this email.`,
+      })
+      .pipe(
+        map((response) => ({
+          succeeded: response.success,
+          message:
+            response.message ||
+            (response.success ? 'Verification code sent successfully' : 'Failed to send verification code'),
+        })),
+      );
+  }
+
   enable2FA(
-    method: 'sms' | 'email' | 'app',
+    method: 'email',
     contactInfo?: string,
   ): Observable<{ succeeded: boolean; message: string }> {
     return this.apiService

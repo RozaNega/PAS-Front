@@ -105,7 +105,7 @@
         }
       </div>
 
-      @if (twoFactorEnabled() && !twoFactorSetupComplete()) {
+      @if (twoFactorEnabled()) {
         <div class="security-settings">
           <div class="setting-row setting-row-vertical">
             <label class="setting-label" for="two-factor-method">Verification Method:</label>
@@ -116,34 +116,35 @@
               (change)="updateTwoFactorMethod($event)"
               class="form-control-lite"
             >
-              <option value="sms">SMS</option>
               <option value="email">Email</option>
-              <option value="app">Authenticator App</option>
             </select>
+            @if (twoFactorSetupComplete()) {
+              <span class="verification-status verified">✓ Verified</span>
+            }
           </div>
 
-          @if (twoFactorMethod() === 'sms') {
+          @if (twoFactorMethod() === 'email') {
             <div class="setting-row setting-row-vertical">
-              <label class="setting-label">Phone Number:</label>
+              <label class="setting-label">Email Address:</label>
               <div class="input-group setting-input-group">
                 <input
-                  type="tel"
-                  [value]="twoFactorPhone()"
-                  (input)="updateTwoFactorPhone($event)"
-                  placeholder="+251-XXX-XXXXXXX"
+                  type="email"
+                  [value]="profile.email"
                   class="form-control-lite"
+                  readonly
                 />
                 <button
                   class="btn btn-primary btn-no-margin setting-action-button"
                   (click)="saveTwoFactorPhone()"
+                  [disabled]="twoFactorSending()"
                 >
-                  Send Code
+                  {{ twoFactorSending() ? 'Sending...' : twoFactorSetupComplete() ? 'Re-send Code' : 'Send Code' }}
                 </button>
               </div>
             </div>
           }
 
-          @if (twoFactorVerificationSent() && !twoFactorSetupComplete()) {
+          @if (twoFactorVerificationSent()) {
             <div class="setting-row setting-row-vertical">
               <label class="setting-label">Verification Code:</label>
               <div class="input-group setting-input-group">
@@ -162,20 +163,6 @@
               </div>
             </div>
           }
-        </div>
-      } @else if (twoFactorEnabled() && twoFactorSetupComplete()) {
-        <div class="security-info security-info-separated">
-          <p class="security-info-text">
-            Your account is protected with
-            {{
-              twoFactorMethod() === 'sms'
-                ? 'SMS'
-                : twoFactorMethod() === 'email'
-                  ? 'Email'
-                  : 'Authenticator App'
-            }}
-            2FA.
-          </p>
         </div>
       }
     </div>

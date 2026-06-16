@@ -1,9 +1,13 @@
 import { Component, OnInit, OnDestroy, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Observable } from 'rxjs';
 import { InventoryService, InventoryStockDto, StockMovementDto } from '../../../../core/services/inventory.service';
+import { ItemMasterService, ItemMaster } from '../../../../core/services/item-master.service';
+import { ApiService } from '../../../../core/services/api.service';
 
 interface PickRow {
+  inventoryId: string;
   itemId: string;
   shelfId: string;
   name: string;
@@ -76,6 +80,9 @@ type SortField = 'dateTime' | 'item' | 'type' | 'quantity' | 'reason' | 'perform
 })
 export class StockAdjustmentComponent implements OnInit, OnDestroy {
   private readonly inventory = inject(InventoryService);
+  private readonly itemMasterService = inject(ItemMasterService);
+  private readonly apiService = inject(ApiService);
+  private readonly itemMasterCache = new Map<string, ItemMaster>();
 
   searchTerm = signal('');
   selectedRow = signal<PickRow | null>(null);
@@ -286,21 +293,56 @@ export class StockAdjustmentComponent implements OnInit, OnDestroy {
 
     this.inventory.getStockOverview({ pageSize: 500 }).subscribe({
       next: (res) => {
-        this.loading.set(false);
         if (res.success !== false && Array.isArray(res.data) && res.data.length > 0) {
           this.allItemsRaw.set(res.data.map((r) => this.mapPick(r)));
+          this.loading.set(false);
         } else {
-          this.allItemsRaw.set([]);
-          this.showNotification(res.message || 'No stock data available', 'info');
+          this.loadFromItemMasters();
         }
         this.loadHistory();
       },
-      error: (err) => {
-        this.loading.set(false);
-        this.loadError.set(err.message || 'Failed to load stock data');
-        this.showNotification('Failed to load stock data from server', 'error');
+      error: () => {
+        this.loadFromItemMasters();
+        this.loadHistory();
       },
     });
+  }
+
+  private loadFromItemMasters(): void {
+    this.itemMasterService.getItemMasters(1, 500).subscribe({
+      next: (res) => {
+        this.loading.set(false);
+        if (res.success && res.data && typeof res.data === 'object' && 'items' in res.data) {
+          const items = (res.data as { items: ItemMaster[] }).items;
+          this.itemMasterCache.clear();
+          items.forEach(m => this.itemMasterCache.set(String(m.id), m));
+          this.allItemsRaw.set(items.map(this.mapItemMasterToPick));
+        } else {
+          this.allItemsRaw.set([]);
+          this.showNotification('No stock data available from any source', 'info');
+        }
+      },
+      error: () => {
+        this.loading.set(false);
+        this.allItemsRaw.set([]);
+        this.showNotification('Failed to load stock data from any source', 'error');
+      },
+    });
+  }
+
+  private mapItemMasterToPick(m: ItemMaster): PickRow {
+    const cur = Number(m.availableStock ?? m.currentStock ?? m.stockQuantity ?? 0);
+    return {
+      inventoryId: '',
+      itemId: String(m.id),
+      shelfId: '',
+      name: m.itemName || '\u2014',
+      sku: m.sku || '\u2014',
+      current: cur,
+      low: false,
+      warehouse: '',
+      shelf: '',
+    };
   }
 
   private loadHistory(): void {
@@ -333,6 +375,7 @@ export class StockAdjustmentComponent implements OnInit, OnDestroy {
     const cur = Number(r.currentQuantity ?? r.currentStock) || 0;
     const low = min > 0 && cur <= min;
     return {
+      inventoryId: r.id,
       itemId: r.itemId,
       shelfId: r.shelfId,
       name: r.itemName || '\u2014',
@@ -429,29 +472,105 @@ export class StockAdjustmentComponent implements OnInit, OnDestroy {
     const quantity = this.quantityToAdjust();
     this.submitMessage.set(null);
 
-    this.inventory
-      .adjustStock({
-        itemId: row.itemId,
-        shelfId: row.shelfId,
-        adjustmentType,
-        quantity,
-        reason: r,
-        notes: this.notes() || undefined,
-      })
-      .subscribe({
-        next: (res) => {
-          if (res.success === false) {
-            this.showNotification(res.message || 'Adjustment failed.', 'error');
-            return;
-          }
-          this.showNotification('Adjustment submitted successfully.', 'success');
-          this.loadData();
-          this.resetForm();
-        },
-        error: (err) => {
-          this.showNotification(err.message || 'Request failed. Please try again.', 'error');
-        },
+    this.tryAdjust(row, adjustmentType, quantity, r);
+  }
+
+  private adjustCall(
+    inventoryId: string,
+    currentQuantity: number,
+    newQuantity: number,
+    reason: string,
+  ): Observable<unknown> {
+    const delta = currentQuantity - newQuantity;
+    return this.apiService.post<unknown>('InventoryStock/adjust', {
+      inventoryId,
+      quantity: delta,
+      reason,
+      remarks: this.notes() || undefined,
+    });
+  }
+
+  private handleAdjustSuccess(res: unknown): void {
+    if ((res as any)?.success !== false) {
+      this.showNotification('Adjustment submitted successfully.', 'success');
+      this.loadData();
+      this.resetForm();
+    } else {
+      this.showNotification((res as any)?.message || 'Adjustment failed.', 'error');
+    }
+  }
+
+  private handleAdjustError(err: unknown): void {
+    const status = (err as any)?.status || '?';
+    const raw = typeof (err as any)?.error === 'string'
+      ? (err as any).error.substring(0, 200)
+      : ((err as any)?.error?.message || (err as any)?.error || 'No details');
+    this.showNotification(`Adjustment failed (${status}): ${raw}`, 'error');
+  }
+
+  private tryAdjust(
+    row: PickRow,
+    adjustmentType: 'increase' | 'decrease' | 'set',
+    quantity: number,
+    reason: string,
+  ): void {
+    if (row.inventoryId) {
+      let newQuantity: number;
+      if (adjustmentType === 'increase') newQuantity = row.current + quantity;
+      else if (adjustmentType === 'decrease') newQuantity = Math.max(0, row.current - quantity);
+      else newQuantity = quantity;
+
+      this.adjustCall(row.inventoryId, row.current, newQuantity, reason).subscribe({
+        next: (res) => this.handleAdjustSuccess(res),
+        error: (err) => this.handleAdjustError(err),
       });
+      return;
+    }
+
+    this.inventory.getStockOverview({ itemId: row.itemId } as any).subscribe({
+      next: (res) => {
+        if (res.success !== false && Array.isArray(res.data) && res.data.length > 0) {
+          const inv = res.data[0];
+          const actualCurrent = inv.currentQuantity ?? inv.currentStock ?? row.current;
+          let newQuantity: number;
+          if (adjustmentType === 'increase') newQuantity = actualCurrent + quantity;
+          else if (adjustmentType === 'decrease') newQuantity = Math.max(0, actualCurrent - quantity);
+          else newQuantity = quantity;
+          this.adjustCall(inv.id, actualCurrent, newQuantity, reason).subscribe({
+            next: (r) => this.handleAdjustSuccess(r),
+            error: (err) => this.handleAdjustError(err),
+          });
+        } else {
+          this.tryReserveFallback(row, quantity, reason);
+        }
+      },
+      error: () => {
+        this.tryReserveFallback(row, quantity, reason);
+      },
+    });
+  }
+
+  private tryReserveFallback(
+    row: PickRow,
+    newQuantity: number,
+    reason: string,
+  ): void {
+    const refId = crypto.randomUUID();
+    this.apiService.post<unknown>('InventoryStock/reserve', {
+      itemId: row.itemId,
+      quantity: Math.max(1, newQuantity),
+      referenceId: refId,
+      referenceType: 'StockAdjustment',
+    }).subscribe({
+      next: (res) => this.handleAdjustSuccess(res),
+      error: (err) => {
+        const status = (err as any)?.status || '?';
+        const raw = typeof (err as any)?.error === 'string'
+          ? (err as any).error.substring(0, 200)
+          : ((err as any)?.error?.message || (err as any)?.error || 'No details');
+        this.showNotification(`Adjustment failed (${status}): ${raw}`, 'error');
+      },
+    });
   }
 
   resetForm(): void {

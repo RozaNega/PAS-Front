@@ -10,15 +10,16 @@ import { Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
-import { finalize } from 'rxjs';
+import { finalize, timeout } from 'rxjs';
 
 import {
   NotificationFeatureService,
   Notification,
 } from '../../services/notification-feature.service';
 import { NotificationService as ToastService } from '../../../../../core/services/notification.service';
-import { WorkflowService } from '../../../../../core/services/workflow.service';
+import { WorkflowService, UserRole, NotificationMessage } from '../../../../../core/services/workflow.service';
 import { CurrentUserService } from '../../../../../core/services/current-user.service';
+import { UsersService, User } from '../../../../../core/services/users.service';
 
 
 
@@ -36,7 +37,16 @@ export class NotificationListComponent {
   private readonly toast = inject(ToastService);
   private readonly workflowService = inject(WorkflowService);
   private readonly currentUserService = inject(CurrentUserService);
+  private readonly usersService = inject(UsersService);
   private readonly cdr = inject(ChangeDetectorRef);
+
+  readonly users = signal<User[]>([]);
+  readonly composeMessage = signal('');
+  readonly selectedUserId = signal<string>('');
+  readonly customName = signal('');
+  readonly showCustomName = signal(false);
+  readonly sending = signal(false);
+  readonly sentMessage = signal<string | null>(null);
 
   readonly notifications = signal<Notification[]>([]);
   readonly loading = signal(false);
@@ -109,6 +119,7 @@ export class NotificationListComponent {
 
   constructor() {
     this.loadNotifications();
+    this.loadUsers();
   }
 
   loadNotifications(): void {
@@ -204,6 +215,97 @@ export class NotificationListComponent {
           this.cdr.markForCheck();
         },
       });
+  }
+
+  loadUsers(): void {
+    this.usersService.getAll().subscribe({
+      next: (res) => {
+        if (res.success && res.data && 'items' in res.data) {
+          this.users.set((res.data as { items: User[] }).items.filter(u => u.isActive));
+        } else {
+          this.users.set([]);
+        }
+      },
+      error: () => {
+        this.users.set([]);
+      },
+    });
+  }
+
+  onUserSelect(value: string): void {
+    this.selectedUserId.set(value);
+    this.showCustomName.set(value === '__other__');
+    if (value !== '__other__') {
+      this.customName.set('');
+    }
+  }
+
+  sendNotification(): void {
+    const msg = this.composeMessage().trim();
+    if (!msg) return;
+
+    let userId = this.selectedUserId();
+    if (this.showCustomName()) {
+      const name = this.customName().trim();
+      if (!name) return;
+      userId = name;
+    }
+    if (!userId) return;
+
+    this.sending.set(true);
+    this.sentMessage.set(null);
+
+    // Look up recipient for local notification
+    const recipient = this.users().find(u => (u.userId || String(u.id)) === userId);
+    const recipientRole = recipient ? this.mapUserRole(recipient.role) : 'Employee';
+
+    // Add local workflow notification so it shows up in recipient's dashboard
+    (this.workflowService as any).createNotification({
+      recipientId: userId,
+      recipientRole,
+      type: 'info',
+      title: 'New Notification',
+      message: msg,
+    });
+
+    // Show success and clear form immediately
+    this.composeMessage.set('');
+    this.selectedUserId.set('');
+    this.customName.set('');
+    this.showCustomName.set(false);
+    this.sentMessage.set('Notification sent successfully');
+    this.sending.set(false);
+    this.loadNotifications();
+    setTimeout(() => this.sentMessage.set(null), 3000);
+
+    // Fire-and-forget the API call (best effort, no UI impact)
+    this.toast.create({ userId, message: msg }).pipe(timeout(15000)).subscribe();
+  }
+
+  private mapUserRole(role: string): UserRole {
+    const map: Record<string, UserRole> = {
+      'Employee': 'Employee',
+      'Manager': 'Manager',
+      'Admin': 'Admin',
+      'Compliance Officer': 'Compliance',
+      'Storekeeper': 'Storekeeper',
+      'Director': 'Director',
+    };
+    return map[role] || 'Employee';
+  }
+
+  viewDetail(notification: Notification, event: Event): void {
+    event.stopPropagation();
+    if (!notification.isRead) {
+      this.markAsRead(notification.id, event);
+    }
+    const match = notification.message.match(/SR[-\s]?\d+/);
+    if (match) {
+      const base = this.dashboardBackLink().replace('/dashboard', '');
+      void this.router.navigate([`${base}/requests`, match[0]]);
+    } else {
+      void this.router.navigate([this.dashboardBackLink()]);
+    }
   }
 
   setFilter(filter: 'all' | 'unread'): void {

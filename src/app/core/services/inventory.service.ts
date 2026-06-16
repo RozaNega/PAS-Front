@@ -60,12 +60,10 @@ export interface StockMovementDto {
 
 /** POST /api/InventoryStock/adjust — AdjustStockCommand */
 export interface AdjustStockRequest {
-  itemId: string;
-  shelfId: string;
-  adjustmentType: 'increase' | 'decrease' | 'set';
-  quantity: number;
+  inventoryId?: string;
+  newQuantity: number;
   reason: string;
-  notes?: string;
+  remarks?: string;
 }
 
 /** POST /api/InventoryStock/reserve — ReserveStockCommand */
@@ -295,6 +293,21 @@ export class InventoryService {
   }): Observable<ApiResponse<StockMovementDto[]>> {
     return this.apiService.get<unknown>('StockLedger/by-date', params).pipe(
       map((raw) => normalizePasListResponse<StockMovementDto>(raw)),
+    );
+  }
+
+  // Create inventory record (for items that exist in ItemMaster but not in InventoryStock)
+  createInventoryRecord(data: {
+    itemId: string;
+    itemName: string;
+    sku: string;
+  }): Observable<ApiResponse<unknown>> {
+    return this.apiService.post<unknown>('inventory/stock', {
+      itemId: data.itemId,
+      itemName: data.itemName,
+      sku: data.sku,
+    }).pipe(
+      map((raw) => this.normalizeEnvelope(raw)),
     );
   }
 

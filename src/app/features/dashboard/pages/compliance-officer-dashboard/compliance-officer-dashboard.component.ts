@@ -16,13 +16,14 @@ import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { PasApiService } from '../../../../shared/services/pas-api.service';
 import { CurrentUserService, CurrentUser } from '../../../../core/services/current-user.service';
 import { AuthService } from '../../../../core/services/auth.service';
+import { ToastService } from '../../../../core/services/toast.service';
 import { UserProfile } from '../../../../types/dashboard.types';
 import { EditProfileModalComponent } from '../../components/edit-profile-modal/edit-profile-modal.component';
 import { ChangePasswordModalComponent } from '../../components/change-password-modal/change-password-modal.component';
 import { FaceDetectionService } from '../../../../core/services/face-detection.service';
 import { ProfileService } from '../../../../core/services/profile.service';
 import { initDashboardProfilePhoto } from '../../../../core/utils/dashboard-profile-photo.util';
-import { Subscription } from 'rxjs';
+import { Subscription, finalize } from 'rxjs';
 
 type ActivityAction = 'Created' | 'Approved' | 'Rejected' | 'Deleted';
 type ActivityStatus = 'Normal' | 'Flagged';
@@ -79,6 +80,7 @@ export class ComplianceOfficerDashboardComponent implements OnInit, OnDestroy {
   private readonly modalService = inject(NgbModal);
   private readonly pasApi = inject(PasApiService);
   private readonly authService = inject(AuthService);
+  private readonly toastService = inject(ToastService);
   private readonly sanitizer = inject(DomSanitizer);
   private readonly currentUserService = inject(CurrentUserService);
   private readonly profileService = inject(ProfileService);
@@ -122,11 +124,13 @@ export class ComplianceOfficerDashboardComponent implements OnInit, OnDestroy {
 
   // Two-Factor Authentication settings
   protected readonly twoFactorEnabled = signal(false);
-  protected readonly twoFactorMethod = signal<'sms' | 'email' | 'app'>('sms');
+  protected readonly twoFactorMethod = signal<'email'>('email');
   protected readonly twoFactorPhone = signal('');
   protected readonly twoFactorVerificationSent = signal(false);
   protected readonly twoFactorVerificationCode = signal('');
   protected readonly twoFactorSetupComplete = signal(false);
+  protected readonly twoFactorSending = signal(false);
+  private currentCode = '';
   readonly filters: ActivityFilter[] = [
     'All Activities',
     'Access Control',
@@ -462,7 +466,6 @@ export class ComplianceOfficerDashboardComponent implements OnInit, OnDestroy {
         if (result && result.profile) {
           this.userProfile.set({ ...result.profile });
         }
-        alert('Profile updated successfully!');
       },
       () => {},
     );
@@ -502,19 +505,35 @@ export class ComplianceOfficerDashboardComponent implements OnInit, OnDestroy {
 
   enable2FA(): void {
     this.twoFactorEnabled.set(true);
-    alert('Two-Factor Authentication has been enabled!');
+    this.toastService.info('Fill in your contact info and click Send Code to enable 2FA.');
   }
 
   disable2FA(): void {
-    this.twoFactorEnabled.set(false);
-    this.twoFactorMethod.set('sms');
-    this.twoFactorPhone.set('');
-    alert('Two-Factor Authentication has been disabled!');
+    this.authService.disable2FA().subscribe({
+      next: (res) => {
+        this.twoFactorEnabled.set(false);
+        this.twoFactorMethod.set('email');
+        this.twoFactorPhone.set('');
+        this.twoFactorVerificationSent.set(false);
+        this.twoFactorVerificationCode.set('');
+        this.twoFactorSetupComplete.set(false);
+        if (res.succeeded) {
+          this.toastService.success('Two-Factor Authentication has been disabled.');
+        } else {
+          this.toastService.error(res.message || 'Failed to disable 2FA.');
+        }
+      },
+      error: () => this.toastService.error('Unable to disable 2FA. Please try again.'),
+    });
   }
 
   updateTwoFactorMethod(event: Event): void {
-    const target = event.target as HTMLSelectElement;
-    this.twoFactorMethod.set(target.value as any);
+    this.twoFactorMethod.set('email');
+    if (this.twoFactorSetupComplete()) {
+      this.twoFactorSetupComplete.set(false);
+      this.twoFactorVerificationSent.set(false);
+      this.twoFactorVerificationCode.set('');
+    }
   }
 
   updateTwoFactorPhone(event: Event): void {
@@ -523,10 +542,28 @@ export class ComplianceOfficerDashboardComponent implements OnInit, OnDestroy {
   }
 
   saveTwoFactorPhone(): void {
-    if (this.twoFactorPhone()) {
-      this.twoFactorVerificationSent.set(true);
-      alert(`Verification code sent to ${this.twoFactorPhone()}.`);
+    const contact = this.userProfile().email;
+    if (!contact) {
+      alert('Please enter a valid email address.');
+      return;
     }
+    this.twoFactorSending.set(true);
+
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    this.currentCode = code;
+    this.authService.sendVerificationCode(contact, code).pipe(finalize(() => this.twoFactorSending.set(false))).subscribe({
+      next: (res) => {
+        if (res.succeeded) {
+          this.twoFactorVerificationSent.set(true);
+          this.toastService.success('Verification code sent! Check your inbox.');
+        } else {
+          alert(res.message || 'Failed to send verification code.');
+        }
+      },
+      error: () => {
+        alert('Unable to send verification code. Please try again.');
+      },
+    });
   }
 
   updateTwoFactorVerificationCode(event: Event): void {
@@ -535,16 +572,30 @@ export class ComplianceOfficerDashboardComponent implements OnInit, OnDestroy {
   }
 
   verifyTwoFactorCode(): void {
-    if (this.twoFactorVerificationCode() === '123456') {
-      this.twoFactorSetupComplete.set(true);
-      alert('2FA setup completed successfully!');
-    } else {
-      alert('Invalid code.');
+    if (this.twoFactorVerificationCode() !== this.currentCode) {
+      alert('Invalid verification code. Please check the code sent to your email and try again.');
+      return;
     }
+    const contact = this.userProfile().email;
+    this.twoFactorSending.set(true);
+    this.authService.enable2FA('email', contact).pipe(finalize(() => this.twoFactorSending.set(false))).subscribe({
+      next: (res) => {
+        if (res.succeeded) {
+          this.twoFactorSetupComplete.set(true);
+          this.toastService.success(res.message || '2FA enabled successfully!');
+        } else {
+          alert(res.message || 'Failed to enable 2FA.');
+        }
+      },
+      error: () => {
+        alert('Unable to enable 2FA. Please try again.');
+      },
+    });
   }
 
   resendVerificationCode(): void {
-    alert('New code sent!');
+    this.twoFactorVerificationCode.set('');
+    this.saveTwoFactorPhone();
   }
 
   getCurrentTime(): string {

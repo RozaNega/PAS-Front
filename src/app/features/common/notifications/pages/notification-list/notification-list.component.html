@@ -24,6 +24,60 @@
     </div>
   </header>
 
+  <section class="n-compose">
+    <h4 class="n-compose__title"><i class="bi bi-send"></i> Send Notification</h4>
+    <div class="n-compose__form">
+      <textarea
+        class="n-compose__input"
+        placeholder="Write your message..."
+        [ngModel]="composeMessage()"
+        (ngModelChange)="composeMessage.set($event)"
+        rows="3"
+      ></textarea>
+
+      <select
+        class="n-compose__select"
+        [ngModel]="selectedUserId()"
+        (ngModelChange)="onUserSelect($event)"
+      >
+        <option value="">-- Select recipient --</option>
+        @for (u of users(); track u.id) {
+          <option [value]="u.userId || u.id">
+            {{ u.fullName || u.username }} ({{ u.role }})
+          </option>
+        }
+        <option value="__other__">Other (type name)</option>
+      </select>
+
+      @if (showCustomName()) {
+        <input
+          type="text"
+          class="n-compose__input"
+          placeholder="Enter recipient name..."
+          [ngModel]="customName()"
+          (ngModelChange)="customName.set($event)"
+        />
+      }
+
+      <button
+        type="button"
+        class="n-compose__btn"
+        (click)="sendNotification()"
+        [disabled]="sending() || !composeMessage().trim() || (!selectedUserId() && !showCustomName()) || (showCustomName() && !customName().trim())"
+      >
+        @if (sending()) {
+          <span class="spinner"></span> Sending...
+        } @else {
+          <i class="bi bi-send-fill"></i> Send
+        }
+      </button>
+
+      @if (sentMessage(); as msg) {
+        <p class="n-compose__sent">{{ msg }}</p>
+      }
+    </div>
+  </section>
+
   @if (loadError()) {
     <div class="n-alert" role="alert">
       <i class="bi bi-wifi-off"></i>
@@ -111,6 +165,9 @@
               <i class="bi bi-envelope-open"></i>
             </button>
           }
+          <button class="n-act n-act--view" title="View Details" (click)="viewDetail(notification, $event)">
+            <i class="bi bi-eye"></i>
+          </button>
           <button class="n-act n-act--del" title="Dismiss" (click)="dismissNotification(notification.id, $event)">
             <i class="bi bi-x"></i>
           </button>

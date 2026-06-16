@@ -409,8 +409,10 @@ export class ItemCatalogComponent {
     let remaining = selected.length;
     selected.forEach(item => {
       if (!item.id) { remaining -= 1; if (remaining === 0) this.loadItems(); return; }
-      const req = { itemId: item.id!, shelfId: '', adjustmentType: draft.adjustmentType!, quantity: draft.quantity!, reason: draft.reason ?? '' };
-      this.inventoryService.adjustStock(req).subscribe({
+      const adjType = draft.adjustmentType!;
+      const qty = draft.quantity!;
+      const newQ = adjType === 'set' ? qty : (adjType === 'increase' ? item.currentStock + qty : item.currentStock - qty);
+      this.inventoryService.adjustStock({ inventoryId: item.id, newQuantity: newQ, reason: draft.reason ?? '' }).subscribe({
         next: () => { remaining -= 1; if (remaining === 0) { this.showAdjustModal.set(false); this.selectedIds.set([]); this.loadItems(); this.showToast('Stock adjusted'); } },
         error: () => { remaining -= 1; if (remaining === 0) { this.showAdjustModal.set(false); this.selectedIds.set([]); this.loadItems(); } }
       });
@@ -603,8 +605,11 @@ export class ItemCatalogComponent {
     }
     const d = this.adjustDraft();
     if (!d.itemId || !d.adjustmentType || !d.quantity) return;
-    const req = { itemId: d.itemId, shelfId: '', adjustmentType: d.adjustmentType, quantity: d.quantity, reason: d.reason ?? '' };
-    this.inventoryService.adjustStock(req).subscribe({
+    const item = this.filteredItems().find(i => i.id === d.itemId);
+    const qty = d.quantity!;
+    const adjType = d.adjustmentType!;
+    const newQ = adjType === 'set' ? qty : (adjType === 'increase' ? (item?.currentStock ?? 0) + qty : (item?.currentStock ?? 0) - qty);
+    this.inventoryService.adjustStock({ inventoryId: d.itemId, newQuantity: newQ, reason: d.reason ?? '' }).subscribe({
       next: () => { this.showAdjustModal.set(false); this.loadItems(); this.showToast('Stock adjusted'); },
       error: () => { this.showAdjustModal.set(false); }
     });

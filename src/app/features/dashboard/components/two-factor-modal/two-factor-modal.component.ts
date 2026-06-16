@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
+import { ApiService } from '../../../../core/services/api.service';
 
 @Component({
   selector: 'app-two-factor-modal',
@@ -13,26 +14,24 @@ import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 })
 export class TwoFactorModalComponent {
   readonly modal = inject(NgbActiveModal);
+  private apiService = inject(ApiService);
 
   step = signal<1 | 2>(1);
-  method = signal<'sms' | 'email' | 'app'>('sms');
+  method = signal<'email'>('email');
   contactInfo = signal('');
   verificationCode = signal('');
   loading = signal(false);
   codeSent = signal(false);
 
-  nextStep(): void {
-    if (this.method() === 'sms' && !this.contactInfo()) {
-      alert('Please enter your phone number');
-      return;
-    }
-    if (this.method() === 'email' && !this.contactInfo()) {
-      alert('Please enter your email');
-      return;
-    }
+  private currentCode = '';
 
-    if (this.method() === 'app') {
-      this.step.set(2);
+  private generateCode(): string {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+  }
+
+  nextStep(): void {
+    if (!this.contactInfo()) {
+      alert('Please enter your email');
       return;
     }
 
@@ -41,19 +40,34 @@ export class TwoFactorModalComponent {
 
   sendVerificationCode(): void {
     this.loading.set(true);
-    // Simulate sending code
-    setTimeout(() => {
-      this.loading.set(false);
-      this.codeSent.set(true);
-      this.step.set(2);
-      console.log(`Code sent to ${this.contactInfo()} via ${this.method()}`);
-    }, 1500);
+    const code = this.generateCode();
+    this.currentCode = code;
+
+    const body = {
+      to: this.contactInfo(),
+      subject: 'Your 2FA Verification Code',
+      body: `Your two-factor authentication verification code is: ${code}\n\nThis code expires in 10 minutes.\n\nIf you did not request this code, please ignore this email.`,
+    };
+
+    this.apiService.post('Notifications/send-email', body).subscribe({
+      next: () => {
+        this.loading.set(false);
+        this.codeSent.set(true);
+        this.step.set(2);
+        console.log(`Code sent to ${this.contactInfo()} via ${this.method()}`);
+      },
+      error: (err: unknown) => {
+        this.loading.set(false);
+        console.error('Error sending verification code:', err);
+        alert('Failed to send verification code. Please check your contact info and try again.');
+      },
+    });
   }
 
   resendCode(): void {
     if (this.loading()) return;
+    this.verificationCode.set('');
     this.sendVerificationCode();
-    alert('A new verification code has been sent.');
   }
 
   submit(): void {
@@ -62,11 +76,10 @@ export class TwoFactorModalComponent {
       return;
     }
     this.loading.set(true);
-    // Simulate API call
+
     setTimeout(() => {
       this.loading.set(false);
-      // Demo code
-      if (this.verificationCode() === '123456') {
+      if (this.verificationCode() === this.currentCode) {
         this.modal.close({ 
           method: this.method(), 
           contactInfo: this.contactInfo(),
@@ -74,9 +87,9 @@ export class TwoFactorModalComponent {
         });
         alert('Two-Factor Authentication enabled successfully!');
       } else {
-        alert('Invalid verification code. Please try 123456 for demo purposes.');
+        alert('Invalid verification code. Please check the code sent to your email and try again.');
       }
-    }, 1500);
+    }, 500);
   }
 
   cancel(): void {

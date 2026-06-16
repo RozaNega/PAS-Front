@@ -1,875 +1,811 @@
-<div class="employee-dashboard">
-
-  <!-- ============ HOME VIEW ============ -->
-  <ng-container *ngIf="currentView === 'home'">
-
-    <!-- Hero Banner -->
-    <div class="hero-banner">
+<section class="employee-dashboard" aria-label="Employee dashboard">
+  @if (currentView === 'home') {
+    <header class="hero-banner">
       <div class="hero-copy">
         <p class="hero-eyebrow">Employee Dashboard</p>
         <div class="hero-header-content">
           <div class="hero-avatar">
-            <img *ngIf="employeeData?.profileImageUrl" [src]="employeeData?.profileImageUrl" alt="Avatar" class="avatar-img" />
-            <div *ngIf="!employeeData?.profileImageUrl" class="avatar-placeholder">
-              {{ (employeeData?.firstName?.[0] || '') + (employeeData?.lastName?.[0] || '') }}
-            </div>
+            @if (profilePhoto()) {
+              <img [src]="profilePhoto()" alt="Profile photo" class="avatar-img shadow-lg" />
+            } @else {
+              <div class="avatar-placeholder shadow-lg">
+                <i class="bi bi-person-fill"></i>
+              </div>
+            }
           </div>
           <div class="hero-text">
-            <h1>Welcome back, {{ employeeData?.firstName || 'Employee' }}</h1>
-            <p>{{ employeeData?.department || 'General' }} Department</p>
+            <h1>👋 {{ greeting }}, {{ userName() }}!</h1>
+            <p>Welcome</p>
           </div>
         </div>
       </div>
       <div class="dashboard-info-widget">
         <div class="info-item">
-          <span class="info-icon">📅</span>
-          <span class="info-text">{{ todayDate | date:'MMM d, yyyy' }}</span>
+          <i class="bi bi-calendar3 info-icon text-primary"></i>
+          <span class="info-text">{{ currentDate }}</span>
         </div>
         <div class="info-item">
-          <span class="info-icon" [style.color]="employeeData?.isOnline ? '#10b981' : '#94a3b8'">
-            {{ employeeData?.isOnline ? '🟢' : '⚪' }}
-          </span>
-          <span class="info-text">{{ employeeData?.isOnline ? 'Online' : 'Offline' }}</span>
+          <i class="bi bi-clock info-icon text-secondary"></i>
+          <span class="info-text">{{ currentTime() }}</span>
+        </div>
+        <div class="info-item">
+          <i class="bi bi-geo-alt-fill info-icon text-danger"></i>
+          <span class="info-text">{{ currentLocation() }}</span>
         </div>
       </div>
-    </div>
-
-    <!-- Summary Cards -->
-    <section class="summary-section">
-      <div class="section-header-row">
-        <h4 class="section-title">Overview</h4>
-        <span class="section-subtitle">Your request summary at a glance</span>
+    </header>
+  } @else {
+    <header class="page-header">
+      <div>
+        <h1>{{ pageTitle }}</h1>
+        @if (pageSubtitle) {
+          <p>{{ pageSubtitle }}</p>
+        }
       </div>
+      @if (currentView === 'profile') {
+        <button class="edit-profile-btn" (click)="editProfile()">
+          <i class="bi bi-pencil-square"></i> Edit Profile
+        </button>
+      }
+    </header>
+  }
+
+  @if (currentView === 'home') {
+    <section class="summary-section" aria-labelledby="summary-heading">
+      <h2 id="summary-heading" class="section-title">📊 MY REQUEST SUMMARY</h2>
+      <p class="summary-caption">{{ requestSummaryLabel() }}</p>
       <div class="card-grid-5">
-        <div class="stat-card stat-card--total">
-          <div class="stat-card-icon-wrap">
-            <i class="bi bi-clipboard2-data"></i>
-          </div>
-          <div class="stat-card-body">
-            <p class="stat-card-value">{{ summaryStats.totalRequests }}</p>
-            <p class="stat-card-label">Total Requests</p>
-            <p class="stat-card-trend">
-              <span class="trend-arrow" [class.trend-up]="(summaryStats.percentChange || 0) >= 0" [class.trend-down]="(summaryStats.percentChange || 0) < 0">
-                {{ (summaryStats.percentChange || 0) >= 0 ? '↑' : '↓' }}
-              </span>
-              {{ summaryStats.percentChange || 0 }}% from last month
-            </p>
-          </div>
-        </div>
-        <div class="stat-card stat-card--approved">
-          <div class="stat-card-icon-wrap">
-            <i class="bi bi-check-circle-fill"></i>
-          </div>
-          <div class="stat-card-body">
-            <p class="stat-card-value">{{ summaryStats.approvedRequests }}</p>
-            <p class="stat-card-label">Approved</p>
-            <p class="stat-card-trend">{{ approvalRate }}% approval rate</p>
-          </div>
-        </div>
-        <div class="stat-card stat-card--pending">
-          <div class="stat-card-icon-wrap">
-            <i class="bi bi-clock-fill"></i>
-          </div>
-          <div class="stat-card-body">
-            <p class="stat-card-value">{{ summaryStats.pendingRequests }}</p>
-            <p class="stat-card-label">Pending</p>
-            <p class="stat-card-trend">
-              <span *ngIf="pendingUrgentCount > 0" class="urgent-pulse">{{ pendingUrgentCount }} need attention</span>
-              <span *ngIf="pendingUrgentCount === 0">Awaiting review</span>
-            </p>
-          </div>
-        </div>
-        <div class="stat-card stat-card--rejected">
-          <div class="stat-card-icon-wrap">
-            <i class="bi bi-x-circle-fill"></i>
-          </div>
-          <div class="stat-card-body">
-            <p class="stat-card-value">{{ summaryStats.rejectedRequests }}</p>
-            <p class="stat-card-label">Rejected</p>
-            <p class="stat-card-trend">Review &amp; resubmit</p>
-          </div>
-        </div>
-        <div class="stat-card stat-card--notifications">
-          <div class="stat-card-icon-wrap">
-            <i class="bi bi-bell-fill"></i>
-            <span *ngIf="unreadNotifications > 0" class="notif-bell-dot">{{ unreadNotifications }}</span>
-          </div>
-          <div class="stat-card-body">
-            <p class="stat-card-value">{{ unreadNotifications }}</p>
-            <p class="stat-card-label">Unread Notifications</p>
-            <p class="stat-card-trend">Latest updates</p>
-          </div>
-        </div>
+        @for (card of summaryCards(); track card.title) {
+          <article class="summary-card summary-card--{{ card.tone }}">
+            <div class="card-header">
+              <p class="card-title">{{ card.title }}</p>
+              @if (card.subtitle) {
+                <p class="card-subtitle">{{ card.subtitle }}</p>
+              }
+            </div>
+            <p class="card-value">{{ card.value }}</p>
+            @if (card.trend) {
+              <p class="card-trend">{{ card.trend }}</p>
+            }
+          </article>
+        }
       </div>
     </section>
 
-    <!-- Pending Requests -->
-    <section class="pending-requests-section">
-      <div class="section-header-row">
-        <h4 class="section-title" style="margin:0;">Pending Requests</h4>
-        <button class="btn-link-sm" (click)="switchView('my-requests')">View all <i class="bi bi-arrow-right"></i></button>
-      </div>
-      <p *ngIf="pendingRequests.length === 0" class="summary-caption">No pending requests right now.</p>
+    <section class="pending-requests-section" aria-labelledby="pending-heading">
+      <header class="panel-header panel-header--split">
+        <h2 id="pending-heading" class="section-title">
+          ⏳ PENDING REQUESTS ({{ pendingRequests().length }})
+        </h2>
+        <a routerLink="/employee/dashboard/my-requests">[View All →]</a>
+      </header>
       <div class="pending-requests-list">
-        <div *ngFor="let req of pendingRequests()" class="pending-request-card">
-          <div>
+        @for (request of pendingRequests(); track request.srNumber) {
+          <article class="pending-request-card">
             <div class="pending-request-header">
-              <strong>{{ 'Service Request' }} - {{ req.srNumber }}</strong>
-              <span class="status-text">● Pending</span>
+              <strong>
+                {{ getPriorityIcon(request.priority) }} {{ request.srNumber }} -
+                {{ request.priority }}
+              </strong>
+              <span class="required-date">Required: {{ request.requiredDate }}</span>
             </div>
-            <div class="pending-request-body">
-              <p><span class="items-label">Items:</span> {{ req.items.length }}</p>
-              <p class="required-date" *ngIf="req.requiredDate">Needed by {{ req.requiredDate }}</p>
+            <p>Requested: {{ request.requestedDate }} | Waiting: {{ request.waitingTime }}</p>
+            <p>Items: {{ request.items.join(', ') }}</p>
+            <p class="status-text">Status: {{ getStatusIcon(request.status) }} Pending Approval</p>
+            <div class="pending-request-actions">
+              <button class="action-btn secondary" (click)="trackRequest(request.srNumber)">
+                [Track Request]
+              </button>
+              <button class="action-btn secondary" (click)="cancelRequest(request.srNumber)">
+                [Cancel Request]
+              </button>
             </div>
-          </div>
-          <div class="pending-request-actions">
-            <button class="action-btn secondary" (click)="viewRequestDetails(req)">View</button>
-          </div>
+          </article>
+        }
+      </div>
+    </section>
+
+    <section class="request-trend-section" aria-labelledby="trend-heading">
+      <h2 id="trend-heading" class="section-title">📈 REQUEST TREND (Last 6 months)</h2>
+      <div class="trend-chart">
+        <svg viewBox="0 0 600 200" class="trend-svg">
+          <!-- Grid lines -->
+          <line x1="50" y1="20" x2="50" y2="180" stroke="#e0e0e0" stroke-width="1" />
+          <line x1="50" y1="180" x2="580" y2="180" stroke="#e0e0e0" stroke-width="1" />
+          @for (tick of [0, 1, 2, 3, 4]; track tick) {
+            <text x="40" [attr.y]="25 + tick * 40" text-anchor="end" font-size="12">
+              {{ getTrendYAxisLabel(tick) }}
+            </text>
+          }
+          @for (point of requestTrendData(); track point.month; let index = $index) {
+            <text
+              [attr.x]="100 + index * 80"
+              y="195"
+              text-anchor="middle"
+              font-size="12"
+            >
+              {{ point.month }}
+            </text>
+          }
+          <polyline
+            [attr.points]="getTrendChartPoints('submitted')"
+            fill="none"
+            stroke="#0ea5e9"
+            stroke-width="2"
+          />
+          <polyline
+            [attr.points]="getTrendChartPoints('approved')"
+            fill="none"
+            stroke="#22c55e"
+            stroke-width="2"
+          />
+          <polyline
+            [attr.points]="getTrendChartPoints('completed')"
+            fill="none"
+            stroke="#f59e0b"
+            stroke-width="2"
+          />
+          <polyline
+            [attr.points]="getTrendChartPoints('rejected')"
+            fill="none"
+            stroke="#ef4444"
+            stroke-width="2"
+          />
+        </svg>
+        <div class="trend-legend">
+          <span><span class="legend-dot blue"></span> Submitted</span>
+          <span><span class="legend-dot green"></span> Approved</span>
+          <span><span class="legend-dot amber"></span> Completed</span>
+          <span><span class="legend-dot rose"></span> Rejected</span>
         </div>
       </div>
     </section>
 
-    <!-- Charts Row (matches storekeeper .charts-grid) -->
-    <div class="charts-grid">
-
-      <!-- Trend Chart (ECharts) -->
-      <section class="request-trend-section">
-        <div class="section-header-row">
-          <h4 class="section-title" style="margin:0;">Request Activity</h4>
-          <span class="section-subtitle">Monthly trend — submitted &amp; approved</span>
-        </div>
-        <div class="trend-chart">
-          <div echarts [options]="trendChartOpts" style="width:100%;height:280px;"></div>
-        </div>
-      </section>
-
-      <!-- Status Distribution Donut (ECharts) -->
-      <section class="request-trend-section">
-        <div class="section-header-row">
-          <h4 class="section-title" style="margin:0;">Status Breakdown</h4>
-          <span class="section-subtitle">Distribution by status</span>
-        </div>
-        <div class="trend-chart">
-          <div echarts [options]="statusDonutOpts" style="width:100%;height:280px;"></div>
-        </div>
-      </section>
-
-    </div>
-
-    <!-- Quick Actions -->
-    <section class="quick-actions-section">
-      <div class="section-header-row">
-        <h4 class="section-title">Quick Actions</h4>
-        <span class="section-subtitle">Frequently used tools</span>
-      </div>
-      <div class="quick-actions-grid">
-        <button class="quick-action-card" (click)="switchView('create-request')">
-          <div class="quick-action-icon quick-action-icon--create">
-            <i class="bi bi-pencil-square"></i>
-          </div>
-          <div class="quick-action-info">
-            <span class="quick-action-label">New Request</span>
-            <span class="quick-action-desc">Submit a service request</span>
-          </div>
-          <i class="bi bi-chevron-right quick-action-arrow"></i>
-        </button>
-        <button class="quick-action-card" (click)="switchView('my-requests')">
-          <div class="quick-action-icon quick-action-icon--list">
-            <i class="bi bi-list-check"></i>
-          </div>
-          <div class="quick-action-info">
-            <span class="quick-action-label">My Requests</span>
-            <span class="quick-action-desc">View all your requests</span>
-          </div>
-          <i class="bi bi-chevron-right quick-action-arrow"></i>
-        </button>
-        <button class="quick-action-card" (click)="switchView('notifications')">
-          <div class="quick-action-icon quick-action-icon--notif">
-            <i class="bi bi-bell"></i>
-          </div>
-          <div class="quick-action-info">
-            <span class="quick-action-label">Notifications</span>
-            <span class="quick-action-desc">{{ unreadNotifications }} unread updates</span>
-          </div>
-          <i class="bi bi-chevron-right quick-action-arrow"></i>
-        </button>
-        <button class="quick-action-card" (click)="switchView('profile')">
-          <div class="quick-action-icon quick-action-icon--profile">
-            <i class="bi bi-person-circle"></i>
-          </div>
-          <div class="quick-action-info">
-            <span class="quick-action-label">My Profile</span>
-            <span class="quick-action-desc">Manage your account</span>
-          </div>
-          <i class="bi bi-chevron-right quick-action-arrow"></i>
-        </button>
+    <section class="quick-links-section" aria-labelledby="quick-links-heading">
+      <h2 id="quick-links-heading" class="section-title">🔔 QUICK LINKS</h2>
+      <div class="quick-links-grid">
+        @for (link of quickLinks; track link.label) {
+          @if (
+            link.label !== 'Create New Request' &&
+            link.label !== 'My Profile' &&
+            link.label !== 'My Requests' &&
+            link.label !== 'Return Materials'
+          ) {
+            <a class="quick-link-card" [routerLink]="link.route">
+              <span class="quick-link-icon">{{ link.icon }}</span>
+              <span class="quick-link-label">{{ link.label }}</span>
+            </a>
+          }
+        }
       </div>
     </section>
+  }
 
-  </ng-container>
-
-  <!-- ============ MY REQUESTS VIEW ============ -->
-  <ng-container *ngIf="currentView === 'my-requests'">
-
-    <div class="page-header">
-      <div>
-        <h1>My Requests</h1>
-        <p>Track and manage all your submitted requests</p>
-      </div>
-      <button class="action-btn primary" (click)="switchView('create-request')">+ New Request</button>
-    </div>
-
-    <!-- Requests summary strip -->
-    <div class="my-requests-summary">
-      <div class="summary-stat">
-        <p>Total</p>
-        <strong>{{ summaryStats.totalRequests }}</strong>
-      </div>
-      <div class="summary-stat" style="border-left-color: #10b981;">
-        <p>Approved</p>
-        <strong>{{ summaryStats.approvedRequests }}</strong>
-      </div>
-      <div class="summary-stat" style="border-left-color: #f59e0b;">
-        <p>Pending</p>
-        <strong>{{ summaryStats.pendingRequests }}</strong>
-      </div>
-      <div class="summary-stat" style="border-left-color: #ef4444;">
-        <p>Rejected</p>
-        <strong>{{ summaryStats.rejectedRequests }}</strong>
-      </div>
-      <div class="summary-stat" style="border-left-color: #6366f1;">
-        <p>Draft</p>
-        <strong>{{ summaryStats.draftRequests || 0 }}</strong>
-      </div>
-    </div>
-
-    <!-- Filter controls -->
-    <div class="search-filters">
-      <input class="search-input" type="text" placeholder="Search requests..." [(ngModel)]="requestSearchTerm" (input)="filterMyRequests()" />
-      <div class="filter-row">
-        <label>
-          Status:
-          <select [(ngModel)]="requestFilterStatus" (change)="filterMyRequests()">
-            <option value="">All</option>
-            <option value="Pending">Pending</option>
-            <option value="Approved">Approved</option>
-            <option value="Rejected">Rejected</option>
-            <option value="Draft">Draft</option>
-          </select>
-        </label>
-        <label>
-          Sort:
-          <select [(ngModel)]="requestSortBy" (change)="filterMyRequests()">
-            <option value="dateDesc">Newest first</option>
-            <option value="dateAsc">Oldest first</option>
-            <option value="type">By type</option>
-          </select>
-        </label>
-      </div>
-    </div>
-
-    <!-- Requests table -->
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Type</th>
-            <th>Status</th>
-            <th>Date</th>
-            <th>Items</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let req of filteredRequests">
-            <td><strong>{{ req.srNumber || req.id || '#' }}</strong></td>
-            <td>{{ 'Service Request' }}</td>
-            <td>
-              <span class="status-pill"
-                    [class.status-approved]="isApprovedStatus(req.status)"
-                    [class.status-pending]="isPendingStatus(req.status)"
-                    [class.status-rejected]="isRejectedStatus(req.status)">
-                {{ req.status }}
-              </span>
-            </td>
-            <td>{{ req.submittedDate | date:'shortDate' }}</td>
-            <td>{{ req.items.length }}</td>
-            <td>
-              <button class="icon-btn" (click)="viewRequestDetails(req)">View</button>
-            </td>
-          </tr>
-          <tr *ngIf="filteredRequests.length === 0">
-            <td colspan="6" style="text-align:center; padding:2rem 0; color:#94a3b8;">No requests found</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-    <p class="pagination-text">Showing {{ filteredRequests.length }} of {{ myRequests.length }} requests</p>
-
-  </ng-container>
-
-  <!-- ============ MY REQUESTS SUMMARY VIEW ============ -->
-  <ng-container *ngIf="currentView === 'my-requests-summary'">
-
-    <div class="page-header">
-      <div>
-        <h1>My Requests Summary</h1>
-        <p>Year-over-year breakdown of all your service requests</p>
-      </div>
-      <button class="action-btn secondary" (click)="switchView('my-requests')">View Details →</button>
-    </div>
-
-    <!-- KPI Cards -->
-    <div class="card-grid-5">
-      <div class="summary-card summary-card--blue">
-        <div class="card-header">
-          <p class="card-title">Total Requests</p>
-          <p class="card-subtitle">All time</p>
-        </div>
-        <p class="card-value">{{ requestSummary().total }}</p>
-        <p class="card-trend">{{ requestSummary().total }} total · {{ requestSummary().total > 0 ? (requestSummary().total) : 'No' }} this year</p>
-      </div>
-      <div class="summary-card summary-card--green">
-        <div class="card-header">
-          <p class="card-title">Approved</p>
-          <p class="card-subtitle">{{ approvalRate }}% approval rate</p>
-        </div>
-        <p class="card-value">{{ requestSummary().approved }}</p>
-        <p class="card-trend">
-          <span class="trend-badge trend-badge--green">{{ requestSummary().approved }} approved</span>
-        </p>
-      </div>
-      <div class="summary-card summary-card--amber">
-        <div class="card-header">
-          <p class="card-title">Pending</p>
-          <p class="card-subtitle">Awaiting review</p>
-        </div>
-        <p class="card-value">{{ requestSummary().pending }}</p>
-        <p class="card-trend">
-          <span *ngIf="pendingUrgentCount > 0" class="trend-badge trend-badge--urgent">🔴 {{ pendingUrgentCount }} urgent</span>
-          <span *ngIf="pendingUrgentCount === 0">No urgent items</span>
-        </p>
-      </div>
-      <div class="summary-card summary-card--rose">
-        <div class="card-header">
-          <p class="card-title">Rejected</p>
-          <p class="card-subtitle">Not approved</p>
-        </div>
-        <p class="card-value">{{ requestSummary().rejected }}</p>
-        <p class="card-trend">
-          <span *ngIf="requestSummary().rejected > 0" class="trend-badge trend-badge--rose">{{ requestSummary().rejected }} rejected</span>
-          <span *ngIf="requestSummary().rejected === 0">None rejected</span>
-        </p>
-      </div>
-      <div class="summary-card summary-card--green">
-        <div class="card-header">
-          <p class="card-title">Completed</p>
-          <p class="card-subtitle">Fulfilled</p>
-        </div>
-        <p class="card-value">{{ requestSummary().completed }}</p>
-        <p class="card-trend">
-          <span *ngIf="requestSummary().completed > 0" class="trend-badge trend-badge--green">✅ {{ requestSummary().completed }} done</span>
-          <span *ngIf="requestSummary().completed === 0">None completed</span>
-        </p>
-      </div>
-    </div>
-
-    <!-- Charts Grid: Monthly Trend + Monthly Breakdown -->
-    <div class="charts-grid">
-      <section class="request-trend-section">
-        <div class="section-header-row">
-          <h4 class="section-title" style="margin:0;">📈 Requests by Month ({{ todayDate.getFullYear() }})</h4>
-        </div>
-        <p class="summary-caption">Monthly trend — submitted vs approved</p>
-        <div class="trend-chart">
-          <div echarts [options]="trendChartOpts" style="width:100%;height:280px;"></div>
-        </div>
-      </section>
-      <section class="request-trend-section">
-        <div class="section-header-row">
-          <h4 class="section-title" style="margin:0;">📊 Monthly Breakdown ({{ todayDate.getFullYear() }})</h4>
-        </div>
-        <p class="summary-caption">Total requests submitted per month</p>
-        <div class="trend-chart">
-          <div echarts [options]="monthlyBarChartOpts" style="width:100%;height:280px;"></div>
-        </div>
-      </section>
-    </div>
-
-    <!-- Status Distribution + Value Summary -->
-    <div class="charts-grid">
-      <section class="request-trend-section">
-        <div class="section-header-row">
-          <h4 class="section-title" style="margin:0;">📊 Status Breakdown</h4>
-        </div>
-        <p class="summary-caption">All requests by current status</p>
-        <div class="trend-chart">
-          <div echarts [options]="statusDonutOpts" style="width:100%;height:280px;"></div>
-        </div>
-      </section>
-      <section class="request-trend-section">
-        <div class="section-header-row">
-          <h4 class="section-title" style="margin:0;">💰 Value Summary</h4>
-        </div>
-        <p class="summary-caption">Approved request values</p>
-        <div class="value-summary-grid">
-          <div class="value-card">
-            <span class="value-card-icon">💰</span>
-            <div class="value-card-body">
-              <p class="value-card-label">Total Value (Approved)</p>
-              <p class="value-card-amount">${{ valueSummary().totalValue.toLocaleString() }}</p>
-            </div>
-          </div>
-          <div class="value-card">
-            <span class="value-card-icon">📊</span>
-            <div class="value-card-body">
-              <p class="value-card-label">Average Value</p>
-              <p class="value-card-amount">${{ valueSummary().avgValue.toLocaleString() }}</p>
-            </div>
-          </div>
-          <div class="value-card">
-            <span class="value-card-icon">🏆</span>
-            <div class="value-card-body">
-              <p class="value-card-label">Highest Value Request</p>
-              <p class="value-card-amount">${{ valueSummary().highestValue.toLocaleString() }}</p>
-              <p class="value-card-sub">({{ valueSummary().highestSr }})</p>
-            </div>
-          </div>
-        </div>
-      </section>
-    </div>
-
-    <!-- Year-by-Year Summary Table -->
-    <section class="panel" *ngIf="requestHistoryRows().length > 0">
-      <div class="panel-header">
-        <div style="display:flex;align-items:center;gap:0.65rem;">
-          <h3>📋 Year-over-Year Summary</h3>
-        </div>
-      </div>
-      <div class="table-wrap" style="border:none;border-radius:0;">
-        <table>
-          <thead>
-            <tr>
-              <th>Year</th>
-              <th>Total</th>
-              <th>Approved</th>
-              <th>Rejected</th>
-              <th>Completed</th>
-              <th>Approval Rate</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let row of requestHistoryRows()">
-              <td><strong>{{ row.year }}</strong></td>
-              <td>{{ row.totalRequests }}</td>
-              <td><span class="status-pill status-approved">{{ row.approved }}</span></td>
-              <td><span class="status-pill status-rejected">{{ row.rejected }}</span></td>
-              <td>{{ row.completed }}</td>
-              <td>
-                <span class="status-pill" [class.status-approved]="row.approvalRate >= 50"
-                      [class.status-pending]="row.approvalRate < 50 && row.approvalRate > 0"
-                      [class.status-rejected]="row.approvalRate === 0">
-                  {{ row.approvalRate }}%
-                </span>
-              </td>
-            </tr>
-            <tr *ngIf="requestHistoryRows().length === 0">
-              <td colspan="6" style="text-align:center;padding:2rem 0;color:#94a3b8;">No request history data available</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
-
-    <!-- Recently Completed -->
-    <section class="panel" *ngIf="completedRequestRows().length > 0">
-      <div class="panel-header">
-        <div style="display:flex;align-items:center;gap:0.65rem;">
-          <h3>✅ Recently Completed</h3>
-        </div>
-      </div>
-      <div class="table-wrap" style="border:none;border-radius:0;">
-        <table>
-          <thead>
-            <tr>
-              <th>SR #</th>
-              <th>Completed On</th>
-              <th>Items</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let row of completedRequestRows()">
-              <td><strong>{{ row.srNumber }}</strong></td>
-              <td>{{ row.completedOn }}</td>
-              <td>{{ row.items }}</td>
-              <td><span class="status-pill status-approved">Completed</span></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
-
-  </ng-container>
-
-  <!-- ============ CATALOG VIEW ============ -->
-  <ng-container *ngIf="currentView === 'catalog'">
-
-    <div class="page-header">
-      <h1>Catalog</h1>
-    </div>
-
-    <div class="search-filters">
-      <input class="search-input" type="text" placeholder="Search catalog..." [(ngModel)]="catalogSearchTerm" (input)="filterCatalog()" />
-      <div class="filter-row">
-        <label>
-          Category:
-          <select [(ngModel)]="catalogFilterCategory" (change)="filterCatalog()">
-            <option value="">All</option>
-            <option *ngFor="let cat of catalogCategories" [value]="cat">{{ cat }}</option>
-          </select>
-        </label>
-      </div>
-    </div>
-
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Category</th>
-            <th>Unit</th>
-            <th>Stock</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let item of filteredCatalog">
-            <td><strong>{{ item.name }}</strong></td>
-            <td>{{ item.category || '-' }}</td>
-            <td>{{ item.uom || '-' }}</td>
-            <td>
-              <span class="status-pill" [class.status-approved]="(item.available || 0) > 10"
-                    [class.status-pending]="(item.available || 0) > 0 && (item.available || 0) <= 10"
-                    [class.status-rejected]="(item.available || 0) === 0">
-                {{ item.available || 0 }}
-              </span>
-            </td>
-            <td>
-              <button class="icon-btn" (click)="requestCatalogItem(item)">Request</button>
-            </td>
-          </tr>
-          <tr *ngIf="filteredCatalog.length === 0">
-            <td colspan="5" style="text-align:center; padding:2rem 0; color:#94a3b8;">No items found</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-    <p class="pagination-text">Showing {{ filteredCatalog.length }} of {{ baseCatalogItems().length }} items</p>
-
-  </ng-container>
-
-  <!-- ============ CREATE REQUEST VIEW ============ -->
-  <ng-container *ngIf="currentView === 'create-request'">
-
-    <div class="page-header">
-      <div>
-        <h1>Create Request</h1>
-        <p>Submit a new purchase or supply request</p>
-      </div>
-      <button class="action-btn secondary" (click)="switchView('my-requests')">← Back</button>
-    </div>
-
-    <div class="panel">
+  @if (currentView === 'new-request') {
+    <section class="panel" aria-labelledby="new-request-heading">
+      <h2 id="new-request-heading">Create New Request</h2>
       <div class="simple-form-grid">
         <label>
-          Request Type
-          <select [(ngModel)]="newRequest.requestType">
-            <option value="Supply Request">Supply Request</option>
-            <option value="Purchase Request">Purchase Request</option>
-          </select>
+          Item Name
+          <input type="text" value="Laptop" />
         </label>
         <label>
-          Required Date
-          <input type="date" [(ngModel)]="newRequest.requiredDate" />
+          Quantity
+          <input type="number" value="1" min="1" />
         </label>
         <label class="full-width">
-          Reason / Description
-          <textarea rows="3" [(ngModel)]="newRequest.description"></textarea>
+          Note
+          <textarea rows="4">Need for office assignment.</textarea>
         </label>
       </div>
       <div class="actions-row">
-        <button class="action-btn secondary" (click)="saveDraft()">Save as Draft</button>
-        <button class="action-btn primary" (click)="submitRequest()">Submit Request</button>
+        <a class="action-btn primary" (click)="submitRequest()">Submit Request</a>
       </div>
-    </div>
+    </section>
+  }
 
-  </ng-container>
-
-  <!-- ============ NOTIFICATIONS VIEW ============ -->
-  <ng-container *ngIf="currentView === 'notifications'">
-
-    <div class="page-header">
-      <div>
-        <h1>Notifications</h1>
-        <p>Updates and alerts about your requests</p>
+  @if (currentView === 'my-requests') {
+    <section class="panel" aria-labelledby="my-requests-heading">
+      <div class="search-filters">
+        <input type="text" placeholder="🔍 Search by SR#, item, date..." class="search-input" />
+        <div class="filter-row">
+          <label>
+            📅 Date:
+            <input type="date" value="2024-12-01" />
+            to
+            <input type="date" value="2024-12-15" />
+          </label>
+          <label>
+            🏷️ Status:
+            <select>
+              <option>All</option>
+              <option>Pending</option>
+              <option>Approved</option>
+              <option>Rejected</option>
+            </select>
+          </label>
+          <label>
+            ⭐ Priority:
+            <select>
+              <option>All</option>
+              <option>Urgent</option>
+              <option>Medium</option>
+              <option>Normal</option>
+            </select>
+          </label>
+        </div>
       </div>
-      <button class="action-btn secondary" *ngIf="hasUnreadNotifications" (click)="markAllNotificationsAsRead()">Mark all read</button>
-    </div>
 
-    <div class="notifications-page">
+      <div class="my-requests-summary">
+        <div class="summary-stat">
+          <p>Total Requests (All Time)</p>
+          <strong>{{ requestSummary().total }}</strong>
+        </div>
+        <div class="summary-stat">
+          <p>Pending Approval</p>
+          <strong>{{ requestSummary().pending }}</strong>
+        </div>
+        <div class="summary-stat">
+          <p>Approved</p>
+          <strong>{{ requestSummary().approved }} 🟢 Ready</strong>
+        </div>
+        <div class="summary-stat">
+          <p>Rejected</p>
+          <strong>{{ requestSummary().rejected }} 🔴 Rejected</strong>
+        </div>
+        <div class="summary-stat">
+          <p>Completed</p>
+          <strong>{{ requestSummary().completed }} ✅ Done</strong>
+        </div>
+      </div>
+
+      <h2 id="my-requests-heading">📋 MY REQUESTS LIST</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">SR #</th>
+              <th scope="col">Date</th>
+              <th scope="col">Items</th>
+              <th scope="col">Priority</th>
+              <th scope="col">Status</th>
+              <th scope="col">Required By</th>
+              <th scope="col">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (request of workflowRequests(); track request.id) {
+              <tr>
+                <td>{{ request.srNumber }}</td>
+                <td>{{ request.submittedDate | date: 'shortDate' }}</td>
+                <td>{{ request.items.length }}</td>
+                <td>{{ getPriorityIcon(request.priority) }} {{ request.priority }}</td>
+                <td>
+                  <span
+                    class="status-pill"
+                    [class.status-pending]="['Submitted', 'Under Review'].includes(request.status)"
+                    [class.status-approved]="
+                      ['Manager Approved', 'Admin Approved', 'Compliance Review', 'Completed'].includes(
+                        request.status
+                      )
+                    "
+                    [class.status-rejected]="
+                      ['Manager Rejected', 'Admin Rejected'].includes(request.status)
+                    "
+                  >
+                    {{ getStatusIcon(request.status) }} {{ request.status }}
+                  </span>
+                </td>
+                <td>{{ request.requiredDate | date: 'shortDate' }}</td>
+                <td>
+                  <button class="icon-btn" title="View" (click)="viewRequest(request.srNumber)">
+                    👁️
+                  </button>
+                  @if (['Submitted', 'Under Review'].includes(request.status)) {
+                    <button class="icon-btn" title="Edit" (click)="editRequest(request.srNumber)">
+                      📝
+                    </button>
+                    <button
+                      class="icon-btn"
+                      title="Cancel"
+                      (click)="cancelRequest(request.srNumber)"
+                    >
+                      ❌
+                    </button>
+                  }
+                  <button class="icon-btn" title="Track" (click)="trackRequest(request.srNumber)">
+                    🔄
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <p class="pagination-text">Showing 1-6 of 23 requests 1 2 → 2</p>
+    </section>
+
+    <section class="request-history panel" aria-labelledby="history-heading">
+      <h2 id="history-heading" class="section-title">📋 MY REQUEST HISTORY</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Year</th>
+              <th scope="col">Total Requests</th>
+              <th scope="col">Approved</th>
+              <th scope="col">Rejected</th>
+              <th scope="col">Completed</th>
+              <th scope="col">Approval Rate</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of requestHistoryRows(); track row.year) {
+              <tr>
+                <td>{{ row.year }}</td>
+                <td>{{ row.totalRequests }}</td>
+                <td>{{ row.approved }}</td>
+                <td>{{ row.rejected }}</td>
+                <td>{{ row.completed }}</td>
+                <td>{{ row.approvalRate }}%</td>
+              </tr>
+            }
+            @if (requestHistoryRows().length === 0) {
+              <tr>
+                <td colspan="6">No request history found.</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="siv-section panel" aria-labelledby="siv-heading">
+      <h2 id="siv-heading" class="section-title">🧾 MY STORE ISSUE VOUCHERS (SIVs)</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">SIV #</th>
+              <th scope="col">Date</th>
+              <th scope="col">Items</th>
+              <th scope="col">Status</th>
+              <th scope="col">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (siv of employeeSivs(); track siv.id) {
+              <tr>
+                <td>{{ siv.sivNumber }}</td>
+                <td>{{ siv.date }}</td>
+                <td>{{ siv.items }}</td>
+                <td>{{ siv.status }}</td>
+                <td>
+                  <button class="icon-btn" (click)="viewSIV(siv.id)">View</button>
+                  <button class="icon-btn" (click)="downloadPDF(siv.id)">Print</button>
+                  <button class="icon-btn" (click)="emailSIV(siv.id)">Email</button>
+                </td>
+              </tr>
+            }
+            @if (employeeSivs().length === 0) {
+              <tr>
+                <td colspan="5">No issued SIVs found for your requests.</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  }
+
+  @if (currentView === 'my-activity') {
+    <section class="notifications-page" aria-labelledby="notif-heading">
+      <div class="notifications-header">
+        <h2 id="notif-heading">Notifications ({{ notifications().length }})</h2>
+        <button class="fancy-btn outline-success" (click)="markAllAsRead()">Mark All Read</button>
+      </div>
+
       <div class="notifications-filters">
         <div class="search-box">
-          <input type="text" placeholder="Search notifications..." [(ngModel)]="notificationSearchTerm" (input)="filterNotifications()" />
+          <input type="text" placeholder="Search notifications..." />
         </div>
         <div class="filter-actions">
-          <select class="type-select" [(ngModel)]="notificationFilterType" (change)="filterNotifications()">
-            <option value="">All types</option>
-            <option *ngFor="let t of notificationTypes" [value]="t">{{ t }}</option>
+          <select class="type-select" aria-label="Filter notifications by type">
+            <option>All Types</option>
+            <option>Approvals</option>
+            <option>Completions</option>
           </select>
+          <button class="fancy-btn outline-success small" (click)="markAllAsRead()">
+            Mark Read
+          </button>
         </div>
       </div>
 
-      <div class="sub-section-header">🔔 Latest Updates</div>
+      <div class="sub-section-header"><i class="bi bi-bell-fill"></i> ALL NOTIFICATIONS</div>
 
       <div class="notifications-feed">
-        <div *ngFor="let notif of displayedNotifications"
-             class="fancy-notification-card"
-             [class.unread]="notif.unread !== false && !notif.read">
-          <div class="card-top">
-            <div class="title-group">
-              <span class="status-dot" [class.approved]="notif.type === 'Approved' || notif.type === 'Resolved'"
-                    [class.completed]="notif.type === 'Completed' || notif.type === 'Info'"
-                    [class.submitted]="notif.type === 'Submitted' || notif.type === 'Pending'"></span>
-              <h4 class="notif-title">{{ notif.title || notif.message || 'Notification' }}</h4>
+        @for (notification of notifications(); track notification.id) {
+          <div class="fancy-notification-card" [class.unread]="!notification.read">
+            <div class="card-content">
+              <div class="card-top">
+                <div class="title-group">
+                  <span class="status-dot" [class]="notification.type"></span>
+                  <h3 class="notif-title">
+                    @if (notification.type === 'approved') {
+                      Request Approved -
+                    }
+                    @if (notification.type === 'completed') {
+                      Request Completed -
+                    }
+                    @if (notification.type === 'submitted') {
+                      Request Submitted -
+                    }
+                    {{ notification.requestId }}
+                  </h3>
+                </div>
+                <span class="notif-time">{{ notification.date }}</span>
+              </div>
+              <p class="notif-message">{{ notification.message }}</p>
+              <div class="notif-actions">
+                <button
+                  class="fancy-btn primary small"
+                  (click)="viewRequest(notification.requestId)"
+                >
+                  View Request
+                </button>
+                @if (notification.type === 'completed') {
+                  <button
+                    class="fancy-btn outline-primary small"
+                    (click)="viewSIV(notification.sivId!)"
+                  >
+                    View SIV
+                  </button>
+                  <button
+                    class="fancy-btn outline-primary small"
+                    (click)="downloadPDF(notification.sivId!)"
+                  >
+                    Download PDF
+                  </button>
+                }
+                <button
+                  class="fancy-btn secondary small"
+                  (click)="dismissNotification(notification.id)"
+                >
+                  Dismiss
+                </button>
+              </div>
             </div>
-            <span class="notif-time">{{ notif.createdAt | date:'MMM d, h:mm a' }}</span>
           </div>
-          <p class="notif-message">{{ notif.message || notif.description || '' }}</p>
-          <div class="notif-actions" *ngIf="notif.type === 'Approved'">
-            <button class="fancy-btn outline-success small" (click)="acknowledgeNotification(notif)">Acknowledge</button>
+        }
+      </div>
+    </section>
+  }
+
+  @if (currentView === 'profile') {
+    <section class="profile-section" aria-labelledby="profile-heading">
+      <section class="profile-info panel" aria-labelledby="profile-info-heading">
+        <h2 id="profile-info-heading" class="section-title">👤 PROFILE INFORMATION</h2>
+        <div class="profile-layout">
+          <div class="profile-photo">
+            <div class="photo-scan-container" [class.scanning]="isValidatingPhoto()">
+              @if (profilePhoto()) {
+                <img [src]="profilePhoto()!" alt="Profile photo" class="profile-image" />
+              } @else {
+                <div class="photo-placeholder">👤</div>
+              }
+
+              @if (isValidatingPhoto()) {
+                <div class="scan-overlay">
+                  <div class="scan-line"></div>
+                  <span class="scan-label">Scanning Face...</span>
+                </div>
+              }
+
+              @if (isUploadingPhoto()) {
+                <div class="scan-overlay upload-overlay">
+                  <div class="upload-spinner"></div>
+                  <span class="scan-label">Saving to server...</span>
+                </div>
+              }
+            </div>
+
+            @if (!isSelectingPhoto()) {
+              <button class="change-photo-btn" (click)="changePhoto()">Change Photo</button>
+            } @else {
+              <div class="inline-upload-container">
+                @if (!isCameraActive()) {
+                  <div class="method-toggles">
+                    <button class="btn-method" (click)="fileInput.click()">
+                      <i class="bi bi-cloud-arrow-up"></i> Upload
+                    </button>
+                    <button class="btn-method" (click)="startCamera()">
+                      <i class="bi bi-camera"></i> Camera
+                    </button>
+                    <input
+                      type="file"
+                      #fileInput
+                      class="file-input-hidden"
+                      (change)="onFileSelected($event)"
+                      accept="image/*"
+                      aria-label="Upload a profile photo"
+                      title="Upload a profile photo"
+                    />
+                  </div>
+                } @else {
+                  <div class="inline-camera-view">
+                    <video #videoElement autoplay muted></video>
+                    <canvas #canvasElement class="camera-canvas"></canvas>
+                    <button class="btn-capture" (click)="capturePhoto()">Capture</button>
+                  </div>
+                }
+
+                <div class="inline-actions">
+                  <button class="btn-cancel-upload" (click)="cancelUpload()">Cancel</button>
+                  <button
+                    class="btn-save-inline"
+                    (click)="isSelectingPhoto.set(false)"
+                    [disabled]="!profilePhoto()"
+                  >
+                    Save
+                  </button>
+                </div>
+              </div>
+            }
+          </div>
+          <div class="profile-details">
+            <div class="detail-row"><strong>Full Name:</strong> {{ userProfile().fullName }}</div>
+            <div class="detail-row">
+              <strong>Employee Code:</strong> {{ userProfile().employeeCode }}
+            </div>
+            <div class="detail-row">
+              <strong>Department:</strong> {{ userProfile().department }}
+            </div>
+            <div class="detail-row"><strong>Email:</strong> {{ userProfile().email }}</div>
+            <div class="detail-row"><strong>Phone:</strong> {{ userProfile().phone }}</div>
           </div>
         </div>
-        <p *ngIf="displayedNotifications.length === 0" style="text-align:center;padding:2rem;color:#94a3b8;">No notifications match your filters.</p>
-      </div>
-    </div>
+      </section>
 
-  </ng-container>
 
-  <!-- ============ PROFILE VIEW ============ -->
-  <ng-container *ngIf="currentView === 'profile'">
 
-    <div class="page-header">
-      <div>
-        <h1>My Profile</h1>
-        <p>Manage your personal information and preferences</p>
-      </div>
-      <button class="edit-profile-btn" (click)="toggleEditProfile()">
-        {{ editingProfile ? 'Cancel' : '✏️ Edit Profile' }}
-      </button>
-    </div>
+      <section class="notification-settings panel" aria-labelledby="notif-settings-heading">
+        <h2 id="notif-settings-heading" class="section-title">🔔 NOTIFICATION SETTINGS</h2>
+        <p class="section-description">
+          Manage how and when you receive notifications about your requests
+        </p>
+        <div class="checkbox-list">
+          <label>
+            <input
+              type="checkbox"
+              [(ngModel)]="notificationSettings().emailOnApproval"
+              (change)="saveNotificationSettings()"
+            />
+            <span>Email me when my request is approved</span>
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              [(ngModel)]="notificationSettings().emailOnRejection"
+              (change)="saveNotificationSettings()"
+            />
+            <span>Email me when my request is rejected</span>
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              [(ngModel)]="notificationSettings().emailOnReady"
+              (change)="saveNotificationSettings()"
+            />
+            <span>Email me when items are ready for pickup</span>
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              [(ngModel)]="notificationSettings().weeklySummary"
+              (change)="saveNotificationSettings()"
+            />
+            <span>Weekly request summary</span>
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              [(ngModel)]="notificationSettings().monthlyDigest"
+              (change)="saveNotificationSettings()"
+            />
+            <span>Monthly request digest</span>
+          </label>
+        </div>
+      </section>
 
-    <div class="profile-section">
-      <div class="profile-layout">
-        <div class="profile-photo">
-          <div class="photo-scan-container" [class.scanning]="scanningPhoto">
-            <img *ngIf="employeeData?.profileImageUrl" [src]="employeeData?.profileImageUrl" alt="Profile" class="profile-image" />
-            <div *ngIf="!employeeData?.profileImageUrl" class="photo-placeholder">
-              {{ (employeeData?.firstName?.[0] || '') + (employeeData?.lastName?.[0] || '') }}
-            </div>
-            <div class="scan-overlay" *ngIf="scanningPhoto">
-              <div class="scan-line"></div>
-              <span class="scan-label">Scanning...</span>
-            </div>
-            <div class="scan-overlay upload-overlay" *ngIf="uploadingPhoto">
-              <div class="upload-spinner"></div>
-              <span class="scan-label">Uploading...</span>
-            </div>
-          </div>
-
-          <ng-container *ngIf="editingProfile && !photoPreview">
-            <button class="change-photo-btn" (click)="photoUploadMethod = ''; showPhotoUpload = !showPhotoUpload">
-              {{ showPhotoUpload ? 'Cancel' : 'Change Photo' }}
+      <section class="account-security panel" aria-labelledby="security-heading">
+        <h2 id="security-heading" class="section-title">🔐 ACCOUNT SECURITY</h2>
+        <div class="security-info">
+          <p><strong>Last Password Change:</strong> Nov 15, 2024</p>
+          <p><strong>Last Login:</strong> Dec 15, 2024 09:30 AM</p>
+          <div class="security-actions">
+            <button class="action-btn secondary" (click)="changePassword()">
+              [Change Password]
             </button>
-          </ng-container>
-
-          <div class="inline-upload-container" *ngIf="showPhotoUpload && editingProfile">
-            <div class="method-toggles">
-              <button class="btn-method" (click)="selectPhotoUploadMethod('file')">
-                <i>📁</i> Browse
-              </button>
-              <button class="btn-method" (click)="selectPhotoUploadMethod('camera')">
-                <i>📷</i> Camera
-              </button>
-              <button class="btn-method" (click)="selectPhotoUploadMethod('scan')">
-                <i>🔍</i> Scan
-              </button>
-            </div>
-
-            <input type="file" #fileInput accept="image/*" class="file-input-hidden"
-                   (change)="onPhotoSelected($event)" />
-            <div class="inline-camera-view" *ngIf="photoUploadMethod === 'camera'">
-              <video #video autoplay muted playsinline></video>
-              <button class="btn-capture" (click)="capturePhoto()">📸 Capture</button>
-            </div>
-            <canvas #canvas class="camera-canvas"></canvas>
-
-            <div class="inline-actions" *ngIf="photoPreview">
-              <button class="btn-cancel-upload" (click)="cancelPhotoUpload()">Cancel</button>
-              <button class="btn-save-inline" [disabled]="uploadingPhoto" (click)="saveProfilePhoto()">
-                {{ uploadingPhoto ? 'Saving...' : 'Save Photo' }}
-              </button>
-            </div>
           </div>
         </div>
+      </section>
 
-        <div class="profile-details" *ngIf="!editingProfile">
-          <div class="detail-row"><strong>First Name:</strong> {{ employeeData?.firstName }}</div>
-          <div class="detail-row"><strong>Last Name:</strong> {{ employeeData?.lastName }}</div>
-          <div class="detail-row"><strong>Email:</strong> {{ employeeData?.email }}</div>
-          <div class="detail-row"><strong>Department:</strong> {{ employeeData?.department }}</div>
-          <div class="detail-row"><strong>Position:</strong> {{ employeeData?.position || '-' }}</div>
-          <div class="detail-row"><strong>Phone:</strong> {{ employeeData?.phone || '-' }}</div>
-          <div class="detail-row"><strong>Employee ID:</strong> {{ employeeData?.employeeId }}</div>
-          <div class="detail-row"><strong>Joined:</strong> {{ employeeData?.joinDate || 'N/A' }}</div>
-        </div>
-
-        <div class="profile-details" *ngIf="editingProfile">
-          <label>First Name <input [(ngModel)]="editForm.firstName" /></label>
-          <label>Last Name <input [(ngModel)]="editForm.lastName" /></label>
-          <label>Email <input [(ngModel)]="editForm.email" type="email" /></label>
-          <label>Phone <input [(ngModel)]="editForm.phone" /></label>
-          <label>Department <input [(ngModel)]="editForm.department" /></label>
-          <label>Position <input [(ngModel)]="editForm.position" /></label>
-          <div class="actions-row" style="grid-column:1/-1">
-            <button class="action-btn secondary" (click)="editingProfile = false">Cancel</button>
-            <button class="action-btn primary" (click)="saveProfile()">Save Changes</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Settings & Security -->
-    <div class="panel" style="margin-top:1.5rem;">
-      <h4 class="section-title">Preferences &amp; Security</h4>
-
-      <div class="sub-section-header" style="margin-top:1rem;">Notification Preferences</div>
-      <div class="checkbox-list">
-        <label *ngFor="let pref of notificationPrefs">
-          <input type="checkbox" [(ngModel)]="pref.enabled" [disabled]="!editingProfile" />{{ pref.label }}
-        </label>
-      </div>
-
-      <div class="actions-row" *ngIf="editingProfile">
-        <button class="action-btn primary" (click)="saveNotificationPrefs()">Save Preferences</button>
-      </div>
-
-      <div class="sub-section-header" style="margin-top:2rem;">Account Security</div>
-      <div class="security-info">
-        <div class="detail-row"><strong>Password:</strong> •••••••• <a href (click)="$event.preventDefault()" style="color:#6366f1;font-weight:600;">Change</a></div>
-        <div class="detail-row"><strong>Two-Factor Auth:</strong> {{ twoFAEnabled ? '✅ Enabled' : '❌ Disabled' }}
-          <a (click)="$event.preventDefault(); show2FASettings = !show2FASettings" href style="color:#6366f1;font-weight:600;margin-left:0.5rem;">
-            {{ show2FASettings ? 'Hide' : 'Manage' }}
-          </a>
-        </div>
-      </div>
-
-      <!-- 2FA -->
-      <div *ngIf="show2FASettings" style="background:#fafbff;border:1px solid #f1f5f9;border-radius:14px;padding:1.25rem;margin-top:0.75rem;">
+      <section class="two-factor-auth panel" aria-labelledby="2fa-heading">
         <div class="twofa-header">
           <div class="twofa-title">
-            <span class="twofa-icon">🔐</span>
-            <h2>Two-Factor Authentication</h2>
+            <i class="bi bi-shield-lock twofa-icon"></i>
+            <h2 id="2fa-heading">TWO-FACTOR AUTHENTICATION</h2>
           </div>
-          <button class="btn-enable-2fa" *ngIf="!twoFAEnabled" (click)="enable2FA()">Enable 2FA</button>
-          <button class="btn-disable-2fa" *ngIf="twoFAEnabled" (click)="disable2FA()">Disable 2FA</button>
+          @if (!twoFactorEnabled()) {
+            <button class="btn-enable-2fa" (click)="enable2FA()">Enable 2FA</button>
+          }
         </div>
 
         <div class="twofa-status">
           <div class="status-indicator">
-            <span class="status-dot" [class.enabled]="twoFAEnabled" [class.disabled]="!twoFAEnabled"></span>
-            <span>{{ twoFAEnabled ? 'Two-factor authentication is active' : 'Two-factor authentication is not enabled' }}</span>
+            <span
+              class="status-dot"
+              [class.enabled]="twoFactorEnabled()"
+              [class.disabled]="!twoFactorEnabled()"
+            ></span>
+            <span class="status-text">{{ twoFactorEnabled() ? 'Enabled' : 'Disabled' }}</span>
           </div>
         </div>
 
-        <div class="twofa-settings">
-          <div class="setting-row">
-            <label>Authentication Method</label>
-            <select class="twofa-select" [(ngModel)]="twoFAMethod" [disabled]="!twoFAEnabled">
-              <option value="app">Authenticator App</option>
-              <option value="sms">SMS</option>
-              <option value="email">Email</option>
-            </select>
-          </div>
-
-          <div class="setting-row" *ngIf="twoFAMethod === 'sms'">
-            <label>Phone Number</label>
-            <div class="phone-input-group">
-              <input class="twofa-input" type="tel" placeholder="+1 (555) 000-0000" [(ngModel)]="twoFAPhone" [disabled]="!twoFAEnabled" />
-              <button class="btn-save-phone" (click)="saveTwoFAPhone()" [disabled]="!twoFAEnabled">Save</button>
-            </div>
-            <span *ngIf="twoFAPhoneVerified" class="verification-status verified">✅ Verified</span>
-          </div>
-
-          <div class="setting-row" *ngIf="twoFAMethod === 'email'">
-            <label>Email for 2FA codes</label>
-            <input class="twofa-input" type="email" [value]="employeeData?.email" readonly />
-            <span class="readonly-value">(Uses your account email)</span>
-          </div>
-
-          <div class="setting-row" *ngIf="twoFAMethod === 'app'">
-            <label>Authenticator App</label>
-            <span class="readonly-value">Scan QR code in the authenticator app of your choice</span>
-          </div>
-
-          <ng-container *ngIf="twoFAVerificationRequired">
+        @if (twoFactorEnabled()) {
+          <div class="twofa-settings">
             <div class="setting-row">
-              <label>Verification Code</label>
-              <div class="verification-input-group">
-                <input class="twofa-input verification-input" type="text" placeholder="000000" maxlength="6" [(ngModel)]="twoFAVerificationCode" />
-                <button class="btn-verify-code" (click)="verifyTwoFACode()">Verify</button>
+              <label for="twofa-method">2FA Method:</label>
+              <select
+                id="twofa-method"
+                class="twofa-select"
+                [value]="twoFactorMethod()"
+                (change)="updateTwoFactorMethod($event)"
+              >
+                <option value="email">Email</option>
+              </select>
+            </div>
+
+            @if (twoFactorMethod() === 'email') {
+              <div class="setting-row">
+                <label for="email-address">Email Address:</label>
+                <div class="phone-input-group">
+                  <input
+                    id="email-address"
+                    type="email"
+                    class="twofa-input"
+                    [value]="userProfile().email"
+                    readonly
+                  />
+                  <button
+                    class="btn-save-phone"
+                    (click)="saveTwoFactorPhone()"
+                    [disabled]="twoFactorSending()"
+                    title="Send verification code"
+                  >
+                    {{ twoFactorSending() ? 'Sending...' : twoFactorSetupComplete() ? 'Re-send Code' : 'Send Code' }}
+                  </button>
+                  @if (twoFactorSetupComplete()) {
+                    <span class="verification-status verified">✓ Verified</span>
+                  }
+                </div>
               </div>
+
+              @if (twoFactorVerificationSent()) {
+                <div class="setting-row verification-row">
+                  <label for="verification-code-email">Verification Code:</label>
+                  <div class="verification-input-group">
+                    <input
+                      id="verification-code-email"
+                      type="text"
+                      class="twofa-input verification-input"
+                      [value]="twoFactorVerificationCode()"
+                      (input)="updateTwoFactorVerificationCode($event)"
+                      placeholder="Enter 6-digit code"
+                      maxlength="6"
+                    />
+                    <button
+                      class="btn-verify-code"
+                      (click)="verifyTwoFactorCode()"
+                      [disabled]="twoFactorVerificationCode().length !== 6"
+                      title="Verify code"
+                    >
+                      Verify
+                    </button>
+                  </div>
+                  <div class="verification-help">
+                    <p>Enter the 6-digit code sent to {{ userProfile().email }}</p>
+                    <button class="btn-resend" (click)="resendVerificationCode()">
+                      Resend Code
+                    </button>
+                  </div>
+                </div>
+              }
+            }
+
+            <div class="twofa-actions">
+              <button class="btn-disable-2fa" (click)="disable2FA()">Disable 2FA</button>
             </div>
-            <div class="verification-help">
-              <p>Enter the 6-digit code from your authenticator app, SMS, or email.</p>
-              <p>Didn't receive a code? <button class="btn-resend" (click)="resendTwoFACode()">Resend</button></p>
-            </div>
-          </ng-container>
-        </div>
+          </div>
+        }
+      </section>
+    </section>
+  }
 
-        <div class="twofa-actions" *ngIf="twoFAEnabled">
-          <p style="color:#94a3b8;font-size:0.82rem;">If you lose access to your 2FA method, contact IT support to recover your account.</p>
+  @if (currentView === 'catalog-items') {
+    <section class="panel" aria-labelledby="catalog-items-heading">
+      <div class="search-filters">
+        <input type="text" placeholder="🔍 Search items..." class="search-input" />
+        <div class="filter-row">
+          <label>
+            📂 Category:
+            <select>
+              <option>All</option>
+              <option>Electronics</option>
+              <option>Furniture</option>
+              <option>Supplies</option>
+            </select>
+          </label>
+          <label>
+            📊 Status:
+            <select>
+              <option>All</option>
+              <option>Good</option>
+              <option>Low</option>
+              <option>Out of Stock</option>
+            </select>
+          </label>
         </div>
       </div>
-    </div>
 
-  </ng-container>
-
-  <!-- ============ VIEW REQUEST MODAL ============ -->
-  <ng-container *ngIf="showRequestModal && selectedRequest">
-    <div class="panel" style="position:relative;">
-      <div class="panel-header">
-        <h4 class="section-title" style="margin:0;">Request Details</h4>
-        <button class="action-btn secondary" (click)="closeRequestModal()">Close</button>
+      <h2 id="catalog-items-heading">📋 ITEMS LIST VIEW (Table)</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">SKU</th>
+              <th scope="col">Item Name</th>
+              <th scope="col">Category</th>
+              <th scope="col">Available</th>
+              <th scope="col">Status</th>
+              <th scope="col">Last Restocked</th>
+              <th scope="col">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of catalogItems(); track item.sku) {
+              <tr>
+                <td>{{ item.sku }}</td>
+                <td>{{ item.name }}</td>
+                <td>{{ item.category }}</td>
+                <td>{{ item.available }}</td>
+                <td>
+                  <span
+                    class="status-pill"
+                    [class.status-approved]="item.status === 'Good'"
+                    [class.status-pending]="item.status === 'Low'"
+                    [class.status-rejected]="item.status === 'Out of Stock'"
+                  >
+                    {{ item.status === 'Good' ? '🟢' : item.status === 'Low' ? '🟡' : '🔴' }}
+                    {{ item.status }}
+                  </span>
+                </td>
+                <td>{{ item.lastRestocked }}</td>
+                <td>
+                  <button class="icon-btn" title="Request Item" (click)="openCreateRequestModal()">
+                    📝 Request
+                  </button>
+                  <button class="icon-btn" title="View Details" (click)="viewCatalogItem(item.sku)">
+                    👁️ View
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
       </div>
-      <div style="display:grid; gap:0.5rem;">
-        <div class="detail-row"><strong>ID:</strong> {{ selectedRequest.srNumber || selectedRequest.id }}</div>
-        <div class="detail-row"><strong>Type:</strong> Service Request</div>
-        <div class="detail-row">
-          <strong>Status:</strong>
-          <span class="status-pill"
-                [class.status-approved]="isApprovedStatus(selectedRequest.status)"
-                [class.status-pending]="isPendingStatus(selectedRequest.status)"
-                [class.status-rejected]="isRejectedStatus(selectedRequest.status)">
-            {{ selectedRequest.status }}
-          </span>
-        </div>
-        <div class="detail-row" *ngIf="selectedRequest.items?.length"><strong>Items:</strong> {{ selectedRequest.items.length }}</div>
-        <div class="detail-row"><strong>Created:</strong> {{ selectedRequest.submittedDate | date:'medium' }}</div>
-        <div class="detail-row" *ngIf="selectedRequest.requiredDate"><strong>Required By:</strong> {{ selectedRequest.requiredDate | date:'mediumDate' }}</div>
-      </div>
-    </div>
-  </ng-container>
+      <p class="pagination-text">Showing 1-5 of 89 items 1 2 3 → 4</p>
+    </section>
+  }
+</section>
 
-</div>
