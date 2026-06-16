@@ -8,7 +8,17 @@
       </div>
     </div>
     <div class="header-actions">
-      <button type="button" class="action-btn secondary" (click)="loadData()">
+      @if (!showDisposalForm()) {
+        <button type="button" class="action-btn primary" (click)="openCreateForm()">
+          <i class="bi bi-plus-lg"></i> Create Disposal
+        </button>
+      }
+      @if (showDisposalForm()) {
+        <button type="button" class="action-btn secondary" (click)="cancelCreateForm()">
+          <i class="bi bi-x-lg"></i> Cancel
+        </button>
+      }
+      <button type="button" class="action-btn secondary" (click)="loadHistory()">
         <i class="bi bi-arrow-clockwise"></i> Refresh
       </button>
     </div>
@@ -29,7 +39,20 @@
     </div>
   }
 
-  @if (!loading()) {
+  @if (!loading() && !showDisposalForm()) {
+    <div class="welcome-state">
+      <div class="welcome-icon">
+        <i class="bi bi-trash3"></i>
+      </div>
+      <h2>Ready to Dispose Materials?</h2>
+      <p>Select items from inventory, specify quantities and a reason, then submit for admin approval.</p>
+      <button type="button" class="action-btn primary create-btn" (click)="openCreateForm()">
+        <i class="bi bi-plus-lg"></i> Create Disposal
+      </button>
+    </div>
+  }
+
+  @if (!loading() && showDisposalForm()) {
     <div class="disposal-layout">
       <div class="panel select-panel">
         <h2><i class="bi bi-box-seam"></i> Select Items for Disposal</h2>
@@ -42,9 +65,13 @@
             <div class="empty-state">No items found</div>
           }
           @for (item of filteredStock(); track item.id) {
-            <div class="stock-item" [class.selected]="isSelected(item)" (click)="toggleItem(item)">
+            <div class="stock-item" [class.selected]="isSelected(item)" [class.out-of-stock]="(item.currentStock || 0) <= 0" (click)="toggleItem(item)">
               <div class="item-check">
-                <i class="bi" [class.bi-square]="!isSelected(item)" [class.bi-check-square-fill]="isSelected(item)"></i>
+                @if ((item.currentStock || 0) > 0) {
+                  <i class="bi" [class.bi-square]="!isSelected(item)" [class.bi-check-square-fill]="isSelected(item)"></i>
+                } @else {
+                  <i class="bi bi-x-circle text-muted"></i>
+                }
               </div>
               <div class="item-info">
                 <span class="item-name">{{ item.itemName || 'Unnamed' }}</span>
@@ -52,8 +79,13 @@
                 <span class="item-location">{{ item.warehouseName || '' }}{{ item.shelfLocation ? ' — ' + item.shelfLocation : '' }}</span>
               </div>
               <div class="item-stock">
-                <span class="stock-qty">{{ item.currentStock }}</span>
-                <span class="stock-label">in stock</span>
+                @if ((item.currentStock || 0) > 0) {
+                  <span class="stock-qty">{{ item.currentStock }}</span>
+                  <span class="stock-label">in stock</span>
+                } @else {
+                  <span class="stock-qty out">0</span>
+                  <span class="stock-label out">out of stock</span>
+                }
               </div>
               @if (item.unitPrice) {
                 <div class="item-price">
@@ -146,40 +178,40 @@
         }
       </div>
     </div>
-
-    <div class="panel history-panel">
-      <h2><i class="bi bi-clock-history"></i> Disposal History</h2>
-      @if (disposalHistory().length === 0) {
-        <div class="empty-state">No disposal records yet</div>
-      }
-      @if (disposalHistory().length > 0) {
-        <div class="history-table-wrapper">
-          <table class="history-table">
-            <thead>
-              <tr>
-                <th>Disposal #</th>
-                <th>Date</th>
-                <th>Items</th>
-                <th>Quantity</th>
-                <th>Reason</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (record of disposalHistory(); track record.id) {
-                <tr>
-                  <td class="cell-id">{{ record.disposalNumber || record.id }}</td>
-                  <td>{{ (record.disposalDate || record.createdAt || '') | date:'mediumDate' }}</td>
-                  <td>{{ record.totalItems || record.items?.length || 0 }}</td>
-                  <td>{{ record.totalQuantity || record.quantity || 0 }}</td>
-                  <td class="cell-reason">{{ record.reason || '—' }}</td>
-                  <td><span class="status-badge" [class]="statusClass(record.status || '')">{{ record.status }}</span></td>
-                </tr>
-              }
-            </tbody>
-          </table>
-        </div>
-      }
-    </div>
   }
+
+  <div class="panel history-panel">
+    <h2><i class="bi bi-clock-history"></i> Disposal History</h2>
+    @if (disposalHistory().length === 0) {
+      <div class="empty-state">No disposal records yet</div>
+    }
+    @if (disposalHistory().length > 0) {
+      <div class="history-table-wrapper">
+        <table class="history-table">
+          <thead>
+            <tr>
+              <th>Disposal #</th>
+              <th>Date</th>
+              <th>Items</th>
+              <th>Quantity</th>
+              <th>Reason</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (record of disposalHistory(); track record.id) {
+              <tr>
+                <td class="cell-id">{{ record.disposalNumber || record.id }}</td>
+                <td>{{ (record.disposalDate || record.createdAt || '') | date:'mediumDate' }}</td>
+                <td>{{ record.totalItems || record.items?.length || 0 }}</td>
+                <td>{{ record.totalQuantity || record.quantity || 0 }}</td>
+                <td class="cell-reason">{{ record.reason || '—' }}</td>
+                <td><span class="status-badge" [class]="statusClass(record.status || '')">{{ record.status }}</span></td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
 </section>

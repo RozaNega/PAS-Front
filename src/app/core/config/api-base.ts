@@ -1,6 +1,6 @@
 import { environment } from '../../../environments/environment';
 
-export const PAS_API_URL_STORAGE_KEY = 'pas_api_base_url';
+export const PAS_API_URL_STORAGE_KEY = 'pasApiBaseUrl';
 
 export function resolveApiBaseUrl(): string {
   return (environment.apiUrl || '/api').replace(/\/+$/, '');
@@ -9,4 +9,3 @@ export function resolveApiBaseUrl(): string {
 export function pasApiUrlHint(): string {
   return `If the API is not reachable, set the base URL then reload: localStorage.setItem('${PAS_API_URL_STORAGE_KEY}', 'http://localhost:5028/api')`;
 }
-

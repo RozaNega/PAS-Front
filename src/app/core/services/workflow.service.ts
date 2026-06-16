@@ -12,9 +12,6 @@ export type RequestStatus =
   | 'Draft'
   | 'Submitted'
   | 'Under Review'
-  | 'Awaiting Stock Verification'
-  | 'Stock Verified'
-  | 'Stock Insufficient'
   | 'Manager Approved'
   | 'Manager Rejected'
   | 'Admin Approved'
@@ -22,7 +19,6 @@ export type RequestStatus =
   | 'Compliance Review'
   | 'Completed'
   | 'Cancelled';
-export type StockVerificationStatus = 'Not Required' | 'Pending' | 'Verified' | 'Insufficient';
 export type RequestPriority = 'Low' | 'Medium' | 'High' | 'Urgent';
 
 export type UserRole = 'Employee' | 'Manager' | 'Admin' | 'Compliance' | 'Storekeeper' | 'Director';
@@ -30,9 +26,6 @@ export type UserRole = 'Employee' | 'Manager' | 'Admin' | 'Compliance' | 'Storek
 export const WORKFLOW_PENDING_STATUSES: readonly RequestStatus[] = [
   'Submitted',
   'Under Review',
-  'Awaiting Stock Verification',
-  'Stock Verified',
-  'Stock Insufficient',
 ] as const;
 
 export const WORKFLOW_APPROVED_STATUSES: readonly RequestStatus[] = [
@@ -59,9 +52,6 @@ const REQUEST_STATUS_RANK: Record<RequestStatus, number> = {
   Draft: 0,
   Submitted: 1,
   'Under Review': 2,
-  'Awaiting Stock Verification': 3,
-  'Stock Verified': 4,
-  'Stock Insufficient': 4,
   'Manager Rejected': 5,
   'Admin Rejected': 5,
   Cancelled: 5,
@@ -95,14 +85,14 @@ export interface ServiceRequest {
   staleEscalatedAt?: Date;
   lastManagerReminderAt?: Date;
   completedDate?: Date;
+  stockStatus?: 'pending' | 'available' | 'unavailable';
+  stockVerificationNotes?: string;
+  storekeeperRespondedAt?: Date;
+  storekeeperName?: string;
   estimatedCost?: number;
   actualCost?: number;
   attachments?: string[];
   workflowHistory: WorkflowStep[];
-  stockVerificationStatus?: StockVerificationStatus;
-  stockVerifiedBy?: string;
-  stockVerifiedDate?: Date;
-  stockVerificationNotes?: string;
 }
 
 export interface RequestItem {
@@ -258,7 +248,6 @@ export class WorkflowService {
         requiredDate: new Date(d.getTime() + 7 * day),
         estimatedCost: 1200,
         completedDate: completed,
-        stockVerificationStatus: 'Not Required' as StockVerificationStatus,
         workflowHistory: [
           { id: `wh_${i}_1`, action: 'Request Submitted', performedBy: empName, performedByRole: 'Employee', timestamp: d, previousStatus: 'Draft', newStatus: 'Submitted' },
         ],
@@ -501,7 +490,7 @@ export class WorkflowService {
     return this.requests().filter(
       (req) =>
         this.managerOwnsRequest(req, managerId) &&
-        ['Submitted', 'Under Review', 'Awaiting Stock Verification', 'Stock Verified', 'Stock Insufficient'].includes(req.status),
+        ['Submitted', 'Under Review'].includes(req.status),
     );
   }
 
@@ -624,179 +613,6 @@ export class WorkflowService {
     return true;
   }
 
-  /** Manager requests stock verification from storekeeper before approving. */
-  requestStockVerification(
-    requestId: string,
-    managerName: string,
-  ): void {
-    const request = this.requests().find((req) => req.id === requestId);
-    if (!request || request.status !== 'Submitted') return;
-
-    const updatedRequest: ServiceRequest = {
-      ...request,
-      status: 'Awaiting Stock Verification',
-      stockVerificationStatus: 'Pending',
-      workflowHistory: [
-        ...request.workflowHistory,
-        {
-          id: this.generateId(),
-          action: 'Stock Verification Requested',
-          performedBy: managerName,
-          performedByRole: 'Manager',
-          timestamp: new Date(),
-          comments: 'Manager requested stock verification from storekeeper',
-          previousStatus: request.status,
-          newStatus: 'Awaiting Stock Verification',
-        },
-      ],
-    };
-
-    this.updateRequest(updatedRequest);
-
-    this.createNotification({
-      recipientId: 'storekeeper_001',
-      recipientRole: 'Storekeeper',
-      type: 'info',
-      title: 'Stock verification required',
-      message: `Manager requested stock verification for ${request.srNumber} from ${request.employeeName}.`,
-      requestId: request.id,
-      actionRequired: true,
-      actionUrl: `/storekeeper/dashboard`,
-    });
-
-    this.createNotification({
-      recipientId: request.employeeId,
-      recipientRole: 'Employee',
-      type: 'info',
-      title: 'Stock check in progress',
-      message: `Your request ${request.srNumber} is being checked for stock availability by the storekeeper.`,
-      requestId: request.id,
-      actionRequired: false,
-      actionUrl: `/employee/dashboard`,
-    });
-  }
-
-  /** Storekeeper confirms stock is available. */
-  confirmStockAvailable(
-    requestId: string,
-    storekeeperName: string,
-    notes?: string,
-  ): void {
-    const request = this.requests().find((req) => req.id === requestId);
-    if (!request || request.status !== 'Awaiting Stock Verification') return;
-
-    const updatedRequest: ServiceRequest = {
-      ...request,
-      status: 'Stock Verified',
-      stockVerificationStatus: 'Verified',
-      stockVerifiedBy: storekeeperName,
-      stockVerifiedDate: new Date(),
-      stockVerificationNotes: notes,
-      workflowHistory: [
-        ...request.workflowHistory,
-        {
-          id: this.generateId(),
-          action: 'Stock Verified',
-          performedBy: storekeeperName,
-          performedByRole: 'Storekeeper',
-          timestamp: new Date(),
-          comments: notes || 'Stock is available',
-          previousStatus: request.status,
-          newStatus: 'Stock Verified',
-        },
-      ],
-    };
-
-    this.updateRequest(updatedRequest);
-
-    const managerId = request.managerId || this.getAssignedManagerQueueId();
-    this.createNotification({
-      recipientId: managerId,
-      recipientRole: 'Manager',
-      type: 'success',
-      title: 'Stock verified',
-      message: `Storekeeper ${storekeeperName} confirmed stock availability for ${request.srNumber}. You can now approve.`,
-      requestId: request.id,
-      actionRequired: true,
-      actionUrl: `/manager/dashboard`,
-    });
-
-    this.createNotification({
-      recipientId: request.employeeId,
-      recipientRole: 'Employee',
-      type: 'info',
-      title: 'Stock available',
-      message: `Stock for your request ${request.srNumber} has been confirmed as available.`,
-      requestId: request.id,
-      actionRequired: false,
-      actionUrl: `/employee/dashboard`,
-    });
-  }
-
-  /** Storekeeper marks stock as insufficient. */
-  confirmStockInsufficient(
-    requestId: string,
-    storekeeperName: string,
-    notes?: string,
-  ): void {
-    const request = this.requests().find((req) => req.id === requestId);
-    if (!request || request.status !== 'Awaiting Stock Verification') return;
-
-    const updatedRequest: ServiceRequest = {
-      ...request,
-      status: 'Stock Insufficient',
-      stockVerificationStatus: 'Insufficient',
-      stockVerifiedBy: storekeeperName,
-      stockVerifiedDate: new Date(),
-      stockVerificationNotes: notes,
-      workflowHistory: [
-        ...request.workflowHistory,
-        {
-          id: this.generateId(),
-          action: 'Stock Insufficient',
-          performedBy: storekeeperName,
-          performedByRole: 'Storekeeper',
-          timestamp: new Date(),
-          comments: notes || 'Stock is insufficient',
-          previousStatus: request.status,
-          newStatus: 'Stock Insufficient',
-        },
-      ],
-    };
-
-    this.updateRequest(updatedRequest);
-
-    const managerId = request.managerId || this.getAssignedManagerQueueId();
-    this.createNotification({
-      recipientId: managerId,
-      recipientRole: 'Manager',
-      type: 'warning',
-      title: 'Stock insufficient',
-      message: `Storekeeper ${storekeeperName} reported insufficient stock for ${request.srNumber}. Please review.`,
-      requestId: request.id,
-      actionRequired: true,
-      actionUrl: `/manager/dashboard`,
-    });
-
-    this.createNotification({
-      recipientId: request.employeeId,
-      recipientRole: 'Employee',
-      type: 'warning',
-      title: 'Stock insufficient',
-      message: `Stock for your request ${request.srNumber} is currently insufficient.`,
-      requestId: request.id,
-      actionRequired: false,
-      actionUrl: `/employee/dashboard`,
-    });
-  }
-
-  /** Get requests pending stock verification (for storekeeper). */
-  getRequestsForStockVerification(): ServiceRequest[] {
-    return this.requests().filter(
-      (req) => req.status === 'Awaiting Stock Verification',
-    );
-  }
-
   /** Auto-notify compliance when requests sit in manager queue too long. */
   escalateStalePendingRequests(thresholdDays = STALE_PENDING_DAYS): number {
     let escalated = 0;
@@ -852,7 +668,6 @@ export class WorkflowService {
       id: options?.id?.trim() || this.generateId(),
       srNumber: options?.srNumber?.trim() || this.generateSRNumber(),
       status: 'Submitted',
-      stockVerificationStatus: 'Not Required',
       submittedDate: new Date(),
       workflowHistory: [
         {
@@ -894,21 +709,6 @@ export class WorkflowService {
   ): void {
     const request = this.requests().find((req) => req.id === requestId);
     if (!request) return;
-
-    // Cannot approve without stock verification
-    if (action === 'approve' && request.stockVerificationStatus !== 'Verified') {
-      this.createNotification({
-        recipientId: reviewerId,
-        recipientRole: 'Manager',
-        type: 'error',
-        title: 'Stock verification required',
-        message: `Cannot approve ${request.srNumber} until stock is verified by the storekeeper. Click "Request Verification" first.`,
-        requestId: request.id,
-        actionRequired: false,
-        actionUrl: `/manager/dashboard`,
-      });
-      return;
-    }
 
     const newStatus: RequestStatus = action === 'approve' ? 'Manager Approved' : 'Manager Rejected';
 
@@ -977,6 +777,104 @@ export class WorkflowService {
         });
       }
     }
+  }
+
+  requestStockVerification(
+    requestId: string,
+    managerName: string,
+  ): void {
+    const request = this.requests().find((req) => req.id === requestId);
+    if (!request) return;
+
+    const updatedRequest: ServiceRequest = {
+      ...request,
+      stockStatus: 'pending',
+      workflowHistory: [
+        ...request.workflowHistory,
+        {
+          id: this.generateId(),
+          action: 'Stock Verification Requested',
+          performedBy: managerName,
+          performedByRole: 'Manager',
+          timestamp: new Date(),
+          comments: `Stock verification requested for ${request.srNumber}`,
+          previousStatus: request.status,
+          newStatus: request.status,
+        },
+      ],
+    };
+
+    this.updateRequest(updatedRequest);
+
+    this.createNotification({
+      recipientId: '',
+      recipientRole: 'Storekeeper',
+      type: 'warning',
+      title: 'Stock verification requested',
+      message: `Manager ${managerName} requests stock verification for ${request.srNumber} — ${request.items[0]?.name || 'item'}. Please confirm availability.`,
+      requestId: request.id,
+      actionRequired: true,
+      actionUrl: `/storekeeper/dashboard`,
+    });
+  }
+
+  respondStockVerification(
+    requestId: string,
+    isAvailable: boolean,
+    storekeeperName: string,
+    notes?: string,
+  ): void {
+    const request = this.requests().find((req) => req.id === requestId);
+    if (!request) return;
+
+    const status = isAvailable ? 'available' : 'unavailable';
+
+    const updatedRequest: ServiceRequest = {
+      ...request,
+      stockStatus: status,
+      stockVerificationNotes: notes || '',
+      storekeeperRespondedAt: new Date(),
+      storekeeperName,
+      workflowHistory: [
+        ...request.workflowHistory,
+        {
+          id: this.generateId(),
+          action: isAvailable ? 'Stock Verified - Available' : 'Stock Verified - Unavailable',
+          performedBy: storekeeperName,
+          performedByRole: 'Storekeeper',
+          timestamp: new Date(),
+          comments: notes || (isAvailable ? 'Stock available' : 'Stock unavailable'),
+          previousStatus: request.status,
+          newStatus: request.status,
+        },
+      ],
+    };
+
+    this.updateRequest(updatedRequest);
+
+    const managerId = request.managerId || 'mgr_001';
+    this.createNotification({
+      recipientId: managerId,
+      recipientRole: 'Manager',
+      type: isAvailable ? 'success' : 'error',
+      title: isAvailable ? 'Stock available' : 'Stock unavailable',
+      message: `Stock for ${request.srNumber} is ${status} — ${storekeeperName}.${notes ? ' Notes: ' + notes : ''}`,
+      requestId: request.id,
+      actionRequired: isAvailable,
+      actionUrl: `/manager/dashboard`,
+    });
+  }
+
+  getRequestsPendingStockVerification(): ServiceRequest[] {
+    return this.requests().filter((r) => r.stockStatus === 'pending');
+  }
+
+  confirmStockAvailable(requestId: string, storekeeperName: string, notes?: string): void {
+    this.respondStockVerification(requestId, true, storekeeperName, notes);
+  }
+
+  confirmStockInsufficient(requestId: string, storekeeperName: string, notes?: string): void {
+    this.respondStockVerification(requestId, false, storekeeperName, notes);
   }
 
   adminReviewRequest(
@@ -1324,10 +1222,6 @@ export class WorkflowService {
       adminReviewDate: existing.adminReviewDate ?? incoming.adminReviewDate,
       adminComments: existing.adminComments ?? incoming.adminComments,
       completedDate: existing.completedDate ?? incoming.completedDate,
-      stockVerificationStatus: (existing.stockVerificationStatus ?? incoming.stockVerificationStatus) as StockVerificationStatus | undefined,
-      stockVerifiedBy: existing.stockVerifiedBy ?? incoming.stockVerifiedBy,
-      stockVerifiedDate: existing.stockVerifiedDate ?? incoming.stockVerifiedDate,
-      stockVerificationNotes: existing.stockVerificationNotes ?? incoming.stockVerificationNotes,
       workflowHistory:
         existing.workflowHistory.length >= incoming.workflowHistory.length
           ? existing.workflowHistory
@@ -1386,9 +1280,6 @@ export class WorkflowService {
       justification: sr.purpose || sr.notes || sr.remarks || '',
       submittedDate: submitted,
       requiredDate: required,
-      stockVerificationStatus: WORKFLOW_PENDING_STATUSES.includes(wfStatus)
-        ? 'Not Required'
-        : 'Verified',
       managerReviewDate:
         WORKFLOW_APPROVED_STATUSES.includes(wfStatus) ||
         WORKFLOW_REJECTED_STATUSES.includes(wfStatus)
@@ -1600,13 +1491,7 @@ export class WorkflowService {
       const rawNotif = localStorage.getItem(STORAGE_NOTIFICATIONS);
       if (rawReq) {
         const parsed = JSON.parse(rawReq) as ServiceRequest[];
-        const migrated = parsed.map((r) => {
-          if (!r.stockVerificationStatus) {
-            return { ...r, stockVerificationStatus: 'Not Required' as StockVerificationStatus };
-          }
-          return r;
-        });
-        this.requests.set(migrated.map((r) => this.reviveServiceRequest(r)));
+        this.requests.set(parsed.map((r) => this.reviveServiceRequest(r)));
       } else {
         this.requests.set([]);
       }
@@ -1646,9 +1531,6 @@ export class WorkflowService {
         ? new Date(r.lastManagerReminderAt as unknown as string)
         : undefined,
       completedDate: r.completedDate ? new Date(r.completedDate as unknown as string) : undefined,
-      stockVerifiedDate: r.stockVerifiedDate
-        ? new Date(r.stockVerifiedDate as unknown as string)
-        : undefined,
       workflowHistory: (r.workflowHistory || []).map((h) => ({
         ...h,
         timestamp: new Date(h.timestamp as unknown as string),

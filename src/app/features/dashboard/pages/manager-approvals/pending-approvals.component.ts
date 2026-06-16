@@ -1,11 +1,15 @@
-import { Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Subscription, take } from 'rxjs';
 import {
   ManagerDataService,
   ManagerRequestRow,
 } from '../../../../core/services/manager-data.service';
-import { WorkflowService } from '../../../../core/services/workflow.service';
+import {
+  WorkflowService,
+  ServiceRequest,
+  NotificationMessage,
+} from '../../../../core/services/workflow.service';
 import { CurrentUserService } from '../../../../core/services/current-user.service';
 import { ServiceRequestService } from '../../../requisition/service-requests/services/service-request.service';
 
@@ -25,13 +29,36 @@ export class PendingApprovalsComponent implements OnInit, OnDestroy {
 
   protected readonly pendingRequests = signal<ManagerRequestRow[]>([]);
 
+  // Stock verification
+  protected readonly workflowNotifications = signal<NotificationMessage[]>([]);
+
   ngOnInit(): void {
     this.loadRequests();
-    this.subs.push(this.workflowService.getRequestUpdates().subscribe(() => this.loadRequests()));
+    this.loadNotifications();
+    this.subs.push(
+      this.workflowService.getRequestUpdates().subscribe(() => {
+        this.loadRequests();
+        this.loadNotifications();
+      }),
+      this.workflowService.getNotificationUpdates().subscribe(() => {
+        this.loadNotifications();
+      }),
+    );
   }
 
   ngOnDestroy(): void {
     this.subs.forEach((sub) => sub.unsubscribe());
+  }
+
+  protected getStockStatus(requestId: string): 'pending' | 'available' | 'unavailable' | undefined {
+    const req = this.workflowService.getRequestById(requestId);
+    return req?.stockStatus;
+  }
+
+  protected checkStock(requestId: string): void {
+    const user = this.currentUserService.getCurrentUserValue();
+    const managerName = user?.fullName || user?.username || 'Manager';
+    this.workflowService.requestStockVerification(requestId, managerName);
   }
 
   protected approve(id: string): void {
@@ -75,9 +102,25 @@ export class PendingApprovalsComponent implements OnInit, OnDestroy {
     }
   }
 
+  protected markNotifAsRead(id: string): void {
+    this.workflowService.markNotificationAsRead(id);
+    this.loadNotifications();
+  }
+
+  protected dismissNotif(id: string): void {
+    this.workflowService.dismissNotification(id);
+    this.loadNotifications();
+  }
+
   private loadRequests(): void {
     this.managerData.syncServiceRequests().subscribe(() => {
       this.pendingRequests.set(this.managerData.requestRows('pending'));
     });
+  }
+
+  private loadNotifications(): void {
+    const userId = this.currentUserService.getCurrentUserValue()?.id || 'mgr_001';
+    const notifs = this.workflowService.getNotificationsForUser(userId, 'Manager');
+    this.workflowNotifications.set(notifs);
   }
 }

@@ -18,6 +18,7 @@ import {
 } from '../../core/services/workflow.service';
 import { ComplianceDataService } from '../../core/services/compliance-data.service';
 import { ManagerDataService } from '../../core/services/manager-data.service';
+import { NotificationSidebarComponent } from '../../features/common/notifications/components/notification-sidebar/notification-sidebar.component';
 
 interface ThemeOption {
   id: string;
@@ -36,12 +37,11 @@ interface PopoverNotificationItem {
 @Component({
   selector: 'app-main-layout',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive, NotificationSidebarComponent],
   templateUrl: './main-layout.component.html',
   styleUrls: ['./main-layout.component.scss'],
   host: {
-    '(document:click)': 'onDocumentClick()',
-    '(document:keydown.escape)': 'closePopovers()',
+    '(document:keydown.escape)': 'closeAllPanels()',
   },
 })
 export class MainLayoutComponent implements OnInit {
@@ -76,6 +76,17 @@ export class MainLayoutComponent implements OnInit {
   protected selectedPrimary = 'violet';
   protected selectedSurface = 'slate';
   protected notificationsOpen = false;
+  protected notifBadgeCount = 0;
+  protected readonly workflowUnreadCount = computed(() => {
+    this.workflowNotificationTick();
+    const user = this.currentUserService.getCurrentUserValue();
+    const role = this.getWorkflowRoleForRoute();
+    if (!user?.id || !role) return 0;
+    return this.workflowService
+      .getNotificationsForUser(user.id, role)
+      .filter((n) => !n.isRead).length;
+  });
+  protected readonly totalBadgeCount = computed(() => this.notifBadgeCount + this.workflowUnreadCount());
   protected openMenuGroups: Set<string> = new Set();
   protected readonly notifications = toSignal(
     this.signalRService.notifications$.pipe(
@@ -149,7 +160,7 @@ export class MainLayoutComponent implements OnInit {
       .subscribe(() => {
         this.user = this.authService.getCurrentUser();
         this.updateMenuItems();
-        this.closePopovers();
+        this.closeAllPanels();
       });
   }
 
@@ -164,19 +175,14 @@ export class MainLayoutComponent implements OnInit {
     }
   }
 
-  protected toggleNotifications(event: Event): void {
-    event.stopPropagation();
+  protected toggleNotifications(): void {
     this.notificationsOpen = !this.notificationsOpen;
     if (this.notificationsOpen) {
       this.configOpen = false;
     }
   }
 
-  protected onDocumentClick(): void {
-    this.closePopovers();
-  }
-
-  protected closePopovers(): void {
+  protected closeAllPanels(): void {
     this.notificationsOpen = false;
     this.configOpen = false;
   }

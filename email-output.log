@@ -1,0 +1,11 @@
+Email service running on http://localhost:5030
+Proxying non-email /api requests to http://127.0.0.1:5028
+Endpoints:
+  POST /api/Notifications/send-email  - Send a direct email
+  POST /api/Notifications             - Send notification email
+  GET  /api/Notifications             - List notifications
+  POST /api/Auth/forgot-password      - Send password reset email
+  POST /api/Auth/reset-password       - Reset password
+SMTP connection verified successfully for k44144202@gmail.com
+Email sent to rozanega1621@gmail.com - MessageID: <54740cd6-8762-42be-3760-74f12d14fb2a@gmail.com>
+Email sent to rozanega1621@gmail.com - MessageID: <f2512595-037d-9131-0f22-6efc2d79fdf7@gmail.com>

@@ -1,9 +1,8 @@
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ApiService } from '../../../../core/services/api.service';
 import { DisposalRecordsService, DisposalRecordDto } from '../../../../core/services/disposal-records.service';
-import { WorkflowService } from '../../../../core/services/workflow.service';
+import { ItemMasterService, ItemMaster, ItemMasterPaginatedResponse } from '../../../../core/services/item-master.service';
 
 interface SelectedItem {
   itemId: string;
@@ -16,7 +15,6 @@ interface SelectedItem {
 
 interface DisplayItem {
   id: string;
-  itemMasterId: string;
   itemName: string;
   sku: string;
   currentStock: number;
@@ -34,12 +32,10 @@ interface DisplayItem {
   styleUrls: ['./disposal.component.scss'],
 })
 export class DisposalComponent implements OnInit {
-  private apiService = inject(ApiService);
-
   private disposalService = inject(DisposalRecordsService);
+  private itemMasterService = inject(ItemMasterService);
 
-  private workflowService = inject(WorkflowService);
-
+  showDisposalForm = signal(false);
   searchTerm = signal('');
   reason = signal('');
   loading = signal(false);
@@ -64,56 +60,60 @@ export class DisposalComponent implements OnInit {
   totalValue = computed(() => this.selectedItems().reduce((s, i) => s + i.quantity * (i.unitCost || 0), 0));
 
   ngOnInit(): void {
-    this.loadData();
-  }
-
-  loadData(): void {
-    this.loading.set(true);
-    this.apiService.get<unknown>('InventoryStock', {}).subscribe({
-      next: (res) => {
-        this.loading.set(false);
-        const extracted = this.extractItems(res);
-        this.stockItems.set(extracted);
-        if (extracted.length === 0) {
-          this.showNotification('No stock items found in inventory', 'error');
-        }
-      },
-      error: (err) => {
-        this.loading.set(false);
-        this.showNotification('Failed to load stock items from server', 'error');
-      },
-    });
     this.loadHistory();
   }
 
-  private extractItems(res: any): DisplayItem[] {
-    if (!res || res.success === false) {
-      console.warn('[Disposal] API returned success=false', res?.message);
-      return [];
-    }
-    let raw: any[] = [];
-    if (res.data) {
-      if (Array.isArray(res.data)) {
-        raw = res.data;
-      } else if (res.data.items && Array.isArray(res.data.items)) {
-        raw = res.data.items;
-      } else if (res.data.data && Array.isArray(res.data.data)) {
-        raw = res.data.data;
-      }
-    }
-    if (raw.length === 0) {
-      console.warn('[Disposal] No items found in response', JSON.stringify(res).substring(0, 500));
-    }
-    return raw.map((x: any) => ({
-      id: x.id || x.Id || '',
-      itemMasterId: x.itemId || x.ItemId || x.id || x.Id || '',
-      itemName: x.itemName || x.ItemName || x.name || x.Name || '',
-      sku: x.sku || x.Sku || '',
-      currentStock: Number(x.currentStock ?? x.CurrentStock ?? x.stockQuantity ?? x.StockQuantity ?? 0),
-      unitPrice: Number(x.unitPrice ?? x.UnitPrice ?? 0),
-      unitOfMeasure: x.unitOfMeasure || x.UnitOfMeasure || '',
-      warehouseName: x.warehouseName || x.WarehouseName || '',
-      shelfLocation: x.shelfLocation || x.ShelfLocation || '',
+  openCreateForm(): void {
+    this.showDisposalForm.set(true);
+    this.searchTerm.set('');
+    this.selectedItems.set([]);
+    this.reason.set('');
+    this.notification.set(null);
+    this.loadItemMasterItems();
+  }
+
+  cancelCreateForm(): void {
+    this.showDisposalForm.set(false);
+    this.selectedItems.set([]);
+    this.reason.set('');
+    this.searchTerm.set('');
+    this.notification.set(null);
+  }
+
+  loadItemMasterItems(): void {
+    this.loading.set(true);
+    this.itemMasterService.getItemMasters(1, 200).subscribe({
+      next: (res) => {
+        this.loading.set(false);
+        if (res.success && res.data && typeof res.data === 'object' && 'items' in res.data) {
+          const items = (res.data as ItemMasterPaginatedResponse).items;
+          this.stockItems.set(this.mapItemMasters(items));
+          if (items.length === 0) {
+            this.showNotification('No items found in inventory', 'error');
+          }
+        } else {
+          this.stockItems.set([]);
+          this.showNotification('No items found in inventory', 'error');
+        }
+      },
+      error: () => {
+        this.loading.set(false);
+        this.stockItems.set([]);
+        this.showNotification('Failed to load items from server', 'error');
+      },
+    });
+  }
+
+  private mapItemMasters(items: ItemMaster[]): DisplayItem[] {
+    return items.map((x) => ({
+      id: String(x.id),
+      itemName: x.itemName || '',
+      sku: x.sku || '',
+      currentStock: x.availableStock ?? x.currentStock ?? x.stockQuantity ?? 0,
+      unitPrice: x.unitPrice ?? 0,
+      unitOfMeasure: x.unitOfMeasure || '',
+      warehouseName: '',
+      shelfLocation: '',
     }));
   }
 
@@ -130,11 +130,16 @@ export class DisposalComponent implements OnInit {
   }
 
   toggleItem(item: DisplayItem): void {
-    const key = item.itemMasterId;
+    const key = item.id;
     const existing = this.selectedItems().find((x) => x.itemId === key);
     if (existing) {
       this.selectedItems.set(this.selectedItems().filter((x) => x.itemId !== existing.itemId));
     } else {
+      const stock = item.currentStock || 0;
+      if (stock <= 0) {
+        this.showNotification(`"${item.itemName}" has no available stock (0) and cannot be disposed.`, 'error');
+        return;
+      }
       this.selectedItems.set([
         ...this.selectedItems(),
         {
@@ -142,7 +147,7 @@ export class DisposalComponent implements OnInit {
           itemName: item.itemName || '',
           sku: item.sku || '',
           quantity: 1,
-          availableStock: item.currentStock || 0,
+          availableStock: stock,
           unitCost: item.unitPrice || 0,
         },
       ]);
@@ -150,13 +155,15 @@ export class DisposalComponent implements OnInit {
   }
 
   isSelected(item: DisplayItem): boolean {
-    return this.selectedItems().some((x) => x.itemId === item.itemMasterId);
+    return this.selectedItems().some((x) => x.itemId === item.id);
   }
 
   updateQuantity(itemId: string, qty: number): void {
     this.selectedItems.set(
       this.selectedItems().map((x) =>
-        x.itemId === itemId ? { ...x, quantity: Math.max(1, Math.min(qty, x.availableStock)) } : x,
+        x.itemId === itemId
+          ? { ...x, quantity: x.availableStock > 0 ? Math.max(1, Math.min(qty, x.availableStock)) : 0 }
+          : x,
       ),
     );
   }
@@ -174,10 +181,21 @@ export class DisposalComponent implements OnInit {
       this.showNotification('Enter a reason for disposal', 'error');
       return;
     }
+    const overstock = this.selectedItems().find((x) => x.quantity > x.availableStock);
+    if (overstock) {
+      this.showNotification(`"${overstock.itemName}" — requested ${overstock.quantity} but only ${overstock.availableStock} available.`, 'error');
+      return;
+    }
+    const zerostock = this.selectedItems().find((x) => x.availableStock <= 0);
+    if (zerostock) {
+      this.showNotification(`"${zerostock.itemName}" has no available stock and cannot be disposed.`, 'error');
+      return;
+    }
     this.submitting.set(true);
     const payload = {
       items: this.selectedItems().map((x) => ({
         itemId: x.itemId,
+        itemName: x.itemName,
         quantity: x.quantity,
         reason: this.reason().trim(),
       })),
@@ -187,15 +205,6 @@ export class DisposalComponent implements OnInit {
       next: (res) => {
         this.submitting.set(false);
         if (res.success !== false) {
-          this.workflowService.createNotification({
-            recipientId: '',
-            recipientRole: 'Admin',
-            type: 'info',
-            title: 'Disposal Created',
-            message: `${this.selectedItems().length} item(s) submitted for disposal. Reason: ${this.reason().trim()}`,
-            actionRequired: true,
-            actionUrl: '/admin/dashboard',
-          });
           this.showNotification('Disposal created successfully. Admin has been notified.', 'success');
           this.selectedItems.set([]);
           this.reason.set('');
@@ -206,7 +215,7 @@ export class DisposalComponent implements OnInit {
       },
       error: (err) => {
         this.submitting.set(false);
-        const msg = err?.error?.title || err?.error?.message || err?.message || 'Failed to create disposal';
+        const msg = err?.error?.message || err?.error?.title || err?.message || 'Failed to create disposal';
         this.showNotification(msg, 'error');
       },
     });

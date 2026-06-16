@@ -349,6 +349,11 @@ export const managerMenuConfig: MenuItem[] = [
     icon: 'bi bi-clock-history',
     route: '/manager/audit-trail',
   },
+  {
+    label: 'Notifications',
+    icon: 'bi bi-bell',
+    route: '/manager/notifications',
+  },
 ];
 
 export function getMenuConfigByRole(role: string): MenuItem[] {

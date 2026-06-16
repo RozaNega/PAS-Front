@@ -6,7 +6,10 @@ import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { EditProfileModalComponent } from '../../components/edit-profile-modal/edit-profile-modal.component';
 import { ChangePasswordModalComponent } from '../../components/change-password-modal/change-password-modal.component';
 import { AuthService } from '../../../../core/services/auth.service';
+import { ToastService } from '../../../../core/services/toast.service';
+import { CurrentUserService } from '../../../../core/services/current-user.service';
 import { FaceDetectionService } from '../../../../core/services/face-detection.service';
+import { finalize } from 'rxjs';
 
 @Component({
   selector: 'app-decision-profile-page',
@@ -19,6 +22,8 @@ export class DecisionProfilePageComponent implements OnDestroy {
   private readonly modalService = inject(NgbModal);
   private readonly sanitizer = inject(DomSanitizer);
   private readonly authService = inject(AuthService);
+  private readonly toastService = inject(ToastService);
+  private readonly currentUserService = inject(CurrentUserService);
 
   @ViewChild('videoElement') videoElement!: ElementRef<HTMLVideoElement>;
   @ViewChild('canvasElement') canvasElement!: ElementRef<HTMLCanvasElement>;
@@ -42,11 +47,12 @@ export class DecisionProfilePageComponent implements OnDestroy {
   };
 
   twoFactorEnabled = signal(false);
-  twoFactorMethod = signal<'sms' | 'email' | 'app'>('sms');
-  phoneNumber = signal('');
+  twoFactorMethod = signal<'email'>('email');
   twoFactorSetupComplete = signal(false);
   twoFactorVerificationSent = signal(false);
   twoFactorVerificationCode = signal('');
+  twoFactorSending = signal(false);
+  private currentCode = '';
 
   approvalLimits = {
     singleRequestLimit: '$10,000',
@@ -84,14 +90,14 @@ export class DecisionProfilePageComponent implements OnDestroy {
     });
 
     modalRef.result
-      .then((result) => {
-        if (result) {
-          this.profile.name = result.fullName;
-          this.profile.email = result.email;
-          this.profile.phone = result.phone;
-          this.profile.department = result.department;
-          this.profile.title = result.position;
-          alert('Profile updated successfully!');
+      .then(() => {
+        const user = this.currentUserService.getCurrentUserValue();
+        if (user) {
+          this.profile.name = user.fullName || this.profile.name;
+          this.profile.email = user.email || this.profile.email;
+          this.profile.phone = user.phone || this.profile.phone;
+          this.profile.department = user.department || this.profile.department;
+          this.profile.title = user.position || this.profile.title;
         }
       })
       .catch(() => {});
@@ -233,57 +239,83 @@ export class DecisionProfilePageComponent implements OnDestroy {
 
   toggle2FA(): void {
     if (this.twoFactorEnabled()) {
-      this.twoFactorEnabled.set(false);
-      alert('2FA has been disabled.');
+      this.authService.disable2FA().subscribe({
+        next: (res) => {
+          this.twoFactorEnabled.set(false);
+          this.twoFactorMethod.set('email');
+          this.twoFactorVerificationSent.set(false);
+          this.twoFactorVerificationCode.set('');
+          this.twoFactorSetupComplete.set(false);
+          if (res.succeeded) {
+            this.toastService.success('2FA has been disabled.');
+          } else {
+            this.toastService.error(res.message || 'Failed to disable 2FA.');
+          }
+        },
+        error: () => this.toastService.error('Unable to disable 2FA. Please try again.'),
+      });
     } else {
-      if (this.twoFactorMethod() === 'sms' && !this.phoneNumber()) {
-        alert('Please enter a phone number to enable SMS 2FA.');
-        return;
-      }
       this.twoFactorEnabled.set(true);
-      alert('2FA has been enabled successfully!');
+      this.toastService.info('Fill in your contact info and click Send Code to enable 2FA.');
     }
   }
 
   enable2FA(): void {
-    if (this.twoFactorMethod() === 'sms' && !this.phoneNumber()) {
-      alert('Please enter a phone number to enable SMS 2FA.');
-      return;
-    }
-    // Send code / initiate setup
-    this.twoFactorVerificationSent.set(true);
-    alert('Verification code sent. Please enter the code to complete setup.');
+    this.twoFactorEnabled.set(true);
+    this.toastService.info('Fill in your contact info and click Send Code to enable 2FA.');
   }
 
   disable2FA(): void {
-    this.twoFactorEnabled.set(false);
-    this.twoFactorMethod.set('sms');
-    this.phoneNumber.set('');
-    this.twoFactorVerificationSent.set(false);
-    this.twoFactorVerificationCode.set('');
-    this.twoFactorSetupComplete.set(false);
-    alert('2FA has been disabled.');
+    this.authService.disable2FA().subscribe({
+      next: (res) => {
+        this.twoFactorEnabled.set(false);
+        this.twoFactorMethod.set('email');
+        this.twoFactorVerificationSent.set(false);
+        this.twoFactorVerificationCode.set('');
+        this.twoFactorSetupComplete.set(false);
+        if (res.succeeded) {
+          this.toastService.success('2FA has been disabled.');
+        } else {
+          this.toastService.error(res.message || 'Failed to disable 2FA.');
+        }
+      },
+      error: () => this.toastService.error('Unable to disable 2FA. Please try again.'),
+    });
   }
 
   updateTwoFactorMethod(event: any): void {
-    this.twoFactorMethod.set(event.target?.value ?? 'sms');
-  }
-
-  twoFactorPhone(): string {
-    return this.phoneNumber();
-  }
-
-  updateTwoFactorPhone(event: any): void {
-    this.phoneNumber.set(event.target?.value ?? '');
+    const newMethod = event.target?.value ?? 'email';
+    this.twoFactorMethod.set(newMethod);
+    if (this.twoFactorSetupComplete()) {
+      this.twoFactorSetupComplete.set(false);
+      this.twoFactorVerificationSent.set(false);
+      this.twoFactorVerificationCode.set('');
+    }
   }
 
   saveTwoFactorPhone(): void {
-    if (this.phoneNumber()) {
-      this.twoFactorVerificationSent.set(true);
-      alert('Verification code sent to ' + this.phoneNumber());
-    } else {
-      alert('Please enter a valid phone number.');
+    const contact = this.profile.email;
+    if (!contact) {
+      alert('Please enter a valid email address.');
+      return;
     }
+    this.twoFactorSending.set(true);
+
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    this.currentCode = code;
+    this.authService.sendVerificationCode(contact, code).pipe(finalize(() => this.twoFactorSending.set(false))).subscribe({
+      next: (res) => {
+        if (res.succeeded) {
+          this.twoFactorVerificationSent.set(true);
+          this.toastService.success('Verification code sent! Check your inbox.');
+        } else {
+          alert(res.message || 'Failed to send verification code.');
+        }
+      },
+      error: () => {
+        alert('Unable to send verification code. Please try again.');
+      },
+    });
   }
 
   updateTwoFactorVerificationCode(event: any): void {
@@ -291,14 +323,30 @@ export class DecisionProfilePageComponent implements OnDestroy {
   }
 
   verifyTwoFactorCode(): void {
-    // Simple local check for demo purposes
-    if (this.twoFactorVerificationCode() === '123456') {
-      this.twoFactorSetupComplete.set(true);
-      this.twoFactorVerificationSent.set(false);
-      alert('2FA setup completed successfully!');
-    } else {
-      alert('Invalid code.');
+    if (this.twoFactorVerificationCode() !== this.currentCode) {
+      alert('Invalid verification code. Please check the code sent to your email and try again.');
+      return;
     }
+    const contact = this.profile.email;
+    this.twoFactorSending.set(true);
+    this.authService.enable2FA('email', contact).pipe(finalize(() => this.twoFactorSending.set(false))).subscribe({
+      next: (res) => {
+        if (res.succeeded) {
+          this.twoFactorSetupComplete.set(true);
+          this.toastService.success(res.message || '2FA enabled successfully!');
+        } else {
+          alert(res.message || 'Failed to enable 2FA.');
+        }
+      },
+      error: () => {
+        alert('Unable to enable 2FA. Please try again.');
+      },
+    });
+  }
+
+  resendVerificationCode(): void {
+    this.twoFactorVerificationCode.set('');
+    this.saveTwoFactorPhone();
   }
 
   savePreferences(): void {

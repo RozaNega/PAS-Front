@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { NgOptimizedImage } from '@angular/common';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { finalize, switchMap } from 'rxjs';
 
@@ -20,6 +20,7 @@ export class Login {
   private readonly formBuilder = inject(FormBuilder);
   private readonly authService = inject(AuthService);
   private readonly usersService = inject(UsersService);
+  private readonly activeRoute = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly transitionSvc = inject(LoginTransitionService);
 
@@ -34,6 +35,23 @@ export class Login {
     password: ['', [Validators.required, Validators.minLength(8)]],
     rememberMe: [true],
   });
+
+  constructor() {
+    const email = this.activeRoute.snapshot.queryParamMap.get('email');
+    if (email) {
+      this.usersService.getAll().subscribe({
+        next: (response) => {
+          const users = (response.data && 'items' in response.data)
+            ? (response.data as { items: any[] }).items
+            : [];
+          const user = users.find((u: any) => u.email?.toLowerCase() === email.toLowerCase());
+          if (user?.username) {
+            this.loginForm.controls.username.setValue(user.username);
+          }
+        },
+      });
+    }
+  }
 
   protected submit(): void {
     this.submitted.set(true);

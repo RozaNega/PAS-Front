@@ -273,6 +273,11 @@
           <div class="detail-row"><strong>Email:</strong> {{ userProfile().email }}</div>
           <div class="detail-row"><strong>Phone:</strong> {{ userProfile().phone }}</div>
         </div>
+        <div class="profile-actions" style="margin-top: 1rem;">
+          <button class="btn btn-primary btn-sm" (click)="editProfile()">
+            <i class="bi bi-pencil"></i> Edit Profile
+          </button>
+        </div>
       </section>
 
       <section class="two-factor-auth panel" aria-labelledby="2fa-heading">
@@ -307,47 +312,41 @@
                 [value]="twoFactorMethod()"
                 (change)="updateTwoFactorMethod($event)"
               >
-                <option value="sms">SMS</option>
                 <option value="email">Email</option>
-                <option value="app">Authenticator App</option>
               </select>
             </div>
 
-            @if (twoFactorMethod() === 'sms') {
+            @if (twoFactorMethod() === 'email') {
               <div class="setting-row">
-                <label for="phone-number">Phone Number:</label>
+                <label for="email-address">Email Address:</label>
                 <div class="phone-input-group">
                   <input
-                    id="phone-number"
-                    type="tel"
+                    id="email-address"
+                    type="email"
                     class="twofa-input"
-                    [value]="twoFactorPhone()"
-                    (input)="updateTwoFactorPhone($event)"
-                    placeholder="+251-XXX-XXXXXXX"
-                    [disabled]="twoFactorVerificationSent() || twoFactorSetupComplete()"
+                    [value]="userProfile().email"
+                    readonly
                   />
-                  @if (!twoFactorVerificationSent() && !twoFactorSetupComplete()) {
-                    <button
-                      class="btn-save-phone"
-                      (click)="saveTwoFactorPhone()"
-                      [disabled]="!twoFactorPhone()"
-                      title="Send verification code"
-                    >
-                      Send Code
-                    </button>
-                  }
+                  <button
+                    class="btn-save-phone"
+                    (click)="saveTwoFactorPhone()"
+                    [disabled]="twoFactorSending()"
+                    title="Send verification code"
+                  >
+                    {{ twoFactorSending() ? 'Sending...' : twoFactorSetupComplete() ? 'Re-send Code' : 'Send Code' }}
+                  </button>
                   @if (twoFactorSetupComplete()) {
                     <span class="verification-status verified">✓ Verified</span>
                   }
                 </div>
               </div>
 
-              @if (twoFactorVerificationSent() && !twoFactorSetupComplete()) {
+              @if (twoFactorVerificationSent()) {
                 <div class="setting-row verification-row">
-                  <label for="verification-code">Verification Code:</label>
+                  <label for="verification-code-email">Verification Code:</label>
                   <div class="verification-input-group">
                     <input
-                      id="verification-code"
+                      id="verification-code-email"
                       type="text"
                       class="twofa-input verification-input"
                       [value]="twoFactorVerificationCode()"
@@ -365,27 +364,13 @@
                     </button>
                   </div>
                   <div class="verification-help">
-                    <p>Enter the 6-digit code sent to {{ twoFactorPhone() }}</p>
+                    <p>Enter the 6-digit code sent to {{ userProfile().email }}</p>
                     <button class="btn-resend" (click)="resendVerificationCode()">
                       Resend Code
                     </button>
                   </div>
                 </div>
               }
-            }
-
-            @if (twoFactorMethod() === 'email') {
-              <div class="setting-row">
-                <label>Email Address:</label>
-                <span class="readonly-value">{{ userProfile().email }}</span>
-              </div>
-            }
-
-            @if (twoFactorMethod() === 'app') {
-              <div class="setting-row">
-                <label>Authenticator App:</label>
-                <span class="readonly-value">Google Authenticator / Microsoft Authenticator</span>
-              </div>
             }
 
             <div class="twofa-actions">

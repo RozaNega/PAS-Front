@@ -1,9 +1,11 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { AuthService, User } from '../../../../core/services/auth.service';
 import { CurrentUserService } from '../../../../core/services/current-user.service';
 import { ProfileService } from '../../../../core/services/profile.service';
+import { FaceDetectionService } from '../../../../core/services/face-detection.service';
 import { DashboardService, DashboardStatistics } from '../../../../core/services/dashboard.service';
 import { ProfileSidebarComponent, ProfileNavItem } from '../../../../shared/components/profile-sidebar/profile-sidebar.component';
 import { DEFAULT_AVATAR_PATH } from '../../../../core/models/stored-user.model';
@@ -113,15 +115,23 @@ import { DEFAULT_AVATAR_PATH } from '../../../../core/models/stored-user.model';
                 </div>
                 <form class="edit-form" (ngSubmit)="saveProfile()">
                   <div class="photo-upload">
-                    <div class="photo-preview" (click)="photoInput.click()">
-                      @if (avatarUrl()) {
-                        <img [src]="avatarUrl()" alt="Profile" />
-                      } @else {
-                        <div class="photo-placeholder">{{ initials() }}</div>
-                      }
-                      <div class="photo-overlay">
-                        <i class="bi bi-camera-fill"></i>
+                    <div class="photo-scan-container" [class.scanning]="isValidatingPhoto()">
+                      <div class="photo-preview" (click)="photoInput.click()">
+                        @if (avatarUrl()) {
+                          <img [src]="avatarUrl()" alt="Profile" />
+                        } @else {
+                          <div class="photo-placeholder">{{ initials() }}</div>
+                        }
+                        <div class="photo-overlay">
+                          <i class="bi bi-camera-fill"></i>
+                        </div>
                       </div>
+                      @if (isValidatingPhoto()) {
+                        <div class="scan-overlay">
+                          <div class="scan-line"></div>
+                          <span class="scan-label">Scanning Face...</span>
+                        </div>
+                      }
                     </div>
                     <input #photoInput type="file" accept="image/*" class="photo-input" (change)="onPhotoSelected($event)" />
                     <p class="photo-hint">Click to change profile photo</p>
@@ -446,6 +456,11 @@ import { DEFAULT_AVATAR_PATH } from '../../../../core/models/stored-user.model';
     .photo-preview:hover .photo-overlay { opacity: 1; }
     .photo-input { display: none; }
     .photo-hint { font-size: 0.8rem; color: var(--text-color-muted); margin: 0; }
+    .photo-scan-container { position: relative; display: inline-block; border-radius: 50%; overflow: hidden; }
+    .scan-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.65); display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 50%; z-index: 2; }
+    .scan-line { width: 80%; height: 2px; background: #10b981; border-radius: 2px; box-shadow: 0 0 12px rgba(16,185,129,0.6); animation: scanMove 1.2s ease-in-out infinite; }
+    .scan-label { color: #fff; font-size: 0.75rem; font-weight: 600; margin-top: 0.5rem; letter-spacing: 0.5px; }
+    @keyframes scanMove { 0%, 100% { transform: translateY(-20px); } 50% { transform: translateY(20px); } }
     .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
     .form-group { display: flex; flex-direction: column; gap: 0.35rem; }
     .form-group label { font-size: 0.85rem; font-weight: 600; color: var(--text-color); }
@@ -508,6 +523,7 @@ export class StorekeeperProfileComponent implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly currentUserService = inject(CurrentUserService);
   private readonly profileService = inject(ProfileService);
+  private readonly faceDetectionService = inject(FaceDetectionService);
   private readonly dashboardService = inject(DashboardService);
 
   protected readonly isLoading = signal(true);
@@ -537,6 +553,7 @@ export class StorekeeperProfileComponent implements OnInit {
   protected readonly isActive = signal(true);
   protected readonly avatarUrl = signal<string | null>(null);
   protected readonly defaultAvatar = DEFAULT_AVATAR_PATH;
+  protected readonly isValidatingPhoto = signal(false);
 
   protected editName = '';
   protected editEmail = '';
@@ -699,22 +716,49 @@ export class StorekeeperProfileComponent implements OnInit {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
     if (!file) return;
-    this.uploadPhoto(file);
+    this.handleFile(file);
   }
 
   protected onPhotoSelectedFromSidebar(file: File): void {
-    this.uploadPhoto(file);
+    this.handleFile(file);
   }
 
-  private uploadPhoto(file: File): void {
-    this.profileService.uploadProfilePhotoToApi(file).subscribe({
-      next: (url) => this.avatarUrl.set(this.profileService.getDisplayUrl(url)),
-      error: () => {
-        this.profileService.applyLocalProfileImageFromFile(file).subscribe({
-          next: (url) => this.avatarUrl.set(url),
-        });
-      },
-    });
+  private async handleFile(file: File): Promise<void> {
+    if (file.size > 20 * 1024 * 1024) {
+      alert('File too large. Max 20MB.');
+      return;
+    }
+
+    this.isValidatingPhoto.set(true);
+
+    try {
+      const result = await this.faceDetectionService.validateProfilePhoto(file);
+
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      this.isValidatingPhoto.set(false);
+
+      if (!result.valid) {
+        alert(`Security Alert: ${result.message}`);
+        return;
+      }
+
+      this.profileService.applyLocalProfileImageFromFile(file).subscribe({
+        next: () => {
+          this.profileService.uploadProfilePhotoToApi(file).subscribe({
+            next: (url) => this.avatarUrl.set(this.profileService.getDisplayUrl(url)),
+            error: () => {
+              console.warn('Server sync failed (photo saved locally)');
+            },
+          });
+        },
+        error: () => alert('Could not process image. Please try a smaller photo.'),
+      });
+    } catch (error) {
+      console.error('Photo validation error:', error);
+      this.isValidatingPhoto.set(false);
+      alert('Failed to analyze photo. Please try again.');
+    }
   }
 
   protected saveProfile(): void {

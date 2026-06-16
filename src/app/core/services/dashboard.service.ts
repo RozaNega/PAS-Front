@@ -140,20 +140,46 @@ export class DashboardService {
 
   private computeFallbackStatistics(): Observable<ApiResponseModel<DashboardStatistics>> {
     return forkJoin({
-      properties: this.apiService.get<unknown>('Properties').pipe(
-        catchError(() => of({ success: false, data: [], statusCode: 0 } as unknown as ApiResponseModel<unknown>)),
-      ),
+      properties: this.apiService
+        .get<unknown>('Properties')
+        .pipe(
+          catchError(() =>
+            of({ success: false, data: [], statusCode: 0 } as unknown as ApiResponseModel<unknown>),
+          ),
+        ),
       employees: this.apiService.get<unknown>('employees').pipe(
-        catchError(() => of({ success: false, data: { items: [] }, statusCode: 0 } as unknown as ApiResponseModel<unknown>)),
+        catchError(() =>
+          of({
+            success: false,
+            data: { items: [] },
+            statusCode: 0,
+          } as unknown as ApiResponseModel<unknown>),
+        ),
       ),
       serviceRequests: this.apiService.get<unknown>('ServiceRequests').pipe(
-        catchError(() => of({ success: false, data: { items: [] }, statusCode: 0 } as unknown as ApiResponseModel<unknown>)),
+        catchError(() =>
+          of({
+            success: false,
+            data: { items: [] },
+            statusCode: 0,
+          } as unknown as ApiResponseModel<unknown>),
+        ),
       ),
-      inventory: this.apiService.get<unknown>('InventoryStock').pipe(
-        catchError(() => of({ success: false, data: [], statusCode: 0 } as unknown as ApiResponseModel<unknown>)),
-      ),
+      inventory: this.apiService
+        .get<unknown>('InventoryStock')
+        .pipe(
+          catchError(() =>
+            of({ success: false, data: [], statusCode: 0 } as unknown as ApiResponseModel<unknown>),
+          ),
+        ),
       inspections: this.apiService.get<unknown>('Inspections').pipe(
-        catchError(() => of({ success: false, data: { items: [] }, statusCode: 0 } as unknown as ApiResponseModel<unknown>)),
+        catchError(() =>
+          of({
+            success: false,
+            data: { items: [] },
+            statusCode: 0,
+          } as unknown as ApiResponseModel<unknown>),
+        ),
       ),
     }).pipe(
       map((raw) => {
@@ -187,10 +213,17 @@ export class DashboardService {
     if (data && typeof data === 'object') {
       const obj = data as Record<string, unknown>;
       if (nestedKey) {
-        const nested = obj[nestedKey] ?? obj[nestedKey.charAt(0).toUpperCase() + nestedKey.slice(1)];
+        const nested =
+          obj[nestedKey] ?? obj[nestedKey.charAt(0).toUpperCase() + nestedKey.slice(1)];
         if (Array.isArray(nested)) return nested;
       }
-      const items = obj['items'] ?? obj['Items'] ?? obj['data'] ?? obj['Data'] ?? obj['inventory'] ?? obj['Inventory'];
+      const items =
+        obj['items'] ??
+        obj['Items'] ??
+        obj['data'] ??
+        obj['Data'] ??
+        obj['inventory'] ??
+        obj['Inventory'];
       if (Array.isArray(items)) return items;
     }
     return [];
@@ -202,8 +235,10 @@ export class DashboardService {
   }
 
   private compute(
-    properties: RawItem[], employees: RawItem[],
-    serviceRequests: RawItem[], inventory: RawItem[],
+    properties: RawItem[],
+    employees: RawItem[],
+    serviceRequests: RawItem[],
+    inventory: RawItem[],
     inspections: RawItem[],
   ): DashboardStatistics {
     const gs = (item: RawItem, ...keys: string[]): string => {
@@ -223,50 +258,94 @@ export class DashboardService {
     };
 
     const totalProperties = properties.length;
-    const totalLocations = new Set(properties.map(p => gs(p, 'locationId', 'location')).filter(Boolean)).size;
+    const totalLocations = new Set(
+      properties.map((p) => gs(p, 'locationId', 'location')).filter(Boolean),
+    ).size;
     const totalEmployees = employees.length;
-    const totalSafetyBoxes = properties.filter(p =>
-      gs(p, 'propertyTypeId').toLowerCase().includes('safety') ||
-      gs(p, 'propertyCategoryId').toLowerCase().includes('safety'),
+    const totalSafetyBoxes = properties.filter(
+      (p) =>
+        gs(p, 'propertyTypeId').toLowerCase().includes('safety') ||
+        gs(p, 'propertyCategoryId').toLowerCase().includes('safety'),
     ).length;
-    const totalSuppliers = new Set(serviceRequests.map(r => r['requesterName']).filter(Boolean)).size;
+    const totalSuppliers = new Set(serviceRequests.map((r) => r['requesterName']).filter(Boolean))
+      .size;
     const totalItems = inventory.length;
-    const totalPropertyValue = properties.reduce((s, p) => s + gn(p, 'currentValue', 'value', 'totalValue'), 0);
-    const totalStockValue = inventory.reduce((s, i) => s + gn(i, 'currentStock', 'stockQuantity') * (gn(i, 'unitPrice') || 15), 0);
+    const totalPropertyValue = properties.reduce(
+      (s, p) => s + gn(p, 'currentValue', 'value', 'totalValue'),
+      0,
+    );
+    const totalStockValue = inventory.reduce(
+      (s, i) => s + gn(i, 'currentStock', 'stockQuantity') * (gn(i, 'unitPrice') || 15),
+      0,
+    );
 
     const matchStatus = (r: RawItem, status: string): boolean =>
       gs(r, 'status').toLowerCase() === status;
-    const pendingReqs = serviceRequests.filter(r => matchStatus(r, 'pending')).length;
-    const approvedReqs = serviceRequests.filter(r => matchStatus(r, 'approved')).length;
-    const rejectedReqs = serviceRequests.filter(r => matchStatus(r, 'rejected')).length;
-    const issuedReqs = serviceRequests.filter(r => matchStatus(r, 'issued')).length;
-    const completedReqs = serviceRequests.filter(r => matchStatus(r, 'completed')).length;
+    const pendingReqs = serviceRequests.filter((r) => matchStatus(r, 'pending')).length;
+    const approvedReqs = serviceRequests.filter((r) => matchStatus(r, 'approved')).length;
+    const rejectedReqs = serviceRequests.filter((r) => matchStatus(r, 'rejected')).length;
+    const issuedReqs = serviceRequests.filter((r) => matchStatus(r, 'issued')).length;
+    const completedReqs = serviceRequests.filter((r) => matchStatus(r, 'completed')).length;
 
-    const lowStockItems = inventory.filter(i => {
+    const lowStockItems = inventory.filter((i) => {
       const min = gn(i, 'minimumThreshold', 'minStockLevel');
       return min > 0 && gn(i, 'currentStock', 'stockQuantity') <= min;
     });
-    const outOfStockItems = inventory.filter(i => gn(i, 'currentStock', 'stockQuantity') <= 0);
+    const outOfStockItems = inventory.filter((i) => gn(i, 'currentStock', 'stockQuantity') <= 0);
 
-    const pendingInsp = inspections.filter(i => gs(i, 'status').toLowerCase() !== 'completed').length;
-    const approvedRec = inspections.filter(i => i['isPassed'] === true).length;
-    const rejectedRec = inspections.filter(i => i['isPassed'] === false).length;
+    const pendingInsp = inspections.filter(
+      (i) => gs(i, 'status').toLowerCase() !== 'completed',
+    ).length;
+    const approvedRec = inspections.filter((i) => i['isPassed'] === true).length;
+    const rejectedRec = inspections.filter((i) => i['isPassed'] === false).length;
 
     const catMap = new Map<string, number>();
-    properties.forEach(p => {
-      const cat = gs(p, 'propertyCategoryName', 'propertyCategoryId', 'category', 'propertyTypeName', 'propertyTypeId', 'Other');
+    properties.forEach((p) => {
+      const cat = gs(
+        p,
+        'propertyCategoryName',
+        'propertyCategoryId',
+        'category',
+        'propertyTypeName',
+        'propertyTypeId',
+        'Other',
+      );
       catMap.set(cat, (catMap.get(cat) || 0) + 1);
     });
-    const categoryColors = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444', '#06b6d4', '#ec4899', '#f97316'];
+    const categoryColors = [
+      '#3b82f6',
+      '#10b981',
+      '#f59e0b',
+      '#8b5cf6',
+      '#ef4444',
+      '#06b6d4',
+      '#ec4899',
+      '#f97316',
+    ];
     const categoryBreakdown: ChartData[] = [...catMap.entries()]
       .sort((a, b) => b[1] - a[1])
       .map(([name, count], i) => ({
-        label: name, value: count, color: categoryColors[i % categoryColors.length],
+        label: name,
+        value: count,
+        color: categoryColors[i % categoryColors.length],
       }));
 
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
     const monthMap = new Map<string, { requests: number; approved: number; completed: number }>();
-    serviceRequests.forEach(r => {
+    serviceRequests.forEach((r) => {
       const rd = r['requestDate'] as string | undefined;
       if (rd) {
         const m = months[new Date(rd).getMonth()] || rd.slice(0, 7);
@@ -278,67 +357,103 @@ export class DashboardService {
       }
     });
     const monthlyTrend: MonthlyTrendPoint[] = [...monthMap.entries()].map(([month, counts]) => ({
-      month, ...counts,
+      month,
+      ...counts,
     }));
 
     const deptMap = new Map<string, number>();
-    serviceRequests.forEach(r => {
+    serviceRequests.forEach((r) => {
       const d = gs(r, 'department', 'Other');
       deptMap.set(d, (deptMap.get(d) || 0) + 1);
     });
-    const totalReqs = Math.max(pendingReqs + approvedReqs + rejectedReqs + completedReqs + issuedReqs, 1);
+    const totalReqs = Math.max(
+      pendingReqs + approvedReqs + rejectedReqs + completedReqs + issuedReqs,
+      1,
+    );
     const departmentActivity: DepartmentActivityPoint[] = [...deptMap.entries()]
       .sort((a, b) => b[1] - a[1])
-      .map(([dept, count]) => ({ department: dept, requests: count, pct: Math.round((count / totalReqs) * 100) }));
+      .map(([dept, count]) => ({
+        department: dept,
+        requests: count,
+        pct: Math.round((count / totalReqs) * 100),
+      }));
 
     const now = new Date();
     const recentActivities: RecentActivity[] = [];
-    properties.slice(-3).reverse().forEach((p, i) => {
-      recentActivities.push({
-        id: `act-prop-${i}`, action: 'Property added',
-        entityName: gs(p, 'name', 'tagNumber', 'Property'),
-        entityId: gs(p, 'id'), userName: 'System',
-        actionDate: new Date(now.getTime() - i * 3600000).toISOString(),
-        timeAgo: `${i + 1} hour${i > 0 ? 's' : ''} ago`,
-        icon: 'bi bi-building-add', color: '#3b82f6',
+    properties
+      .slice(-3)
+      .reverse()
+      .forEach((p, i) => {
+        recentActivities.push({
+          id: `act-prop-${i}`,
+          action: 'Property added',
+          entityName: gs(p, 'name', 'tagNumber', 'Property'),
+          entityId: gs(p, 'id'),
+          userName: 'System',
+          actionDate: new Date(now.getTime() - i * 3600000).toISOString(),
+          timeAgo: `${i + 1} hour${i > 0 ? 's' : ''} ago`,
+          icon: 'bi bi-building-add',
+          color: '#3b82f6',
+        });
       });
-    });
-    serviceRequests.slice(-3).reverse().forEach((r, i) => {
-      recentActivities.push({
-        id: `act-req-${i}`, action: gs(r, 'status', 'Unknown'),
-        entityName: gs(r, 'purpose', 'id', 'Service request'),
-        entityId: gs(r, 'id'),
-        userName: gs(r, 'requesterName', 'User'),
-        actionDate: new Date(now.getTime() - i * 7200000).toISOString(),
-        timeAgo: `${i + 2} hours ago`,
-        icon: 'bi bi-check-circle', color: '#10b981',
+    serviceRequests
+      .slice(-3)
+      .reverse()
+      .forEach((r, i) => {
+        recentActivities.push({
+          id: `act-req-${i}`,
+          action: gs(r, 'status', 'Unknown'),
+          entityName: gs(r, 'purpose', 'id', 'Service request'),
+          entityId: gs(r, 'id'),
+          userName: gs(r, 'requesterName', 'User'),
+          actionDate: new Date(now.getTime() - i * 7200000).toISOString(),
+          timeAgo: `${i + 2} hours ago`,
+          icon: 'bi bi-check-circle',
+          color: '#10b981',
+        });
       });
-    });
 
-    const lowStockAlerts: LowStockAlert[] = lowStockItems.map(i => ({
+    const lowStockAlerts: LowStockAlert[] = lowStockItems.map((i) => ({
       itemId: gs(i, 'itemId', 'id'),
       itemName: gs(i, 'itemName', 'name', 'Item'),
       sku: gs(i, 'sku', '—'),
       currentStock: gn(i, 'currentStock', 'stockQuantity'),
       minStockLevel: gn(i, 'minimumThreshold', 'minStockLevel'),
-      deficit: Math.max(0, gn(i, 'minimumThreshold', 'minStockLevel') - gn(i, 'currentStock', 'stockQuantity')),
+      deficit: Math.max(
+        0,
+        gn(i, 'minimumThreshold', 'minStockLevel') - gn(i, 'currentStock', 'stockQuantity'),
+      ),
       location: gs(i, 'warehouseName', 'shelfLocation', '—'),
       severity:
-        gn(i, 'currentStock', 'stockQuantity') <= 0 ? 'Critical'
-          : gn(i, 'currentStock', 'stockQuantity') <= gn(i, 'minimumThreshold', 'minStockLevel') * 0.5 ? 'Warning'
-          : 'Attention',
+        gn(i, 'currentStock', 'stockQuantity') <= 0
+          ? 'Critical'
+          : gn(i, 'currentStock', 'stockQuantity') <=
+              gn(i, 'minimumThreshold', 'minStockLevel') * 0.5
+            ? 'Warning'
+            : 'Attention',
     }));
 
     return {
-      totalProperties, totalLocations, totalSafetyBoxes, totalItems,
-      totalSuppliers, totalEmployees,
-      pendingRequisitions: pendingReqs, approvedRequisitions: approvedReqs,
-      issuedRequisitions: issuedReqs, completedRequisitions: completedReqs,
+      totalProperties,
+      totalLocations,
+      totalSafetyBoxes,
+      totalItems,
+      totalSuppliers,
+      totalEmployees,
+      pendingRequisitions: pendingReqs,
+      approvedRequisitions: approvedReqs,
+      issuedRequisitions: issuedReqs,
+      completedRequisitions: completedReqs,
       rejectedRequisitions: rejectedReqs,
-      pendingInspections: pendingInsp, approvedReceiving: approvedRec, rejectedReceiving: rejectedRec,
-      totalStockValue, lowStockItemsCount: lowStockItems.length,
+      pendingInspections: pendingInsp,
+      approvedReceiving: approvedRec,
+      rejectedReceiving: rejectedRec,
+      totalStockValue,
+      lowStockItemsCount: lowStockItems.length,
       outOfStockItemsCount: outOfStockItems.length,
-      totalPropertyValue, propertiesByLocation: totalLocations, propertiesByType: catMap.size,
+      totalPropertyValue,
+      propertiesByLocation: totalLocations,
+      propertiesByType: catMap.size,
       requisitionsByStatus: [
         { label: 'Pending', value: pendingReqs, color: '#f59e0b' },
         { label: 'Approved', value: approvedReqs, color: '#10b981' },
@@ -347,13 +462,19 @@ export class DashboardService {
         { label: 'Issued', value: issuedReqs, color: '#8b5cf6' },
       ],
       propertiesByLocationChart: categoryBreakdown.slice(0, 6),
-      stockMovementsByMonth: monthlyTrend.map(mt => ({ label: mt.month, value: mt.requests, color: '#3b82f6' })),
+      stockMovementsByMonth: monthlyTrend.map((mt) => ({
+        label: mt.month,
+        value: mt.requests,
+        color: '#3b82f6',
+      })),
       receivingByStatus: [
         { label: 'Accepted', value: approvedRec, color: '#10b981' },
         { label: 'Rejected', value: rejectedRec, color: '#ef4444' },
       ],
-      dailyCreatedProperties: categoryBreakdown.slice(0, 5).map(c => ({
-        label: c.label, value: Math.round(c.value / 3), color: c.color,
+      dailyCreatedProperties: categoryBreakdown.slice(0, 5).map((c) => ({
+        label: c.label,
+        value: Math.round(c.value / 3),
+        color: c.color,
       })),
       monthlyTrend,
       categoryBreakdown,

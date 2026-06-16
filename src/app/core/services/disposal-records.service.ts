@@ -65,7 +65,7 @@ export interface PaginatedDisposalResponse {
 }
 
 export interface CreateDisposalRecordCommand {
-  items: { itemId: string; quantity: number; reason?: string }[];
+  items: { itemId: string; itemName?: string; quantity: number; reason?: string }[];
   reason?: string;
 }
 

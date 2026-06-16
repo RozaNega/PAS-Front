@@ -14,6 +14,55 @@
     </div>
   </div>
 
+  <!-- Send Notification -->
+  <section class="compose-section">
+    <h4 class="compose-section__title"><i class="bi bi-send"></i> Send Notification</h4>
+    <div class="compose-section__form">
+      <textarea
+        class="compose-section__input"
+        placeholder="Write your message..."
+        [(ngModel)]="composeMessage"
+        rows="3"
+      ></textarea>
+      <select
+        class="compose-section__select"
+        [(ngModel)]="selectedUserId"
+        (ngModelChange)="onUserSelect($event)"
+      >
+        <option value="">-- Select recipient --</option>
+        @for (u of users; track u.id) {
+          <option [value]="u.userId || u.id">
+            {{ u.fullName || u.username }} ({{ u.role }})
+          </option>
+        }
+        <option value="__other__">Other (type name)</option>
+      </select>
+      @if (showCustomName) {
+        <input
+          type="text"
+          class="compose-section__input"
+          placeholder="Enter recipient name..."
+          [(ngModel)]="customName"
+        />
+      }
+      <button
+        type="button"
+        class="compose-section__btn"
+        (click)="sendNotification()"
+        [disabled]="sending || !composeMessage.trim() || (!selectedUserId && !showCustomName) || (showCustomName && !customName.trim())"
+      >
+        @if (sending) {
+          <span class="spinner"></span> Sending...
+        } @else {
+          <i class="bi bi-send-fill"></i> Send
+        }
+      </button>
+      @if (sentMessage) {
+        <p class="compose-section__sent">{{ sentMessage }}</p>
+      }
+    </div>
+  </section>
+
   <!-- All Notifications -->
   <div class="notifications-section">
     <h2>📬 ALL NOTIFICATIONS</h2>

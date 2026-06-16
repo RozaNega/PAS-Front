@@ -121,6 +121,66 @@
   color: #64748b;
 }
 
+.welcome-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.welcome-icon {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: #fef2f2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  color: #ef4444;
+  margin-bottom: 1.25rem;
+}
+
+.welcome-state h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.welcome-state p {
+  margin: 0 0 1.5rem;
+  font-size: 0.9rem;
+  color: #64748b;
+  max-width: 420px;
+  line-height: 1.5;
+}
+
+.create-btn {
+  padding: 0.75rem 2rem;
+  font-size: 1rem;
+  background: #ef4444;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.create-btn:hover {
+  background: #dc2626;
+}
+
 .spinner {
   width: 24px;
   height: 24px;
@@ -214,6 +274,13 @@
 }
 .stock-item.selected {
   background: #fef2f2;
+}
+.stock-item.out-of-stock {
+  opacity: 0.55;
+  cursor: not-allowed;
+  .item-check i { color: #dc2626; }
+  .stock-qty.out { color: #dc2626; font-weight: 700; }
+  .stock-label.out { color: #dc2626; font-size: 0.7rem; }
 }
 
 .item-check i {

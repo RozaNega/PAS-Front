@@ -1,0 +1,63 @@
+@if (isOpen) {
+  <div class="notif-overlay" (click)="close()"></div>
+  <aside class="notif-sidebar">
+    <header class="notif-sidebar-header">
+      <h3>
+        <i class="bi bi-bell"></i> Notification Center
+      </h3>
+      <div class="notif-header-actions">
+        @if (unreadCount > 0) {
+          <button type="button" class="notif-action-btn" (click)="markAllAsRead()" title="Mark all as read">
+            <i class="bi bi-check2-all"></i>
+          </button>
+        }
+        <button type="button" class="notif-action-btn" (click)="close()" title="Close">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+    </header>
+
+    <div class="notif-sidebar-body">
+
+      <section class="notif-section">
+        <h4 class="notif-section-title">
+          <i class="bi bi-inbox"></i> Recent
+          @if (unreadCount > 0) {
+            <span class="notif-unread-count">{{ unreadCount }} unread</span>
+          }
+        </h4>
+        <div class="notif-list">
+          @if (loadingNotifs()) {
+            <div class="notif-loading"><span class="spinner"></span> Loading...</div>
+          } @else if (mergedRecent().length === 0) {
+            <div class="notif-empty">
+              <i class="bi bi-bell-slash"></i>
+              <p>No notifications</p>
+            </div>
+          } @else {
+            @for (n of mergedRecent(); track n.id) {
+              <div class="notif-item" [class.notif-unread]="!n.isRead">
+                <div class="notif-item-icon">
+                  <span class="wf-icon">{{ n.icon }}</span>
+                </div>
+                <div class="notif-item-content">
+                  <p class="notif-item-text">{{ n.message }}</p>
+                  <div class="notif-item-meta">
+                    <span class="notif-item-sender">{{ n.sender }}</span>
+                    <span class="notif-item-time">{{ n.timeAgo }}</span>
+                  </div>
+                </div>
+              </div>
+            }
+          }
+        </div>
+      </section>
+
+      <div class="notif-view-all">
+        <button type="button" class="notif-view-all-btn" (click)="viewAll()">
+          <i class="bi bi-box-arrow-right"></i> View All Notifications
+        </button>
+      </div>
+    </div>
+  </aside>
+}

@@ -14,10 +14,8 @@ import { firstValueFrom, Subject, takeUntil } from 'rxjs';
 import { InventoryService, InventoryStockDto, StockMovementDto } from '../../../../core/services/inventory.service';
 import { WarehousesService } from '../../../../core/services/warehouses.service';
 
-import { ToastService } from '../../../../core/services/toast.service';
-
 import { CategoriesService, Category } from '../../../../core/services/categories.service';
-
+import { ToastService } from '../../../../core/services/toast.service';
 
 import { NgxEchartsDirective, provideEchartsCore } from 'ngx-echarts';
 import * as echarts from 'echarts/core';
@@ -339,12 +337,12 @@ export class CurrentStockComponent implements OnInit, OnDestroy {
     const qty = Number(this.bulkAdjustQty());
     if (Number.isNaN(qty)) return;
     try {
+      const adjType = this.bulkAdjustType();
+      const newQuantity = adjType === 'set' ? qty : (adjType === 'increase' ? item.quantity + qty : item.quantity - qty);
       await firstValueFrom(
         this.inventory.adjustStock({
-          itemId: item.id,
-          shelfId: '',
-          adjustmentType: this.bulkAdjustType(),
-          quantity: qty,
+          inventoryId: item.id,
+          newQuantity,
           reason: this.bulkAdjustReason() || 'Item adjustment',
         }),
       );
@@ -356,14 +354,14 @@ export class CurrentStockComponent implements OnInit, OnDestroy {
   }
 
   issueItem(item: StockItem): void {
-    this.inventory.adjustStock({ itemId: item.id, shelfId: '', adjustmentType: 'decrease', quantity: 1, reason: 'Issue' }).subscribe({
+    this.inventory.adjustStock({ inventoryId: item.id, newQuantity: item.quantity - 1, reason: 'Issue' }).subscribe({
       next: () => this.loadStock(),
       error: (error: unknown) => console.error(error),
     });
   }
 
   transferStock(item: StockItem): void {
-    this.inventory.adjustStock({ itemId: item.id, shelfId: '', adjustmentType: 'decrease', quantity: 1, reason: 'Transfer out' }).subscribe({
+    this.inventory.adjustStock({ inventoryId: item.id, newQuantity: item.quantity - 1, reason: 'Transfer out' }).subscribe({
       next: () => this.loadStock(),
       error: (error: unknown) => console.error(error),
     });

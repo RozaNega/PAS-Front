@@ -1,421 +1,152 @@
-<div class="page">
-  <!-- Hero -->
-  <div class="hero">
-    <div class="hero__text">
-      <h1>Audit Reference</h1>
-      <p>Approval audit logs, decision history, compliance records, and export tools</p>
-    </div>
-    <div class="hero__actions">
-      <button class="hero__btn hero__btn--secondary" (click)="retry()" title="Refresh data">
-        <i class="pi pi-refresh"></i> Refresh
-      </button>
-      <div class="export-dropdown" (mouseleave)="closeExportDropdown()">
-        <button class="hero__btn" (click)="toggleExportDropdown()">
-          <i class="pi pi-download"></i> Export
-          <i class="pi pi-chevron-down" style="font-size:.6rem;margin-left:.15rem;"></i>
-        </button>
-        @if (exportDropdownOpen()) {
-          <div class="export-dropdown__menu">
-            <button (click)="exportExcel()"><i class="pi pi-file-excel"></i> Export to Excel</button>
-            <button (click)="exportPDF()"><i class="pi pi-file-pdf"></i> Export to PDF</button>
-            <button (click)="emailReport()"><i class="pi pi-envelope"></i> Email Report</button>
-            <button (click)="printView()"><i class="pi pi-print"></i> Print</button>
-            <button (click)="scheduleExport()"><i class="pi pi-calendar"></i> Schedule Export</button>
+<div class="audit-reference-page">
+  <div class="page-header">
+    <h1>Audit Reference</h1>
+    <button class="btn btn-secondary" (click)="export()">Export</button>
+  </div>
+
+  @if (workflowNotifications().length > 0) {
+    <div class="notification-panel">
+      <h3>🔔 Notifications ({{ wfUnreadCount() }})</h3>
+      <div class="notification-list">
+        @for (n of workflowNotifications(); track n.id) {
+          <div class="notification-item" [class.unread]="!n.isRead">
+            <span class="notif-icon">{{ getWfIcon(n.type) }}</span>
+            <span class="notif-text">{{ n.title ? n.title + ': ' : '' }}{{ n.message }}</span>
+            <span class="notif-time">{{ formatWfDate(n.createdDate) }}</span>
+            <div class="notif-actions">
+              @if (!n.isRead) {
+                <button class="btn btn-sm btn-outline" (click)="markWfAsRead(n.id)" title="Mark read">✓</button>
+              }
+              <button class="btn btn-sm btn-outline" (click)="dismissWf(n.id)" title="Dismiss">✕</button>
+            </div>
           </div>
         }
       </div>
     </div>
+  }
+
+  <!-- Search and Filter -->
+  <div class="search-filter-section">
+    <div class="search-bar">
+      <input type="text" placeholder="Search by SR#, approver, date..." />
+    </div>
+    <div class="filter-controls">
+      <span>📅 Date: [{{ dateFrom }}] to [{{ dateTo }}]</span>
+      <span>👤 Approver: All ▼</span>
+      <span>📦 Status: All ▼</span>
+      <button class="btn btn-secondary" (click)="export()">Advanced Filters ▼</button>
+    </div>
   </div>
 
-  <!-- Loading -->
-  @if (isLoading()) {
-    <div class="state-box">
-      <div class="spinner"></div>
-      <p>Loading audit data...</p>
-    </div>
-  }
-
-  <!-- Error -->
-  @if (error(); as msg) {
-    <div class="state-box state-box--error">
-      <i class="pi pi-exclamation-triangle" style="font-size:2rem;color:#ef4444;margin-bottom:.5rem;"></i>
-      <p>{{ msg }}</p>
-      <button class="hero__btn" style="margin-top:.75rem;" (click)="retry()"><i class="pi pi-refresh"></i> Retry</button>
-    </div>
-  }
-
-  <!-- Main Content -->
-  @if (!isLoading() && !error()) {
-    <!-- ─────── Filter Bar ─────── -->
-    <div class="filter-bar">
-      <div class="filter-bar__row">
-        <div class="filter-bar__search">
-          <i class="pi pi-search"></i>
-          <input type="text" placeholder="Search by SR#, approver, date..." [value]="searchQuery()" (input)="searchQuery.set($any($event.target).value); currentPage.set(1)" />
-        </div>
-        <div class="filter-bar__date">
-          <span>📅 Date:</span>
-          <input type="date" [value]="dateFrom()" (input)="dateFrom.set($any($event.target).value); currentPage.set(1)" />
-          <span>to</span>
-          <input type="date" [value]="dateTo()" (input)="dateTo.set($any($event.target).value); currentPage.set(1)" />
-        </div>
-        <div class="filter-bar__select">
-          <span>👤 Approver:</span>
-          <select [value]="approverFilter()" (change)="approverFilter.set($any($event.target).value); currentPage.set(1)">
-            @for (a of approversList(); track a) {
-              <option [value]="a">{{ a }}</option>
-            }
-          </select>
-        </div>
-        <div class="filter-bar__select">
-          <span>📦 Status:</span>
-          <select [value]="statusFilter()" (change)="statusFilter.set($any($event.target).value); currentPage.set(1)">
-            <option value="All">All</option>
-            <option value="Pending">Pending</option>
-            <option value="Approved">Approved</option>
-            <option value="Rejected">Rejected</option>
-          </select>
-        </div>
-        <button class="filter-bar__toggle" (click)="toggleAdvanced()">
-          {{ showAdvancedFilters() ? 'Hide' : 'Show' }} Advanced Filters <i class="pi" [class.pi-chevron-up]="showAdvancedFilters()" [class.pi-chevron-down]="!showAdvancedFilters()"></i>
-        </button>
-      </div>
-    </div>
-
-    <!-- ─────── Stats Cards ─────── -->
-    <div class="stats">
-      <div class="stats__card">
-        <div class="stats__icon stats__icon--total"><i class="pi pi-calculator"></i></div>
-        <div class="stats__info">
-          <span class="stats__label">Total Events</span>
-          <span class="stats__value">{{ auditStats.totalEvents }}</span>
-        </div>
-      </div>
-      <div class="stats__card">
-        <div class="stats__icon stats__icon--primary"><i class="pi pi-check-circle"></i></div>
-        <div class="stats__info">
-          <span class="stats__label">Approved</span>
-          <span class="stats__value">{{ auditStats.approvedCount }}</span>
-          <span class="stats__sub">{{ auditStats.approvalRate }}%</span>
-        </div>
-      </div>
-      <div class="stats__card">
-        <div class="stats__icon stats__icon--danger"><i class="pi pi-times-circle"></i></div>
-        <div class="stats__info">
-          <span class="stats__label">Rejected</span>
-          <span class="stats__value">{{ auditStats.rejectedCount }}</span>
-          <span class="stats__sub">{{ auditStats.totalEvents > 0 ? (auditStats.rejectedCount / auditStats.totalEvents * 100 | number:'1.0-0') : 0 }}%</span>
-        </div>
-      </div>
-      <div class="stats__card">
-        <div class="stats__icon stats__icon--warn"><i class="pi pi-clock"></i></div>
-        <div class="stats__info">
-          <span class="stats__label">Pending</span>
-          <span class="stats__value">{{ auditStats.pendingCount }}</span>
-          <span class="stats__sub">{{ auditStats.totalEvents > 0 ? (auditStats.pendingCount / auditStats.totalEvents * 100 | number:'1.0-0') : 0 }}%</span>
-        </div>
-      </div>
-      <div class="stats__card">
-        <div class="stats__icon stats__icon--info"><i class="pi pi-chart-bar"></i></div>
-        <div class="stats__info">
-          <span class="stats__label">Avg Response</span>
-          <span class="stats__value">{{ auditStats.avgResponseDays }}</span>
-          <span class="stats__sub">days</span>
-        </div>
-      </div>
-      <div class="stats__card">
-        <div class="stats__icon stats__icon--accent"><i class="pi pi-star"></i></div>
-        <div class="stats__info">
-          <span class="stats__label">Top Approver</span>
-          <span class="stats__value--sm">{{ auditStats.mostActiveApprover }}</span>
-          <span class="stats__sub">{{ auditStats.mostActiveCount }} approvals</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- ─────── APPROVAL LOGS ─────── -->
-    <div class="panel">
-      <div class="panel__header">
-        <span><i class="pi pi-file-text" style="margin-right:.4rem;"></i> Approval Logs</span>
-        <div class="panel__actions">
-          <button class="btn btn--sm" (click)="viewDetails('logs', 'Full Approval Logs')">
-            <i class="pi pi-eye"></i> View All
-          </button>
-        </div>
-      </div>
-      <div class="table-wrap">
-        <table class="table">
-          <thead>
+  <!-- Approval Logs -->
+  <div class="logs-section">
+    <h2>📋 APPROVAL LOGS</h2>
+    <div class="table-container">
+      <table class="logs-table">
+        <thead>
+          <tr>
+            <th>Timestamp</th>
+            <th>Approver</th>
+            <th>SR #</th>
+            <th>Decision</th>
+            <th>Value</th>
+            <th>Response</th>
+            <th>Justification</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (log of approvalLogs; track log.timestamp) {
             <tr>
-              <th>Timestamp</th>
-              <th>Approver</th>
-              <th>SR #</th>
-              <th>Decision</th>
-              <th>Value</th>
-              <th>Response</th>
-              <th>Justification</th>
+              <td>{{ log.timestamp }}</td>
+              <td>{{ log.approver }}</td>
+              <td>{{ log.srNumber }}</td>
+              <td>{{ log.decision }}</td>
+              <td>{{ log.value }}</td>
+              <td>{{ log.responseTime }}</td>
+              <td>{{ log.justification }}</td>
             </tr>
-          </thead>
-          <tbody>
-            @for (log of pagedLogs; track log.srNumber + log.timestamp) {
-              <tr>
-                <td class="td-date">{{ log.timestamp | date:'medium' }}</td>
-                <td>
-                  <div class="td-employee">
-                    <div class="td-avatar" [style.background]="getAvatarColor(log.approver)">{{ getInitials(log.approver) }}</div>
-                    <span class="td-name">{{ log.approver }}</span>
-                  </div>
-                </td>
-                <td class="td-mono">{{ log.srNumber }}</td>
-                <td>
-                  <span [class]="getDecisionClass(log.decision)">
-                    <i [class]="getDecisionIcon(log.decision)"></i> {{ getDecisionLabel(log.decision) }}
-                  </span>
-                </td>
-                <td class="td-value">${{ log.value | number }}</td>
-                <td class="td-date">{{ log.responseTime }}</td>
-                <td>
-                  @if (log.decision === 'approved') {
-                    <span class="badge badge--success"><i class="pi pi-check"></i> {{ log.justification }}</span>
-                  } @else if (log.decision === 'rejected') {
-                    <span class="badge badge--danger"><i class="pi pi-ban"></i> {{ log.justification }}</span>
-                  } @else {
-                    <span class="badge badge--warn"><i class="pi pi-clock"></i> {{ log.justification }}</span>
-                  }
-                </td>
-              </tr>
-            } @empty {
-              <tr class="empty-row">
-                <td colspan="7">
-                  <div class="empty-state"><i class="pi pi-inbox"></i><p>No approval logs found matching your filters</p></div>
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
-      </div>
-      @if (approvalLogs.length > pageSize()) {
-        <div class="pagination">
-          <span class="pagination__info">Showing {{ ((currentPage() - 1) * pageSize()) + 1 }}-{{ getPageEnd() }} of {{ approvalLogs.length }} entries</span>
-          <div class="pagination__controls">
-            <button class="btn btn--page" [disabled]="currentPage() <= 1" (click)="setPage(currentPage() - 1)"><i class="pi pi-chevron-left"></i></button>
-            @for (p of [].constructor(totalPages); track $index) {
-              <button class="btn btn--page" [class.btn--page-active]="currentPage() === $index + 1" (click)="setPage($index + 1)">{{ $index + 1 }}</button>
-            }
-            <button class="btn btn--page" [disabled]="currentPage() >= totalPages" (click)="setPage(currentPage() + 1)"><i class="pi pi-chevron-right"></i></button>
-          </div>
-        </div>
-      }
+          }
+        </tbody>
+      </table>
     </div>
-
-    <!-- ─────── DECISION HISTORY ─────── -->
-    <div class="panel">
-      <div class="panel__header">
-        <span><i class="pi pi-history" style="margin-right:.4rem;"></i> Decision History</span>
-        <div class="panel__actions">
-          <button class="btn btn--sm" (click)="viewDetails('history', 'Full Decision History')">
-            <i class="pi pi-eye"></i> View All
-          </button>
-        </div>
+    <div class="pagination">
+      <span>Showing 1-{{ approvalLogs.length }} of 156 entries</span>
+      <div class="pagination-controls">
+        <button class="btn btn-sm btn-secondary">1</button>
+        <button class="btn btn-sm btn-secondary">2</button>
+        <button class="btn btn-sm btn-secondary">3</button>
+        <button class="btn btn-sm btn-secondary">→</button>
       </div>
-      <div class="table-wrap">
-        <table class="table">
-          <thead>
+    </div>
+  </div>
+
+  <!-- Decision History -->
+  <div class="history-section">
+    <h2>📜 DECISION HISTORY</h2>
+    <div class="table-container">
+      <table class="history-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>SR #</th>
+            <th>Decision</th>
+            <th>Reason</th>
+            <th>Comments</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (history of decisionHistory; track history.srNumber) {
             <tr>
-              <th>Date</th>
-              <th>SR #</th>
-              <th>Decision</th>
-              <th>Reason</th>
-              <th>Comments</th>
+              <td>{{ history.date }}</td>
+              <td>{{ history.srNumber }}</td>
+              <td>{{ history.decision }}</td>
+              <td>{{ history.reason }}</td>
+              <td>{{ history.comments }}</td>
             </tr>
-          </thead>
-          <tbody>
-            @for (h of decisionHistory; track h.srNumber + h.date) {
-              <tr>
-                <td class="td-date">{{ h.date | date }}</td>
-                <td class="td-mono">{{ h.srNumber }}</td>
-                <td>
-                  <span [class]="getDecisionClass(h.decision)">
-                    <i [class]="getDecisionIcon(h.decision)"></i> {{ getDecisionLabel(h.decision) }}
-                  </span>
-                </td>
-                <td>
-                  @if (h.decision === 'approved') {
-                    <span class="badge badge--success"><i class="pi pi-check"></i> {{ h.reason }}</span>
-                  } @else {
-                    <span class="badge badge--danger"><i class="pi pi-ban"></i> {{ h.reason }}</span>
-                  }
-                </td>
-                <td style="color:#64748b;font-size:.8rem;">{{ h.comments }}</td>
-              </tr>
-            } @empty {
-              <tr class="empty-row">
-                <td colspan="5">
-                  <div class="empty-state"><i class="pi pi-inbox"></i><p>No decision history found</p></div>
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- ─────── AUDIT TRAIL SUMMARY ─────── -->
-    <div class="panel">
-      <div class="panel__header">
-        <span><i class="pi pi-chart-bar" style="margin-right:.4rem;"></i> Audit Trail Summary</span>
-      </div>
-      <div class="panel__body">
-        <div class="summary-grid">
-          <div class="summary-card">
-            <div class="summary-card__value">{{ auditStats.totalEvents }}</div>
-            <div class="summary-card__label">Total Approval Events</div>
-          </div>
-          <div class="summary-card summary-card--primary">
-            <div class="summary-card__value">{{ auditStats.approvedCount }} <span style="font-size:.7rem;opacity:.7;">({{ auditStats.approvalRate }}%)</span></div>
-            <div class="summary-card__label">Approved</div>
-          </div>
-          <div class="summary-card summary-card--danger">
-            <div class="summary-card__value">{{ auditStats.rejectedCount }} <span style="font-size:.7rem;opacity:.7;">({{ auditStats.totalEvents > 0 ? (auditStats.rejectedCount / auditStats.totalEvents * 100 | number:'1.0-0') : 0 }}%)</span></div>
-            <div class="summary-card__label">Rejected</div>
-          </div>
-          <div class="summary-card summary-card--warn">
-            <div class="summary-card__value">{{ auditStats.pendingCount }} <span style="font-size:.7rem;opacity:.7;">({{ auditStats.totalEvents > 0 ? (auditStats.pendingCount / auditStats.totalEvents * 100 | number:'1.0-0') : 0 }}%)</span></div>
-            <div class="summary-card__label">Pending</div>
-          </div>
-          <div class="summary-card summary-card--info">
-            <div class="summary-card__value">{{ auditStats.avgResponseDays }} <span style="font-size:.7rem;opacity:.7;">days</span></div>
-            <div class="summary-card__label">Average Response Time</div>
-          </div>
-          <div class="summary-card summary-card--accent">
-            <div class="summary-card__value--long">{{ auditStats.mostActiveApprover }}</div>
-            <div class="summary-card__label">Most Active Approver <span style="font-weight:600;color:#0f172a;">({{ auditStats.mostActiveCount }} approvals)</span></div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ─────── COMPLIANCE RECORDS ─────── -->
-    <div class="panel">
-      <div class="panel__header">
-        <span><i class="pi pi-shield" style="margin-right:.4rem;"></i> Compliance Records</span>
-      </div>
-      <div class="panel__body">
-        <div class="compliance-grid">
-          <div class="compliance-status" [class.compliance-status--pass]="isAuditReady && violationCount === 0" [class.compliance-status--warn]="violationCount > 0">
-            <div class="compliance-status__icon">
-              @if (violationCount === 0) {
-                <i class="pi pi-check-circle"></i>
-              } @else {
-                <i class="pi pi-exclamation-triangle"></i>
-              }
-            </div>
-            <div class="compliance-status__text">
-              <h3>{{ violationCount === 0 ? 'All approvals are compliant with department policy.' : 'Compliance issues detected.' }}</h3>
-              <p>{{ violationCount === 0 ? 'No violations detected in approval chain.' : `${violationCount} violation(s) found in approval records.` }}</p>
-              <p class="compliance-status__badge"><i class="pi pi-check"></i> Audit ready: {{ isAuditReady ? 'Yes' : 'No data' }}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ─────── EXPORT OPTIONS ─────── -->
-    <div class="panel">
-      <div class="panel__header">
-        <span><i class="pi pi-download" style="margin-right:.4rem;"></i> Export Options</span>
-      </div>
-      <div class="panel__body">
-        <div class="export-grid">
-          <button class="export-option" (click)="exportExcel()">
-            <i class="pi pi-file-excel" style="color:#22c55e;"></i>
-            <span>Export to Excel</span>
-          </button>
-          <button class="export-option" (click)="exportPDF()">
-            <i class="pi pi-file-pdf" style="color:#ef4444;"></i>
-            <span>Export to PDF</span>
-          </button>
-          <button class="export-option" (click)="emailReport()">
-            <i class="pi pi-envelope" style="color:#6366f1;"></i>
-            <span>Email Report</span>
-          </button>
-          <button class="export-option" (click)="printView()">
-            <i class="pi pi-print" style="color:#64748b;"></i>
-            <span>Print</span>
-          </button>
-          <button class="export-option" (click)="scheduleExport()">
-            <i class="pi pi-calendar" style="color:#d97706;"></i>
-            <span>Schedule Export</span>
-          </button>
-        </div>
-      </div>
-    </div>
-  }
-
-  <!-- ═══════════ DETAIL MODAL ═══════════ -->
-  @if (showModal()) {
-    <div class="modal-overlay" (click)="closeModal()">
-      <div class="modal-content" (click)="$event.stopPropagation()">
-        <div class="modal-content__header">
-          <h2><i class="pi pi-file-text" style="margin-right:.4rem;color:#6366f1;"></i> {{ modalTitle() }}</h2>
-          <button class="close-btn" (click)="closeModal()"><i class="pi pi-times"></i></button>
-        </div>
-        <div class="modal-content__body">
-          @if (modalType() === 'logs') {
-            <div class="detail-section">
-              <h3 class="detail-section__title">All Approval Logs ({{ approvalLogs.length }})</h3>
-              <table class="items-table">
-                <thead>
-                  <tr><th>Timestamp</th><th>Approver</th><th>SR #</th><th>Decision</th><th>Value</th><th>Response</th><th>Justification</th></tr>
-                </thead>
-                <tbody>
-                  @for (log of approvalLogs; track log.srNumber + log.timestamp) {
-                    <tr>
-                      <td class="td-date">{{ log.timestamp | date:'medium' }}</td>
-                      <td>
-                        <div class="td-employee">
-                          <div class="td-avatar td-avatar--sm" [style.background]="getAvatarColor(log.approver)">{{ getInitials(log.approver) }}</div>
-                          <span class="td-name">{{ log.approver }}</span>
-                        </div>
-                      </td>
-                      <td class="td-mono">{{ log.srNumber }}</td>
-                      <td><span [class]="getDecisionClass(log.decision)"><i [class]="getDecisionIcon(log.decision)"></i> {{ getDecisionLabel(log.decision) }}</span></td>
-                      <td class="td-value">${{ log.value | number }}</td>
-                      <td class="td-date">{{ log.responseTime }}</td>
-                      <td>{{ log.justification }}</td>
-                    </tr>
-                  }
-                </tbody>
-              </table>
-            </div>
           }
-          @if (modalType() === 'history') {
-            <div class="detail-section">
-              <h3 class="detail-section__title">Full Decision History ({{ decisionHistory.length }})</h3>
-              <table class="items-table">
-                <thead>
-                  <tr><th>Date</th><th>SR #</th><th>Decision</th><th>Reason</th><th>Comments</th></tr>
-                </thead>
-                <tbody>
-                  @for (h of decisionHistory; track h.srNumber + h.date) {
-                    <tr>
-                      <td class="td-date">{{ h.date | date }}</td>
-                      <td class="td-mono">{{ h.srNumber }}</td>
-                      <td><span [class]="getDecisionClass(h.decision)"><i [class]="getDecisionIcon(h.decision)"></i> {{ getDecisionLabel(h.decision) }}</span></td>
-                      <td>{{ h.reason }}</td>
-                      <td style="color:#64748b;font-size:.8rem;">{{ h.comments }}</td>
-                    </tr>
-                  }
-                </tbody>
-              </table>
-            </div>
-          }
-        </div>
-        <div class="modal-content__footer">
-          <button class="modal-btn modal-btn--secondary" (click)="closeModal()"><i class="pi pi-times"></i> Close</button>
-          <button class="modal-btn modal-btn--primary" (click)="exportPDF()"><i class="pi pi-download"></i> Export PDF</button>
-        </div>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Audit Trail Summary -->
+  <div class="summary-section">
+    <h2>🔍 AUDIT TRAIL SUMMARY</h2>
+    <div class="summary-card">
+      <div class="summary-item">
+        <strong>Total Approval Events:</strong> 156
+      </div>
+      <div class="summary-item">
+        <strong>Approved:</strong> 124 (79.5%) <strong>Rejected:</strong> 18 (11.5%) <strong>Pending:</strong> 14 (9%)
+      </div>
+      <div class="summary-item">
+        <strong>Average Response Time:</strong> 1.2 days
+      </div>
+      <div class="summary-item">
+        <strong>Most Active Approver:</strong> Sarah Smith (45 approvals)
       </div>
     </div>
-  }
+  </div>
+
+  <!-- Compliance Records -->
+  <div class="compliance-section">
+    <h2>✅ COMPLIANCE RECORDS</h2>
+    <div class="compliance-card">
+      <p>All approvals are compliant with department policy.</p>
+      <p>No violations detected in approval chain.</p>
+      <p>Audit ready: Yes</p>
+    </div>
+  </div>
+
+  <!-- Export Options -->
+  <div class="export-section">
+    <h2>⚡ EXPORT OPTIONS</h2>
+    <div class="export-buttons">
+      <button class="btn btn-secondary" (click)="exportExcel()">📥 Export to Excel</button>
+      <button class="btn btn-secondary" (click)="exportPDF()">📄 Export to PDF</button>
+      <button class="btn btn-secondary" (click)="emailReport()">📧 Email Report</button>
+      <button class="btn btn-secondary" (click)="print()">🖨️ Print</button>
+      <button class="btn btn-secondary" (click)="scheduleExport()">📅 Schedule Export</button>
+    </div>
+  </div>
 </div>
