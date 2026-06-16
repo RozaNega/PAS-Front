@@ -1,6 +1,6 @@
 import express from 'express';
 import fs from 'fs/promises';
-import { existsSync, readFileSync } from 'fs';
+import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
 import nodemailer from 'nodemailer';
 
@@ -332,6 +332,105 @@ app.post('/api/Auth/reset-password', async (req, res) => {
 
 app.post('/api/Auth/login', async (req, res) => {
   res.json({ success: true, message: 'Mock login' });
+});
+
+// ---------- Pending Registration Endpoints ----------
+
+const PENDING_FILE_DEV = resolve(dataFolder, 'pending-registrations.json');
+
+function loadPendingDev() {
+  try {
+    if (!existsSync(PENDING_FILE_DEV)) return new Map();
+    const raw = readFileSync(PENDING_FILE_DEV, 'utf8');
+    const arr = JSON.parse(raw);
+    if (!Array.isArray(arr)) return new Map();
+    const map = new Map();
+    for (const item of arr) map.set(item.id, item);
+    return map;
+  } catch {
+    return new Map();
+  }
+}
+
+function savePendingDev(map) {
+  try {
+    writeFileSync(PENDING_FILE_DEV, JSON.stringify(Array.from(map.values()), null, 2), 'utf8');
+  } catch {}
+}
+
+const pendingRegistrationsDev = loadPendingDev();
+const pendingIds = Array.from(pendingRegistrationsDev.keys());
+let pendingDevIdCounter = pendingIds.reduce((max, id) => {
+  const parts = id.split('-');
+  const num = parseInt(parts[parts.length - 1], 10);
+  return isNaN(num) ? max : Math.max(max, num);
+}, 0);
+
+app.post('/api/Auth/register-pending', async (req, res) => {
+  try {
+    const { username, fullName, email, password, roleName, department, employeeCode, phoneNumber } = req.body || {};
+    if (!email || !password || !fullName || !roleName) {
+      return res.status(400).json({ success: false, message: 'Missing required fields: email, password, fullName, roleName' });
+    }
+    pendingDevIdCounter++;
+    const id = `pending-${Date.now()}-${pendingDevIdCounter}`;
+    const record = {
+      id, username: username || fullName.toLowerCase().replace(/\s+/g, '_'),
+      fullName: fullName.trim(), email: email.trim().toLowerCase(),
+      roleName: roleName.trim(), department: department || '',
+      employeeCode: employeeCode || '', phoneNumber: phoneNumber || '',
+      password, submittedAt: new Date().toISOString(),
+    };
+    pendingRegistrationsDev.set(id, record);
+    savePendingDev(pendingRegistrationsDev);
+    console.log('[DevAPI] Pending registration created for', email);
+    res.json({ success: true, message: 'Registration submitted for admin approval.', data: { id } });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+app.get('/api/Auth/pending-registrations', async (req, res) => {
+  try {
+    const list = Array.from(pendingRegistrationsDev.values()).map(({ password, ...rest }) => rest);
+    res.json({ success: true, data: list, statusCode: 200 });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+app.get('/api/Auth/pending-registrations/count', async (req, res) => {
+  try {
+    res.json({ success: true, data: pendingRegistrationsDev.size, statusCode: 200 });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+app.post('/api/Auth/pending-registrations/:id/approve', async (req, res) => {
+  try {
+    const record = pendingRegistrationsDev.get(req.params.id);
+    if (!record) return res.status(404).json({ success: false, message: 'Pending registration not found.' });
+    pendingRegistrationsDev.delete(req.params.id);
+    savePendingDev(pendingRegistrationsDev);
+    console.log('[DevAPI] Approved pending registration for', record.email);
+    res.json({ success: true, message: `${record.fullName} approved as ${record.roleName}.` });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+app.post('/api/Auth/pending-registrations/:id/reject', async (req, res) => {
+  try {
+    const record = pendingRegistrationsDev.get(req.params.id);
+    if (!record) return res.status(404).json({ success: false, message: 'Pending registration not found.' });
+    pendingRegistrationsDev.delete(req.params.id);
+    savePendingDev(pendingRegistrationsDev);
+    console.log('[DevAPI] Rejected pending registration for', record.email);
+    res.json({ success: true, message: `${record.fullName}'s registration rejected.` });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
 });
 
 // Debug: log unmatched routes

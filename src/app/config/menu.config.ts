@@ -46,10 +46,10 @@ export const adminMenuConfig: MenuItem[] = [
     icon: 'bi bi-people',
     children: [
       { label: 'Users', route: '/admin/users', permissions: ['view_users'] },
+      { label: 'Pending Registrations', route: '/admin/users/pending-registrations', permissions: ['view_users'] },
       { label: 'Employees', route: '/admin/users/employees', permissions: ['view_employees'] },
       { label: 'Roles & Permissions', route: '/admin/users/roles', permissions: ['view_roles'] },
       { label: 'Activity Logs', route: '/admin/users/activity', permissions: ['view_audit_log'] },
-      { label: 'Reset Password', route: '/admin/users/reset-password', permissions: ['view_users'] },
     ],
   },
   {

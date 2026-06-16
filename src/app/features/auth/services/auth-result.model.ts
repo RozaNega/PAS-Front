@@ -18,4 +18,5 @@ export interface AuthResult {
   message: string;
   session?: AuthSession;
   resetToken?: string;
+  data?: { username?: string };
 }

@@ -280,6 +280,10 @@ export const routes: Routes = [
         loadComponent: () => import('./features/user-management/pages/add-user/add-user.component').then(m => m.AddUserComponent),
       },
       {
+        path: 'users/pending-registrations',
+        loadComponent: () => import('./features/user-management/pages/pending-registrations/pending-registrations.component').then(m => m.PendingRegistrationsComponent),
+      },
+      {
         path: 'users/roles',
         loadComponent: () => import('./features/user-management/pages/roles-permissions/roles-permissions.component').then(m => m.RolesPermissionsComponent),
       },
@@ -294,10 +298,6 @@ export const routes: Routes = [
       {
         path: 'users/activity',
         loadComponent: () => import('./features/user-management/pages/activity-logs/activity-logs.component').then(m => m.ActivityLogsComponent),
-      },
-      {
-        path: 'users/reset-password',
-        loadComponent: () => import('./features/user-management/pages/reset-password/reset-password.component').then(m => m.AdminResetPasswordComponent),
       },
     ],
   },

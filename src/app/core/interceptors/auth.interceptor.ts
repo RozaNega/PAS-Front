@@ -19,7 +19,8 @@ export class AuthInterceptor implements HttpInterceptor {
     const token = this.tokenService.getToken();
     
     const isAuthRequest = req.url.toLowerCase().includes('/auth/login') || 
-                          req.url.toLowerCase().includes('/auth/register');
+                          req.url.toLowerCase().includes('/auth/register') ||
+                          req.url.toLowerCase().includes('/auth/register-pending');
     
     if (token && !isAuthRequest) {
       const cloned = req.clone({

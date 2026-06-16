@@ -92,3 +92,18 @@
     grid-template-columns: 1fr;
   }
 }
+
+.approval-notice {
+  text-align: center;
+  padding: 2rem 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.approval-notice p {
+  color: var(--text-color-muted);
+  max-width: 28rem;
+  line-height: 1.5;
+}

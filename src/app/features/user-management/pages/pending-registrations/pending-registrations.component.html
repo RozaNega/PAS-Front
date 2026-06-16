@@ -1,0 +1,87 @@
+<div class="page-container">
+  <div class="page-header">
+    <h1>Pending Registrations</h1>
+    <p class="page-subtitle">Approve or reject new account requests</p>
+  </div>
+
+  @if (error()) {
+    <div class="alert alert-error">
+      <i class="bi bi-exclamation-circle"></i>
+      <span>{{ error() }}</span>
+      <button class="alert-close" (click)="error.set('')">&times;</button>
+    </div>
+  }
+
+  <div class="card">
+    @if (loading()) {
+      <div class="loading-state">
+        <span class="spinner"></span>
+        <p>Loading pending registrations...</p>
+      </div>
+    } @else if (registrations().length === 0) {
+      <div class="empty-state">
+        <i class="bi bi-check2-circle" style="font-size: 2.5rem; color: var(--success-color);"></i>
+        <p>No pending registrations.</p>
+        <p class="text-muted">All account requests have been processed.</p>
+      </div>
+    } @else {
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Full Name</th>
+              <th>Username</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Department</th>
+              <th>Employee Code</th>
+              <th>Submitted</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (reg of registrations(); track reg.id) {
+              <tr>
+                <td>{{ reg.fullName }}</td>
+                <td>{{ reg.username }}</td>
+                <td>{{ reg.email }}</td>
+                <td><span class="badge badge-role">{{ reg.roleName }}</span></td>
+                <td>{{ reg.department }}</td>
+                <td><code>{{ reg.employeeCode }}</code></td>
+                <td class="text-muted">{{ reg.submittedAt | date:'medium' }}</td>
+                <td class="actions-cell">
+                  <button
+                    class="btn btn-success btn-sm"
+                    [disabled]="actionInProgress() === reg.id"
+                    (click)="approve(reg.id)"
+                  >
+                    @if (actionInProgress() === reg.id) {
+                      <span class="spinner-sm"></span>
+                    } @else {
+                      <i class="bi bi-check-lg"></i>
+                    }
+                    Approve
+                  </button>
+                  <button
+                    class="btn btn-danger btn-sm"
+                    [disabled]="actionInProgress() === reg.id"
+                    (click)="reject(reg.id)"
+                  >
+                    <i class="bi bi-x-lg"></i>
+                    Reject
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+
+  <div class="page-footer">
+    <button class="btn btn-outline" (click)="loadPending()" [disabled]="loading()">
+      <i class="bi bi-arrow-clockwise"></i> Refresh
+    </button>
+  </div>
+</div>

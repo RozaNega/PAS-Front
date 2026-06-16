@@ -33,6 +33,7 @@ export class Register {
   protected readonly statusTone = signal<'neutral' | 'success' | 'error'>('neutral');
   protected readonly showPassword = signal(false);
   protected readonly showConfirmPassword = signal(false);
+  protected readonly pendingApproval = signal(false);
 
   protected readonly registerForm = this.formBuilder.nonNullable.group(
     {
@@ -107,27 +108,37 @@ export class Register {
     }
 
     this.loading.set(true);
-    this.registrationService
-      .register(registerData)
+    const isAdmin = registerData.roleName === 'Admin';
+    const request$ = isAdmin
+      ? this.registrationService.register(registerData)
+      : this.registrationService.registerPending(registerData);
+
+    request$
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
         next: (response) => {
           if (response.success) {
-            this.statusTone.set('success');
-            this.statusMessage.set(response.message || 'Account created successfully! Please login.');
-            this.registerForm.reset({
-              fullName: '',
-              username: '',
-              phoneNumber: '',
-              email: '',
-              department: '',
-              employeeCode: '',
-              roleName: 'Employee',
-              password: '',
-              confirmPassword: '',
-              acceptedTerms: true,
-            });
-            this.submitted.set(false);
+            if (isAdmin) {
+              this.statusTone.set('success');
+              this.statusMessage.set(response.message || 'Account created successfully! Please login.');
+              this.registerForm.reset({
+                fullName: '',
+                username: '',
+                phoneNumber: '',
+                email: '',
+                department: '',
+                employeeCode: '',
+                roleName: 'Employee',
+                password: '',
+                confirmPassword: '',
+                acceptedTerms: true,
+              });
+              this.submitted.set(false);
+            } else {
+              this.pendingApproval.set(true);
+              this.statusTone.set('success');
+              this.statusMessage.set(response.message || 'Registration submitted for admin approval.');
+            }
           } else {
             this.statusTone.set('error');
             this.statusMessage.set(response.message || 'Registration failed. Please try again.');

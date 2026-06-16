@@ -8,9 +8,18 @@
       alt="AFRICOM Technologies"
       priority
     />
-    <h1 id="register-title">Create Account</h1>
-    <p class="auth-subtitle">Fill in the details to set up your account</p>
+    <h1 id="register-title">{{ pendingApproval() ? 'Registration Submitted' : 'Create Account' }}</h1>
+    <p class="auth-subtitle">{{ pendingApproval() ? 'Your account request is pending admin approval.' : 'Fill in the details to set up your account' }}</p>
 
+    @if (pendingApproval()) {
+      <div class="approval-notice">
+        <i class="bi bi-hourglass-split" style="font-size: 2rem; color: var(--primary-color);"></i>
+        <p>A notification has been sent to the administrators. You will be able to log in once your account is approved.</p>
+        <p style="margin-top: 0.5rem;">
+          <a routerLink="/auth/login" class="btn-primary" style="display: inline-block; text-decoration: none;">Back to Login</a>
+        </p>
+      </div>
+    } @else {
     <form class="auth-form" [formGroup]="registerForm" (ngSubmit)="submit()" novalidate>
       <div class="form-section">
         <p class="form-section-title">Personal Information</p>
@@ -231,6 +240,7 @@
       }
     </form>
 
+    }
     <p class="auth-switch-row">
       Already have an account?
       <a routerLink="/auth/login">Login</a>
