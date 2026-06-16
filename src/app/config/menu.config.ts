@@ -49,7 +49,6 @@ export const adminMenuConfig: MenuItem[] = [
       { label: 'Employees', route: '/admin/users/employees', permissions: ['view_employees'] },
       { label: 'Roles & Permissions', route: '/admin/users/roles', permissions: ['view_roles'] },
       { label: 'Activity Logs', route: '/admin/users/activity', permissions: ['view_audit_log'] },
-      { label: 'Reset Password', route: '/admin/users/reset-password', permissions: ['view_users'] },
     ],
   },
   {

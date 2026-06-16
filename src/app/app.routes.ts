@@ -295,10 +295,6 @@ export const routes: Routes = [
         path: 'users/activity',
         loadComponent: () => import('./features/user-management/pages/activity-logs/activity-logs.component').then(m => m.ActivityLogsComponent),
       },
-      {
-        path: 'users/reset-password',
-        loadComponent: () => import('./features/user-management/pages/reset-password/reset-password.component').then(m => m.AdminResetPasswordComponent),
-      },
     ],
   },
   {
