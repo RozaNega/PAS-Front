@@ -374,11 +374,80 @@ export class AuthService {
     );
   }
 
+  register(request: {
+    username: string;
+    email: string;
+    password: string;
+    fullName?: string;
+    roleName?: string;
+    phone?: string;
+  }): Observable<{ succeeded: boolean; message: string; data?: any }> {
+    return this.apiService.post<any>('Auth/register', request).pipe(
+      map((response) => ({
+        succeeded: response.success,
+        message: response.message || (response.success ? 'Registration successful' : 'Registration failed'),
+        data: response.data,
+      })),
+    );
+  }
+
   logout(): void {
+    this.apiService.post<any>('Auth/logout', {}).pipe(
+      map((response) => ({
+        succeeded: response.success,
+        message: response.message || 'Logged out',
+      })),
+    ).subscribe();
     this.tokenService.clear();
     this.currentUserSubject.next(null);
     this.currentUserService.clear();
     this.router.navigate(['/auth/login']);
+  }
+
+  refreshToken(token?: string): Observable<{ succeeded: boolean; message: string; data?: { token: string; refreshToken: string } }> {
+    return this.apiService.post<any>('Auth/refresh-token', { token }).pipe(
+      map((response) => ({
+        succeeded: response.success,
+        message: response.message || 'Token refreshed',
+        data: response.data,
+      })),
+    );
+  }
+
+  uploadProfilePhoto(file: File): Observable<{ succeeded: boolean; message: string; photoUrl?: string }> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.apiService.post<any>('Auth/upload-profile-photo', formData).pipe(
+      map((response) => ({
+        succeeded: response.success,
+        message: response.message || (response.success ? 'Photo uploaded' : 'Upload failed'),
+        photoUrl: response.data?.photoUrl || response.data?.url,
+      })),
+    );
+  }
+
+  updateProfile(payload: Record<string, unknown>): Observable<{ succeeded: boolean; message: string }> {
+    return this.apiService.put<any>('Auth/update-profile', payload).pipe(
+      map((response) => ({
+        succeeded: response.success,
+        message: response.message || (response.success ? 'Profile updated successfully.' : 'Failed to update profile.'),
+      })),
+    );
+  }
+
+  fetchCurrentUser(): Observable<{ succeeded: boolean; message: string; data?: any }> {
+    return this.apiService.get<any>('Auth/me').pipe(
+      map((response) => ({
+        succeeded: response.success,
+        message: response.message || '',
+        data: response.data,
+      })),
+      tap((res) => {
+        if (res.succeeded && res.data) {
+          this.currentUserSubject.next(res.data);
+        }
+      }),
+    );
   }
 
   getCurrentUser(): User | null {

@@ -1144,10 +1144,6 @@ export class WorkflowService {
     if (last) this.requestUpdates$.next(last);
   }
 
-  getAllRequests(): ServiceRequest[] {
-    return this.requests();
-  }
-
   getAllNotifications(): NotificationMessage[] {
     return this.notifications();
   }
@@ -1175,6 +1171,10 @@ export class WorkflowService {
 
   getRequestById(id: string): ServiceRequest | undefined {
     return this.requests().find((req) => req.id === id);
+  }
+
+  getAllRequests(): ServiceRequest[] {
+    return this.requests();
   }
 
   markNotificationAsRead(notificationId: string): void {

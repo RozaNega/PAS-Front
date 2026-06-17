@@ -1,5 +1,6 @@
 [
   [
+
     "rozneg2121@gmail.com",
     {
       "username": "Ro_1",
@@ -54,3 +55,19 @@
     }
   ]
 ]
+=======
+    "rozaneg1621@gmail.com",
+    {
+      "username": "H_1",
+      "password": "Hir@12345",
+      "fullName": "H_1",
+      "role": "Employee",
+      "department": "IT Department",
+      "employeeCode": "EMP_1001",
+      "phoneNumber": "+251-911-000000",
+      "position": "Staff",
+      "joinDate": "2024-01-15"
+    }
+  ]
+]
+

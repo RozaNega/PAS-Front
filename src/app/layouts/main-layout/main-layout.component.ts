@@ -382,6 +382,8 @@ export class MainLayoutComponent implements OnInit {
     return match?.label ?? 'Dashboard';
   }
 
+  private readonly pendingRegService = inject(PendingRegistrationService);
+
   private updateMenuItems(): void {
     if (this.router.url.startsWith('/admin')) {
       this.menuItems = getMenuConfigForRole('admin');
@@ -627,20 +629,32 @@ export class MainLayoutComponent implements OnInit {
   }
 
   private loadAdminMenuBadges(): void {
+
     this.pendingCountSub?.unsubscribe();
     this.pendingRegistrationService.refreshCount();
     this.pendingCountSub = this.pendingRegistrationService.count$.subscribe((count) => {
       this.menuItems = this.menuItems.map((item) => {
         if (item.label !== 'User Management') return item;
         return {
+
+    this.pendingRegService.getCount().subscribe({
+      next: (res) => {
+        const count = res.data ?? 0;
+        this.menuItems = this.menuItems.map((item) => ({
+
           ...item,
           children: item.children?.map((child: MenuItem) =>
             child.route === '/admin/users/pending-registrations'
               ? { ...child, badge: count > 0 ? count : undefined }
               : child,
           ),
+
         };
       });
+
+        }));
+      },
+
     });
   }
 

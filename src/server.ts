@@ -158,6 +158,66 @@ app.post('/api/Auth/reset-password', async (_req, res) => {
   res.json({ success: true, message: 'Password reset successful' });
 });
 
+// ---------- Additional Auth Endpoints (dev mock) ----------
+
+app.get('/api/Auth/me', async (_req, res) => {
+  res.json({ success: true, data: { id: 'dev-user-001', email: 'dev@example.com', userName: 'DevUser', fullName: 'Dev User', roles: ['Admin'], twoFactorEnabled: true, emailConfirmed: true }, statusCode: 200 });
+});
+
+app.get('/api/Auth/confirm-email', async (req, res) => {
+  const token = req.query['token'];
+  if (!token) { res.status(400).json({ success: false, message: 'Invalid or missing token.', statusCode: 400 }); return; }
+  res.json({ success: true, message: 'Email confirmed successfully.', statusCode: 200 });
+});
+
+app.post('/api/Auth/enable-2fa', async (req, res) => {
+  const { method, contactInfo } = req.body || {};
+  if (!method || !contactInfo) { res.status(400).json({ success: false, message: 'method and contactInfo are required.', statusCode: 400 }); return; }
+  res.json({ success: true, message: '2FA enabled successfully.', statusCode: 200 });
+});
+
+app.post('/api/Auth/disable-2fa', async (_req, res) => {
+  res.json({ success: true, message: '2FA disabled successfully.', statusCode: 200 });
+});
+
+app.post('/api/Auth/resend-verification', async (req, res) => {
+  const { email } = req.body || {};
+  if (!email) { res.status(400).json({ success: false, message: 'Email is required.', statusCode: 400 }); return; }
+  res.json({ success: true, message: 'Verification email resent.', statusCode: 200 });
+});
+
+app.post('/api/Auth/send-phone-otp', async (req, res) => {
+  const { phoneNumber } = req.body || {};
+  if (!phoneNumber) { res.status(400).json({ success: false, message: 'Phone number is required.', statusCode: 400 }); return; }
+  res.json({ success: true, message: 'OTP sent to phone.', otp: '123456', statusCode: 200 });
+});
+
+app.post('/api/Auth/verify-phone-otp', async (req, res) => {
+  const { phoneNumber, otp } = req.body || {};
+  if (!phoneNumber || !otp) { res.status(400).json({ success: false, message: 'Phone number and OTP are required.', statusCode: 400 }); return; }
+  res.json({ success: true, message: 'Phone number verified successfully.', statusCode: 200 });
+});
+
+app.post('/api/Auth/logout', async (_req, res) => {
+  res.json({ success: true, message: 'Logged out successfully.', statusCode: 200 });
+});
+
+app.post('/api/Auth/refresh-token', async (req, res) => {
+  const { token } = req.body || {};
+  res.json({ success: true, message: 'Token refreshed.', data: { token: token || 'mock-refreshed-token', refreshToken: 'mock-refresh-token' }, statusCode: 200 });
+});
+
+app.post('/api/Auth/change-password', async (req, res) => {
+  const { currentPassword, newPassword } = req.body || {};
+  if (!currentPassword || !newPassword) { res.status(400).json({ success: false, message: 'Current and new password are required.', statusCode: 400 }); return; }
+  if (newPassword.length < 6) { res.status(400).json({ success: false, message: 'Password must be at least 6 characters.', statusCode: 400 }); return; }
+  res.json({ success: true, message: 'Password changed successfully.', statusCode: 200 });
+});
+
+app.post('/api/Auth/upload-profile-photo', async (req, res) => {
+  res.json({ success: true, message: 'Profile photo uploaded.', data: { photoUrl: '/uploads/photo-' + Date.now() + '.jpg' }, statusCode: 200 });
+});
+
 /**
  * Forward `/api/*` to the real PAS backend (same role as `proxy.conf.json` during `ng serve`).
  * The previous mock `Dashboard/statistics` response hid `recentActivities` and broke Activity Logs.
@@ -325,6 +385,22 @@ if (isMainModule(import.meta.url) || process.env['pm_id']) {
     }
 
     console.log(`Node Express server listening on http://localhost:${port}`);
+    console.log('Auth Endpoints:');
+    console.log('  POST /api/Auth/login                - Login');
+    console.log('  POST /api/Auth/register              - Register new user');
+    console.log('  POST /api/Auth/logout                - Logout');
+    console.log('  POST /api/Auth/refresh-token         - Refresh JWT token');
+    console.log('  POST /api/Auth/change-password       - Change password');
+    console.log('  POST /api/Auth/forgot-password       - Send reset email');
+    console.log('  POST /api/Auth/reset-password        - Reset password');
+    console.log('  POST /api/Auth/resend-verification   - Resend email confirmation');
+    console.log('  GET  /api/Auth/me                    - Get current user profile');
+    console.log('  GET  /api/Auth/confirm-email         - Confirm email');
+    console.log('  POST /api/Auth/enable-2fa            - Enable 2FA');
+    console.log('  POST /api/Auth/disable-2fa           - Disable 2FA');
+    console.log('  POST /api/Auth/send-phone-otp        - Send OTP');
+    console.log('  POST /api/Auth/verify-phone-otp      - Verify OTP');
+    console.log('  POST /api/Auth/upload-profile-photo  - Upload profile photo');
   });
 }
 

@@ -1,18 +1,68 @@
 [
-  {"id":"sr-001","srNumber":"SR-2026-001","requesterId":"emp-008","requesterName":"Meron Assefa","department":"IT","purpose":"New laptop for developer","urgency":"High","notes":"Need for new hire","approvedById":"emp-001","approvedByName":"Abebe Kebede","requestDate":"2026-05-10T09:00:00.000Z","status":"Approved","totalItems":1,"totalQuantity":1,"issuedQuantity":0},
-  {"id":"sr-002","srNumber":"SR-2026-002","requesterId":"emp-010","requesterName":"Betelhem Tadesse","department":"Human Resources","purpose":"Office furniture for HR department","urgency":"Medium","notes":"Need 5 desks and chairs","approvedById":null,"approvedByName":null,"requestDate":"2026-05-12T10:30:00.000Z","status":"Pending","totalItems":2,"totalQuantity":10,"issuedQuantity":0},
-  {"id":"sr-003","srNumber":"SR-2026-003","requesterId":"emp-012","requesterName":"Hanna Tekle","department":"Operations","purpose":"Printer toner cartridges","urgency":"Low","notes":"Monthly replenishment","approvedById":"emp-004","approvedByName":"Mekdes Alemayehu","requestDate":"2026-05-15T14:00:00.000Z","status":"Completed","totalItems":1,"totalQuantity":20,"issuedQuantity":20},
-  {"id":"sr-004","srNumber":"SR-2026-004","requesterId":"emp-005","requesterName":"Dawit Hailu","department":"Marketing","purpose":"Marketing materials printing","urgency":"Medium","notes":"Brochures and flyers","approvedById":null,"approvedByName":null,"requestDate":"2026-05-18T11:15:00.000Z","status":"Pending","totalItems":3,"totalQuantity":500,"issuedQuantity":0},
-  {"id":"sr-005","srNumber":"SR-2026-005","requesterId":"emp-011","requesterName":"Solomon Ayele","department":"Finance","purpose":"Stationery supplies","urgency":"Low","notes":"General office stationery","approvedById":"emp-003","approvedByName":"Getachew Tesfaye","requestDate":"2026-05-20T08:45:00.000Z","status":"Approved","totalItems":5,"totalQuantity":100,"issuedQuantity":0},
-  {"id":"sr-006","srNumber":"SR-2026-006","requesterId":"emp-002","requesterName":"Sara Mohammed","department":"Human Resources","purpose":"Training materials","urgency":"High","notes":"New employee onboarding kits","approvedById":"emp-001","approvedByName":"Abebe Kebede","requestDate":"2026-05-22T09:30:00.000Z","status":"Completed","totalItems":4,"totalQuantity":30,"issuedQuantity":30},
-  {"id":"sr-007","srNumber":"SR-2026-007","requesterId":"emp-009","requesterName":"Henok Girma","department":"IT","purpose":"Network cables and accessories","urgency":"Medium","notes":"CAT6 cables for office renovation","approvedById":null,"approvedByName":null,"requestDate":"2026-05-25T13:00:00.000Z","status":"Pending","totalItems":3,"totalQuantity":200,"issuedQuantity":0},
-  {"id":"sr-008","srNumber":"SR-2026-008","requesterId":"emp-014","requesterName":"Eden Shiferaw","department":"Administration","purpose":"Cleaning supplies","urgency":"Low","notes":"Monthly cleaning supplies","approvedById":"emp-006","approvedByName":"Tigist Wondimu","requestDate":"2026-05-28T10:00:00.000Z","status":"Completed","totalItems":6,"totalQuantity":45,"issuedQuantity":45},
-  {"id":"sr-009","srNumber":"SR-2026-009","requesterId":"emp-007","requesterName":"Yonas Berhanu","department":"Procurement","purpose":"Server maintenance parts","urgency":"High","notes":"Critical server components","approvedById":null,"approvedByName":null,"requestDate":"2026-06-01T09:00:00.000Z","status":"Pending","totalItems":2,"totalQuantity":4,"issuedQuantity":0},
-  {"id":"sr-010","srNumber":"SR-2026-010","requesterId":"emp-013","requesterName":"Biruk Mengistu","department":"Marketing","purpose":"Photography equipment","urgency":"Medium","notes":"Camera and lighting for content","approvedById":"emp-005","approvedByName":"Dawit Hailu","requestDate":"2026-06-02T14:30:00.000Z","status":"Rejected","totalItems":1,"totalQuantity":1,"issuedQuantity":0},
-  {"id":"sr-011","srNumber":"SR-2026-011","requesterId":"emp-016","requesterName":"Bontu Fekadu","department":"IT","purpose":"Monitor upgrade","urgency":"Low","notes":"Upgrade 15 monitors","approvedById":"emp-001","approvedByName":"Abebe Kebede","requestDate":"2026-06-03T11:00:00.000Z","status":"Approved","totalItems":1,"totalQuantity":15,"issuedQuantity":0},
-  {"id":"sr-012","srNumber":"SR-2026-012","requesterId":"emp-017","requesterName":"Fikadu Belay","department":"Operations","purpose":"Packing materials","urgency":"Medium","notes":"Warehouse packing supplies","approvedById":null,"approvedByName":null,"requestDate":"2026-06-04T08:30:00.000Z","status":"Pending","totalItems":4,"totalQuantity":300,"issuedQuantity":0},
-  {"id":"sr-013","srNumber":"SR-2026-013","requesterId":"emp-018","requesterName":"Mahlet Desta","department":"Human Resources","purpose":"Office snacks and beverages","urgency":"Low","notes":"Monthly office refreshments","approvedById":"emp-002","approvedByName":"Sara Mohammed","requestDate":"2026-06-05T09:15:00.000Z","status":"Approved","totalItems":8,"totalQuantity":80,"issuedQuantity":0},
-  {"id":"sr-014","srNumber":"SR-2026-014","requesterId":"emp-020","requesterName":"Tsion Lemma","department":"Marketing","purpose":"Event banners and signage","urgency":"Medium","notes":"Upcoming trade show","approvedById":null,"approvedByName":null,"requestDate":"2026-06-08T10:00:00.000Z","status":"Pending","totalItems":2,"totalQuantity":15,"issuedQuantity":0},
-  {"id":"sr-015","srNumber":"SR-2026-015","requesterId":"emp-015","requesterName":"Muluken Eshetu","department":"Procurement","purpose":"Safety equipment","urgency":"High","notes":"PPE for warehouse staff","approvedById":"emp-004","approvedByName":"Mekdes Alemayehu","requestDate":"2026-06-09T13:45:00.000Z","status":"Completed","totalItems":5,"totalQuantity":60,"issuedQuantity":60},
-  {"id":"sr-016","srNumber":"SR-2026-016","requesterId":"emp-003","requesterName":"Getachew Tesfaye","department":"Finance","purpose":"Calculator and office tools","urgency":"Low","notes":"Finance department tools","approvedById":null,"approvedByName":null,"requestDate":"2026-06-10T07:30:00.000Z","status":"Pending","totalItems":3,"totalQuantity":8,"issuedQuantity":0}
+  {
+    "id": "sr-1781642746565",
+    "srNumber": "SR-001",
+    "requesterId": "",
+    "requesterName": "H_1",
+    "department": "IT Dept",
+    "purpose": "tuy",
+    "urgency": "Medium",
+    "notes": "",
+    "requestDate": "2026-06-16T20:45:46.565Z",
+    "status": "Approved",
+    "stockVerificationStatus": "NotVerified",
+    "totalItems": 1,
+    "totalQuantity": 1,
+    "issuedQuantity": 0,
+    "items": [
+      {
+        "id": "B927FAB6-B2F5-46FF-8453-104F54590D84",
+        "itemId": "B927FAB6-B2F5-46FF-8453-104F54590D84",
+        "itemName": "pc",
+        "sku": "Hp-12",
+        "unitOfMeasure": "PCS",
+        "requestedQty": 1,
+        "issuedQty": 0,
+        "pendingQty": 1,
+        "shelfId": null,
+        "shelfLocation": null
+      }
+    ],
+    "createdAt": "2026-06-16T20:45:46.567Z",
+    "updatedAt": "2026-06-16T20:45:46.616Z",
+    "approvedById": "mgr_001",
+    "approvedByName": "Manager"
+  },
+  {
+    "id": "sr-1781642746606",
+    "srNumber": "SR-002",
+    "requesterId": "",
+    "requesterName": "Test User",
+    "department": "IT",
+    "purpose": "Test",
+    "urgency": "Normal",
+    "notes": "",
+    "requestDate": "2026-06-16T20:45:46.606Z",
+    "status": "Pending",
+    "stockVerificationStatus": "NotVerified",
+    "totalItems": 1,
+    "totalQuantity": 2,
+    "issuedQuantity": 0,
+    "items": [
+      {
+        "id": "AD1E0859-D4BE-44D6-84AA-0EDA5113C34A",
+        "itemId": "AD1E0859-D4BE-44D6-84AA-0EDA5113C34A",
+        "itemName": "Desktop",
+        "sku": "DES-001",
+        "unitOfMeasure": "PCS",
+        "requestedQty": 2,
+        "issuedQty": 0,
+        "pendingQty": 2,
+        "shelfId": null,
+        "shelfLocation": null
+      }
+    ],
+    "createdAt": "2026-06-16T20:45:46.606Z",
+    "updatedAt": null
+  }
 ]

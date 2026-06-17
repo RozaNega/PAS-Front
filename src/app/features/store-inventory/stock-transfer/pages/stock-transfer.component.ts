@@ -1,5 +1,6 @@
 import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { StockTransferService, TransferHistory } from '../services/stock-transfer.service';
 
 import { NgxEchartsDirective, provideEchartsCore } from 'ngx-echarts';
@@ -13,7 +14,7 @@ echarts.use([BarChart, PieChart, LineChart, TooltipComponent, GridComponent, Leg
 @Component({
   selector: 'app-stock-transfer',
   standalone: true,
-  imports: [CommonModule, NgxEchartsDirective],
+  imports: [CommonModule, FormsModule, NgxEchartsDirective],
   providers: [provideEchartsCore({ echarts })],
   templateUrl: './stock-transfer.component.html',
   styleUrls: ['./stock-transfer.component.scss']
@@ -34,6 +35,7 @@ export class StockTransferComponent implements OnInit {
   notes = signal<string>('');
   requiredByDate = signal<string>('');
   itemSearch = signal<string>('');
+  showCreateForm = signal(false);
   showHistoryModal = signal(false);
   submitting = signal(false);
   error = signal<string | null>(null);
@@ -162,6 +164,8 @@ export class StockTransferComponent implements OnInit {
     this.transferItems.set([]);
   }
 
+  openCreateTransfer(): void { this.showCreateForm.set(true); }
+  closeCreateForm(): void { this.showCreateForm.set(false); }
   openHistoryModal(): void { this.showHistoryModal.set(true); }
   closeHistoryModal(): void { this.showHistoryModal.set(false); }
 
