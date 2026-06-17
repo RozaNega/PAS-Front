@@ -248,7 +248,7 @@ export class EditProfileModalComponent {
       employeeCode: this.profile.employeeCode || undefined,
     };
 
-    this.apiService.put(`users/${userId}`, payload).subscribe({
+    this.authService.updateProfile(payload).subscribe({
       next: async () => {
         try {
           if (this.profile.password) {

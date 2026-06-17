@@ -101,7 +101,14 @@ app.post('/api/Notifications/send-email', async (req, res) => {
 
 app.post('/api/Notifications', async (req, res) => {
   try {
-    const { to, subject, body, userId, message } = req.body || {};
+    const { to, subject, body, userId, message, title: reqTitle } = req.body || {};
+
+    // Store notification locally so it appears in the sidebar
+    const notifMessage = message || body || subject || '';
+    const notifTitle = reqTitle || subject || 'Notification';
+    if (notifMessage) {
+      addNotification({ userId: userId || to || '', message: notifMessage, title: notifTitle });
+    }
 
     // Frontend sends { userId, message }, email service expects { to, subject, body }
     const emailTo = to || (message ? extractEmail(message) : '');
@@ -127,7 +134,7 @@ app.post('/api/Notifications', async (req, res) => {
       let data = '';
       backendRes.on('data', (chunk) => data += chunk);
       backendRes.on('end', () => {
-        try { res.json(JSON.parse(data)); } catch { res.json({ success: true, message: 'Notification created' }); }
+        try { res.json(JSON.parse(data)); } catch { res.json({ success: true, message: 'Notification created', data: { id: 'local-' + Date.now() } }); }
       });
     });
     backendReq.on('error', (err) => {
@@ -147,8 +154,72 @@ function extractEmail(text) {
   return match ? match[0] : '';
 }
 
+// ---------- In-memory notification store ----------
+
+const notificationsStore = [];
+let notifIdCounter = 0;
+
+function addNotification(notif) {
+  notifIdCounter++;
+  const entry = {
+    id: `notif-${Date.now()}-${notifIdCounter}`,
+    message: notif.message || notif.body || '',
+    isRead: false,
+    sentDate: new Date().toISOString(),
+    userId: notif.userId || notif.to || '',
+    title: notif.title || notif.subject || 'Notification',
+    ...notif,
+  };
+  notificationsStore.unshift(entry);
+  return entry;
+}
+
 app.get('/api/Notifications', async (req, res) => {
-  res.json({ success: true, data: [] });
+  const pageNumber = parseInt(req.query.pageNumber) || 1;
+  const pageSize = parseInt(req.query.pageSize) || 50;
+  const showOnlyUnread = req.query.showOnlyUnread === 'true';
+  let filtered = [...notificationsStore];
+  if (showOnlyUnread) filtered = filtered.filter(n => !n.isRead);
+  const totalCount = filtered.length;
+  const unreadCount = notificationsStore.filter(n => !n.isRead).length;
+  const totalPages = Math.ceil(totalCount / pageSize) || 1;
+  const start = (pageNumber - 1) * pageSize;
+  const items = filtered.slice(start, start + pageSize);
+  res.json({
+    success: true,
+    data: {
+      notifications: items,
+      totalCount,
+      unreadCount,
+      pageNumber,
+      totalPages,
+      hasPreviousPage: pageNumber > 1,
+      hasNextPage: pageNumber < totalPages,
+    },
+    statusCode: 200,
+  });
+});
+
+app.get('/api/Notifications/unread-count', async (req, res) => {
+  const unreadCount = notificationsStore.filter(n => !n.isRead).length;
+  res.json({ success: true, data: unreadCount, statusCode: 200 });
+});
+
+app.post('/api/Notifications/read-all', async (req, res) => {
+  for (const n of notificationsStore) n.isRead = true;
+  res.json({ success: true, message: 'All notifications marked as read.', statusCode: 200 });
+});
+
+app.post('/api/Notifications/:id/read', async (req, res) => {
+  const n = notificationsStore.find(x => x.id === req.params.id);
+  if (n) n.isRead = true;
+  res.json({ success: true, message: 'Notification marked as read.', statusCode: 200 });
+});
+
+app.delete('/api/Notifications/:id', async (req, res) => {
+  const idx = notificationsStore.findIndex(x => x.id === req.params.id);
+  if (idx !== -1) notificationsStore.splice(idx, 1);
+  res.json({ success: true, message: 'Notification deleted.', statusCode: 200 });
 });
 
 // File-backed pending registrations store: Map<id, {username, fullName, email, roleName, department, employeeCode, phoneNumber, password, submittedAt}>
@@ -350,6 +421,11 @@ app.post('/api/Auth/reset-password', async (req, res) => {
         password: pwd,
         fullName: username || email.split('@')[0],
         role: 'Employee',
+        department: existing.department || '',
+        employeeCode: existing.employeeCode || '',
+        phoneNumber: existing.phoneNumber || '',
+        position: existing.position || '',
+        joinDate: existing.joinDate || new Date().toISOString().split('T')[0],
       });
       saveUsersStore(usersStore);
     }
@@ -397,6 +473,131 @@ app.post('/api/Auth/reset-password', async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 });
+
+// ---------- Additional Auth Endpoints (dev mock) ----------
+
+app.get('/api/Auth/me', (req, res) => {
+  // Return a minimal user profile — real backend returns full profile
+  res.json({
+    success: true,
+    data: {
+      id: 'dev-user-001',
+      email: req.headers['x-user-email'] || 'dev@example.com',
+      userName: 'DevUser',
+      fullName: 'Dev User',
+      roles: ['Admin'],
+      twoFactorEnabled: true,
+      emailConfirmed: true,
+      phoneNumber: null,
+      phoneNumberConfirmed: false,
+    },
+    statusCode: 200,
+  });
+});
+
+app.get('/api/Auth/confirm-email', (req, res) => {
+  const { token, email } = req.query;
+  if (!token) {
+    return res.status(400).json({ success: false, message: 'Invalid or missing token.', statusCode: 400 });
+  }
+  res.json({ success: true, message: 'Email confirmed successfully.', statusCode: 200 });
+});
+
+app.post('/api/Auth/enable-2fa', (req, res) => {
+  const { method, contactInfo } = req.body || {};
+  if (!method || !contactInfo) {
+    return res.status(400).json({ success: false, message: 'method and contactInfo are required.', statusCode: 400 });
+  }
+  res.json({ success: true, message: '2FA enabled successfully.', statusCode: 200 });
+});
+
+app.post('/api/Auth/disable-2fa', (_req, res) => {
+  res.json({ success: true, message: '2FA disabled successfully.', statusCode: 200 });
+});
+
+app.post('/api/Auth/resend-verification', (req, res) => {
+  const { email } = req.body || {};
+  if (!email) {
+    return res.status(400).json({ success: false, message: 'Email is required.', statusCode: 400 });
+  }
+  res.json({ success: true, message: 'Verification email resent.', statusCode: 200 });
+});
+
+app.post('/api/Auth/send-phone-otp', (req, res) => {
+  const { phoneNumber } = req.body || {};
+  if (!phoneNumber) {
+    return res.status(400).json({ success: false, message: 'Phone number is required.', statusCode: 400 });
+  }
+  res.json({ success: true, message: 'OTP sent to phone.', otp: '123456', statusCode: 200 });
+});
+
+app.post('/api/Auth/verify-phone-otp', (req, res) => {
+  const { phoneNumber, otp } = req.body || {};
+  if (!phoneNumber || !otp) {
+    return res.status(400).json({ success: false, message: 'Phone number and OTP are required.', statusCode: 400 });
+  }
+  // Accept any 6-digit OTP for dev
+  res.json({ success: true, message: 'Phone number verified successfully.', statusCode: 200 });
+});
+
+app.post('/api/Auth/logout', (_req, res) => {
+  res.json({ success: true, message: 'Logged out successfully.', statusCode: 200 });
+});
+
+app.post('/api/Auth/refresh-token', (req, res) => {
+  const { token } = req.body || {};
+  res.json({
+    success: true,
+    message: 'Token refreshed.',
+    data: { token: token || 'mock-refreshed-token', refreshToken: 'mock-refresh-token' },
+    statusCode: 200,
+  });
+});
+
+app.post('/api/Auth/change-password', (req, res) => {
+  const { currentPassword, newPassword } = req.body || {};
+  if (!currentPassword || !newPassword) {
+    return res.status(400).json({ success: false, message: 'Current and new password are required.', statusCode: 400 });
+  }
+  if (newPassword.length < 6) {
+    return res.status(400).json({ success: false, message: 'Password must be at least 6 characters.', statusCode: 400 });
+  }
+  res.json({ success: true, message: 'Password changed successfully.', statusCode: 200 });
+});
+
+app.post('/api/Auth/upload-profile-photo', (req, res) => {
+  res.json({ success: true, message: 'Profile photo uploaded.', data: { photoUrl: '/uploads/photo-' + Date.now() + '.jpg' }, statusCode: 200 });
+});
+
+app.put('/api/Auth/update-profile', (req, res) => {
+  const { fullName, username, department, position, employeeCode, phoneNumber } = req.body || {};
+  // Update the user in the local store so changes persist across page refreshes
+  const email = resolveEmailFromUserStore(username);
+  if (email) {
+    const existing = usersStore.get(email);
+    if (existing) {
+      usersStore.set(email, {
+        ...existing,
+        fullName: fullName || existing.fullName,
+        username: username || existing.username,
+        department: department || existing.department || '',
+        position: position || existing.position || '',
+        employeeCode: employeeCode || existing.employeeCode || '',
+        phoneNumber: phoneNumber || existing.phoneNumber || '',
+      });
+      saveUsersStore(usersStore);
+    }
+  }
+  res.json({ success: true, message: 'Profile updated successfully.', statusCode: 200 });
+});
+
+function resolveEmailFromUserStore(username) {
+  if (!username) return null;
+  for (const [storedEmail, storedUser] of usersStore) {
+    if (storedUser.username === username) return storedEmail;
+  }
+  return null;
+}
 
 // ---------- Local Login Handler (dev mock) ----------
 
@@ -449,6 +650,13 @@ app.post('/api/Auth/login', async (req, res) => {
     const payload = Buffer.from(JSON.stringify(tokenPayload)).toString('base64url');
     const token = `${header}.${payload}.mock-dev-signature`;
 
+    // Build extended profile fields — use stored values or generate sensible defaults
+    const empCode = userEntry.employeeCode || `EMP_${String(Math.floor(Math.random() * 9000) + 1000)}`;
+    const dept = userEntry.department || 'IT Department';
+    const phoneVal = userEntry.phoneNumber || '+251-911-000000';
+    const pos = userEntry.position || 'Staff';
+    const joinDt = userEntry.joinDate || new Date().toISOString().split('T')[0];
+
     res.json({
       success: true,
       data: {
@@ -458,6 +666,11 @@ app.post('/api/Auth/login', async (req, res) => {
           username: userEntry.username,
           fullName: userEntry.fullName,
           email: userEntry.email,
+          employeeCode: empCode,
+          department: dept,
+          phone: phoneVal,
+          position: pos,
+          joinDate: joinDt,
           roles: [userEntry.role],
           permissions: [],
           isActive: true,
@@ -474,7 +687,7 @@ app.post('/api/Auth/login', async (req, res) => {
 
 app.post('/api/Auth/register', async (req, res) => {
   try {
-    const { username, fullName, email, password, roleName } = req.body || {};
+    const { username, fullName, email, password, roleName, department, employeeCode, phoneNumber, position } = req.body || {};
 
     // Store locally so login and forgot-password work
     if (email && password) {
@@ -484,6 +697,11 @@ app.post('/api/Auth/register', async (req, res) => {
         password,
         fullName: fullName || uname,
         role: roleName || 'Admin',
+        department: department || '',
+        employeeCode: employeeCode || '',
+        phoneNumber: phoneNumber || '',
+        position: position || '',
+        joinDate: new Date().toISOString().split('T')[0],
       });
       saveUsersStore(usersStore);
 
@@ -611,6 +829,11 @@ app.post('/api/Auth/pending-registrations/:id/approve', async (req, res) => {
       password,
       fullName,
       role: roleName,
+      department: department || '',
+      employeeCode: employeeCode || '',
+      phoneNumber: phoneNumber || '',
+      position: position || '',
+      joinDate: new Date().toISOString().split('T')[0],
     });
     saveUsersStore(usersStore);
 
@@ -819,6 +1042,660 @@ app.delete('/api/ShelfLocations/:id', (req, res) => {
   res.json({ success: true, message: 'Shelf location deleted', statusCode: 200 });
 });
 
+// ---------- Employee & User Lookup (used by dashboard to fill profile fields) ----------
+
+app.get('/api/users/:id', (req, res) => {
+  const userId = req.params.id;
+  for (const [storedEmail, storedUser] of usersStore) {
+    if (storedEmail === userId || storedUser.username === userId) {
+      return res.json({
+        success: true,
+        data: {
+          id: storedEmail,
+          userId: storedEmail,
+          username: storedUser.username,
+          email: storedEmail,
+          fullName: storedUser.fullName,
+          firstName: storedUser.fullName?.split(' ')[0] || storedUser.fullName,
+          lastName: storedUser.fullName?.split(' ').slice(1).join(' ') || '',
+          role: storedUser.role,
+          roles: [storedUser.role],
+          isActive: true,
+          employeeCode: storedUser.employeeCode || '',
+          phoneNumber: storedUser.phoneNumber || '',
+          department: storedUser.department || '',
+        },
+        statusCode: 200,
+      });
+    }
+  }
+  res.status(404).json({ success: false, message: 'User not found', statusCode: 404 });
+});
+
+app.put('/api/users/:id', (req, res) => {
+  const userId = req.params.id;
+  const body = req.body || {};
+  for (const [storedEmail, storedUser] of usersStore) {
+    if (storedEmail === userId || storedUser.username === userId) {
+      usersStore.set(storedEmail, {
+        ...storedUser,
+        fullName: body.fullName || body.name || body.fullName || storedUser.fullName,
+        username: body.username || storedUser.username,
+        department: body.department || storedUser.department || '',
+        position: body.position || body.jobTitle || storedUser.position || '',
+        employeeCode: body.employeeCode || storedUser.employeeCode || '',
+        phoneNumber: body.phoneNumber || body.phone || storedUser.phoneNumber || '',
+        joinDate: body.joinDate || storedUser.joinDate || new Date().toISOString().split('T')[0],
+      });
+      saveUsersStore(usersStore);
+
+      return res.json({
+        success: true,
+        message: 'Profile updated successfully.',
+        data: { id: storedEmail },
+        statusCode: 200,
+      });
+    }
+  }
+  // If not found in local store, create a new entry
+  usersStore.set(userId, {
+    username: body.username || userId,
+    password: '',
+    fullName: body.fullName || body.name || userId,
+    role: 'User',
+    department: body.department || '',
+    employeeCode: body.employeeCode || '',
+    phoneNumber: body.phoneNumber || '',
+    position: body.position || '',
+    joinDate: new Date().toISOString().split('T')[0],
+  });
+  saveUsersStore(usersStore);
+  res.json({ success: true, message: 'User created.', statusCode: 200 });
+});
+
+app.get('/api/employees/by-user/:userId', (req, res) => {
+  const userId = req.params.userId;
+  for (const [storedEmail, storedUser] of usersStore) {
+    if (storedEmail === userId || storedUser.username === userId) {
+      return res.json({
+        success: true,
+        data: {
+          id: 1,
+          employeeId: storedEmail,
+          firstName: storedUser.fullName?.split(' ')[0] || storedUser.fullName,
+          lastName: storedUser.fullName?.split(' ').slice(1).join(' ') || '',
+          email: storedEmail,
+          phoneNumber: storedUser.phoneNumber || '',
+          department: storedUser.department || '',
+          position: storedUser.position || '',
+          employeeCode: storedUser.employeeCode || '',
+          fullName: storedUser.fullName,
+          designation: storedUser.position || '',
+          dateOfJoining: storedUser.joinDate || new Date().toISOString().split('T')[0],
+          employmentType: 'Full-Time',
+          status: 'Active',
+          isActive: true,
+        },
+        statusCode: 200,
+      });
+    }
+  }
+  res.status(404).json({ success: false, message: 'Employee not found', statusCode: 404 });
+});
+
+// Serve ItemMasters locally so the catalog works with the in-memory
+// user store (fake JWT tokens are rejected by the real backend on 5028).
+app.get('/api/ItemMasters', (req, res) => {
+  try {
+    const d = JSON.parse(readFileSync(resolve(__dirname, 'data', 'inventory.json'), 'utf8'));
+    const items = d.itemMasters || [];
+    return res.json({
+      success: true, message: '',
+      data: { items, pageNumber: 1, totalPages: 1, totalCount: items.length, hasPreviousPage: false, hasNextPage: false },
+      statusCode: 200,
+    });
+  } catch {
+    return res.json({ success: true, message: '', data: { items: [], pageNumber: 1, totalPages: 1, totalCount: 0, hasPreviousPage: false, hasNextPage: false }, statusCode: 200 });
+  }
+});
+
+app.get('/api/ItemMasters/:id', (req, res, next) => {
+  try {
+    const d = JSON.parse(readFileSync(resolve(__dirname, 'data', 'inventory.json'), 'utf8'));
+    const item = (d.itemMasters || []).find(x => String(x.id) === String(req.params.id));
+    if (item) {
+      const stockLocations = (d.inventory || [])
+        .filter(inv => String(inv.itemId) === String(req.params.id))
+        .map(inv => ({ shelfId: inv.shelfId, shelfLocation: inv.shelfLocation, warehouseName: inv.warehouseName, availableQuantity: inv.availableStock ?? 0 }));
+      return res.json({ success: true, message: '', data: { ...item, stockLocations }, statusCode: 200 });
+    }
+  } catch {}
+  next();
+});
+
+function writeInventoryJson(d) {
+  writeFileSync(resolve(__dirname, 'data', 'inventory.json'), JSON.stringify(d, null, 2), 'utf8');
+}
+
+app.post('/api/ItemMasters', express.json(), (req, res) => {
+  try {
+    const d = JSON.parse(readFileSync(resolve(__dirname, 'data', 'inventory.json'), 'utf8'));
+    const payload = req.body || {};
+    const id = payload.id || `itm-${Date.now()}`;
+    const item = { id, itemName: payload.itemName || payload.sku || '', sku: payload.sku || '', description: payload.description || '', categoryName: payload.categoryName || '', unitOfMeasure: payload.unitOfMeasure || 'PCS', currentStock: payload.stockQuantity || 0, reservedStock: 0, availableStock: payload.stockQuantity || 0, minStockLevel: payload.minStockLevel || 0, requiresInspection: false, isLowStock: false, stockQuantity: payload.stockQuantity || 0, isActive: payload.isActive ?? true };
+    d.itemMasters = d.itemMasters || [];
+    d.itemMasters.push(item);
+    d.inventory = d.inventory || [];
+    d.inventory.push({ id: `inv-${Date.now()}`, itemId: id, itemName: item.itemName, sku: item.sku, shelfId: payload.shelfId || '', shelfLocation: payload.shelfLocation || '', warehouseId: payload.warehouseId || '', warehouseName: payload.warehouseName || '', currentStock: item.currentStock || 0, reservedStock: 0, availableStock: item.currentStock || 0, unitOfMeasure: item.unitOfMeasure || 'Units', lastUpdated: new Date().toISOString(), minimumThreshold: item.minStockLevel || 0, maximumThreshold: 0 });
+    writeInventoryJson(d);
+    res.json({ success: true, message: 'Created', data: id, statusCode: 201 });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message, statusCode: 500 });
+  }
+});
+
+app.put('/api/ItemMasters/:id', express.json(), (req, res) => {
+  try {
+    const d = JSON.parse(readFileSync(resolve(__dirname, 'data', 'inventory.json'), 'utf8'));
+    d.itemMasters = d.itemMasters || [];
+    const idx = d.itemMasters.findIndex(x => String(x.id) === String(req.params.id));
+    if (idx === -1) return res.status(404).json({ success: false, message: 'Not found', statusCode: 404 });
+    d.itemMasters[idx] = { ...d.itemMasters[idx], ...req.body };
+    writeInventoryJson(d);
+    res.json({ success: true, message: 'Updated', data: d.itemMasters[idx], statusCode: 200 });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message, statusCode: 500 });
+  }
+});
+
+app.delete('/api/ItemMasters/:id', (req, res) => {
+  try {
+    const d = JSON.parse(readFileSync(resolve(__dirname, 'data', 'inventory.json'), 'utf8'));
+    d.itemMasters = d.itemMasters || [];
+    const idx = d.itemMasters.findIndex(x => String(x.id) === String(req.params.id));
+    if (idx === -1) return res.status(404).json({ success: false, message: 'Not found', statusCode: 404 });
+    const removed = d.itemMasters.splice(idx, 1);
+    writeInventoryJson(d);
+    res.json({ success: true, message: 'Deleted', data: removed, statusCode: 200 });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message, statusCode: 500 });
+  }
+});
+
+// In-memory store for service requests with file persistence
+// (avoids proxying to real backend which rejects the fake email-service JWT with 401).
+const SR_FILE = resolve(__dirname, 'data', 'service-requests.json');
+let serviceRequests = [];
+
+function loadServiceRequests() {
+  try {
+    if (existsSync(SR_FILE)) {
+      serviceRequests = JSON.parse(readFileSync(SR_FILE, 'utf8'));
+      console.log(`Loaded ${serviceRequests.length} service requests from disk`);
+    }
+  } catch (e) {
+    console.error('Error loading service requests:', e.message);
+    serviceRequests = [];
+  }
+}
+
+function saveServiceRequests() {
+  try {
+    writeFileSync(SR_FILE, JSON.stringify(serviceRequests, null, 2), 'utf8');
+  } catch (e) {
+    console.error('Error saving service requests:', e.message);
+  }
+}
+
+loadServiceRequests();
+
+function normalizeServiceRequest(item) {
+  const items = (item.items || []).map(i => ({
+    id: i.id || i.itemId || `itm-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    itemId: i.itemId || '',
+    itemName: i.itemName || i.name || '',
+    sku: i.sku || '',
+    unitOfMeasure: i.unitOfMeasure || 'PCS',
+    requestedQty: i.requestedQty || i.quantity || 0,
+    issuedQty: i.issuedQty || 0,
+    pendingQty: (i.requestedQty || i.quantity || 0) - (i.issuedQty || 0),
+    shelfId: i.shelfId || i.preferredShelfId || null,
+    shelfLocation: i.shelfLocation || null,
+  }));
+  return {
+    id: item.id,
+    srNumber: item.srNumber || item.id,
+    requesterId: item.requesterId || item.employeeId || '',
+    requesterName: item.requesterName || item.employeeName || item.requester || 'Employee',
+    department: item.department || '',
+    purpose: item.purpose || item.justification || item.remarks || '',
+    urgency: item.urgency || 'Normal',
+    notes: item.notes || item.remarks || '',
+    requestDate: item.requestDate || item.createdAt || new Date().toISOString(),
+    status: item.status || 'Pending',
+    stockVerificationStatus: item.stockVerificationStatus || 'NotVerified',
+    totalItems: items.length,
+    totalQuantity: items.reduce((s, i) => s + i.requestedQty, 0),
+    issuedQuantity: items.reduce((s, i) => s + (i.issuedQty || 0), 0),
+    items,
+    createdAt: item.createdAt || item.requestDate || new Date().toISOString(),
+    updatedAt: item.updatedAt || null,
+  };
+}
+
+// Must be registered before /api/ServiceRequests/:id to avoid :id matching 'approve' etc.
+app.post('/api/ServiceRequests/:id/approve', express.json(), (req, res) => {
+  console.log('HIT approve:', req.params.id);
+  const item = serviceRequests.find(x => String(x.id) === String(req.params.id));
+  if (!item) return res.status(404).json({ success: false, message: 'Not found', statusCode: 404 });
+  const payload = req.body || {};
+  item.status = 'Approved';
+  item.approvedById = payload.userId || payload.Id || '';
+  item.approvedByName = payload.userName || 'Approver';
+  item.updatedAt = new Date().toISOString();
+  const normal = normalizeServiceRequest(item);
+  Object.assign(item, normal);
+  saveServiceRequests();
+  res.json({ success: true, message: 'Approved', data: normal, statusCode: 200 });
+});
+
+app.post('/api/ServiceRequests/:id/reject', express.json(), (req, res) => {
+  const item = serviceRequests.find(x => String(x.id) === String(req.params.id));
+  if (!item) return res.status(404).json({ success: false, message: 'Not found', statusCode: 404 });
+  const payload = req.body || {};
+  item.status = 'Rejected';
+  item.rejectionReason = payload.reason || payload.reason || 'Rejected';
+  item.updatedAt = new Date().toISOString();
+  const normal = normalizeServiceRequest(item);
+  Object.assign(item, normal);
+  saveServiceRequests();
+  res.json({ success: true, message: 'Rejected', data: normal, statusCode: 200 });
+});
+
+app.post('/api/ServiceRequests/:id/verify-stock', express.json(), (req, res) => {
+  const item = serviceRequests.find(x => String(x.id) === String(req.params.id));
+  if (!item) return res.status(404).json({ success: false, message: 'Not found', statusCode: 404 });
+  const payload = req.body || {};
+  const isAvailable = payload.isAvailable === true || payload.isAvailable === 'true';
+  item.stockVerificationStatus = isAvailable ? 'Verified' : 'Insufficient';
+  item.stockVerifiedByName = payload.userName || 'Storekeeper';
+  item.stockVerificationDate = new Date().toISOString();
+  item.stockVerificationNotes = payload.notes || '';
+  item.updatedAt = new Date().toISOString();
+  const normal = normalizeServiceRequest(item);
+  Object.assign(item, normal);
+  saveServiceRequests();
+  res.json({ success: true, message: isAvailable ? 'Stock verified' : 'Stock insufficient', data: normal, statusCode: 200 });
+});
+
+app.get('/api/ServiceRequests', (req, res) => {
+  const items = serviceRequests.map(normalizeServiceRequest);
+  const status = req.query.status;
+  const filtered = status ? items.filter(x => (x.status || '').toLowerCase() === String(status).toLowerCase()) : items;
+  res.json({ success: true, message: '', data: { items: filtered, pageNumber: 1, totalPages: 1, totalCount: filtered.length, hasPreviousPage: false, hasNextPage: false }, statusCode: 200 });
+});
+
+// Issue / StoreIssueVouchers
+function loadSIVs() {
+  try { return JSON.parse(readFileSync(resolve(__dirname, 'data', 'store-issue-vouchers.json'), 'utf8')); } catch { return []; }
+}
+function saveSIVs(list) { writeFileSync(resolve(__dirname, 'data', 'store-issue-vouchers.json'), JSON.stringify(list, null, 2), 'utf8'); }
+const storeIssueVouchers = loadSIVs();
+
+app.post('/api/ServiceRequests/:id/issue', express.json(), (req, res) => {
+  const sr = serviceRequests.find(x => String(x.id) === String(req.params.id));
+  if (!sr) return res.status(404).json({ success: false, message: 'Service request not found', statusCode: 404 });
+  sr.status = 'Issued';
+  sr.updatedAt = new Date().toISOString();
+  saveServiceRequests();
+  const siv = {
+    id: 'siv-' + Date.now(),
+    sivNumber: 'SIV-' + String(Date.now()).slice(-8),
+    serviceRequestId: req.params.id,
+    srNumber: sr.srNumber,
+    issueDate: new Date().toISOString().split('T')[0],
+    requesterName: sr.requesterName || '',
+    department: sr.department || '',
+    status: 'Issued',
+    totalItems: req.body?.items?.length || 0,
+    items: (req.body?.items || []).map(x => ({ ...x, id: 'siv-item-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6) })),
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+  storeIssueVouchers.unshift(siv);
+  saveSIVs(storeIssueVouchers);
+  res.json({ success: true, message: 'Issued successfully', data: siv, statusCode: 200 });
+});
+
+app.get('/api/StoreIssueVouchers', (req, res) => {
+  res.json({ success: true, message: '', data: storeIssueVouchers, statusCode: 200 });
+});
+
+app.post('/api/StoreIssueVouchers', express.json(), (req, res) => {
+  try {
+    const { command } = req.body;
+    if (!command) return res.status(400).json({ success: false, message: 'No command provided', statusCode: 400 });
+    const sr = serviceRequests.find(x => String(x.id) === String(command.serviceRequestId));
+    if (sr) { sr.status = 'Issued'; sr.updatedAt = new Date().toISOString(); saveServiceRequests(); }
+    const siv = {
+      id: 'siv-' + Date.now(),
+      sivNumber: 'SIV-' + String(Date.now()).slice(-8),
+      serviceRequestId: command.serviceRequestId,
+      srNumber: sr?.srNumber || '',
+      issueDate: new Date().toISOString().split('T')[0],
+      requesterName: command.issuedToId || sr?.requesterName || '',
+      department: command.department || sr?.department || '',
+      status: 'Issued',
+      totalItems: command.items?.length || 0,
+      items: (command.items || []).map(x => ({ ...x, id: 'siv-item-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6) })),
+      notes: command.notes || '',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    storeIssueVouchers.unshift(siv);
+    saveSIVs(storeIssueVouchers);
+    res.status(201).json({ success: true, message: 'SIV created', data: siv.id, statusCode: 201 });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message, statusCode: 500 });
+  }
+});
+
+app.get('/api/ServiceRequests/:id', (req, res) => {
+  const item = serviceRequests.find(x => String(x.id) === String(req.params.id));
+  if (!item) return res.status(404).json({ success: false, message: 'Not found', statusCode: 404 });
+  res.json({ success: true, message: '', data: normalizeServiceRequest(item), statusCode: 200 });
+});
+
+app.post('/api/ServiceRequests', express.json(), (req, res) => {
+  try {
+    const payload = req.body || {};
+    // Support both { command: { ... } } and flat body formats
+    const data = payload.command || payload;
+    const id = `sr-${Date.now()}`;
+    const srNumber = data.srNumber?.trim() || id;
+    const item = {
+      id, srNumber, ...data,
+      status: 'Pending',
+      stockVerificationStatus: 'NotVerified',
+      requestDate: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+    };
+    const normal = normalizeServiceRequest(item);
+    serviceRequests.push(normal);
+    saveServiceRequests();
+    // Notify manager by email
+    const managerEmail = process.env.MANAGER_EMAIL || 'k44144202@gmail.com';
+    const employeeName = data.requesterName || data.employeeName || 'Employee';
+    const emailBody = `Service request ${srNumber} has been submitted by ${employeeName}.\n\nItems:\n${(data.items || []).map(i => `  - ${i.itemName || i.itemId} x ${i.requestedQty || i.quantity}`).join('\n')}\n\nPurpose: ${data.purpose || data.remarks || 'N/A'}\n\nPlease review in the approval dashboard.`;
+    sendEmail({ to: managerEmail, subject: `New Service Request: ${srNumber}`, body: emailBody }).catch(() => {});
+    return res.status(201).json({ success: true, message: 'Created', data: id, statusCode: 201 });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message, statusCode: 500 });
+  }
+});
+
+// ServiceRequest (no 's') endpoints used by the core ServiceRequestService
+function serviceRequestRows(statusFilter) {
+  const all = serviceRequests.map(normalizeServiceRequest);
+  const filtered = statusFilter ? all.filter(x => (x.status || '').toLowerCase() === statusFilter.toLowerCase()) : all;
+  return filtered.map(x => ({
+    id: x.id,
+    requestNumber: x.srNumber,
+    title: x.purpose || x.notes || '',
+    description: x.purpose || '',
+    category: x.department || '',
+    priority: x.urgency || 'Normal',
+    status: x.status,
+    requester: x.requesterName,
+    requesterId: x.requesterId,
+    department: x.department,
+    submittedDate: x.requestDate,
+    approvedDate: x.updatedAt,
+    approvedBy: x.approvedByName || null,
+    comments: x.notes || null,
+    items: x.items || [],
+  }));
+}
+
+app.get('/api/ServiceRequest', (req, res) => {
+  res.json({ success: true, message: '', data: serviceRequestRows(null), statusCode: 200 });
+});
+
+app.get('/api/ServiceRequest/pending', (req, res) => {
+  res.json({ success: true, message: '', data: serviceRequestRows('pending'), statusCode: 200 });
+});
+
+app.get('/api/ServiceRequest/approved', (req, res) => {
+  res.json({ success: true, message: '', data: serviceRequestRows('approved'), statusCode: 200 });
+});
+
+app.get('/api/ServiceRequest/rejected', (req, res) => {
+  res.json({ success: true, message: '', data: serviceRequestRows('rejected'), statusCode: 200 });
+});
+
+app.post('/api/ServiceRequest/:id/reject', express.json(), (req, res) => {
+  const item = serviceRequests.find(x => String(x.id) === String(req.params.id));
+  if (!item) return res.status(404).json({ success: false, message: 'Not found', statusCode: 404 });
+  item.status = 'Rejected';
+  item.updatedAt = new Date().toISOString();
+  saveServiceRequests();
+  res.json({ success: true, message: 'Rejected', data: normalizeServiceRequest(item), statusCode: 200 });
+});
+
+// Serve inventory stock data locally (proxy to backend returns 401).
+app.get('/api/InventoryStock', (req, res) => {
+  try {
+    const d = JSON.parse(readFileSync(resolve(__dirname, 'data', 'inventory.json'), 'utf8'));
+    const inv = d.inventory || [];
+    const whFilter = req.query.warehouseId;
+    let filtered = inv;
+    if (whFilter) filtered = inv.filter(x => String(x.warehouseId) === String(whFilter));
+    const items = filtered.map(x => ({
+      ...x,
+      id: x.id || x.itemId,
+      currentQuantity: x.currentStock ?? x.availableStock ?? 0,
+      itemId: x.itemId,
+      itemName: x.itemName || '',
+      sku: x.sku || '',
+      unitOfMeasure: x.unitOfMeasure || 'PCS',
+      warehouseName: x.warehouseName || '',
+      shelfLocation: x.shelfLocation || '',
+      currentStock: x.currentStock ?? x.availableStock ?? 0,
+      availableStock: x.availableStock ?? x.currentStock ?? 0,
+      unitPrice: x.unitPrice || 0,
+    }));
+    res.json({ success: true, message: '', data: items, statusCode: 200 });
+  } catch {
+    res.json({ success: true, message: '', data: [], statusCode: 200 });
+  }
+});
+
+// ─── DisposalRecords ──────────────────────────────────────────────────────
+function loadDisposalRecords() {
+  try {
+    return JSON.parse(readFileSync(resolve(__dirname, 'data', 'disposal-records.json'), 'utf8'));
+  } catch {
+    return [];
+  }
+}
+function saveDisposalRecords(list) {
+  writeFileSync(resolve(__dirname, 'data', 'disposal-records.json'), JSON.stringify(list, null, 2), 'utf8');
+}
+let disposalRecords = loadDisposalRecords();
+
+app.get('/api/DisposalRecords', (req, res) => {
+  const list = disposalRecords.map(x => ({
+    id: x.id,
+    disposalNumber: x.disposalNumber,
+    itemId: x.items?.[0]?.itemId || '',
+    itemName: x.items?.[0]?.itemName || '',
+    sku: x.items?.[0]?.sku || '',
+    quantity: x.items?.reduce((s, i) => s + i.quantity, 0) || 0,
+    disposalDate: x.createdAt,
+    createdAt: x.createdAt,
+    disposedBy: x.disposedBy || '',
+    disposedByName: x.disposedByName || '',
+    reason: x.reason || '',
+    status: x.status || 'Pending',
+    totalItems: x.items?.length || 0,
+    totalQuantity: x.items?.reduce((s, i) => s + i.quantity, 0) || 0,
+    totalValue: x.items?.reduce((s, i) => s + i.quantity * (i.unitCost || 0), 0) || 0,
+    estimatedValue: x.items?.reduce((s, i) => s + i.quantity * (i.unitCost || 0), 0) || 0,
+    actualValue: 0,
+  }));
+  const pageNumber = parseInt(req.query.pageNumber) || 1;
+  const pageSize = parseInt(req.query.pageSize) || 50;
+  const start = (pageNumber - 1) * pageSize;
+  const page = list.slice(start, start + pageSize);
+  res.json({
+    success: true, message: '',
+    data: { items: page, pageNumber, totalPages: Math.ceil(list.length / pageSize), totalCount: list.length, hasPreviousPage: pageNumber > 1, hasNextPage: start + pageSize < list.length },
+    statusCode: 200,
+  });
+});
+
+app.get('/api/DisposalRecords/:id', (req, res) => {
+  const record = disposalRecords.find(x => String(x.id) === String(req.params.id));
+  if (!record) return res.status(404).json({ success: false, message: 'Not found', statusCode: 404 });
+  res.json({
+    success: true, message: '', data: {
+      ...record,
+      auditHistory: record.auditHistory || [{ date: record.createdAt, action: 'Created', performedBy: record.disposedByName || record.disposedBy || '' }],
+    }, statusCode: 200,
+  });
+});
+
+app.post('/api/DisposalRecords', express.json(), (req, res) => {
+  try {
+    const { items, reason } = req.body;
+    if (!items || !items.length) return res.status(400).json({ success: false, message: 'No items provided', statusCode: 400 });
+    // Deduct stock from inventory.json
+    const d = JSON.parse(readFileSync(resolve(__dirname, 'data', 'inventory.json'), 'utf8'));
+    const inv = d.inventory || [];
+    const im = d.itemMasters || [];
+    for (const item of items) {
+      const invRec = inv.find(x => String(x.itemId) === String(item.itemId));
+      if (invRec) {
+        if ((invRec.availableStock ?? 0) < item.quantity) {
+          return res.status(400).json({ success: false, message: `Insufficient stock for item '${item.itemName || item.itemId}'. Available: ${invRec.availableStock ?? 0}, Requested for disposal: ${item.quantity}`, statusCode: 400 });
+        }
+        invRec.currentStock = (invRec.currentStock ?? 0) - item.quantity;
+        invRec.availableStock = (invRec.availableStock ?? 0) - item.quantity;
+      }
+      const imRec = im.find(x => String(x.id) === String(item.itemId));
+      if (imRec) {
+        imRec.currentStock = Math.max(0, (imRec.currentStock ?? 0) - item.quantity);
+        imRec.availableStock = Math.max(0, (imRec.availableStock ?? 0) - item.quantity);
+        imRec.stockQuantity = Math.max(0, (imRec.stockQuantity ?? 0) - item.quantity);
+      }
+    }
+    // Remove inventory records where stock reached 0
+    d.inventory = inv.filter(x => (x.availableStock ?? 0) > 0);
+    // Remove itemMasters where stock reached 0
+    d.itemMasters = im.filter(x => (x.availableStock ?? x.currentStock ?? x.stockQuantity ?? 0) > 0);
+    writeFileSync(resolve(__dirname, 'data', 'inventory.json'), JSON.stringify(d, null, 2), 'utf8');
+    // Create disposal record
+    const record = {
+      id: 'disp-' + Date.now(),
+      disposalNumber: 'DSP-' + String(Date.now()).slice(-8),
+      items: items.map(x => ({ ...x, unitCost: 0, totalValue: 0 })),
+      reason: reason || '',
+      status: 'Completed',
+      disposedBy: req.body.userId || req.body.disposedBy || 'storekeeper',
+      disposedByName: req.body.userName || req.body.disposedByName || 'Storekeeper',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      auditHistory: [{ date: new Date().toISOString(), action: 'Created & Completed', performedBy: req.body.userName || req.body.disposedByName || 'Storekeeper' }],
+    };
+    disposalRecords.unshift(record);
+    saveDisposalRecords(disposalRecords);
+    return res.status(201).json({ success: true, message: 'Disposal completed successfully', data: record.id, statusCode: 201 });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message, statusCode: 500 });
+  }
+});
+
+app.post('/api/DisposalRecords/:id/approve', express.json(), (req, res) => {
+  const record = disposalRecords.find(x => String(x.id) === String(req.params.id));
+  if (!record) return res.status(404).json({ success: false, message: 'Not found', statusCode: 404 });
+  record.status = req.body.isApproved ? 'Approved' : 'Rejected';
+  record.approvedById = req.body.userId || '';
+  record.approvedByName = req.body.userName || '';
+  record.approvedDate = new Date().toISOString();
+  record.approvalRemarks = req.body.remarks || '';
+  record.updatedAt = new Date().toISOString();
+  (record.auditHistory || (record.auditHistory = [])).push({ date: record.approvedDate, action: record.status === 'Approved' ? 'Approved' : 'Rejected', performedBy: req.body.userName || '', remarks: req.body.remarks || '' });
+  saveDisposalRecords(disposalRecords);
+  res.json({ success: true, message: `Disposal ${record.status}`, data: record, statusCode: 200 });
+});
+
+// ─── Warehouses ──────────────────────────────────────────────────────────
+const warehouses = [
+  { id: 'wh-001', warehouseName: 'Main Warehouse', location: 'Building A', isActive: true },
+  { id: 'wh-002', warehouseName: 'Branch Warehouse A', location: 'Building B', isActive: true },
+  { id: 'wh-003', warehouseName: 'Overflow Storage', location: 'Building C', isActive: true },
+];
+
+app.get('/api/Warehouses', (req, res) => {
+  let list = warehouses;
+  if (req.query.isActive === 'true') list = list.filter(w => w.isActive);
+  res.json({ success: true, message: '', data: list, statusCode: 200 });
+});
+
+// ─── TransferRecords ─────────────────────────────────────────────────────
+const transferRecords = [];
+
+app.get('/api/TransferRecords', (req, res) => {
+  const pageNumber = parseInt(req.query.pageNumber) || 1;
+  const pageSize = parseInt(req.query.pageSize) || 20;
+  const start = (pageNumber - 1) * pageSize;
+  const page = transferRecords.slice(start, start + pageSize);
+  res.json({
+    success: true, message: '',
+    data: { items: page, pageNumber, totalPages: Math.ceil(transferRecords.length / pageSize), totalCount: transferRecords.length, hasPreviousPage: pageNumber > 1, hasNextPage: start + pageSize < transferRecords.length },
+    statusCode: 200,
+  });
+});
+
+app.get('/api/TransferRecords/:id', (req, res) => {
+  const item = transferRecords.find(x => String(x.id) === String(req.params.id));
+  if (!item) return res.status(404).json({ success: false, message: 'Not found', statusCode: 404 });
+  res.json({ success: true, message: '', data: item, statusCode: 200 });
+});
+
+app.post('/api/TransferRecords', express.json(), (req, res) => {
+  try {
+    const { itemId, quantity, fromLocationId, toLocationId, reason, remarks, reference } = req.body;
+    if (!itemId || !fromLocationId || !toLocationId) return res.status(400).json({ success: false, message: 'Missing required fields', statusCode: 400 });
+    const fromWh = warehouses.find(w => String(w.id) === String(fromLocationId));
+    const toWh = warehouses.find(w => String(w.id) === String(toLocationId));
+    const record = {
+      id: 'tr-' + Date.now(),
+      transferNumber: reference || `TR-${Date.now()}`,
+      itemId,
+      quantity: quantity || 1,
+      fromLocationId,
+      fromLocation: fromLocationId,
+      fromLocationName: fromWh?.warehouseName || fromLocationId,
+      toLocationId,
+      toLocation: toLocationId,
+      toLocationName: toWh?.warehouseName || toLocationId,
+      reason: reason || '',
+      remarks: remarks || '',
+      status: 'Completed',
+      initiatedBy: 'storekeeper',
+      transferDate: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      history: [{ date: new Date().toISOString(), action: 'Created', performedBy: 'storekeeper' }],
+    };
+    transferRecords.unshift(record);
+    res.status(201).json({ success: true, message: 'Transfer record created', data: record.id, statusCode: 201 });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message, statusCode: 500 });
+  }
+});
+
 app.use('/api', (req, res, next) => {
   const isEmailPath =
     req.path.startsWith('/Notifications') ||
@@ -844,4 +1721,24 @@ app.listen(port, () => {
   console.log('  POST /api/Notifications             - Send notification email');
   console.log('  GET  /api/Notifications             - List notifications');
   console.log('  POST /api/Auth/forgot-password      - Generate reset token & send email');
+  console.log('  POST /api/Auth/login                - Local login handler');
+  console.log('  POST /api/Auth/register             - Register new user');
+  console.log('  POST /api/Auth/logout               - Logout current user');
+  console.log('  POST /api/Auth/refresh-token        - Refresh JWT token');
+  console.log('  POST /api/Auth/change-password      - Change user password');
+  console.log('  POST /api/Auth/reset-password       - Reset password using token');
+  console.log('  POST /api/Auth/resend-verification  - Resend email confirmation');
+  console.log('  POST /api/Auth/register-pending     - Register pending user');
+  console.log('  GET  /api/Auth/pending-registrations - List pending users');
+  console.log('  GET  /api/Auth/pending-registrations/count - Pending count');
+  console.log('  POST /api/Auth/pending-registrations/:id/approve - Approve pending');
+  console.log('  POST /api/Auth/pending-registrations/:id/reject  - Reject pending');
+  console.log('  GET  /api/Auth/me                   - Get current user profile');
+  console.log('  GET  /api/Auth/confirm-email        - Confirm email address');
+  console.log('  POST /api/Auth/enable-2fa           - Enable 2FA');
+  console.log('  POST /api/Auth/disable-2fa          - Disable 2FA');
+  console.log('  POST /api/Auth/send-phone-otp       - Send OTP to phone');
+  console.log('  POST /api/Auth/verify-phone-otp     - Verify phone OTP code');
+  console.log('  POST /api/Auth/upload-profile-photo - Upload profile photo');
+  console.log('  PUT  /api/Auth/update-profile        - Update current user profile');
 });

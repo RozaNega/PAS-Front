@@ -217,43 +217,9 @@
                       <i class="bi bi-three-dots-vertical"></i>
                     </summary>
                     <div class="req-action-sheet__panel" role="menu">
-                      <button
-                        type="button"
-                        class="req-action-sheet__item"
-                        *ngIf="statusEquals(sr, 'Pending')"
-                        (click)="editServiceRequest(sr.id); closeSheet(rowSheet)">
-                        <i class="bi bi-pencil req-action-sheet__item-icon"></i>
-                        <span>Edit</span>
-                      </button>
                       <button type="button" class="req-action-sheet__item" (click)="addComment(sr.id); closeSheet(rowSheet)">
                         <i class="bi bi-chat-left-text req-action-sheet__item-icon"></i>
                         <span>Add comment</span>
-                      </button>
-                      <div class="req-action-sheet__sep" *ngIf="statusEquals(sr, 'Pending')"></div>
-                      <button
-                        type="button"
-                        class="req-action-sheet__item req-action-sheet__item--success"
-                        *ngIf="statusEquals(sr, 'Pending')"
-                        (click)="approveRequest(sr.id); closeSheet(rowSheet)">
-                        <i class="bi bi-check-lg req-action-sheet__item-icon"></i>
-                        <span>Approve</span>
-                      </button>
-                      <button
-                        type="button"
-                        class="req-action-sheet__item req-action-sheet__item--danger"
-                        *ngIf="statusEquals(sr, 'Pending')"
-                        (click)="rejectRequest(sr.id); closeSheet(rowSheet)">
-                        <i class="bi bi-x-lg req-action-sheet__item-icon"></i>
-                        <span>Reject</span>
-                      </button>
-                      <div class="req-action-sheet__sep" *ngIf="statusEquals(sr, 'Pending') || statusEquals(sr, 'Rejected')"></div>
-                      <button
-                        type="button"
-                        class="req-action-sheet__item req-action-sheet__item--danger"
-                        *ngIf="statusEquals(sr, 'Pending') || statusEquals(sr, 'Rejected')"
-                        (click)="deleteRequest(sr.id); closeSheet(rowSheet)">
-                        <i class="bi bi-trash req-action-sheet__item-icon"></i>
-                        <span>Delete</span>
                       </button>
                     </div>
                   </details>

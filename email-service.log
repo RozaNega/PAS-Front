@@ -1,0 +1,80 @@
+Email service running on http://localhost:5030
+Proxying non-email /api requests to http://127.0.0.1:5028
+Endpoints:
+  POST /api/Notifications/send-email  - Send a direct email
+  POST /api/Notifications             - Send notification email
+  GET  /api/Notifications             - List notifications
+  POST /api/Auth/forgot-password      - Generate reset token & send email
+  POST /api/Auth/login                - Local login handler
+  POST /api/Auth/register             - Register new user
+  POST /api/Auth/logout               - Logout current user
+  POST /api/Auth/refresh-token        - Refresh JWT token
+  POST /api/Auth/change-password      - Change user password
+  POST /api/Auth/reset-password       - Reset password using token
+  POST /api/Auth/resend-verification  - Resend email confirmation
+  POST /api/Auth/register-pending     - Register pending user
+  GET  /api/Auth/pending-registrations - List pending users
+  GET  /api/Auth/pending-registrations/count - Pending count
+  POST /api/Auth/pending-registrations/:id/approve - Approve pending
+  POST /api/Auth/pending-registrations/:id/reject  - Reject pending
+  GET  /api/Auth/me                   - Get current user profile
+  GET  /api/Auth/confirm-email        - Confirm email address
+  POST /api/Auth/enable-2fa           - Enable 2FA
+  POST /api/Auth/disable-2fa          - Disable 2FA
+  POST /api/Auth/send-phone-otp       - Send OTP to phone
+  POST /api/Auth/verify-phone-otp     - Verify phone OTP code
+  POST /api/Auth/upload-profile-photo - Upload profile photo
+  PUT  /api/Auth/update-profile        - Update current user profile
+SMTP connection verified successfully for k44144202@gmail.com
+HIT approve: sr-1781642746565
+Email sent to k44144202@gmail.com - MessageID: <2df37a8f-107b-a533-8d42-180819d0279c@gmail.com>
+Email sent to k44144202@gmail.com - MessageID: <c58f6f88-dd94-6bc9-d2e9-da9f20a72333@gmail.com>
+Proxying to backend: GET /api/Dashboard/statistics
+Proxying to backend: GET /api/InventoryReports/valuation
+Proxying to backend: GET /api/ReceivingNotes?status=Pending&pageSize=10
+Proxying to backend: GET /api/ReceivingNotes?pageSize=5
+Proxying to backend: GET /api/ReceivingNotes?pageSize=5
+Proxying to backend: GET /api/Properties
+Proxying to backend: GET /api/employees
+Proxying to backend: GET /api/Inspections
+Proxying to backend: GET /api/Suppliers
+Proxying to backend: GET /api/ReceivingNotes?pageNumber=1&pageSize=50
+Proxying to backend: GET /api/Inspections?pageNumber=1&pageSize=50
+Proxying to backend: GET /api/Dashboard/statistics
+Proxying to backend: GET /api/InventoryReports/valuation
+Proxying to backend: GET /api/ReceivingNotes?status=Pending&pageSize=10
+Proxying to backend: GET /api/ReceivingNotes?pageSize=5
+Proxying to backend: GET /api/ReceivingNotes?pageSize=5
+Proxying to backend: GET /api/Properties
+Proxying to backend: GET /api/employees
+Proxying to backend: GET /api/Inspections
+Proxying to backend: GET /api/Dashboard/statistics
+Proxying to backend: GET /api/InventoryReports/valuation
+Proxying to backend: GET /api/ReceivingNotes?status=Pending&pageSize=10
+Proxying to backend: GET /api/ReceivingNotes?pageSize=5
+Proxying to backend: GET /api/ReceivingNotes?pageSize=5
+Proxying to backend: GET /api/Properties
+Proxying to backend: GET /api/employees
+Proxying to backend: GET /api/Inspections
+Proxying to backend: GET /api/Categories?pageNumber=1&pageSize=100
+Proxying to backend: GET /api/StockLedger?dateFrom=2026-03-24&dateTo=2026-06-16&pageSize=500
+Proxying to backend: GET /api/StockLedger?dateFrom=2026-03-18&dateTo=2026-06-16&pageSize=500
+Proxying to backend: GET /api/StockLedger?dateFrom=2026-03-24&dateTo=2026-06-16&pageSize=500
+Proxying to backend: GET /api/Categories?pageNumber=1&pageSize=100
+Proxying to backend: GET /api/InventoryReports/valuation?asOfDate=2026-06-16
+Proxying to backend: GET /api/StockMovementReports?fromDate=2026-05-17&toDate=2026-06-16
+Proxying to backend: GET /api/InventoryReports/valuation?asOfDate=2026-06-16
+Proxying to backend: GET /api/StockMovementReports?fromDate=2026-05-17&toDate=2026-06-16
+Local login successful for rozaneg1621@gmail.com
+Proxying to backend: GET /api/Dashboard/statistics
+Proxying to backend: GET /api/Properties
+Proxying to backend: GET /api/employees
+Proxying to backend: GET /api/Inspections
+Proxying to backend: GET /api/users?pageNumber=1&pageSize=1000
+Proxying to backend: GET /api/Dashboard/statistics
+Proxying to backend: GET /api/AuditTrails?pageNumber=1&pageSize=500
+Proxying to backend: GET /api/Properties
+Proxying to backend: GET /api/employees
+Proxying to backend: GET /api/Inspections
+Proxying to backend: GET /api/Inspections?pageNumber=1&pageSize=1000
+Local login successful for rozaneg1621@gmail.com
