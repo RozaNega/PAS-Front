@@ -1,0 +1,56 @@
+[
+  [
+    "rozneg2121@gmail.com",
+    {
+      "username": "Ro_1",
+      "password": "Ros@1234",
+      "fullName": "RO",
+      "role": "Employee"
+    }
+  ],
+  [
+    "ros@gmail.com",
+    {
+      "username": "roza_1",
+      "password": "@Roza123",
+      "fullName": "roza",
+      "role": "Employee"
+    }
+  ],
+  [
+    "k44142@gmail.com",
+    {
+      "username": "abe_1",
+      "password": "@Abe1234",
+      "fullName": "abebe",
+      "role": "Employee"
+    }
+  ],
+  [
+    "eyu@gmail.com",
+    {
+      "username": "eyu_1",
+      "password": "@Eyu1234",
+      "fullName": "eyuel",
+      "role": "Storekeeper"
+    }
+  ],
+  [
+    "robel@gmail.com",
+    {
+      "username": "robel_1",
+      "password": "@Robel1234",
+      "fullName": "robel",
+      "role": "Manager"
+    }
+  ],
+  [
+    "ananya@gmail.com",
+    {
+      "username": "ananya_1",
+      "password": "@Ananya123",
+      "fullName": "ananya",
+      "role": "Compliance Officer"
+    }
+  ]
+]

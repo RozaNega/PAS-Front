@@ -48,13 +48,14 @@ export class PendingRegistrationsComponent {
     this.pendingService.approve(id)
       .pipe(finalize(() => this.actionInProgress.set(null)))
       .subscribe({
-        next: (res) => {
-          if (res.success) {
-            this.registrations.update((list) => list.filter((r) => r.id !== id));
-          } else {
-            this.error.set(res.message || 'Failed to approve registration.');
-          }
-        },
+          next: (res) => {
+            if (res.success) {
+              this.registrations.update((list) => list.filter((r) => r.id !== id));
+              this.pendingService.refreshCount();
+            } else {
+              this.error.set(res.message || 'Failed to approve registration.');
+            }
+          },
         error: () => {
           this.error.set('Unable to process approval. Please try again.');
         },
@@ -66,13 +67,14 @@ export class PendingRegistrationsComponent {
     this.pendingService.reject(id)
       .pipe(finalize(() => this.actionInProgress.set(null)))
       .subscribe({
-        next: (res) => {
-          if (res.success) {
-            this.registrations.update((list) => list.filter((r) => r.id !== id));
-          } else {
-            this.error.set(res.message || 'Failed to reject registration.');
-          }
-        },
+          next: (res) => {
+            if (res.success) {
+              this.registrations.update((list) => list.filter((r) => r.id !== id));
+              this.pendingService.refreshCount();
+            } else {
+              this.error.set(res.message || 'Failed to reject registration.');
+            }
+          },
         error: () => {
           this.error.set('Unable to process rejection. Please try again.');
         },

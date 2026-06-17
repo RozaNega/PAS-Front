@@ -103,13 +103,23 @@ export class Login {
           this.loginForm.controls.rememberMe.setValue(raw.rememberMe);
 
           const targetUrl = this.authService.getDashboardRouteForUser(result.user);
+          console.log('[Login] targetUrl:', targetUrl, 'user:', result.user);
 
           this.transitionSvc.start();
-          void this.router.navigateByUrl(targetUrl);
 
-          setTimeout(() => {
+          this.router.navigateByUrl(targetUrl).then((navResult) => {
+            console.log('[Login] Navigation result:', navResult);
             this.transitionSvc.end();
-          }, 3500);
+
+            setTimeout(() => {
+              console.log('[Login] 2s after nav, current URL:', window.location.href, 'isAuth:', this.authService.isAuthenticated());
+            }, 2000);
+          }).catch((err) => {
+            console.error('[Login] Navigation ERROR:', err);
+            this.transitionSvc.end();
+            this.statusTone.set('error');
+            this.statusMessage.set('Navigation error: ' + (err?.message || 'unknown'));
+          });
         },
         error: (err) => {
           let errorMessage = 'Unable to sign in. Verify your credentials and try again.';

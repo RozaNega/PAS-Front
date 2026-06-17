@@ -280,7 +280,7 @@ export class ShelfLocationsComponent {
     const totalQty = d.totalQuantity || 0;
     const itemCount = d.itemCount || 0;
     const occupancy = cap > 0 ? Math.min(100, Math.round((totalQty / cap) * 100)) : 0;
-    const value = totalQty * 1500;
+    const value = 0;
     return {
       id: d.id,
       warehouseId: d.warehouseId || '',
@@ -448,22 +448,7 @@ export class ShelfLocationsComponent {
 
   openDetailModal(shelf: ShelfDisplay): void {
     this.selectedShelf.set(shelf);
-    const itemCount = Math.min(shelf.items, 8);
-    const names = ['Widget A', 'Bolt Pack', 'Fastener Kit', 'Panel Set', 'Bracket', 'Seal Ring', 'Cable Tie', 'Gasket'];
-    const skus = ['WDG-001', 'BLT-002', 'FST-003', 'PNL-004', 'BRK-005', 'SRL-006', 'CBL-007', 'GSK-008'];
-    const items: ShelfItem[] = [];
-    let remaining = shelf.items;
-    for (let i = 0; i < itemCount; i++) {
-      const qty = i < itemCount - 1 ? Math.ceil(remaining / (itemCount - i)) : remaining;
-      remaining -= qty;
-      items.push({
-        name: names[i % names.length],
-        sku: skus[i % skus.length],
-        quantity: qty,
-        unit: 'pcs',
-      });
-    }
-    this.detailItems.set(items);
+    this.detailItems.set([]);
     this.modalMode.set('detail');
     this.showModal.set(true);
   }

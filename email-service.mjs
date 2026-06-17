@@ -230,6 +230,19 @@ function saveUsersStore(map) {
 
 const usersStore = loadUsersStore();
 
+// Seed a default admin user if store is empty
+if (usersStore.size === 0) {
+  const defaultUser = {
+    username: 'admin',
+    password: 'admin1234',
+    fullName: 'Admin User',
+    role: 'Admin',
+  };
+  usersStore.set('admin@africom.local', defaultUser);
+  saveUsersStore(usersStore);
+  console.log('Seeded default admin user (admin@africom.local / admin1234)');
+}
+
 // In-memory password reset token store: Map<token, {email, expiry, used}>
 const resetTokens = new Map();
 
@@ -453,6 +466,7 @@ app.post('/api/Auth/login', async (req, res) => {
       success: true,
       data: {
         token,
+        refreshToken: `mock-refresh-${Date.now()}`,
         user: {
           id: userEntry.email,
           username: userEntry.username,
@@ -466,6 +480,38 @@ app.post('/api/Auth/login', async (req, res) => {
     });
   } catch (err) {
     console.error('login error:', err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+app.post('/api/Auth/refresh-token', async (req, res) => {
+  try {
+    const { refreshToken } = req.body || {};
+    if (!refreshToken) {
+      return res.status(400).json({ success: false, message: 'Refresh token required' });
+    }
+    console.log('Refreshing token for', refreshToken.slice(0, 20) + '...');
+
+    const tokenPayload = {
+      sub: 'dev-user',
+      unique_name: 'devuser',
+      email: 'dev@example.com',
+      role: 'Admin',
+      exp: Math.floor(Date.now() / 1000) + 86400,
+    };
+    const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
+    const payload = Buffer.from(JSON.stringify(tokenPayload)).toString('base64url');
+    const newToken = `${header}.${payload}.mock-dev-signature`;
+
+    res.json({
+      success: true,
+      data: {
+        token: newToken,
+        refreshToken: `mock-refresh-${Date.now()}`,
+      },
+    });
+  } catch (err) {
+    console.error('refresh-token error:', err);
     res.status(500).json({ success: false, message: err.message });
   }
 });
@@ -717,107 +763,6 @@ function proxyToBackend(req, res) {
     req.pipe(proxyReq);
   }
 }
-
-// ---------- Warehouse & Shelf Location mock endpoints (dev only) ----------
-
-const DEV_WAREHOUSES = [
-  { id: 'wh-001', warehouseName: 'Main Warehouse', locationCode: 'MW-01', address: '123 Storage Ave', city: 'Addis Ababa', country: 'Ethiopia', contactPerson: 'Abebe', contactPhone: '+251-911-000001', contactEmail: 'abebe@warehouse.com', isActive: true, totalShelves: 5, occupiedShelves: 3, totalItems: 1200, createdAt: '2025-01-15T08:00:00Z' },
-  { id: 'wh-002', warehouseName: 'East Distribution', locationCode: 'ED-01', address: '456 Logistics Rd', city: 'Dire Dawa', country: 'Ethiopia', contactPerson: 'Bekele', contactPhone: '+251-911-000002', contactEmail: 'bekele@warehouse.com', isActive: true, totalShelves: 3, occupiedShelves: 2, totalItems: 800, createdAt: '2025-02-20T10:30:00Z' },
-  { id: 'wh-003', warehouseName: 'North Storage', locationCode: 'NS-01', address: '789 Industrial Zone', city: 'Mekelle', country: 'Ethiopia', contactPerson: 'Chaltu', contactPhone: '+251-911-000003', contactEmail: 'chaltu@warehouse.com', isActive: false, totalShelves: 2, occupiedShelves: 0, totalItems: 0, createdAt: '2025-03-10T14:00:00Z' },
-];
-
-const DEV_SHELVES = [
-  { id: 'sl-001', warehouseId: 'wh-001', warehouseName: 'Main Warehouse', fullAddress: 'A-1-01', qrCodeValue: 'QR-A1-01', isActive: true, itemCount: 4, totalQuantity: 320, capacity: 500, aisle: 'A', rack: '1', shelfNumber: '01', zone: 'Receiving', binType: 'Standard', length: 120, width: 80, height: 200, maxWeight: 500, description: 'Main receiving shelf', createdAt: '2025-01-20T09:00:00Z' },
-  { id: 'sl-002', warehouseId: 'wh-001', warehouseName: 'Main Warehouse', fullAddress: 'A-1-02', qrCodeValue: 'QR-A1-02', isActive: true, itemCount: 3, totalQuantity: 180, capacity: 500, aisle: 'A', rack: '1', shelfNumber: '02', zone: 'Storage', binType: 'Standard', length: 120, width: 80, height: 200, maxWeight: 500, description: '', createdAt: '2025-01-20T09:05:00Z' },
-  { id: 'sl-003', warehouseId: 'wh-001', warehouseName: 'Main Warehouse', fullAddress: 'B-1-01', qrCodeValue: 'QR-B1-01', isActive: true, itemCount: 2, totalQuantity: 95, capacity: 400, aisle: 'B', rack: '1', shelfNumber: '01', zone: 'Storage', binType: 'Heavy Duty', length: 150, width: 100, height: 200, maxWeight: 1000, description: 'Heavy equipment storage', createdAt: '2025-02-01T11:00:00Z' },
-  { id: 'sl-004', warehouseId: 'wh-001', warehouseName: 'Main Warehouse', fullAddress: 'B-1-02', qrCodeValue: 'QR-B1-02', isActive: true, itemCount: 5, totalQuantity: 410, capacity: 400, aisle: 'B', rack: '1', shelfNumber: '02', zone: 'Storage', binType: 'Heavy Duty', length: 150, width: 100, height: 200, maxWeight: 1000, description: '', createdAt: '2025-02-01T11:10:00Z' },
-  { id: 'sl-005', warehouseId: 'wh-001', warehouseName: 'Main Warehouse', fullAddress: 'C-1-01', qrCodeValue: 'QR-C1-01', isActive: true, itemCount: 0, totalQuantity: 0, capacity: 300, aisle: 'C', rack: '1', shelfNumber: '01', zone: 'Shipping', binType: 'Standard', length: 100, width: 80, height: 180, maxWeight: 300, description: '', createdAt: '2025-02-10T08:30:00Z' },
-  { id: 'sl-006', warehouseId: 'wh-002', warehouseName: 'East Distribution', fullAddress: 'A-1-01', qrCodeValue: 'QR-EA1-01', isActive: true, itemCount: 3, totalQuantity: 200, capacity: 350, aisle: 'A', rack: '1', shelfNumber: '01', zone: 'Storage', binType: 'Standard', length: 110, width: 75, height: 190, maxWeight: 400, description: '', createdAt: '2025-03-01T09:00:00Z' },
-  { id: 'sl-007', warehouseId: 'wh-002', warehouseName: 'East Distribution', fullAddress: 'A-1-02', qrCodeValue: 'QR-EA1-02', isActive: true, itemCount: 2, totalQuantity: 150, capacity: 350, aisle: 'A', rack: '1', shelfNumber: '02', zone: 'Storage', binType: 'Standard', length: 110, width: 75, height: 190, maxWeight: 400, description: '', createdAt: '2025-03-01T09:05:00Z' },
-  { id: 'sl-008', warehouseId: 'wh-002', warehouseName: 'East Distribution', fullAddress: 'B-1-01', qrCodeValue: 'QR-EB1-01', isActive: false, itemCount: 0, totalQuantity: 0, capacity: 300, aisle: 'B', rack: '1', shelfNumber: '01', zone: 'Maintenance', binType: 'Standard', length: 100, width: 70, height: 180, maxWeight: 300, description: 'Under maintenance', createdAt: '2025-03-15T10:00:00Z' },
-];
-
-app.get('/api/Warehouses', (req, res) => {
-  const { searchTerm, isActive } = req.query;
-  let list = [...DEV_WAREHOUSES];
-  if (searchTerm) list = list.filter(w => w.warehouseName.toLowerCase().includes(searchTerm.toLowerCase()));
-  if (isActive === 'true') list = list.filter(w => w.isActive);
-  if (isActive === 'false') list = list.filter(w => !w.isActive);
-  res.json({ success: true, message: null, data: list, statusCode: 200 });
-});
-
-app.get('/api/Warehouses/:id', (req, res) => {
-  const w = DEV_WAREHOUSES.find(x => x.id === req.params.id);
-  if (!w) return res.status(404).json({ success: false, message: 'Warehouse not found', statusCode: 404 });
-  res.json({ success: true, message: null, data: w, statusCode: 200 });
-});
-
-app.post('/api/Warehouses', (req, res) => {
-  const { warehouseName, locationCode, address, city, country, contactPerson, contactPhone, contactEmail } = req.body || {};
-  if (!warehouseName || !locationCode) {
-    return res.status(400).json({ success: false, message: 'warehouseName and locationCode are required', statusCode: 400 });
-  }
-  const newWh = {
-    id: `wh-${Date.now()}`,
-    warehouseName, locationCode, address: address || '', city: city || '', country: country || '',
-    contactPerson: contactPerson || '', contactPhone: contactPhone || '', contactEmail: contactEmail || '',
-    isActive: true, totalShelves: 0, occupiedShelves: 0, totalItems: 0,
-    createdAt: new Date().toISOString(),
-  };
-  DEV_WAREHOUSES.push(newWh);
-  res.json({ success: true, message: 'Warehouse created', data: newWh.id, statusCode: 200 });
-});
-
-app.get('/api/ShelfLocations', (req, res) => {
-  const { warehouseId, searchTerm } = req.query;
-  let list = [...DEV_SHELVES];
-  if (warehouseId) list = list.filter(s => s.warehouseId === warehouseId);
-  if (searchTerm) list = list.filter(s => s.fullAddress.toLowerCase().includes(searchTerm.toLowerCase()) || s.zone?.toLowerCase().includes(searchTerm.toLowerCase()));
-  list.sort((a, b) => a.warehouseName.localeCompare(b.warehouseName) || a.fullAddress.localeCompare(b.fullAddress));
-  res.json({ success: true, message: null, data: list, statusCode: 200 });
-});
-
-app.get('/api/ShelfLocations/:id', (req, res) => {
-  const s = DEV_SHELVES.find(x => x.id === req.params.id);
-  if (!s) return res.status(404).json({ success: false, message: 'Shelf location not found', statusCode: 404 });
-  res.json({ success: true, message: null, data: s, statusCode: 200 });
-});
-
-app.post('/api/ShelfLocations', (req, res) => {
-  const { warehouseId, warehouseName, aisle, rack, shelfNumber, zone, binType, capacity } = req.body || {};
-  if (!warehouseId || !aisle || !rack || !shelfNumber) {
-    return res.status(400).json({ success: false, message: 'warehouseId, aisle, rack, and shelfNumber are required', statusCode: 400 });
-  }
-  const wh = DEV_WAREHOUSES.find(w => w.id === warehouseId);
-  const newSl = {
-    id: `sl-${Date.now()}`,
-    warehouseId, warehouseName: wh?.warehouseName || warehouseName || '',
-    fullAddress: `${aisle}-${rack}-${shelfNumber}`,
-    qrCodeValue: `QR-${aisle}-${rack}-${shelfNumber}`,
-    isActive: true, itemCount: 0, totalQuantity: 0, capacity: capacity || 100,
-    aisle, rack, shelfNumber, zone: zone || '', binType: binType || 'Standard',
-    length: 0, width: 0, height: 0, maxWeight: 0, description: '',
-    createdAt: new Date().toISOString(),
-  };
-  DEV_SHELVES.push(newSl);
-  res.json({ success: true, message: 'Shelf location created', data: newSl.id, statusCode: 200 });
-});
-
-app.put('/api/ShelfLocations/:id', (req, res) => {
-  const idx = DEV_SHELVES.findIndex(x => x.id === req.params.id);
-  if (idx === -1) return res.status(404).json({ success: false, message: 'Shelf location not found', statusCode: 404 });
-  const existing = DEV_SHELVES[idx];
-  const updates = req.body || {};
-  DEV_SHELVES[idx] = { ...existing, ...updates, id: existing.id, createdAt: existing.createdAt, updatedAt: new Date().toISOString() };
-  res.json({ success: true, message: 'Shelf location updated', statusCode: 200 });
-});
-
-app.delete('/api/ShelfLocations/:id', (req, res) => {
-  const idx = DEV_SHELVES.findIndex(x => x.id === req.params.id);
-  if (idx === -1) return res.status(404).json({ success: false, message: 'Shelf location not found', statusCode: 404 });
-  DEV_SHELVES.splice(idx, 1);
-  res.json({ success: true, message: 'Shelf location deleted', statusCode: 200 });
-});
 
 app.use('/api', (req, res, next) => {
   const isEmailPath =

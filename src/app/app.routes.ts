@@ -7,7 +7,11 @@ export const routes: Routes = [
   {
     path: '',
     pathMatch: 'full',
-    redirectTo: 'landing',
+    loadComponent: () => import('./pages/landing/landing').then((m) => m.Landing),
+  },
+  {
+    path: 'landing',
+    redirectTo: '',
   },
   {
     path: 'dashboard',
@@ -401,10 +405,6 @@ export const routes: Routes = [
     ],
   },
 
-  {
-    path: 'landing',
-    loadComponent: () => import('./pages/landing/landing').then((m) => m.Landing),
-  },
   {
     path: 'auth',
     loadChildren: () => import('./features/auth/auth-module').then((m) => m.AuthModule),
@@ -1017,6 +1017,6 @@ export const routes: Routes = [
   },
   {
     path: '**',
-    redirectTo: 'landing',
+    redirectTo: '',
   },
 ];

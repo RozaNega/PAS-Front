@@ -6,7 +6,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { CurrentUserService } from '../../core/services/current-user.service';
 import { ProfileService } from '../../core/services/profile.service';
 import { SignalRService } from '../../core/services/signalr.service';
-import { filter, map } from 'rxjs';
+import { filter, map, Subscription } from 'rxjs';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { getMenuConfigByRole as getMenuConfigForRole, MenuItem } from '../../config/menu.config';
 import { User } from '../../core/services/auth.service';
@@ -18,6 +18,7 @@ import {
 } from '../../core/services/workflow.service';
 import { ComplianceDataService } from '../../core/services/compliance-data.service';
 import { ManagerDataService } from '../../core/services/manager-data.service';
+import { PendingRegistrationService } from '../../core/services/pending-registration.service';
 import { NotificationSidebarComponent } from '../../features/common/notifications/components/notification-sidebar/notification-sidebar.component';
 
 interface ThemeOption {
@@ -54,6 +55,8 @@ export class MainLayoutComponent implements OnInit {
   private readonly workflowService = inject(WorkflowService);
   private readonly complianceData = inject(ComplianceDataService);
   private readonly managerData = inject(ManagerDataService);
+  private readonly pendingRegistrationService = inject(PendingRegistrationService);
+  private pendingCountSub?: Subscription;
 
   protected menuItems: MenuItem[] = [];
   private readonly workflowNotificationTick = signal(0);
@@ -382,6 +385,7 @@ export class MainLayoutComponent implements OnInit {
   private updateMenuItems(): void {
     if (this.router.url.startsWith('/admin')) {
       this.menuItems = getMenuConfigForRole('admin');
+      this.loadAdminMenuBadges();
       return;
     }
 
@@ -619,6 +623,24 @@ export class MainLayoutComponent implements OnInit {
           return child;
         })
       };
+    });
+  }
+
+  private loadAdminMenuBadges(): void {
+    this.pendingCountSub?.unsubscribe();
+    this.pendingRegistrationService.refreshCount();
+    this.pendingCountSub = this.pendingRegistrationService.count$.subscribe((count) => {
+      this.menuItems = this.menuItems.map((item) => {
+        if (item.label !== 'User Management') return item;
+        return {
+          ...item,
+          children: item.children?.map((child: MenuItem) =>
+            child.route === '/admin/users/pending-registrations'
+              ? { ...child, badge: count > 0 ? count : undefined }
+              : child,
+          ),
+        };
+      });
     });
   }
 

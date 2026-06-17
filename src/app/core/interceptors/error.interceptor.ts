@@ -16,24 +16,9 @@ export class ErrorInterceptor implements HttpInterceptor {
           return throwError(() => error);
         }
 
-        // In development mode, pass through all API errors without logging
-        const isDevMode = !!(typeof window !== 'undefined' && window.location && window.location.hostname === 'localhost');
-        if (isDevMode) {
-          return throwError(() => error);
-        }
-
-        // Suppress error toast for specific endpoints
-        if (error.headers?.get('X-Suppress-Error-Toast')) {
-          return throwError(() => error);
-        }
-
-        if (error.status === 401) {
-          // Redirect to login page on 401 Unauthorized
-          this.router.navigate(['/login']);
-        } else if (error.status === 403) {
-          // Redirect to forbidden page on 403 Forbidden
-          this.router.navigate(['/forbidden']);
-        } else if (error.status === 500) {
+        // Skip 401/403 redirects — dev API endpoints don't auth-check, and redirect loops
+        // are worse than showing an empty state. Let AuthGuard catch expired sessions.
+        if (error.status === 500) {
           console.error('Server Error:', error.message);
         }
 
