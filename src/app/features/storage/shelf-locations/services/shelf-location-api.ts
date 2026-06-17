@@ -13,32 +13,7 @@ export interface ShelfLocationRecord {
   providedIn: 'root',
 })
 export class ShelfLocationApi {
-  private readonly shelfLocationsSignal = signal<ShelfLocationRecord[]>([
-    {
-      id: 1,
-      warehouseCode: 'WHS-MAIN',
-      code: 'A-01-01',
-      zone: 'A1',
-      maxUnits: 220,
-      active: true,
-    },
-    {
-      id: 2,
-      warehouseCode: 'WHS-MAIN',
-      code: 'A-01-02',
-      zone: 'A1',
-      maxUnits: 220,
-      active: true,
-    },
-    {
-      id: 3,
-      warehouseCode: 'WHS-COLD',
-      code: 'C-02-01',
-      zone: 'C2',
-      maxUnits: 110,
-      active: true,
-    },
-  ]);
+  private readonly shelfLocationsSignal = signal<ShelfLocationRecord[]>([]);
 
   list(): ShelfLocationRecord[] {
     return this.shelfLocationsSignal();

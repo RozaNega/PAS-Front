@@ -8,6 +8,7 @@ import { BarChart, PieChart } from 'echarts/charts';
 import { TooltipComponent, GridComponent, LegendComponent } from 'echarts/components';
 import { CanvasRenderer } from 'echarts/renderers';
 import { WarehousesService, WarehouseDto } from '../../../../core/services/warehouses.service';
+import { ShelvesService, ShelfLocationDto } from '../../../../core/services/shelves.service';
 
 echarts.use([BarChart, PieChart, TooltipComponent, GridComponent, LegendComponent, CanvasRenderer]);
 
@@ -50,6 +51,7 @@ interface ShelfInfo {
 })
 export class WarehousesComponent {
   private readonly warehousesService = inject(WarehousesService);
+  private readonly shelvesService = inject(ShelvesService);
 
   searchTerm = signal('');
   statusFilter = signal('All');
@@ -248,8 +250,8 @@ export class WarehousesComponent {
           rows.map((wh: WarehouseDto) => {
             const totalShelves = wh.totalShelves ?? 0;
             const totalItems = wh.totalItems ?? 0;
-            const computedCapacity = totalShelves * 100; // backend has no capacity field; derive a value for the UI
-            const computedUtilization = totalItems;
+            const occupiedShelves = wh.occupiedShelves ?? 0;
+            const occupancy = totalShelves > 0 ? Math.round((occupiedShelves / totalShelves) * 100) : 0;
             return {
               id: wh.id,
               name: wh.warehouseName,
@@ -258,10 +260,10 @@ export class WarehousesComponent {
               address: wh.address || '',
               city: wh.city || '',
               country: wh.country || '',
-              items: computedUtilization,
-              value: computedUtilization * 1500,
-              capacity: computedCapacity,
-              occupancy: computedCapacity ? Math.round((computedUtilization / computedCapacity) * 100) : 0,
+              items: totalItems,
+              value: 0,
+              capacity: 0,
+              occupancy,
               shelfCount: Math.max(1, totalShelves),
               status: (wh.isActive ? 'Active' : 'Inactive') as 'Active' | 'Inactive',
               managerName: wh.contactPerson || '',
@@ -420,22 +422,28 @@ export class WarehousesComponent {
 
   openDetailModal(warehouse: Warehouse): void {
     this.selectedWarehouse.set(warehouse);
-    const shelfCount = warehouse.shelfCount || 8;
-    const perShelf = Math.round(warehouse.items / shelfCount);
-    const perOcc = Math.round(warehouse.occupancy / shelfCount);
-    const shelves: ShelfInfo[] = [];
-    for (let i = 0; i < Math.min(shelfCount, 12); i++) {
-      const aisle = String.fromCharCode(65 + (i % 8));
-      const rack = `R-${String(i + 1).padStart(2, '0')}`;
-      shelves.push({
-        label: `${aisle}-${rack}`,
-        items: perShelf + (i === 0 ? warehouse.items - perShelf * shelfCount : 0),
-        occupancy: Math.min(100, perOcc + (i % 5) * 3),
-      });
-    }
-    this.detailShelves.set(shelves);
+    this.detailShelves.set([]);
+    this.shelvesService.getShelves({ warehouseId: warehouse.id, isActive: undefined }).subscribe({
+      next: (res) => {
+        const dtoList = Array.isArray(res.data) ? res.data : [];
+        this.detailShelves.set(dtoList.map(d => this.mapShelfToInfo(d)));
+      },
+      error: () => {
+        this.detailShelves.set([]);
+      },
+    });
     this.modalMode.set('detail');
     this.showModal.set(true);
+  }
+
+  private mapShelfToInfo(d: ShelfLocationDto): ShelfInfo {
+    const cap = d.capacity && d.capacity > 0 ? d.capacity : 0;
+    const totalQty = d.totalQuantity || 0;
+    return {
+      label: d.fullAddress || `${d.aisle || ''}-${d.rack || ''}-${d.shelfNumber || ''}`,
+      items: d.itemCount || 0,
+      occupancy: cap > 0 ? Math.min(100, Math.round((totalQty / cap) * 100)) : 0,
+    };
   }
 
   openDeleteModal(warehouse: Warehouse): void {

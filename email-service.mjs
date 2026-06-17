@@ -301,6 +301,19 @@ function saveUsersStore(map) {
 
 const usersStore = loadUsersStore();
 
+// Seed a default admin user if store is empty
+if (usersStore.size === 0) {
+  const defaultUser = {
+    username: 'admin',
+    password: 'admin1234',
+    fullName: 'Admin User',
+    role: 'Admin',
+  };
+  usersStore.set('admin@africom.local', defaultUser);
+  saveUsersStore(usersStore);
+  console.log('Seeded default admin user (admin@africom.local / admin1234)');
+}
+
 // In-memory password reset token store: Map<token, {email, expiry, used}>
 const resetTokens = new Map();
 
@@ -661,6 +674,7 @@ app.post('/api/Auth/login', async (req, res) => {
       success: true,
       data: {
         token,
+        refreshToken: `mock-refresh-${Date.now()}`,
         user: {
           id: userEntry.email,
           username: userEntry.username,
@@ -679,6 +693,38 @@ app.post('/api/Auth/login', async (req, res) => {
     });
   } catch (err) {
     console.error('login error:', err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+app.post('/api/Auth/refresh-token', async (req, res) => {
+  try {
+    const { refreshToken } = req.body || {};
+    if (!refreshToken) {
+      return res.status(400).json({ success: false, message: 'Refresh token required' });
+    }
+    console.log('Refreshing token for', refreshToken.slice(0, 20) + '...');
+
+    const tokenPayload = {
+      sub: 'dev-user',
+      unique_name: 'devuser',
+      email: 'dev@example.com',
+      role: 'Admin',
+      exp: Math.floor(Date.now() / 1000) + 86400,
+    };
+    const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
+    const payload = Buffer.from(JSON.stringify(tokenPayload)).toString('base64url');
+    const newToken = `${header}.${payload}.mock-dev-signature`;
+
+    res.json({
+      success: true,
+      data: {
+        token: newToken,
+        refreshToken: `mock-refresh-${Date.now()}`,
+      },
+    });
+  } catch (err) {
+    console.error('refresh-token error:', err);
     res.status(500).json({ success: false, message: err.message });
   }
 });
@@ -940,6 +986,7 @@ function proxyToBackend(req, res) {
     req.pipe(proxyReq);
   }
 }
+
 
 // ---------- Warehouse & Shelf Location mock endpoints (dev only) ----------
 
@@ -1695,6 +1742,7 @@ app.post('/api/TransferRecords', express.json(), (req, res) => {
     res.status(500).json({ success: false, message: err.message, statusCode: 500 });
   }
 });
+
 
 app.use('/api', (req, res, next) => {
   const isEmailPath =

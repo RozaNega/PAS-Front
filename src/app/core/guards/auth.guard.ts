@@ -16,18 +16,12 @@ export class AuthGuard implements CanActivate {
       return true;
     }
 
-    // Check if token exists in localStorage
-    const hasToken = localStorage.getItem('pas_token') !== null;
-
-    if (hasToken) {
-      return true;
-    }
-
+    // Check via AuthService (which validates token expiry)
     if (this.authService.isAuthenticated()) {
       return true;
     }
 
-    // Redirect to login only if no token exists
+    // Redirect to login only if no valid session
     this.router.navigate(['/auth/login']);
     return false;
   }
