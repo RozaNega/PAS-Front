@@ -1,12 +1,14 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { finalize } from 'rxjs';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { AuthService, User } from '../../../../core/services/auth.service';
 import { CurrentUserService } from '../../../../core/services/current-user.service';
 import { ProfileService } from '../../../../core/services/profile.service';
 import { FaceDetectionService } from '../../../../core/services/face-detection.service';
 import { DashboardService, DashboardStatistics } from '../../../../core/services/dashboard.service';
+import { ToastService } from '../../../../core/services/toast.service';
 import { ProfileSidebarComponent, ProfileNavItem } from '../../../../shared/components/profile-sidebar/profile-sidebar.component';
 import { DEFAULT_AVATAR_PATH } from '../../../../core/models/stored-user.model';
 
@@ -290,6 +292,83 @@ import { DEFAULT_AVATAR_PATH } from '../../../../core/models/stored-user.model';
                 }
               </div>
             }
+
+            @case ('settings') {
+              <div class="content-card">
+                <div class="content-card-header">
+                  <h2>Account Settings</h2>
+                  <p>Manage your account preferences and security</p>
+                </div>
+                <div class="settings-list">
+                  <div class="setting-item twofa-admin-item">
+                    <div class="setting-info">
+                      <h4>Two-Factor Authentication</h4>
+                      <p>Add an extra layer of security to your account</p>
+                    </div>
+                    <div class="twofa-admin-status">
+                      <span
+                        class="status-dot-admin"
+                        [class.enabled]="twoFactorEnabled()"
+                        [class.disabled]="!twoFactorEnabled()"
+                      ></span>
+                      <span>{{ twoFactorEnabled() ? 'Enabled' : 'Disabled' }}</span>
+                    </div>
+                    @if (!twoFactorEnabled()) {
+                      <button type="button" class="btn btn-outline-primary btn-sm" (click)="enable2FA()">
+                        <i class="bi bi-shield-check"></i> Enable
+                      </button>
+                    } @else {
+                      <button type="button" class="btn btn-outline-danger btn-sm" (click)="disable2FA()">
+                        <i class="bi bi-shield-x"></i> Disable
+                      </button>
+                    }
+                  </div>
+                  @if (twoFactorEnabled()) {
+                    <div class="twofa-admin-settings">
+                      <div class="twofa-admin-row">
+                        <label>Method:</label>
+                        <select [value]="twoFactorMethod()" (change)="updateTwoFactorMethod($event)" class="twofa-admin-select">
+                          <option value="email">Email</option>
+                        </select>
+                        @if (twoFactorSetupComplete()) {
+                          <span class="verified-badge">✓ Verified</span>
+                        }
+                      </div>
+                      @if (twoFactorMethod() === 'email') {
+                        <div class="twofa-admin-row">
+                          <label>Email:</label>
+                          <div class="twofa-admin-input-group">
+                            <input type="email" [value]="email()" class="form-control form-control-sm" readonly />
+                            <button
+                              class="btn btn-primary btn-sm"
+                              (click)="saveTwoFactorPhone()"
+                              [disabled]="twoFactorSending()"
+                            >
+                              {{ twoFactorSending() ? 'Sending...' : twoFactorSetupComplete() ? 'Re-send' : 'Send Code' }}
+                            </button>
+                          </div>
+                        </div>
+                      }
+                      @if (twoFactorVerificationSent()) {
+                        <div class="twofa-admin-row">
+                          <label>Code:</label>
+                          <div class="twofa-admin-input-group">
+                            <input
+                              type="text"
+                              (input)="updateTwoFactorVerificationCode($event)"
+                              placeholder="6-digit code"
+                              maxlength="6"
+                              class="form-control form-control-sm"
+                            />
+                            <button class="btn btn-success btn-sm" (click)="verifyTwoFactorCode()">Verify</button>
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
+              </div>
+            }
           }
         </main>
       </div>
@@ -476,6 +555,10 @@ import { DEFAULT_AVATAR_PATH } from '../../../../core/models/stored-user.model';
     .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
     .btn-secondary { background: var(--surface-section); color: var(--text-color); border: 1px solid var(--surface-border); }
     .btn-secondary:hover { background: var(--surface-border); }
+    .btn-outline-primary { background: transparent; color: var(--primary-color); border: 1.5px solid var(--primary-color); padding: 0.5rem 1rem; font-size: 0.85rem; }
+    .btn-outline-primary:hover { background: var(--primary-color-soft); }
+    .btn-outline-danger { background: transparent; border: 1px solid #ef4444; color: #ef4444; padding: 0.5rem 1rem; font-size: 0.85rem; }
+    .btn-outline-danger:hover { background: #fef2f2; }
     .spinner-sm { width: 1rem; height: 1rem; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.6s linear infinite; display: inline-block; }
     @keyframes spin { to { transform: rotate(360deg); } }
     .form-alert { display: flex; align-items: center; gap: 0.5rem; padding: 0.65rem 1rem; border-radius: 10px; font-size: 0.85rem; font-weight: 500; }
@@ -511,6 +594,89 @@ import { DEFAULT_AVATAR_PATH } from '../../../../core/models/stored-user.model';
     .perf-trend.up { color: #059669; }
     .perf-trend.down { color: #dc2626; }
 
+    .settings-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .setting-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 1.25rem;
+      background: var(--surface-section);
+      border-radius: 12px;
+      border: 1px solid var(--surface-border);
+    }
+    .setting-info h4 {
+      margin: 0;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+    .setting-info p {
+      margin: 0.15rem 0 0;
+      font-size: 0.8rem;
+      color: var(--text-color-muted);
+    }
+    .twofa-admin-item {
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .twofa-admin-status {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+    .status-dot-admin {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    .status-dot-admin.enabled { background: #22c55e; }
+    .status-dot-admin.disabled { background: #94a3b8; }
+    .twofa-admin-settings {
+      padding: 0.75rem 1.25rem;
+      background: var(--surface-section);
+      border-radius: 12px;
+      border: 1px solid var(--surface-border);
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+    .twofa-admin-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .twofa-admin-row label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      min-width: 50px;
+    }
+    .twofa-admin-select {
+      padding: 0.3rem 0.5rem;
+      border-radius: 6px;
+      border: 1px solid var(--surface-border);
+      font-size: 0.8rem;
+      background: var(--surface-card);
+      color: var(--text-color);
+    }
+    .twofa-admin-input-group {
+      display: flex;
+      gap: 0.4rem;
+      flex: 1;
+    }
+    .twofa-admin-input-group input { flex: 1; min-width: 120px; }
+    .verified-badge {
+      font-size: 0.75rem;
+      color: #16a34a;
+      font-weight: 600;
+    }
+
     @media (max-width: 900px) {
       .profile-layout { flex-direction: column; }
       .profile-sidebar { width: 100%; }
@@ -525,6 +691,7 @@ export class StorekeeperProfileComponent implements OnInit {
   private readonly profileService = inject(ProfileService);
   private readonly faceDetectionService = inject(FaceDetectionService);
   private readonly dashboardService = inject(DashboardService);
+  private readonly toastService = inject(ToastService);
 
   protected readonly isLoading = signal(true);
   protected readonly error = signal<string | null>(null);
@@ -536,6 +703,7 @@ export class StorekeeperProfileComponent implements OnInit {
     { id: 'password', label: 'Change Password', icon: 'bi bi-shield-lock' },
     { id: 'work', label: 'Work Activity', icon: 'bi bi-clock-history' },
     { id: 'reports', label: 'Performance', icon: 'bi bi-bar-chart' },
+    { id: 'settings', label: 'Settings', icon: 'bi bi-gear' },
   ];
 
   protected readonly activeSection = signal<string>('overview');
@@ -571,6 +739,16 @@ export class StorekeeperProfileComponent implements OnInit {
   protected changingPassword = signal(false);
   protected passwordError = signal<string | null>(null);
   protected passwordSuccess = signal<string | null>(null);
+
+  // Two-Factor Authentication
+  protected readonly twoFactorEnabled = signal(false);
+  protected readonly twoFactorMethod = signal<'email'>('email');
+  protected readonly twoFactorPhone = signal('');
+  protected readonly twoFactorVerificationSent = signal(false);
+  protected readonly twoFactorVerificationCode = signal('');
+  protected readonly twoFactorSetupComplete = signal(false);
+  protected readonly twoFactorSending = signal(false);
+  private currentCode = '';
 
   protected readonly departmentDisplay = computed(() => this.department() || 'Warehouse & Inventory');
 
@@ -834,5 +1012,105 @@ export class StorekeeperProfileComponent implements OnInit {
         console.error('changePassword error:', err);
       },
     });
+  }
+
+  protected enable2FA(): void {
+    this.twoFactorEnabled.set(true);
+    if (this.twoFactorSetupComplete()) {
+      this.twoFactorSetupComplete.set(false);
+      this.twoFactorVerificationSent.set(false);
+      this.twoFactorVerificationCode.set('');
+    }
+    this.toastService.info('Fill in your contact info and click Send Code to enable 2FA.');
+  }
+
+  protected disable2FA(): void {
+    this.authService.disable2FA().subscribe({
+      next: (res) => {
+        this.twoFactorEnabled.set(false);
+        this.twoFactorMethod.set('email');
+        this.twoFactorPhone.set('');
+        this.twoFactorVerificationSent.set(false);
+        this.twoFactorVerificationCode.set('');
+        this.twoFactorSetupComplete.set(false);
+        if (res.succeeded) {
+          this.toastService.success('Two-Factor Authentication has been disabled.');
+        } else {
+          this.toastService.error(res.message || 'Failed to disable 2FA.');
+        }
+      },
+      error: () => this.toastService.error('Unable to disable 2FA. Please try again.'),
+    });
+  }
+
+  protected updateTwoFactorMethod(event: Event): void {
+    this.twoFactorMethod.set('email');
+    if (this.twoFactorSetupComplete()) {
+      this.twoFactorSetupComplete.set(false);
+      this.twoFactorVerificationSent.set(false);
+      this.twoFactorVerificationCode.set('');
+    }
+  }
+
+  protected updateTwoFactorPhone(event: Event): void {
+    const target = event.target as HTMLInputElement;
+    this.twoFactorPhone.set(target.value);
+  }
+
+  protected saveTwoFactorPhone(): void {
+    const contact = this.email();
+    if (!contact) {
+      alert('Please enter a valid email address.');
+      return;
+    }
+    this.twoFactorSending.set(true);
+
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    this.currentCode = code;
+    this.authService.sendVerificationCode(contact, code).pipe(finalize(() => this.twoFactorSending.set(false))).subscribe({
+      next: (res) => {
+        if (res.succeeded) {
+          this.twoFactorVerificationSent.set(true);
+          this.toastService.success('Verification code sent! Check your inbox.');
+        } else {
+          alert(res.message || 'Failed to send verification code.');
+        }
+      },
+      error: () => {
+        alert('Unable to send verification code. Please try again.');
+      },
+    });
+  }
+
+  protected updateTwoFactorVerificationCode(event: Event): void {
+    const target = event.target as HTMLInputElement;
+    this.twoFactorVerificationCode.set(target.value);
+  }
+
+  protected verifyTwoFactorCode(): void {
+    if (this.twoFactorVerificationCode() !== this.currentCode) {
+      alert('Invalid verification code. Please check the code sent to your email and try again.');
+      return;
+    }
+    const contact = this.email();
+    this.twoFactorSending.set(true);
+    this.authService.enable2FA('email', contact).pipe(finalize(() => this.twoFactorSending.set(false))).subscribe({
+      next: (res) => {
+        if (res.succeeded) {
+          this.twoFactorSetupComplete.set(true);
+          this.toastService.success(res.message || '2FA enabled successfully!');
+        } else {
+          alert(res.message || 'Failed to enable 2FA.');
+        }
+      },
+      error: () => {
+        alert('Unable to enable 2FA. Please try again.');
+      },
+    });
+  }
+
+  protected resendVerificationCode(): void {
+    this.twoFactorVerificationCode.set('');
+    this.saveTwoFactorPhone();
   }
 }

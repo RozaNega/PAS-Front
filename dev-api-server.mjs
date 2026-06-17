@@ -334,6 +334,88 @@ app.post('/api/Auth/login', async (req, res) => {
   res.json({ success: true, message: 'Mock login' });
 });
 
+// ---------- Additional Auth Endpoints (dev mock) ----------
+
+app.get('/api/Auth/me', (req, res) => {
+  res.json({
+    success: true,
+    data: {
+      id: 'dev-user-001',
+      email: 'dev@example.com',
+      userName: 'DevUser',
+      fullName: 'Dev User',
+      roles: ['Admin'],
+      twoFactorEnabled: true,
+      emailConfirmed: true,
+    },
+    statusCode: 200,
+  });
+});
+
+app.get('/api/Auth/confirm-email', (req, res) => {
+  const { token } = req.query;
+  if (!token) return res.status(400).json({ success: false, message: 'Invalid or missing token.', statusCode: 400 });
+  res.json({ success: true, message: 'Email confirmed successfully.', statusCode: 200 });
+});
+
+app.post('/api/Auth/enable-2fa', (req, res) => {
+  const { method, contactInfo } = req.body || {};
+  if (!method || !contactInfo) return res.status(400).json({ success: false, message: 'method and contactInfo are required.', statusCode: 400 });
+  res.json({ success: true, message: '2FA enabled successfully.', statusCode: 200 });
+});
+
+app.post('/api/Auth/disable-2fa', (_req, res) => {
+  res.json({ success: true, message: '2FA disabled successfully.', statusCode: 200 });
+});
+
+app.post('/api/Auth/resend-verification', (req, res) => {
+  const { email } = req.body || {};
+  if (!email) return res.status(400).json({ success: false, message: 'Email is required.', statusCode: 400 });
+  res.json({ success: true, message: 'Verification email resent.', statusCode: 200 });
+});
+
+app.post('/api/Auth/send-phone-otp', (req, res) => {
+  const { phoneNumber } = req.body || {};
+  if (!phoneNumber) return res.status(400).json({ success: false, message: 'Phone number is required.', statusCode: 400 });
+  res.json({ success: true, message: 'OTP sent to phone.', otp: '123456', statusCode: 200 });
+});
+
+app.post('/api/Auth/verify-phone-otp', (req, res) => {
+  const { phoneNumber, otp } = req.body || {};
+  if (!phoneNumber || !otp) return res.status(400).json({ success: false, message: 'Phone number and OTP are required.', statusCode: 400 });
+  res.json({ success: true, message: 'Phone number verified successfully.', statusCode: 200 });
+});
+
+app.post('/api/Auth/logout', (_req, res) => {
+  res.json({ success: true, message: 'Logged out successfully.', statusCode: 200 });
+});
+
+app.post('/api/Auth/refresh-token', (req, res) => {
+  const { token } = req.body || {};
+  res.json({
+    success: true,
+    message: 'Token refreshed.',
+    data: { token: token || 'mock-refreshed-token', refreshToken: 'mock-refresh-token' },
+    statusCode: 200,
+  });
+});
+
+app.post('/api/Auth/change-password', (req, res) => {
+  const { currentPassword, newPassword } = req.body || {};
+  if (!currentPassword || !newPassword) return res.status(400).json({ success: false, message: 'Current and new password are required.', statusCode: 400 });
+  if (newPassword.length < 6) return res.status(400).json({ success: false, message: 'Password must be at least 6 characters.', statusCode: 400 });
+  res.json({ success: true, message: 'Password changed successfully.', statusCode: 200 });
+});
+
+app.post('/api/Auth/upload-profile-photo', (req, res) => {
+  res.json({ success: true, message: 'Profile photo uploaded.', data: { photoUrl: '/uploads/photo-' + Date.now() + '.jpg' }, statusCode: 200 });
+});
+
+app.put('/api/Auth/update-profile', (req, res) => {
+  const { fullName, username, department, position, employeeCode, phoneNumber } = req.body || {};
+  res.json({ success: true, message: 'Profile updated successfully.', statusCode: 200 });
+});
+
 // ---------- Pending Registration Endpoints ----------
 
 const PENDING_FILE_DEV = resolve(dataFolder, 'pending-registrations.json');
@@ -433,12 +515,158 @@ app.post('/api/Auth/pending-registrations/:id/reject', async (req, res) => {
   }
 });
 
+// ---------- Users Endpoints ----------
+
+const DEV_USERS = new Map();
+
+app.get('/api/users/:id', (req, res) => {
+  const user = DEV_USERS.get(req.params.id);
+  if (!user) return res.status(404).json({ success: false, message: 'User not found.', statusCode: 404 });
+  res.json({ success: true, data: user, statusCode: 200 });
+});
+
+app.put('/api/users/:id', (req, res) => {
+  const existing = DEV_USERS.get(req.params.id);
+  const updated = { ...existing, ...req.body, id: req.params.id };
+  DEV_USERS.set(req.params.id, updated);
+  res.json({ success: true, message: 'Profile updated successfully.', statusCode: 200 });
+});
+
+// ---------- Swagger UI ----------
+
+const OPENAPI_SPEC = {
+  openapi: '3.0.3',
+  info: { title: 'PAS API', version: '1.0.0', description: 'PAS Backend API' },
+  servers: [{ url: '/', description: 'Local dev' }],
+  components: {
+    securitySchemes: {
+      Bearer: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' }
+    }
+  },
+  security: [{ Bearer: [] }],
+  paths: {
+    '/api/Auth/login': {
+      post: { tags: ['Auth'], summary: 'Login to the system', security: [], requestBody: { content: { 'application/json': { schema: { type: 'object', properties: { username: { type: 'string' }, password: { type: 'string' } }, required: ['username', 'password'] } } } }, responses: { '200': { description: 'Login successful' }, '401': { description: 'Invalid credentials' } } }
+    },
+    '/api/Auth/register': {
+      post: { tags: ['Auth'], summary: 'Register a new user', security: [], requestBody: { content: { 'application/json': { schema: { type: 'object', properties: { username: { type: 'string' }, email: { type: 'string' }, password: { type: 'string' }, fullName: { type: 'string' }, roleName: { type: 'string' }, phone: { type: 'string' } }, required: ['username', 'email', 'password'] } } } }, responses: { '200': { description: 'Registration successful' } } }
+    },
+    '/api/Auth/logout': {
+      post: { tags: ['Auth'], summary: 'Logout current user', responses: { '200': { description: 'Logged out' } } }
+    },
+    '/api/Auth/refresh-token': {
+      post: { tags: ['Auth'], summary: 'Refresh JWT token', security: [], requestBody: { content: { 'application/json': { schema: { type: 'object', properties: { token: { type: 'string' }, refreshToken: { type: 'string' } } } } } }, responses: { '200': { description: 'Token refreshed' } } }
+    },
+    '/api/Auth/change-password': {
+      post: { tags: ['Auth'], summary: 'Change user password', requestBody: { content: { 'application/json': { schema: { type: 'object', properties: { currentPassword: { type: 'string' }, newPassword: { type: 'string' } }, required: ['currentPassword', 'newPassword'] } } } }, responses: { '200': { description: 'Password changed' } } }
+    },
+    '/api/Auth/forgot-password': {
+      post: { tags: ['Auth'], summary: 'Send password reset email', security: [], requestBody: { content: { 'application/json': { schema: { type: 'object', properties: { email: { type: 'string' } }, required: ['email'] } } } }, responses: { '200': { description: 'Reset email sent' } } }
+    },
+    '/api/Auth/reset-password': {
+      post: { tags: ['Auth'], summary: 'Reset password using token', security: [], requestBody: { content: { 'application/json': { schema: { type: 'object', properties: { email: { type: 'string' }, token: { type: 'string' }, password: { type: 'string' } }, required: ['email', 'token', 'password'] } } } }, responses: { '200': { description: 'Password reset' } } }
+    },
+    '/api/Auth/upload-profile-photo': {
+      post: { tags: ['Auth'], summary: 'Upload profile photo', requestBody: { content: { 'multipart/form-data': { schema: { type: 'object', properties: { file: { type: 'string', format: 'binary' } }, required: ['file'] } } } }, responses: { '200': { description: 'Photo uploaded' } } }
+    },
+    '/api/Auth/update-profile': {
+      put: { tags: ['Auth'], summary: 'Update current user profile', requestBody: { content: { 'application/json': { schema: { type: 'object', properties: { fullName: { type: 'string' }, name: { type: 'string' }, username: { type: 'string' }, department: { type: 'string' }, position: { type: 'string' }, employeeCode: { type: 'string' }, phoneNumber: { type: 'string' } } } } } }, responses: { '200': { description: 'Profile updated' } } }
+    },
+    '/api/Auth/me': {
+      get: { tags: ['Auth'], summary: 'Get current user profile', responses: { '200': { description: 'User profile' } } }
+    },
+    '/api/Auth/confirm-email': {
+      get: { tags: ['Auth'], summary: 'Confirm email address', security: [], parameters: [{ name: 'token', in: 'query', required: true, schema: { type: 'string' } }, { name: 'email', in: 'query', schema: { type: 'string' } }], responses: { '200': { description: 'Email confirmed' } } }
+    },
+    '/api/Auth/enable-2fa': {
+      post: { tags: ['Auth'], summary: 'Enable 2FA', requestBody: { content: { 'application/json': { schema: { type: 'object', properties: { method: { type: 'string' }, contactInfo: { type: 'string' } }, required: ['method', 'contactInfo'] } } } }, responses: { '200': { description: '2FA enabled' } } }
+    },
+    '/api/Auth/disable-2fa': {
+      post: { tags: ['Auth'], summary: 'Disable 2FA', responses: { '200': { description: '2FA disabled' } } }
+    },
+    '/api/Auth/resend-verification': {
+      post: { tags: ['Auth'], summary: 'Resend email confirmation', security: [], requestBody: { content: { 'application/json': { schema: { type: 'object', properties: { email: { type: 'string' } }, required: ['email'] } } } }, responses: { '200': { description: 'Verification resent' } } }
+    },
+    '/api/Auth/send-phone-otp': {
+      post: { tags: ['Auth'], summary: 'Send OTP to phone number', requestBody: { content: { 'application/json': { schema: { type: 'object', properties: { phoneNumber: { type: 'string' } }, required: ['phoneNumber'] } } } }, responses: { '200': { description: 'OTP sent' } } }
+    },
+    '/api/Auth/verify-phone-otp': {
+      post: { tags: ['Auth'], summary: 'Verify phone OTP code', requestBody: { content: { 'application/json': { schema: { type: 'object', properties: { phoneNumber: { type: 'string' }, otp: { type: 'string' } }, required: ['phoneNumber', 'otp'] } } } }, responses: { '200': { description: 'Phone verified' } } }
+    },
+    '/api/Auth/register-pending': {
+      post: { tags: ['Auth'], summary: 'Register pending user', security: [], requestBody: { content: { 'application/json': { schema: { type: 'object' } } } }, responses: { '200': { description: 'Pending registration created' } } }
+    },
+    '/api/Auth/pending-registrations': {
+      get: { tags: ['Auth'], summary: 'List pending registrations', responses: { '200': { description: 'Pending list' } } }
+    },
+    '/api/Auth/pending-registrations/count': {
+      get: { tags: ['Auth'], summary: 'Pending registrations count', responses: { '200': { description: 'Count' } } }
+    },
+    '/api/Auth/pending-registrations/{id}/approve': {
+      post: { tags: ['Auth'], summary: 'Approve pending registration', parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }], responses: { '200': { description: 'Approved' } } }
+    },
+    '/api/Auth/pending-registrations/{id}/reject': {
+      post: { tags: ['Auth'], summary: 'Reject pending registration', parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }], responses: { '200': { description: 'Rejected' } } }
+    },
+    '/api/users/{id}': {
+      get: { tags: ['Users'], summary: 'Get user by ID', parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }], responses: { '200': { description: 'User data' } } },
+      put: { tags: ['Users'], summary: 'Update user profile', parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }], requestBody: { content: { 'application/json': { schema: { type: 'object', properties: { fullName: { type: 'string' }, name: { type: 'string' }, username: { type: 'string' }, department: { type: 'string' }, position: { type: 'string' }, employeeCode: { type: 'string' } } } } } }, responses: { '200': { description: 'Profile updated' } } }
+    }
+  }
+};
+
+app.get('/api-docs', (_req, res) => {
+  res.json(OPENAPI_SPEC);
+});
+
+app.get('/swagger', (_req, res) => {
+  res.send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>PAS API - Swagger</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css" />
+</head>
+<body>
+  <div id="swagger-ui"></div>
+  <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
+  <script>
+    SwaggerUIBundle({ url: '/api-docs', dom_id: '#swagger-ui' });
+  </script>
+</body>
+</html>`);
+});
+
 // Debug: log unmatched routes
 app.use((req, res) => {
   console.log('*** UNMATCHED ***', req.method, req.originalUrl);
-  console.log('Registered routes: POST /api/Notifications/send-email');
   res.status(404).json({ success: false, message: `No handler for ${req.method} ${req.originalUrl}` });
 });
 
 const port = process.env.PORT || 5028;
-app.listen(port, () => console.log(`Dev API server listening on http://localhost:${port}`));
+app.listen(port, () => {
+  console.log(`Dev API server listening on http://localhost:${port}`);
+  console.log(`Swagger UI: http://localhost:${port}/swagger`);
+  console.log('Auth Endpoints:');
+  console.log('  POST /api/Auth/login                - Login');
+  console.log('  POST /api/Auth/register              - Register new user');
+  console.log('  POST /api/Auth/logout                - Logout');
+  console.log('  POST /api/Auth/refresh-token         - Refresh JWT token');
+  console.log('  POST /api/Auth/change-password       - Change password');
+  console.log('  POST /api/Auth/forgot-password       - Send reset email');
+  console.log('  POST /api/Auth/reset-password        - Reset password');
+  console.log('  POST /api/Auth/resend-verification   - Resend email confirmation');
+  console.log('  GET  /api/Auth/me                    - Get current user profile');
+  console.log('  GET  /api/Auth/confirm-email         - Confirm email');
+  console.log('  POST /api/Auth/enable-2fa            - Enable 2FA');
+  console.log('  POST /api/Auth/disable-2fa           - Disable 2FA');
+  console.log('  POST /api/Auth/send-phone-otp        - Send OTP');
+  console.log('  POST /api/Auth/verify-phone-otp      - Verify OTP');
+  console.log('  POST /api/Auth/upload-profile-photo  - Upload profile photo');
+  console.log('  PUT  /api/Auth/update-profile        - Update current user profile');
+  console.log('  POST /api/Auth/register-pending      - Register pending user');
+  console.log('  GET  /api/Auth/pending-registrations - List pending registrations');
+  console.log('  GET  /api/Auth/pending-registrations/count - Pending count');
+  console.log('  POST /api/Auth/pending-registrations/:id/approve - Approve pending');
+  console.log('  POST /api/Auth/pending-registrations/:id/reject  - Reject pending');
+});

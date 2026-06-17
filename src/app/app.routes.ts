@@ -383,6 +383,13 @@ export const routes: Routes = [
         loadComponent: () => import('./features/store-inventory/categories/pages/categories.component').then(m => m.CategoriesComponent),
       },
       {
+        path: 'requests/pending',
+        loadComponent: () =>
+          import('./features/dashboard/pages/storekeeper-pending-requests/storekeeper-pending-requests.component').then(
+            (m) => m.StorekeeperPendingRequestsComponent,
+          ),
+      },
+      {
         path: 'profile',
         loadComponent: () =>
           import('./features/dashboard/pages/storekeeper-profile/storekeeper-profile.component').then(

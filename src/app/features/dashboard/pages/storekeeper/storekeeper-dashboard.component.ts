@@ -509,6 +509,7 @@ export class StorekeeperDashboardComponent implements OnInit {
       { title: 'Pending Receivings', value: stats.pendingInspections.toString(), secondary: 'Awaiting inspection', trend: stats.pendingInspections > 0 ? 'Pending' : 'No items', color: 'yellow', icon: 'bi bi-arrow-down-circle', route: '/storekeeper/receiving' },
       { title: 'Low Stock Alerts', value: stats.lowStockItemsCount.toString(), secondary: 'Items need reordering', trend: stats.lowStockItemsCount > 0 ? 'Action required' : 'Stock healthy', color: 'red', icon: 'bi bi-exclamation-triangle', route: '/storekeeper/inventory/low-stock' },
       { title: 'Issued This Week', value: stats.issuedRequisitions.toString(), secondary: 'Items issued', trend: '---', color: 'green', icon: 'bi bi-check-circle', route: '/storekeeper/reports' },
+      { title: 'Create Transfer', value: 'Transfer Stock', secondary: 'Move items between warehouses', trend: 'Start →', color: 'blue', icon: 'bi bi-arrow-left-right', route: '/storekeeper/inventory/transfer' },
     ]);
   }
 

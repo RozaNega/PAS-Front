@@ -18,6 +18,7 @@ import {
 } from '../../core/services/workflow.service';
 import { ComplianceDataService } from '../../core/services/compliance-data.service';
 import { ManagerDataService } from '../../core/services/manager-data.service';
+import { PendingRegistrationService } from '../../core/services/pending-registration.service';
 import { NotificationSidebarComponent } from '../../features/common/notifications/components/notification-sidebar/notification-sidebar.component';
 
 interface ThemeOption {
@@ -379,9 +380,12 @@ export class MainLayoutComponent implements OnInit {
     return match?.label ?? 'Dashboard';
   }
 
+  private readonly pendingRegService = inject(PendingRegistrationService);
+
   private updateMenuItems(): void {
     if (this.router.url.startsWith('/admin')) {
       this.menuItems = getMenuConfigForRole('admin');
+      this.loadAdminMenuBadges();
       return;
     }
 
@@ -619,6 +623,22 @@ export class MainLayoutComponent implements OnInit {
           return child;
         })
       };
+    });
+  }
+
+  private loadAdminMenuBadges(): void {
+    this.pendingRegService.getCount().subscribe({
+      next: (res) => {
+        const count = res.data ?? 0;
+        this.menuItems = this.menuItems.map((item) => ({
+          ...item,
+          children: item.children?.map((child: MenuItem) =>
+            child.route === '/admin/users/pending-registrations'
+              ? { ...child, badge: count > 0 ? count : undefined }
+              : child,
+          ),
+        }));
+      },
     });
   }
 

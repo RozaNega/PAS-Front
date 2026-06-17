@@ -10,7 +10,85 @@
         <p class="page-subtitle">Transfers created by storekeepers</p>
       </div>
     </div>
+    <div class="header-actions">
+      <button type="button" class="btn btn-primary" (click)="openCreateTransfer()">
+        <i class="bi bi-plus-lg"></i> Create Transfer
+      </button>
+    </div>
   </div>
+
+  <!-- Create Transfer Form -->
+  @if (showCreateForm()) {
+    <div class="create-transfer-form">
+      <div class="form-header">
+        <h2>New Stock Transfer</h2>
+        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="closeCreateForm()">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      <div class="form-body">
+        <div class="row">
+          <div class="col">
+            <label>From Warehouse</label>
+            <select [(ngModel)]="fromWarehouse" (change)="onFromWarehouseChange()" class="form-control">
+              <option value="">Select source warehouse</option>
+              <option value="wh-001">Main Warehouse</option>
+              <option value="wh-002">Branch Warehouse A</option>
+              <option value="wh-003">Overflow Storage</option>
+            </select>
+          </div>
+          <div class="col">
+            <label>To Warehouse</label>
+            <select [(ngModel)]="toWarehouse" class="form-control">
+              <option value="">Select destination warehouse</option>
+              <option value="wh-001">Main Warehouse</option>
+              <option value="wh-002">Branch Warehouse A</option>
+              <option value="wh-003">Overflow Storage</option>
+            </select>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col">
+            <label>Reason</label>
+            <input [(ngModel)]="transferReason" class="form-control" placeholder="e.g. Reallocation, Restock" />
+          </div>
+          <div class="col">
+            <label>Notes (optional)</label>
+            <input [(ngModel)]="notes" class="form-control" placeholder="Additional notes" />
+          </div>
+        </div>
+        @if (fromWarehouse() && transferItems().length > 0) {
+          <div class="items-section">
+            <h4>Items to Transfer</h4>
+            <table class="table">
+              <thead>
+                <tr><th>Item</th><th>SKU</th><th>Available</th><th>Qty to Transfer</th></tr>
+              </thead>
+              <tbody>
+                @for (item of transferItems(); track item.sku) {
+                  <tr>
+                    <td>{{ item.name }}</td>
+                    <td>{{ item.sku }}</td>
+                    <td>{{ item.available }}</td>
+                    <td><input type="number" min="0" [max]="item.available" [value]="item.toTransfer" (input)="updateTransferQuantity(item.sku, $any($event.target).value)" class="form-control" /></td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+        @if (error()) {
+          <div class="alert alert-danger">{{ error() }}</div>
+        }
+        <div class="form-actions">
+          <button type="button" class="btn btn-outline-secondary" (click)="closeCreateForm()">Cancel</button>
+          <button type="button" class="btn btn-primary" (click)="createTransferOrder()" [disabled]="submitting() || !isFormValid()">
+            {{ submitting() ? 'Submitting...' : 'Submit Transfer' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
 
   <!-- Loading Skeleton -->
   @if (loading()) {
