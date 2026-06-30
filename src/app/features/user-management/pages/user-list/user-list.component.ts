@@ -60,9 +60,11 @@ export class UserListComponent implements OnInit {
   showDetailModal = signal(false);
   showEditModal = signal(false);
   showResetConfirmModal = signal(false);
+  showAssignRoleModal = signal(false);
   selectedUser = signal<User | null>(null);
   editForm = signal<Partial<User>>({});
   resetTargetUser = signal<User | null>(null);
+  selectedRoleForAssignment = signal<string>('');
 
   notification = signal<{ type: 'success' | 'error'; message: string } | null>(null);
 
@@ -593,6 +595,49 @@ export class UserListComponent implements OnInit {
   closeResetConfirmModal(): void {
     this.showResetConfirmModal.set(false);
     this.resetTargetUser.set(null);
+  }
+
+  openAssignRoleModal(user: User): void {
+    this.selectedUser.set(user);
+    this.selectedRoleForAssignment.set(user.role || '');
+    this.showAssignRoleModal.set(true);
+  }
+
+  closeAssignRoleModal(): void {
+    this.showAssignRoleModal.set(false);
+    this.selectedUser.set(null);
+    this.selectedRoleForAssignment.set('');
+  }
+
+  onAssignRoleChange(e: Event): void {
+    this.selectedRoleForAssignment.set((e.target as HTMLSelectElement).value);
+  }
+
+  saveAssignRole(): void {
+    const user = this.selectedUser();
+    const roleName = this.selectedRoleForAssignment();
+    if (!user || !roleName) return;
+
+    const numericId = typeof user.id === 'number' ? user.id : parseInt(String(user.id), 10);
+    if (isNaN(numericId)) return;
+
+    this.usersService.assignRole(numericId, roleName).subscribe({
+      next: (response: any) => {
+        if (response.success) {
+          this.loadUsers();
+          this.notification.set({ type: 'success', message: `Role "${roleName}" assigned to ${user.name}.` });
+        } else {
+          this.notification.set({ type: 'error', message: response.message || 'Failed to assign role.' });
+        }
+        this.autoDismissNotification();
+        this.closeAssignRoleModal();
+      },
+      error: () => {
+        this.notification.set({ type: 'error', message: 'Error assigning role.' });
+        this.autoDismissNotification();
+        this.closeAssignRoleModal();
+      },
+    });
   }
 
   executeResetPassword(): void {

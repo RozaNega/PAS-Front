@@ -12,5 +12,201 @@
       "position": "Staff",
       "joinDate": "2024-01-15"
     }
+  ],
+  [
+    "rozaneg2121@gmail.com",
+    {
+      "username": "rr_1",
+      "password": "Roz@1234",
+      "fullName": "roza",
+      "role": "Employee",
+      "department": "IT",
+      "employeeCode": "EMP09",
+      "phoneNumber": "0901340567",
+      "position": "",
+      "joinDate": "2026-06-17"
+    }
+  ],
+  [
+    "rozanega15@gmail.com",
+    {
+      "username": "rr_1",
+      "password": "Roz@1234",
+      "fullName": "roza",
+      "role": "Employee",
+      "department": "IT",
+      "employeeCode": "EMP09",
+      "phoneNumber": "0901340567",
+      "position": "",
+      "joinDate": "2026-06-17"
+    }
+  ],
+  [
+    "r@gmail.com",
+    {
+      "username": "R_112",
+      "password": "Roz@1234",
+      "fullName": "roza",
+      "role": "Employee",
+      "department": "IT",
+      "employeeCode": "EMP003",
+      "phoneNumber": "0912045678",
+      "position": "",
+      "joinDate": "2026-06-17"
+    }
+  ],
+  [
+    "rrrr@gmail.com",
+    {
+      "username": "R_112",
+      "password": "Roz@1234",
+      "fullName": "roza",
+      "role": "Employee",
+      "department": "IT",
+      "employeeCode": "EMP00345",
+      "phoneNumber": "0912045678",
+      "position": "",
+      "joinDate": "2026-06-17"
+    }
+  ],
+  [
+    "admin@afrocom.com",
+    {
+      "username": "admin",
+      "password": "",
+      "fullName": "Admin User",
+      "role": "admin",
+      "department": "",
+      "employeeCode": "",
+      "phoneNumber": "+251911000100",
+      "position": "",
+      "joinDate": ""
+    }
+  ],
+  [
+    "abebe.kebede@afrocom.com",
+    {
+      "username": "abebe.k",
+      "password": "",
+      "fullName": "Abebe Kebede",
+      "role": "manager",
+      "department": "",
+      "employeeCode": "",
+      "phoneNumber": "+251911000001",
+      "position": "",
+      "joinDate": ""
+    }
+  ],
+  [
+    "sara.mohammed@afrocom.com",
+    {
+      "username": "sara.m",
+      "password": "",
+      "fullName": "Sara Mohammed",
+      "role": "manager",
+      "department": "",
+      "employeeCode": "",
+      "phoneNumber": "+251911000002",
+      "position": "",
+      "joinDate": ""
+    }
+  ],
+  [
+    "getachew.tesfaye@afrocom.com",
+    {
+      "username": "getachew.t",
+      "password": "",
+      "fullName": "Getachew Tesfaye",
+      "role": "employee",
+      "department": "",
+      "employeeCode": "",
+      "phoneNumber": "+251911000003",
+      "position": "",
+      "joinDate": ""
+    }
+  ],
+  [
+    "mekdes.alemayehu@afrocom.com",
+    {
+      "username": "mekdes.a",
+      "password": "",
+      "fullName": "Mekdes Alemayehu",
+      "role": "manager",
+      "department": "",
+      "employeeCode": "",
+      "phoneNumber": "+251911000004",
+      "position": "",
+      "joinDate": ""
+    }
+  ],
+  [
+    "storekeeper@afrocom.com",
+    {
+      "username": "storekeeper",
+      "password": "",
+      "fullName": "Store Keeper",
+      "role": "storekeeper",
+      "department": "",
+      "employeeCode": "",
+      "phoneNumber": "+251911000200",
+      "position": "",
+      "joinDate": ""
+    }
+  ],
+  [
+    "n@gmail.com",
+    {
+      "username": "n_12",
+      "password": "Nn@12345",
+      "fullName": "new",
+      "role": "Admin",
+      "department": "IT",
+      "employeeCode": "EMP90",
+      "phoneNumber": "0910923495",
+      "position": "",
+      "joinDate": "2026-06-30"
+    }
+  ],
+  [
+    "testuser99@test.com",
+    {
+      "username": "testuser99",
+      "password": "Test@12345",
+      "fullName": "Test User 99",
+      "role": "Manager",
+      "department": "",
+      "employeeCode": "",
+      "phoneNumber": "",
+      "position": "",
+      "joinDate": "2026-06-30"
+    }
+  ],
+  [
+    "hir@gmail.com",
+    {
+      "username": "h_11",
+      "password": "Hi@12345",
+      "fullName": "hirut w",
+      "role": "Storekeeper",
+      "department": "IT",
+      "employeeCode": "EMP00",
+      "phoneNumber": "0910564938",
+      "position": "",
+      "joinDate": "2026-06-30"
+    }
+  ],
+  [
+    "hh@gmail.com",
+    {
+      "username": "hh_1",
+      "password": "Hh@121212",
+      "fullName": "hhh",
+      "role": "Compliance Officer",
+      "department": "IT",
+      "employeeCode": "EMP99",
+      "phoneNumber": "0987675645",
+      "position": "",
+      "joinDate": "2026-06-30"
+    }
   ]
 ]

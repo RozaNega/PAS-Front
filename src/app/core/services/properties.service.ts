@@ -8,11 +8,17 @@ export interface PropertyDto {
   name: string;
   description?: string;
   locationId: string;
+  locationName?: string;
   propertyTypeId: string;
+  propertyTypeName?: string;
   propertyCategoryId: string;
+  propertyCategoryName?: string;
   purchaseDate: string;
   purchasePrice: number;
   currentValue: number;
+  totalValue?: number;
+  unitPrice?: number;
+  quantity?: number;
   safetyBoxId?: string;
   isActive: boolean;
 }

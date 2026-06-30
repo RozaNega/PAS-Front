@@ -14,20 +14,28 @@
     <a routerLink="/reports/disposal" routerLinkActive="active">Disposal</a>
   </nav>
 
+  @if (loading) {
+    <p class="report-status report-status--loading" role="status" aria-live="polite">Loading requisition report...</p>
+  }
+
+  @if (errorMessage) {
+    <p class="report-status report-status--fallback" role="status" aria-live="polite">{{ errorMessage }}</p>
+  }
+
   <div class="report-hub__cards">
     <article>
       <span>Total Requests</span>
-      <strong>184</strong>
-      <small>Submitted in current month</small>
+      <strong>{{ totalRequests }}</strong>
+      <small>Submitted in current period</small>
     </article>
     <article>
       <span>Approval Rate</span>
-      <strong>87%</strong>
+      <strong>{{ approvalRate }}</strong>
       <small>Approved vs submitted</small>
     </article>
     <article>
       <span>Avg. Processing Time</span>
-      <strong>2.8 days</strong>
+      <strong>{{ avgProcessingTime }}</strong>
       <small>From submit to decision</small>
     </article>
   </div>

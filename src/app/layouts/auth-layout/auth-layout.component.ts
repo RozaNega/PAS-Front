@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { AfterViewInit, ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { AuthThemeService } from '../../features/auth/services/auth-theme.service';
 
@@ -9,8 +9,12 @@ import { AuthThemeService } from '../../features/auth/services/auth-theme.servic
   templateUrl: './auth-layout.component.html',
   styleUrls: ['./auth-layout.component.scss'],
 })
-export class AuthLayoutComponent {
+export class AuthLayoutComponent implements AfterViewInit {
   protected readonly theme = inject(AuthThemeService);
+
+  ngAfterViewInit(): void {
+    this.theme.applyTheme();
+  }
 
   protected toggleDarkMode(): void {
     this.theme.toggleDarkMode();

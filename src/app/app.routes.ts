@@ -946,6 +946,13 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'notifications',
+        loadComponent: () =>
+          import('./features/common/notifications/pages/notification-list/notification-list.component').then(
+            (m) => m.NotificationListComponent,
+          ),
+      },
+      {
         path: 'audit-trail',
         loadComponent: () =>
           import('./features/compliance/pages/audit-trail-page/audit-trail-page.component').then(

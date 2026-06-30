@@ -9,7 +9,6 @@ export interface RegisterRequest {
   confirmPassword: string;
   email: string;
   fullName: string;
-  roleName: string;
   department: string;
   employeeCode?: string;
   phoneNumber?: string;

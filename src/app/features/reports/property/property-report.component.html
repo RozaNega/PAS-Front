@@ -14,20 +14,28 @@
     <a routerLink="/reports/disposal" routerLinkActive="active">Disposal</a>
   </nav>
 
+  @if (loading) {
+    <p class="report-status report-status--loading" role="status" aria-live="polite">Loading property report...</p>
+  }
+
+  @if (errorMessage) {
+    <p class="report-status report-status--fallback" role="status" aria-live="polite">{{ errorMessage }}</p>
+  }
+
   <div class="report-hub__cards">
     <article>
       <span>Total Registered Assets</span>
-      <strong>1,245</strong>
+      <strong>{{ totalAssets }}</strong>
       <small>All asset classes</small>
     </article>
     <article>
       <span>Assigned Assets</span>
-      <strong>1,109</strong>
+      <strong>{{ assignedAssets }}</strong>
       <small>Assigned to locations/users</small>
     </article>
     <article>
       <span>Pending Verification</span>
-      <strong>36</strong>
+      <strong>{{ pendingVerification }}</strong>
       <small>Awaiting review</small>
     </article>
   </div>

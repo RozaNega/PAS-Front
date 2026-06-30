@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { ReportService } from '../services/report.service';
+import { ReportsService } from '../../../core/services/reports.service';
 import { NotificationService } from '../../../core/services/notification.service';
 
 type InventoryValuationItem = {
@@ -41,11 +42,13 @@ export class InventoryReportComponent implements OnInit {
   hasLoaded = false;
   hasLiveData = false;
   loadErrorMessage = '';
+  turnoverDays: number | null = null;
 
   filterForm: FormGroup;
 
   constructor(
     private readonly reportService: ReportService,
+    private readonly coreReportsService: ReportsService,
     private readonly notificationService: NotificationService,
     private readonly fb: FormBuilder
   ) {
@@ -65,6 +68,7 @@ export class InventoryReportComponent implements OnInit {
     this.reportData = null;
     this.hasLiveData = false;
     this.loadErrorMessage = '';
+    this.turnoverDays = null;
 
     this.reportService.getInventoryValuation(this.filterForm.value).subscribe({
       next: (response: unknown) => {
@@ -72,6 +76,7 @@ export class InventoryReportComponent implements OnInit {
         if (data) {
           this.reportData = data;
           this.hasLiveData = true;
+          this.loadTurnover();
         } else {
           this.loadErrorMessage = 'Live inventory service is unavailable.';
         }
@@ -85,6 +90,21 @@ export class InventoryReportComponent implements OnInit {
         this.loadErrorMessage = 'Unable to reach the inventory report endpoint.';
         this.notificationService.error('Failed to load inventory report.');
       }
+    });
+  }
+
+  private loadTurnover(): void {
+    this.coreReportsService.getStockMovement().subscribe({
+      next: (res) => {
+        if (res.success && res.data?.summary) {
+          const s = res.data.summary;
+          const totalMovement = s.totalQuantityIn + s.totalQuantityOut;
+          const avgStock = this.reportData?.totalQuantity ?? 1;
+          if (avgStock > 0 && totalMovement > 0) {
+            this.turnoverDays = Math.round((avgStock / totalMovement) * 30);
+          }
+        }
+      },
     });
   }
 
@@ -146,7 +166,8 @@ export class InventoryReportComponent implements OnInit {
   }
 
   get averageTurnover(): string {
-    return '0 days';
+    if (this.turnoverDays === null) return '—';
+    return `${this.turnoverDays} days`;
   }
 }
 

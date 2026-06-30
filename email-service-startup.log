@@ -1,0 +1,59 @@
+Loaded 2 service requests from disk
+Email service running on http://localhost:5030
+Proxying non-email /api requests to http://127.0.0.1:5028
+Endpoints:
+  POST /api/Notifications/send-email  - Send a direct email
+  POST /api/Notifications             - Send notification email
+  GET  /api/Notifications             - List notifications
+  POST /api/Auth/forgot-password      - Generate reset token & send email
+  POST /api/Auth/login                - Local login handler
+  POST /api/Auth/register             - Register new user
+  POST /api/Auth/logout               - Logout current user
+  POST /api/Auth/refresh-token        - Refresh JWT token
+  POST /api/Auth/change-password      - Change user password
+  POST /api/Auth/reset-password       - Reset password using token
+  POST /api/Auth/resend-verification  - Resend email confirmation
+  POST /api/Auth/register-pending     - Register pending user
+  GET  /api/Auth/pending-registrations - List pending users
+  GET  /api/Auth/pending-registrations/count - Pending count
+  POST /api/Auth/pending-registrations/:id/approve - Approve pending
+  POST /api/Auth/pending-registrations/:id/reject  - Reject pending
+  GET  /api/Auth/me                   - Get current user profile
+  GET  /api/Auth/confirm-email        - Confirm email address
+  POST /api/Auth/enable-2fa           - Enable 2FA
+  POST /api/Auth/disable-2fa          - Disable 2FA
+  POST /api/Auth/send-phone-otp       - Send OTP to phone
+  POST /api/Auth/verify-phone-otp     - Verify phone OTP code
+  POST /api/Auth/upload-profile-photo - Upload profile photo
+  PUT  /api/Auth/update-profile        - Update current user profile
+SMTP connection verified successfully for k44144202@gmail.com
+Proxying to backend: GET /api/Dashboard/statistics
+Proxying to backend: GET /api/employees
+Proxying to backend: GET /api/Inspections
+Proxying to backend: GET /api/Dashboard/statistics
+Proxying to backend: GET /api/employees
+Proxying to backend: GET /api/Inspections
+Local login successful for hir@gmail.com
+Proxying to backend: GET /api/Dashboard/statistics
+Proxying to backend: GET /api/InventoryReports/valuation
+Proxying to backend: GET /api/ReceivingNotes?status=Pending&pageSize=10
+Proxying to backend: GET /api/ReceivingNotes?pageSize=5
+Proxying to backend: GET /api/ReceivingNotes?pageSize=5
+Proxying to backend: GET /api/employees
+Proxying to backend: GET /api/Inspections
+Proxying to backend: GET /api/Dashboard/statistics
+Proxying to backend: GET /api/InventoryReports/valuation
+Proxying to backend: GET /api/ReceivingNotes?status=Pending&pageSize=10
+Proxying to backend: GET /api/ReceivingNotes?pageSize=5
+Proxying to backend: GET /api/ReceivingNotes?pageSize=5
+Proxying to backend: GET /api/employees
+Proxying to backend: GET /api/Inspections
+Proxying to backend: GET /api/Dashboard/statistics
+Proxying to backend: GET /api/employees
+Proxying to backend: GET /api/Inspections
+Proxying to backend: GET /api/Dashboard/statistics
+Proxying to backend: GET /api/employees
+Proxying to backend: GET /api/Inspections
+Proxying to backend: GET /api/Dashboard/statistics
+Proxying to backend: GET /api/employees
+Proxying to backend: GET /api/Inspections
