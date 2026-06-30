@@ -14,20 +14,28 @@
     <a routerLink="/reports/disposal" routerLinkActive="active">Disposal</a>
   </nav>
 
+  @if (loading) {
+    <p class="report-status report-status--loading" role="status" aria-live="polite">Loading disposal report...</p>
+  }
+
+  @if (errorMessage) {
+    <p class="report-status report-status--fallback" role="status" aria-live="polite">{{ errorMessage }}</p>
+  }
+
   <div class="report-hub__cards">
     <article>
       <span>Disposed Assets</span>
-      <strong>92</strong>
+      <strong>{{ totalDisposals }}</strong>
       <small>Within current fiscal period</small>
     </article>
     <article>
       <span>Pending Disposal Cases</span>
-      <strong>14</strong>
+      <strong>{{ pendingDisposals }}</strong>
       <small>Awaiting final approval</small>
     </article>
     <article>
       <span>Recovered Value</span>
-      <strong>ETB 418K</strong>
+      <strong>{{ recoveredValue }}</strong>
       <small>From disposals and salvage</small>
     </article>
   </div>

@@ -338,6 +338,18 @@ export function app(): express.Express {
     await writeDataFile('users.json', data);
     res.json({ success: true, message: 'Toggled', data: data[idx], statusCode: 200 });
   });
+  // Assign role to user (admin operation)
+  server.patch('/api/users/:id/assign-role', express.json(), async (req, res) => {
+    const data = await readDataFile('users.json');
+    const idx = data.findIndex((x: any) => String(x.id) === String(req.params.id));
+    if (idx === -1) return res.status(404).json({ success: false, message: 'User not found', statusCode: 404 });
+    const { roleName } = req.body;
+    if (!roleName) return res.status(400).json({ success: false, message: 'roleName is required', statusCode: 400 });
+    data[idx].role = roleName;
+    data[idx].roles = [roleName.toLowerCase().replace(/[\s_-]+/g, '')];
+    await writeDataFile('users.json', data);
+    res.json({ success: true, message: `Role "${roleName}" assigned to user`, data: data[idx], statusCode: 200 });
+  });
 
   // ─── Employees API ────────────────────────────────────────────────────
   server.get('/api/employees', async (req, res) => {
@@ -712,23 +724,95 @@ export function app(): express.Express {
     });
   });
 
-  // Auth/login endpoint — looks up users.json
+  // Auth/login endpoint — hardcoded admin + users.json lookup + role check
   server.post('/api/Auth/login', async (req, res) => {
     const { username, password } = req.body;
     try {
+      // ── Hardcoded super admin ──
+      if (username === 'admin' && password === 'Admin@123') {
+        const mockToken = 'mock-jwt-token-' + Date.now();
+        return res.status(200).json({
+          success: true, succeeded: true, message: 'Login successful',
+          data: {
+            token: mockToken, refreshToken: 'mock-refresh-token',
+            expiresAt: new Date(Date.now() + 3600000).toISOString(),
+            user: {
+              id: 'u-001', username: 'admin', fullName: 'Admin User',
+              email: 'admin@afrocom.com', roles: ['admin'], permissions: [],
+              isActive: true,
+            },
+          },
+        });
+      }
+
       const users = await readDataFile('users.json');
       const user = users.find((u: any) => u.username === username);
       if (user && password && password.length >= 8) {
+        // ── Role check: deny login if user has no role assigned ──
+        const userRoles = user.roles || (user.role ? [user.role] : []);
+        if (!userRoles.length) {
+          return res.status(403).json({
+            success: false, succeeded: false,
+            message: 'Account pending role assignment. Contact an administrator.',
+            errors: ['Account pending role assignment. Contact an administrator.'],
+          });
+        }
+
         const mockToken = 'mock-jwt-token-' + Date.now();
         res.status(200).json({
           success: true, succeeded: true, message: 'Login successful',
-          data: { token: mockToken, refreshToken: 'mock-refresh-token', expiresAt: new Date(Date.now() + 3600000).toISOString(), user: { id: user.userId || String(user.id), username: user.username, fullName: user.fullName, email: user.email, roles: user.roles || [user.role], permissions: [], isActive: user.isActive } }
+          data: { token: mockToken, refreshToken: 'mock-refresh-token', expiresAt: new Date(Date.now() + 3600000).toISOString(), user: { id: user.userId || String(user.id), username: user.username, fullName: user.fullName, email: user.email, roles: userRoles, permissions: [], isActive: user.isActive } }
         });
       } else {
         res.status(401).json({ success: false, succeeded: false, message: 'Invalid username or password', errors: ['Invalid username or password'] });
       }
     } catch {
       res.status(500).json({ success: false, succeeded: false, message: 'Server error', errors: ['Internal error'] });
+    }
+  });
+
+  // Auth/register endpoint — saves user with empty roles (pending assignment)
+  server.post('/api/Auth/register', async (req, res) => {
+    try {
+      const { username, password, email, fullName, phoneNumber, department, employeeCode } = req.body;
+
+      if (!username || !password || !email) {
+        return res.status(400).json({ success: false, message: 'Username, password, and email are required.' });
+      }
+
+      const users = await readDataFile('users.json');
+      const exists = users.find((u: any) => u.username === username || u.email === email);
+      if (exists) {
+        return res.status(409).json({ success: false, message: 'Username or email already exists.' });
+      }
+
+      const maxId = users.reduce((max: number, u: any) => Math.max(max, Number(u.id) || 0), 0);
+      const newUser = {
+        id: maxId + 1,
+        userId: `u-${Date.now()}`,
+        username,
+        email,
+        fullName: fullName || username,
+        firstName: (fullName || username).split(' ')[0] || '',
+        lastName: (fullName || username).split(' ').slice(1).join(' ') || '',
+        role: '',
+        roles: [],
+        isActive: true,
+        phoneNumber: phoneNumber || '',
+        department: department || '',
+        employeeCode: employeeCode || '',
+        lastLogin: null,
+      };
+
+      users.push(newUser);
+      await writeDataFile('users.json', users);
+
+      res.status(201).json({
+        success: true, message: 'Account created successfully! An administrator must assign your role before you can log in.',
+        data: { id: newUser.id },
+      });
+    } catch {
+      res.status(500).json({ success: false, message: 'Server error during registration.' });
     }
   });
 

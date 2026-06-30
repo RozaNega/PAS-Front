@@ -5,6 +5,7 @@ import { dirname, resolve } from 'path';
 import { readFileSync, existsSync, writeFileSync } from 'fs';
 import http from 'http';
 import crypto from 'crypto';
+import { getDb } from './db/init.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const envPath = resolve(__dirname, '.env');
@@ -222,6 +223,86 @@ app.delete('/api/Notifications/:id', async (req, res) => {
   res.json({ success: true, message: 'Notification deleted.', statusCode: 200 });
 });
 
+// ---------- Scheduled Reports Store (file-backed) ----------
+
+const SCHEDULES_FILE = resolve(__dirname, '.scheduled-reports.json');
+
+function loadSchedules() {
+  try {
+    if (!existsSync(SCHEDULES_FILE)) return [];
+    return JSON.parse(readFileSync(SCHEDULES_FILE, 'utf8'));
+  } catch { return []; }
+}
+
+function saveSchedules(list) {
+  try {
+    writeFileSync(SCHEDULES_FILE, JSON.stringify(list, null, 2), 'utf8');
+  } catch (err) {
+    console.error('Failed to persist schedules:', err.message);
+  }
+}
+
+let schedulesStore = loadSchedules();
+let scheduleIdCounter = schedulesStore.reduce((max, s) => Math.max(max, s._idNum || 0), 0);
+
+app.post('/api/Notifications/schedules', (req, res) => {
+  const { frequency, email, startDate, filters, reportType } = req.body || {};
+  if (!frequency || !email || !startDate) {
+    return res.status(400).json({ success: false, message: 'frequency, email, and startDate are required' });
+  }
+  scheduleIdCounter++;
+  const schedule = {
+    id: `sched-${Date.now()}-${scheduleIdCounter}`,
+    _idNum: scheduleIdCounter,
+    frequency,
+    email,
+    startDate,
+    filters: filters || {},
+    reportType: reportType || 'valuation',
+    createdAt: new Date().toISOString(),
+    lastRunAt: null,
+    nextRunAt: calculateNextRun(frequency, startDate),
+    isActive: true,
+  };
+  schedulesStore.push(schedule);
+  saveSchedules(schedulesStore);
+  console.log('Report scheduled:', schedule.id, '-', frequency, email);
+  res.json({ success: true, message: 'Report scheduled successfully', data: { id: schedule.id } });
+});
+
+app.get('/api/Notifications/schedules', (req, res) => {
+  res.json({ success: true, data: schedulesStore, statusCode: 200 });
+});
+
+app.delete('/api/Notifications/schedules/:id', (req, res) => {
+  const idx = schedulesStore.findIndex(s => s.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ success: false, message: 'Schedule not found' });
+  schedulesStore.splice(idx, 1);
+  saveSchedules(schedulesStore);
+  res.json({ success: true, message: 'Schedule deleted' });
+});
+
+function calculateNextRun(frequency, startDate) {
+  const start = new Date(startDate);
+  if (isNaN(start.getTime())) return null;
+  const now = Date.now();
+  if (start.getTime() > now) return start.toISOString();
+  // If start date is in the past, calculate the next occurrence
+  const next = new Date(start);
+  while (next.getTime() <= now) {
+    switch (frequency) {
+      case 'daily': next.setDate(next.getDate() + 1); break;
+      case 'weekly': next.setDate(next.getDate() + 7); break;
+      case 'monthly': next.setMonth(next.getMonth() + 1); break;
+      case 'quarterly': next.setMonth(next.getMonth() + 3); break;
+      default: return start.toISOString();
+    }
+  }
+  return next.toISOString();
+}
+
+// ---------- Pending registrations store ----------
+
 // File-backed pending registrations store: Map<id, {username, fullName, email, roleName, department, employeeCode, phoneNumber, password, submittedAt}>
 const PENDING_FILE = resolve(__dirname, '.pending-registrations.json');
 
@@ -301,6 +382,39 @@ function saveUsersStore(map) {
 
 const usersStore = loadUsersStore();
 
+<
+// Seed usersStore from data/users.json on startup so existing users appear in the list
+(function seedUsersFromJson() {
+  try {
+    const usersJsonPath = resolve(__dirname, 'data', 'users.json');
+    if (existsSync(usersJsonPath)) {
+      const raw = readFileSync(usersJsonPath, 'utf8');
+      const users = JSON.parse(raw);
+      if (Array.isArray(users)) {
+        for (const u of users) {
+          const email = (u.email || '').toLowerCase();
+          if (email && !usersStore.has(email)) {
+            usersStore.set(email, {
+              username: u.username || '',
+              password: '',
+              fullName: u.fullName || u.firstName + ' ' + u.lastName || u.username || '',
+              role: u.role || (Array.isArray(u.roles) && u.roles.length ? u.roles[0] : ''),
+              department: u.department || '',
+              employeeCode: u.employeeCode || '',
+              phoneNumber: u.phoneNumber || '',
+              position: u.position || '',
+              joinDate: u.joinDate || '',
+            });
+          }
+        }
+        saveUsersStore(usersStore);
+      }
+    }
+  } catch (err) {
+    console.error('Failed to seed users from data/users.json:', err.message);
+  }
+})();
+
 // Seed a default admin user if store is empty
 if (usersStore.size === 0) {
   const defaultUser = {
@@ -313,6 +427,7 @@ if (usersStore.size === 0) {
   saveUsersStore(usersStore);
   console.log('Seeded default admin user (admin@africom.local / admin1234)');
 }
+
 
 // In-memory password reset token store: Map<token, {email, expiry, used}>
 const resetTokens = new Map();
@@ -624,12 +739,52 @@ app.post('/api/Auth/login', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Username and password are required' });
     }
 
+    // ── Hardcoded super admin ──
+    if (loginName === 'admin' && loginPwd === 'Admin@123') {
+      const tokenPayload = {
+        sub: 'admin@afrocom.com',
+        unique_name: 'admin',
+        email: 'admin@afrocom.com',
+        role: 'admin',
+        fullName: 'Admin User',
+        exp: Math.floor(Date.now() / 1000) + 86400,
+      };
+      const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
+      const payload = Buffer.from(JSON.stringify(tokenPayload)).toString('base64url');
+      const token = `${header}.${payload}.mock-dev-signature`;
+      return res.json({
+        success: true,
+        data: {
+          token,
+          user: {
+            id: 'u-001',
+            username: 'admin',
+            fullName: 'Admin User',
+            email: 'admin@afrocom.com',
+            employeeCode: 'EMP001',
+            department: 'IT',
+            phone: '+251-911-000000',
+            position: 'Administrator',
+            joinDate: '2024-01-01',
+            roles: ['admin'],
+            permissions: [],
+            isActive: true,
+          },
+        },
+      });
+    }
+
     // Check local user store first (match by username or email)
     let userEntry = null;
     for (const [storedEmail, storedUser] of usersStore) {
       const matchName = storedUser.username.toLowerCase() === loginName.toLowerCase();
       const matchEmail = storedEmail.toLowerCase() === loginName.toLowerCase();
       if (matchName || matchEmail) {
+        // If stored password is empty, this user was seeded from data/users.json
+        // with unknown password → proxy to real backend
+        if (!storedUser.password) {
+          return proxyToBackend(req, res);
+        }
         if (storedUser.password === loginPwd) {
           userEntry = { ...storedUser, email: storedEmail };
           break;
@@ -646,6 +801,16 @@ app.post('/api/Auth/login', async (req, res) => {
     if (!userEntry) {
       // Not found in local store — proxy to backend
       return proxyToBackend(req, res);
+    }
+
+    // ── Role check: deny login if user has no role assigned ──
+    const userRole = userEntry.role || '';
+    if (!userRole) {
+      return res.status(403).json({
+        success: false, succeeded: false,
+        message: 'Account pending role assignment. Contact an administrator.',
+        errors: ['Account pending role assignment. Contact an administrator.'],
+      });
     }
 
     console.log('Local login successful for', userEntry.email);
@@ -733,20 +898,20 @@ app.post('/api/Auth/refresh-token', async (req, res) => {
 
 app.post('/api/Auth/register', async (req, res) => {
   try {
-    const { username, fullName, email, password, roleName, department, employeeCode, phoneNumber, position } = req.body || {};
+    const { username, fullName, email, password, department, employeeCode, phoneNumber } = req.body || {};
 
-    // Store locally so login and forgot-password work
+    // Store locally with NO role (pending admin assignment)
     if (email && password) {
       const uname = username || (fullName || '').toLowerCase().replace(/\s+/g, '_') || email.split('@')[0];
       usersStore.set(email.toLowerCase(), {
         username: uname,
         password,
         fullName: fullName || uname,
-        role: roleName || 'Admin',
+        role: '',
         department: department || '',
         employeeCode: employeeCode || '',
         phoneNumber: phoneNumber || '',
-        position: position || '',
+        position: '',
         joinDate: new Date().toISOString().split('T')[0],
       });
       saveUsersStore(usersStore);
@@ -756,11 +921,14 @@ app.post('/api/Auth/register', async (req, res) => {
       saveApprovedUsers(approvedUsers);
     }
 
-    // Proxy to backend for actual registration
-    return proxyToBackend(req, res);
+    res.status(201).json({
+      success: true,
+      message: 'Account created successfully! An administrator must assign your role before you can log in.',
+      data: { id: email },
+    });
   } catch (err) {
     console.error('register intercept error:', err);
-    return proxyToBackend(req, res);
+    res.status(500).json({ success: false, message: 'Server error during registration.' });
   }
 });
 
@@ -1089,7 +1257,149 @@ app.delete('/api/ShelfLocations/:id', (req, res) => {
   res.json({ success: true, message: 'Shelf location deleted', statusCode: 200 });
 });
 
+// ---------- Properties (valuations) — SQLite backed ----------
+
+function mapRowToProperty(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    name: row.name,
+    tagNumber: row.tag_number,
+    serialNumber: row.serial_number,
+    propertyTypeId: row.property_type_id,
+    propertyTypeName: row.property_type_name || null,
+    propertyCategoryId: row.property_category_id,
+    propertyCategoryName: row.category_name || row.property_category_id,
+    unitPrice: row.unit_price,
+    totalValue: row.total_value,
+    quantity: row.quantity,
+    purchaseDate: row.purchase_date,
+    locationId: row.location_id,
+    locationName: row.location_name || row.location_id,
+    currentValue: row.current_value,
+    description: row.description,
+    purchasePrice: row.purchase_price,
+    safetyBoxId: row.safety_box_id,
+    shelfNumber: row.shelf_number,
+    isActive: !!row.is_active,
+  };
+}
+
+app.get('/api/Properties', (req, res) => {
+  try {
+    const db = getDb();
+    const { searchTerm, locationId, propertyTypeId, propertyCategoryId } = req.query;
+
+    let sql = `
+      SELECT p.*, pc.name as category_name, l.name as location_name, pt.name as property_type_name
+      FROM properties p
+      LEFT JOIN property_categories pc ON pc.id = p.property_category_id
+      LEFT JOIN locations l ON l.id = p.location_id
+      LEFT JOIN property_types pt ON pt.id = p.property_type_id
+      WHERE 1=1
+    `;
+    const params = [];
+
+    if (searchTerm) {
+      sql += ' AND (p.name LIKE ? OR p.tag_number LIKE ? OR p.serial_number LIKE ?)';
+      const term = `%${searchTerm}%`;
+      params.push(term, term, term);
+    }
+    if (locationId) {
+      sql += ' AND p.location_id = ?';
+      params.push(locationId);
+    }
+    if (propertyTypeId) {
+      sql += ' AND p.property_type_id = ?';
+      params.push(propertyTypeId);
+    }
+    if (propertyCategoryId) {
+      sql += ' AND p.property_category_id = ?';
+      params.push(propertyCategoryId);
+    }
+
+    sql += ' ORDER BY p.created_at DESC';
+
+    const rows = db.prepare(sql).all(...params);
+    const data = rows.map(mapRowToProperty);
+    res.json({ success: true, message: null, data, statusCode: 200 });
+  } catch (err) {
+    console.error('GET /api/Properties error:', err.message);
+    res.status(500).json({ success: false, message: err.message, statusCode: 500 });
+  }
+});
+
+app.get('/api/Properties/:id', (req, res) => {
+  try {
+    const db = getDb();
+    const row = db.prepare(`
+      SELECT p.*, pc.name as category_name, l.name as location_name, pt.name as property_type_name
+      FROM properties p
+      LEFT JOIN property_categories pc ON pc.id = p.property_category_id
+      LEFT JOIN locations l ON l.id = p.location_id
+      LEFT JOIN property_types pt ON pt.id = p.property_type_id
+      WHERE p.id = ?
+    `).get(req.params.id);
+
+    if (!row) {
+      return res.status(404).json({ success: false, message: 'Property not found', statusCode: 404 });
+    }
+    res.json({ success: true, message: null, data: mapRowToProperty(row), statusCode: 200 });
+  } catch (err) {
+    console.error('GET /api/Properties/:id error:', err.message);
+    res.status(500).json({ success: false, message: err.message, statusCode: 500 });
+  }
+});
+
+// ---------- Roles API ----------
+
+function getRolesWithUserCounts() {
+  const roleMap = {};
+  for (const [, storedUser] of usersStore) {
+    const r = storedUser.role || '';
+    if (r) roleMap[r] = (roleMap[r] || 0) + 1;
+  }
+  return [
+    { id: 'role-admin', name: 'Admin', roleName: 'Admin', description: 'Full system access', userCount: roleMap['admin'] || 0, permissions: ['admin_dashboard', 'view_users', 'view_employees', 'view_roles', 'view_audit_log', 'view_notifications'], isActive: true },
+    { id: 'role-manager', name: 'Manager', roleName: 'Manager', description: 'Department manager', userCount: roleMap['manager'] || 0, permissions: ['manager_dashboard', 'approve_requests', 'view_reports'], isActive: true },
+    { id: 'role-employee', name: 'Employee', roleName: 'Employee', description: 'Regular employee', userCount: roleMap['employee'] || 0, permissions: ['employee_dashboard', 'create_requests', 'view_own_requests'], isActive: true },
+    { id: 'role-storekeeper', name: 'Storekeeper', roleName: 'Storekeeper', description: 'Warehouse staff', userCount: roleMap['storekeeper'] || 0, permissions: ['storekeeper_dashboard', 'manage_inventory', 'issue_items'], isActive: true },
+    { id: 'role-compliance', name: 'Compliance Officer', roleName: 'Compliance Officer', description: 'Compliance and audit', userCount: roleMap['compliance-officer'] || 0, permissions: ['compliance_dashboard', 'view_audits', 'manage_compliance'], isActive: true },
+  ];
+}
+
+app.get('/api/Roles', (req, res) => {
+  res.json({ success: true, message: '', data: getRolesWithUserCounts(), statusCode: 200 });
+});
+
+app.get('/api/Roles/:id', (req, res) => {
+  const role = DEV_ROLES.find(r => r.id === req.params.id);
+  if (!role) return res.status(404).json({ success: false, message: 'Not found', statusCode: 404 });
+  res.json({ success: true, message: '', data: role, statusCode: 200 });
+});
+
 // ---------- Employee & User Lookup (used by dashboard to fill profile fields) ----------
+
+app.get('/api/users', (req, res) => {
+  const items = Array.from(usersStore.entries()).map(([email, u], index) => ({
+    id: index + 1,
+    userId: email,
+    username: u.username,
+    email,
+    fullName: u.fullName,
+    firstName: (u.fullName || '').split(' ')[0] || '',
+    lastName: (u.fullName || '').split(' ').slice(1).join(' ') || '',
+    role: u.role || '',
+    roles: u.role ? [u.role] : [],
+    isActive: true,
+    employeeName: u.fullName || u.username,
+    employeeCode: u.employeeCode || '',
+    roleName: u.role || '',
+    department: u.department || '',
+    phoneNumber: u.phoneNumber || '',
+  }));
+  res.json({ success: true, message: '', data: { items, pageNumber: 1, totalPages: 1, totalCount: items.length, hasPreviousPage: false, hasNextPage: false }, statusCode: 200 });
+});
 
 app.get('/api/users/:id', (req, res) => {
   const userId = req.params.id;
@@ -1117,6 +1427,29 @@ app.get('/api/users/:id', (req, res) => {
     }
   }
   res.status(404).json({ success: false, message: 'User not found', statusCode: 404 });
+});
+
+app.patch('/api/users/:id/assign-role', (req, res) => {
+  const { roleName } = req.body || {};
+  if (!roleName) return res.status(400).json({ success: false, message: 'roleName is required', statusCode: 400 });
+
+  const userId = req.params.id;
+  const entries = Array.from(usersStore.entries());
+  for (let i = 0; i < entries.length; i++) {
+    const [storedEmail, storedUser] = entries[i];
+    const indexId = String(i + 1);
+    if (storedEmail === userId || storedUser.username === userId || String(storedUser.id) === userId || indexId === userId) {
+      storedUser.role = roleName;
+      usersStore.set(storedEmail, storedUser);
+      saveUsersStore(usersStore);
+      return res.json({ success: true, message: `Role "${roleName}" assigned to user`, data: storedUser, statusCode: 200 });
+    }
+  }
+  res.status(404).json({ success: false, message: 'User not found', statusCode: 404 });
+});
+
+app.patch('/api/users/:id/toggle-status', (req, res) => {
+  res.json({ success: true, message: 'Toggled', statusCode: 200 });
 });
 
 app.put('/api/users/:id', (req, res) => {
@@ -1761,6 +2094,14 @@ app.use('/api', (req, res, next) => {
 });
 
 const port = 5030;
+
+// Initialize database (non-fatal — auth/login endpoints don't need it)
+try {
+  getDb();
+} catch (err) {
+  console.error('Database init failed (auth/login still works):', err.message);
+}
+
 app.listen(port, () => {
   console.log(`Email service running on http://localhost:${port}`);
   console.log(`Proxying non-email /api requests to http://127.0.0.1:${BACKEND_PORT}`);

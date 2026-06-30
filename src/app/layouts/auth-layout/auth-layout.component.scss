@@ -125,15 +125,23 @@
 }
 
 :host-context(body.auth-dark) {
+  .auth-backdrop::after {
+    background: rgba(0, 0, 0, 0.85);
+  }
+
+  .backdrop-video {
+    filter: blur(3px) brightness(0.2);
+  }
+
   .toolbar-btn {
-    background: rgba(30, 41, 59, 0.9);
-    border-color: rgba(51, 65, 85, 0.5);
+    background: rgba(0, 0, 0, 0.9);
+    border-color: rgba(255, 255, 255, 0.08);
     color: #e2e8f0;
   }
 
   .theme-panel {
-    background: #1e293b;
-    border-color: #334155;
+    background: #000000;
+    border-color: #1f1f1f;
   }
 
   .theme-panel h3 {
@@ -141,8 +149,8 @@
   }
 
   .swatch {
-    border-color: #1e293b;
-    box-shadow: 0 0 0 1px #475569;
+    border-color: #000000;
+    box-shadow: 0 0 0 1px #1f1f1f;
   }
 }
 

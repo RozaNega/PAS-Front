@@ -83,7 +83,7 @@ export class NotificationSidebarComponent {
     if (url.startsWith('/admin')) return '/admin/notifications';
     if (url.startsWith('/storekeeper')) return '/storekeeper/notifications';
     if (url.startsWith('/manager')) return '/manager/notifications';
-    if (url.startsWith('/compliance')) return '/compliance-officer/notifications';
+    if (url.startsWith('/compliance') || url.startsWith('/compliance-officer')) return '/compliance-officer/notifications';
     if (url.startsWith('/employee')) return '/employee/dashboard/notifications';
     return '/notifications';
   }
@@ -91,16 +91,21 @@ export class NotificationSidebarComponent {
   loadWorkflowNotifs(): void {
     const user = this.currentUserService.getCurrentUserValue();
     if (!user?.id) return;
-    const role = this.guessRole(user.roles);
+    const role = this.getRoleFromUrl();
     if (!role) return;
     const notifs = this.workflowService.getNotificationsForUser(user.id, role);
     this.workflowNotifs.set(notifs);
     this.emitBadge();
   }
 
-  private guessRole(roles: string[]): UserRole | null {
-    const valid: UserRole[] = ['Employee', 'Manager', 'Admin', 'Compliance', 'Storekeeper', 'Director'];
-    return valid.find(r => roles.includes(r)) || null;
+  private getRoleFromUrl(): UserRole | null {
+    const url = typeof window !== 'undefined' ? window.location.pathname : '';
+    if (url.startsWith('/admin')) return 'Admin';
+    if (url.startsWith('/storekeeper')) return 'Storekeeper';
+    if (url.startsWith('/manager')) return 'Manager';
+    if (url.startsWith('/compliance') || url.startsWith('/compliance-officer')) return 'Compliance';
+    if (url.startsWith('/employee')) return 'Employee';
+    return null;
   }
 
   private emitBadge(): void {
@@ -139,9 +144,15 @@ export class NotificationSidebarComponent {
   markAllAsRead(): void {
     this.notificationService.markAllAsRead().subscribe({
       next: () => {
-        this.notifications.update(list => list.map(n => ({ ...n, isRead: true })));
-        this.workflowNotifs.update(list => list.map(n => ({ ...n, isRead: true })));
-        this.workflowNotifs().forEach(n => this.workflowService.markNotificationAsRead(n.id));
+        this.workflowNotifs().forEach(n => this.workflowService.dismissNotification(n.id));
+        this.notifications.set([]);
+        this.workflowNotifs.set([]);
+        this.emitBadge();
+      },
+      error: () => {
+        this.workflowNotifs().forEach(n => this.workflowService.dismissNotification(n.id));
+        this.notifications.set([]);
+        this.workflowNotifs.set([]);
         this.emitBadge();
       },
     });

@@ -14,20 +14,28 @@
     <a routerLink="/reports/disposal" routerLinkActive="active">Disposal</a>
   </nav>
 
+  @if (loading) {
+    <p class="report-status report-status--loading" role="status" aria-live="polite">Loading stock movement report...</p>
+  }
+
+  @if (errorMessage) {
+    <p class="report-status report-status--fallback" role="status" aria-live="polite">{{ errorMessage }}</p>
+  }
+
   <div class="report-hub__cards">
     <article>
       <span>Total Incoming</span>
-      <strong>2,890</strong>
+      <strong>{{ totalIncoming }}</strong>
       <small>Units received this period</small>
     </article>
     <article>
       <span>Total Outgoing</span>
-      <strong>2,431</strong>
+      <strong>{{ totalOutgoing }}</strong>
       <small>Units issued this period</small>
     </article>
     <article>
       <span>Net Balance</span>
-      <strong>+459</strong>
+      <strong>{{ netBalance }}</strong>
       <small>Current cycle change</small>
     </article>
   </div>

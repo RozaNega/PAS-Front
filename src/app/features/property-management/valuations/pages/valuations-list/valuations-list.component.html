@@ -254,8 +254,12 @@
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary" (click)="closeScheduleModal()">Cancel</button>
-        <button class="btn btn-primary" (click)="saveSchedule()">
-          <i class="bi bi-check-lg"></i> Save Schedule
+        <button class="btn btn-primary" (click)="saveSchedule()" [disabled]="isLoading()">
+          @if (isLoading()) {
+            <i class="bi bi-arrow-repeat spinning"></i> Saving...
+          } @else {
+            <i class="bi bi-check-lg"></i> Save Schedule
+          }
         </button>
       </div>
     </div>

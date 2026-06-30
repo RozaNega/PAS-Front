@@ -45,7 +45,69 @@
             }
           </div>
         }
+
+        <!-- Unassigned Users (always last item in roles list) -->
+        <div class="role-item unassigned-role-item" [class.expanded]="expandedUser() === -1" (click)="toggleUserExpand(-1)">
+          <div class="role-indicator role-unassigned">
+            <i class="bi bi-person-exclamation"></i>
+          </div>
+          <div class="role-info">
+            <span class="role-name">Unassigned Users</span>
+            <span class="role-count">{{ unassignedUsers().length }} users</span>
+          </div>
+          @if (unassignedUsers().length) {
+            <span class="unassigned-badge">{{ unassignedUsers().length }}</span>
+          }
+          <i class="bi bi-chevron-down expand-icon"></i>
+        </div>
+        @if (expandedUser() === -1) {
+          <div class="unassigned-dropdown">
+            @if (unassignedUsers().length) {
+              @for (u of unassignedUsers(); track u.id) {
+                <div class="unassigned-item" [class.expanding]="expandedUser() === u.id">
+                  <div class="unassigned-row" (click)="toggleUserExpand(u.id)">
+                    <div class="u-avatar">{{ u.avatar }}</div>
+                    <div class="u-info">
+                      <span class="u-name">{{ u.name }}</span>
+                      <span class="u-email">{{ u.email }}</span>
+                    </div>
+                    <span class="no-role-badge">No role</span>
+                    <i class="bi bi-chevron-down expand-icon"></i>
+                  </div>
+                  @if (expandedUser() === u.id) {
+                    <div class="role-picker">
+                      <p class="picker-label">Assign a role to <strong>{{ u.name }}</strong>:</p>
+                      <div class="role-options">
+                        @for (role of roles(); track role.id) {
+                          <button
+                            type="button"
+                            class="role-option role-{{ role.color }}"
+                            [disabled]="assigningUserId() === u.id"
+                            (click)="assignRoleToUser(u, role.name)"
+                          >
+                            @if (assigningUserId() === u.id) {
+                              <span class="spinner-border spinner-border-sm"></span>
+                            } @else {
+                              <i class="bi bi-shield-check"></i>
+                            }
+                            {{ role.name }}
+                          </button>
+                        }
+                      </div>
+                    </div>
+                  }
+                </div>
+              }
+            } @else {
+              <div class="unassigned-empty">
+                <i class="bi bi-check2-all"></i>
+                <span>All users have a role assigned</span>
+              </div>
+            }
+          </div>
+        }
       </div>
+
       <button type="button" class="btn btn-secondary btn-block" (click)="openCreateModal()">
         <i class="bi bi-plus-circle"></i>
         Create New Role
@@ -81,6 +143,34 @@
             </div>
           }
         </div>
+        <!-- Users assigned to this role -->
+        <div class="users-section">
+          <div class="users-header">
+            <h4><i class="bi bi-people"></i> Users with this role</h4>
+          </div>
+          @if (usersInSelectedRole().length) {
+            <div class="users-list">
+              @for (u of usersInSelectedRole(); track u.id) {
+                <div class="user-item">
+                  <div class="user-avatar">{{ u.avatar }}</div>
+                  <div class="user-info">
+                    <span class="user-name">{{ u.name }}</span>
+                    <span class="user-email">{{ u.email }}</span>
+                  </div>
+                  <button type="button" class="btn-icon danger" title="Remove role" (click)="removeRoleFromUser(u)">
+                    <i class="bi bi-x-lg"></i>
+                  </button>
+                </div>
+              }
+            </div>
+          } @else {
+            <div class="users-empty">
+              <i class="bi bi-person-plus"></i>
+              <p>No users assigned to this role.</p>
+            </div>
+          }
+        </div>
+
         <div class="panel-footer">
           <button type="button" class="btn btn-secondary" (click)="resetPermissions()">
             <i class="bi bi-arrow-counterclockwise"></i>

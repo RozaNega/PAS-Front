@@ -85,6 +85,10 @@ export class UsersService {
     return this.http.patch<UserApiResponse>(`${this.baseUrl}/${id}/toggle-status`, {});
   }
 
+  assignRole(id: number, roleName: string): Observable<UserApiResponse> {
+    return this.http.patch<UserApiResponse>(`${this.baseUrl}/${id}/assign-role`, { roleName });
+  }
+
   /**
    * Send a password-reset email to a user.
    */

@@ -1,7 +1,8 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RolesService } from '../../../../core/services/roles.service';
+import { UsersService } from '../../../../core/services/users.service';
 
 interface RoleRow {
   id: string;
@@ -20,11 +21,28 @@ interface RoleRow {
 })
 export class RolesPermissionsComponent implements OnInit {
   private readonly rolesService = inject(RolesService);
+  private readonly usersService = inject(UsersService);
 
   selectedRole = signal<string | null>(null);
   showCreateModal = signal(false);
 
   roles = signal<RoleRow[]>([]);
+  allUsers = signal<any[]>([]);
+
+  // Users who have no role assigned
+  unassignedUsers = computed(() =>
+    this.allUsers().filter((u: any) => !u.role || u.role === '')
+  );
+
+  // Users filtered for the selected role
+  usersInSelectedRole = computed(() => {
+    const roleName = this.getSelectedRole()?.name?.toLowerCase() || '';
+    return this.allUsers().filter((u: any) => (u.role || '').toLowerCase() === roleName);
+  });
+
+  // Track which user's role picker is open
+  expandedUser = signal<number | null>(null);
+  assigningUserId = signal<number | null>(null);
 
   // Create role form
   newRoleName = signal('');
@@ -147,6 +165,11 @@ export class RolesPermissionsComponent implements OnInit {
   ];
 
   ngOnInit(): void {
+    this.loadRoles();
+    this.loadUsers();
+  }
+
+  private loadRoles(): void {
     this.rolesService.getRoles().subscribe({
       next: (res: any) => {
         if (res.success && res.data?.length) {
@@ -154,7 +177,7 @@ export class RolesPermissionsComponent implements OnInit {
           this.roles.set(
             (res.data as any[]).map((r: any, i: number) => ({
               id: r.id,
-              name: r.roleName,
+              name: r.roleName || r.name,
               userCount: r.userCount ?? 0,
               color: palette[i % palette.length],
               description: r.description || '',
@@ -166,6 +189,17 @@ export class RolesPermissionsComponent implements OnInit {
         }
       },
       error: (err: any) => console.error('Failed to load roles', err),
+    });
+  }
+
+  private loadUsers(): void {
+    this.usersService.getUsers(1, 1000).subscribe({
+      next: (res: any) => {
+        if (res.success && res.data?.items) {
+          this.allUsers.set(res.data.items);
+        }
+      },
+      error: (err: any) => console.error('Failed to load users', err),
     });
   }
 
@@ -245,18 +279,71 @@ export class RolesPermissionsComponent implements OnInit {
     });
   }
 
+  toggleUserExpand(userId: number): void {
+    this.expandedUser.set(this.expandedUser() === userId ? null : userId);
+  }
+
+  assignRoleToUser(user: any, roleName: string): void {
+    const numericId = typeof user.id === 'number' ? user.id : parseInt(String(user.id), 10);
+    if (isNaN(numericId)) return;
+
+    this.assigningUserId.set(numericId);
+    this.usersService.assignRole(numericId, roleName).subscribe({
+      next: (res: any) => {
+        this.assigningUserId.set(null);
+        if (res.success) {
+          this.showNotification('success', `Role "${roleName}" assigned to ${user.name || user.email}`);
+          this.expandedUser.set(null);
+          this.loadUsers();
+          this.loadRoles();
+        } else {
+          this.showNotification('error', res.message || 'Failed to assign role');
+        }
+      },
+      error: (err: any) => {
+        this.assigningUserId.set(null);
+        this.showNotification('error', err?.error?.message || 'Error assigning role');
+      },
+    });
+  }
+
+  removeRoleFromUser(user: any): void {
+    if (!confirm(`Remove role from ${user.name || user.email}?`)) return;
+
+    const numericId = typeof user.id === 'number' ? user.id : parseInt(String(user.id), 10);
+    if (isNaN(numericId)) return;
+
+    this.assigningUserId.set(numericId);
+    this.usersService.assignRole(numericId, '').subscribe({
+      next: (res: any) => {
+        this.assigningUserId.set(null);
+        if (res.success) {
+          this.showNotification('success', `Role removed from ${user.name || user.email}`);
+          this.loadUsers();
+          this.loadRoles();
+        } else {
+          this.showNotification('error', res.message || 'Failed to remove role');
+        }
+      },
+      error: (err: any) => {
+        this.assigningUserId.set(null);
+        this.showNotification('error', err?.error?.message || 'Error removing role');
+      },
+    });
+  }
+
   showNotification(type: 'success' | 'error', message: string): void {
     this.notification.set({ type, message });
     setTimeout(() => this.notification.set(null), 5000);
   }
 
   saveChanges(): void {
-    alert('Permissions saved successfully!');
+    this.showNotification('success', 'Permissions saved successfully!');
   }
 
   resetPermissions(): void {
     if (confirm('Reset all permissions to defaults?')) {
-      alert('Permissions reset!');
+      this.showNotification('success', 'Permissions reset!');
     }
   }
 }

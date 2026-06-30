@@ -47,11 +47,11 @@
         <p><strong>Prepared By:</strong> Mike Wilson (Compliance Officer)</p>
         <div class="report-divider"></div>
         <h4>EXECUTIVE SUMMARY</h4>
-        <p><strong>Overall Compliance Score:</strong> 92% (Excellent)</p>
-        <p><strong>Total Violations:</strong> 23 (▼ 15% from last quarter)</p>
-        <p><strong>Critical Violations:</strong> 3 (▼ 2 from last quarter)</p>
-        <p><strong>Resolved Violations:</strong> 12</p>
-        <p><strong>Recommendations:</strong> 5</p>
+        <p><strong>Overall Compliance Score:</strong> {{ complianceScore }} ({{ (stats()?.complianceScore ?? 0) >= 85 ? 'Excellent' : (stats()?.complianceScore ?? 0) >= 70 ? 'Good' : 'Needs Improvement' }})</p>
+        <p><strong>Total Violations:</strong> {{ totalViolations }} (Current period)</p>
+        <p><strong>Critical Violations:</strong> {{ criticalViolations }}</p>
+        <p><strong>Inspections Logged:</strong> {{ inspectionCount }}</p>
+        <p><strong>Audit Trail Entries:</strong> {{ auditLogs().length.toLocaleString() }}</p>
       </div>
     </div>
   </div>
@@ -71,34 +71,15 @@
           </tr>
         </thead>
         <tbody>
-          <tr>
-            <td>Critical</td>
-            <td>3</td>
-            <td>13%</td>
-            <td>▼ -2</td>
-            <td>Missing Documentation (2)</td>
-          </tr>
-          <tr>
-            <td>High</td>
-            <td>5</td>
-            <td>22%</td>
-            <td>● Same</td>
-            <td>Approval Chain (3)</td>
-          </tr>
-          <tr>
-            <td>Medium</td>
-            <td>8</td>
-            <td>35%</td>
-            <td>▼ -1</td>
-            <td>Incomplete Audit Trail (4)</td>
-          </tr>
-          <tr>
-            <td>Low</td>
-            <td>7</td>
-            <td>30%</td>
-            <td>▼ -2</td>
-            <td>Outdated Docs (3)</td>
-          </tr>
+          @for (v of violations(); track v.severity) {
+            <tr>
+              <td>{{ v.severity }}</td>
+              <td>{{ v.count }}</td>
+              <td>{{ v.percentage }}</td>
+              <td>{{ v.trend }}</td>
+              <td>{{ v.commonType }}</td>
+            </tr>
+          }
         </tbody>
       </table>
     </div>
@@ -119,34 +100,39 @@
           </tr>
         </thead>
         <tbody>
-          <tr>
-            <td>Data Security</td>
-            <td>High</td>
-            <td>Possible</td>
-            <td>High</td>
-            <td>In Progress</td>
-          </tr>
-          <tr>
-            <td>Compliance</td>
-            <td>Medium</td>
-            <td>Likely</td>
-            <td>Medium</td>
-            <td>Under Control</td>
-          </tr>
-          <tr>
-            <td>Operational</td>
-            <td>Low</td>
-            <td>Unlikely</td>
-            <td>Low</td>
-            <td>Controlled</td>
-          </tr>
-          <tr>
-            <td>Financial</td>
-            <td>Low</td>
-            <td>Rare</td>
-            <td>Medium</td>
-            <td>Controlled</td>
-          </tr>
+          @if (inspections().length > 0) {
+            @for (ins of inspections().slice(0, 6); track ins.id) {
+              <tr>
+                <td>{{ ins.inspectionType ?? ins.category ?? 'General' }}</td>
+                <td>{{ ins.severity ?? ins.status ?? 'Medium' }}</td>
+                <td>{{ ins.frequency ?? 'Periodic' }}</td>
+                <td>{{ ins.priority ?? 'Medium' }}</td>
+                <td>{{ ins.outcome ?? ins.result ?? 'Under Review' }}</td>
+              </tr>
+            }
+          } @else {
+            <tr>
+              <td>Data Security</td>
+              <td>{{ criticalViolationsCount > 3 ? 'High' : 'Medium' }}</td>
+              <td>{{ criticalViolationsCount > 0 ? 'Possible' : 'Unlikely' }}</td>
+              <td>High</td>
+              <td>In Progress</td>
+            </tr>
+            <tr>
+              <td>Compliance</td>
+              <td>{{ totalViolationsCount > 10 ? 'Medium' : 'Low' }}</td>
+              <td>{{ totalViolationsCount > 5 ? 'Likely' : 'Unlikely' }}</td>
+              <td>Medium</td>
+              <td>Under Control</td>
+            </tr>
+            <tr>
+              <td>Operational</td>
+              <td>Low</td>
+              <td>Unlikely</td>
+              <td>Low</td>
+              <td>Controlled</td>
+            </tr>
+          }
         </tbody>
       </table>
     </div>
@@ -168,30 +154,22 @@
           </tr>
         </thead>
         <tbody>
-          <tr>
-            <td>Documentation</td>
-            <td>🟡 Partial</td>
-            <td>8</td>
-            <td>Complete missing</td>
-            <td>Dec 31, 2024</td>
-            <td>John Doe</td>
-          </tr>
-          <tr>
-            <td>Approval Chain</td>
-            <td>🟢 Good</td>
-            <td>3</td>
-            <td>Enforce policy</td>
-            <td>Jan 15, 2025</td>
-            <td>Sarah Smith</td>
-          </tr>
-          <tr>
-            <td>Data Integrity</td>
-            <td>🟢 Good</td>
-            <td>1</td>
-            <td>Regular audits</td>
-            <td>Ongoing</td>
-            <td>IT Team</td>
-          </tr>
+          @if (auditLogs().length > 0) {
+            @for (log of auditLogs().slice(0, 5); track log.id) {
+              <tr>
+                <td>{{ log.entityType }}</td>
+                <td>{{ log.status === 'critical' ? '🔴' : log.status === 'warning' ? '🟡' : '🟢' }} {{ log.status === 'critical' ? 'Critical' : log.status === 'warning' ? 'Partial' : 'Good' }}</td>
+                <td>{{ log.actionType }}</td>
+                <td>{{ log.details }}</td>
+                <td>{{ log.timestamp | date:'mediumDate' }}</td>
+                <td>{{ log.user }}</td>
+              </tr>
+            }
+          } @else {
+            <tr><td>Documentation</td><td>🟡 Partial</td><td>8</td><td>Complete missing</td><td>Dec 31, 2024</td><td>John Doe</td></tr>
+            <tr><td>Approval Chain</td><td>🟢 Good</td><td>3</td><td>Enforce policy</td><td>Jan 15, 2025</td><td>Sarah Smith</td></tr>
+            <tr><td>Data Integrity</td><td>🟢 Good</td><td>1</td><td>Regular audits</td><td>Ongoing</td><td>IT Team</td></tr>
+          }
         </tbody>
       </table>
     </div>

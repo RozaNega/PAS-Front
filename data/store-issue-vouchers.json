@@ -1,0 +1,22 @@
+[
+  {
+    "id": "siv-1781959437331",
+    "sivNumber": "SIV-59437331",
+    "serviceRequestId": "sr-1781642746565",
+    "srNumber": "SR-001",
+    "issueDate": "2026-06-20",
+    "requesterName": "H_1",
+    "department": "IT Dept",
+    "status": "Issued",
+    "totalItems": 1,
+    "items": [
+      {
+        "srDetailId": "B927FAB6-B2F5-46FF-8453-104F54590D84",
+        "issuedQty": 1,
+        "id": "siv-item-1781959437332-5sx0"
+      }
+    ],
+    "createdAt": "2026-06-20T12:43:57.332Z",
+    "updatedAt": "2026-06-20T12:43:57.332Z"
+  }
+]

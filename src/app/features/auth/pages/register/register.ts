@@ -19,21 +19,12 @@ export class Register {
   private readonly authApi = inject(AuthApi);
   private readonly registrationService = inject(RegistrationService);
 
-  protected readonly roleOptions = [
-    { label: 'Admin', value: 'Admin' },
-    { label: 'Storekeeper', value: 'Storekeeper' },
-    { label: 'Employee', value: 'Employee' },
-    { label: 'Manager', value: 'Manager' },
-    { label: 'Compliance Officer', value: 'Compliance Officer' },
-  ] as const;
-
   protected readonly submitted = signal(false);
   protected readonly loading = signal(false);
   protected readonly statusMessage = signal('');
   protected readonly statusTone = signal<'neutral' | 'success' | 'error'>('neutral');
   protected readonly showPassword = signal(false);
   protected readonly showConfirmPassword = signal(false);
-  protected readonly pendingApproval = signal(false);
 
   protected readonly registerForm = this.formBuilder.nonNullable.group(
     {
@@ -51,7 +42,6 @@ export class Register {
       email: ['', [Validators.required, Validators.email, Validators.maxLength(100)]],
       department: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
       employeeCode: ['', [Validators.required, this.employeeCodeValidator.bind(this)]],
-      roleName: ['Employee', [Validators.required]],
       password: [
         '',
         [
@@ -94,7 +84,6 @@ export class Register {
       confirmPassword: raw.confirmPassword,
       email: raw.email.trim().toLowerCase(),
       fullName: raw.fullName.trim(),
-      roleName: raw.roleName,
       department: raw.department.trim(),
       employeeCode: raw.employeeCode.trim(),
       phoneNumber: raw.phoneNumber?.trim() || undefined,
@@ -108,37 +97,26 @@ export class Register {
     }
 
     this.loading.set(true);
-    const isAdmin = registerData.roleName === 'Admin';
-    const request$ = isAdmin
-      ? this.registrationService.register(registerData)
-      : this.registrationService.registerPending(registerData);
-
-    request$
+    this.registrationService
+      .register(registerData)
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
         next: (response) => {
           if (response.success) {
-            if (isAdmin) {
-              this.statusTone.set('success');
-              this.statusMessage.set(response.message || 'Account created successfully! Please login.');
-              this.registerForm.reset({
-                fullName: '',
-                username: '',
-                phoneNumber: '',
-                email: '',
-                department: '',
-                employeeCode: '',
-                roleName: 'Employee',
-                password: '',
-                confirmPassword: '',
-                acceptedTerms: true,
-              });
-              this.submitted.set(false);
-            } else {
-              this.pendingApproval.set(true);
-              this.statusTone.set('success');
-              this.statusMessage.set(response.message || 'Registration submitted for admin approval.');
-            }
+            this.statusTone.set('success');
+            this.statusMessage.set(response.message || 'Account created successfully! Please login.');
+            this.registerForm.reset({
+              fullName: '',
+              username: '',
+              phoneNumber: '',
+              email: '',
+              department: '',
+              employeeCode: '',
+              password: '',
+              confirmPassword: '',
+              acceptedTerms: true,
+            });
+            this.submitted.set(false);
           } else {
             this.statusTone.set('error');
             this.statusMessage.set(response.message || 'Registration failed. Please try again.');

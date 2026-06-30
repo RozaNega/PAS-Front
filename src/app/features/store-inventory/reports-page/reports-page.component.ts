@@ -11,8 +11,10 @@ import {
   TooltipComponent,
 } from 'echarts/components';
 import { CanvasRenderer } from 'echarts/renderers';
-import { forkJoin, of } from 'rxjs';
-import { catchError, map } from 'rxjs/operators';
+import { forkJoin, of, timer } from 'rxjs';
+import { catchError, map, timeout } from 'rxjs/operators';
+import { ApiService } from '../../../core/services/api.service';
+import { ToastService } from '../../../core/services/toast.service';
 import { InventoryService } from '../../../core/services/inventory.service';
 import {
   InventoryValuationItemDto,
@@ -113,6 +115,8 @@ export class ReportsPageComponent implements OnInit {
   private readonly reportsService = inject(ReportsService);
   private readonly inventoryService = inject(InventoryService);
   private readonly warehousesService = inject(WarehousesService);
+  private readonly apiService = inject(ApiService);
+  private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
 
   activeTab: ReportTab = 'stock';
@@ -382,6 +386,11 @@ export class ReportsPageComponent implements OnInit {
   }
 
   generateReport(): void {
+    this.valuationItems.set([]);
+    this.issuances.set([]);
+    this.receivings.set([]);
+    this.movementReport.set(null);
+    this.loadError.set('');
     this.loadAllData();
   }
 
@@ -412,6 +421,34 @@ export class ReportsPageComponent implements OnInit {
   }
 
   exportToExcel(): void {
+    const tryApiExport = (): boolean => {
+      if (this.activeTab === 'stock') {
+        this.reportsService.exportInventoryValuation({ asOfDate: this.endDate() }).subscribe({
+          next: (blob) => this.downloadBlob(blob, `stock-report.xlsx`),
+          error: () => this.csvFallback(),
+        });
+        return true;
+      }
+      if (this.activeTab === 'issuance') {
+        this.reportsService.exportStockMovement({ fromDate: this.startDate(), toDate: this.endDate() }).subscribe({
+          next: (blob) => this.downloadBlob(blob, `issuance-report.xlsx`),
+          error: () => this.csvFallback(),
+        });
+        return true;
+      }
+      if (this.activeTab === 'receiving') {
+        this.reportsService.exportStockMovement({ fromDate: this.startDate(), toDate: this.endDate() }).subscribe({
+          next: (blob) => this.downloadBlob(blob, `receiving-report.xlsx`),
+          error: () => this.csvFallback(),
+        });
+        return true;
+      }
+      return false;
+    };
+    if (!tryApiExport()) this.csvFallback();
+  }
+
+  private csvFallback(): void {
     let headers: string[] = [];
     let rows: string[][] = [];
     if (this.activeTab === 'stock') {
@@ -426,20 +463,77 @@ export class ReportsPageComponent implements OnInit {
     }
     const csv = [headers.join(','), ...rows.map((r) => r.map((v) => `"${String(v).replaceAll('"', '""')}"`).join(','))].join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    this.downloadBlob(blob, `${this.activeTab}-report.csv`);
+  }
+
+  private downloadBlob(blob: Blob, filename: string): void {
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `${this.activeTab}-report.csv`;
+    link.download = filename;
     link.click();
     URL.revokeObjectURL(link.href);
   }
 
   exportToPDF(): void {
-    window.print();
+    const tryApiExport = (): boolean => {
+      if (this.activeTab === 'stock') {
+        this.reportsService.exportInventoryValuation({ asOfDate: this.endDate() }).subscribe({
+          next: (blob) => this.downloadBlob(blob, `stock-report.pdf`),
+          error: () => window.print(),
+        });
+        return true;
+      }
+      if (this.activeTab === 'issuance') {
+        this.reportsService.exportStockMovement({ fromDate: this.startDate(), toDate: this.endDate() }).subscribe({
+          next: (blob) => this.downloadBlob(blob, `issuance-report.pdf`),
+          error: () => window.print(),
+        });
+        return true;
+      }
+      if (this.activeTab === 'receiving') {
+        this.reportsService.exportStockMovement({ fromDate: this.startDate(), toDate: this.endDate() }).subscribe({
+          next: (blob) => this.downloadBlob(blob, `receiving-report.pdf`),
+          error: () => window.print(),
+        });
+        return true;
+      }
+      return false;
+    };
+    if (!tryApiExport()) window.print();
   }
 
   emailReport(): void {
-    const subject = encodeURIComponent(`${this.activeTab.charAt(0).toUpperCase() + this.activeTab.slice(1)} Report`);
-    window.location.href = `mailto:?subject=${subject}`;
+    const to = prompt('Recipient email:');
+    if (!to || !to.includes('@')) {
+      this.toast.error('Please enter a valid email address');
+      return;
+    }
+    const tabLabel = this.activeTab.charAt(0).toUpperCase() + this.activeTab.slice(1);
+    let body = `${tabLabel} Report\n${'='.repeat(30)}\nGenerated: ${new Date().toLocaleString()}\n\n`;
+    if (this.activeTab === 'stock') {
+      body += `Total Items: ${this.totalItems()}\nTotal Value: ${this.formatValue(this.totalValue())}\nTotal Units: ${this.totalUnits()}\n\n`;
+      for (const item of this.filteredItems()) {
+        body += `${item.sku} | ${item.name} | ${item.category} | ${item.warehouse} | Qty: ${item.quantity} | ${this.formatValue(item.total)}\n`;
+      }
+    } else if (this.activeTab === 'issuance') {
+      body += `Total SIVs: ${this.totalSIVs()}\nTotal Value: ${this.formatValue(this.totalIssuedValue())}\n\n`;
+      for (const i of this.issuanceFiltered()) {
+        body += `${i.date} | ${i.sivNumber} | ${i.requester} | ${i.department} | ${i.item} | Qty: ${i.quantity} | ${this.formatValue(i.value)}\n`;
+      }
+    } else {
+      body += `Total GRNs: ${this.totalGRNs()}\nTotal Value: ${this.formatValue(this.totalReceivedValue())}\n\n`;
+      for (const r of this.receivingFiltered()) {
+        body += `${r.date} | ${r.grnNumber} | ${r.supplier} | ${r.items} items | Qty: ${r.quantity} | ${this.formatValue(r.value)} | ${r.status}\n`;
+      }
+    }
+    this.apiService.post<{ messageId: string }>('Notifications/send-email', {
+      to,
+      subject: `${tabLabel} Report - PAS`,
+      body,
+    }).subscribe({
+      next: () => this.toast.success('Report sent via email'),
+      error: () => this.toast.error('Failed to send email. Check SMTP config in .env'),
+    });
   }
 
   printReport(): void {
@@ -460,7 +554,27 @@ export class ReportsPageComponent implements OnInit {
   }
 
   saveSchedule(): void {
-    this.closeScheduleModal();
+    if (!this.scheduleEmail() || !this.scheduleDate()) {
+      this.toast.error('Please fill in email and start date');
+      return;
+    }
+    this.isLoading.set(true);
+    this.apiService.post<{ id: string }>('Notifications/schedules', {
+      frequency: this.scheduleFrequency(),
+      email: this.scheduleEmail(),
+      startDate: this.scheduleDate(),
+      reportType: this.activeTab,
+    }).subscribe({
+      next: () => {
+        this.isLoading.set(false);
+        this.toast.success('Report scheduled successfully!');
+        this.closeScheduleModal();
+      },
+      error: () => {
+        this.isLoading.set(false);
+        this.toast.error('Failed to save schedule');
+      },
+    });
   }
 
   // ── Private ──
@@ -469,34 +583,43 @@ export class ReportsPageComponent implements OnInit {
     this.reportGenerated.set(false);
     this.loadError.set('');
 
-    const is401 = (err: any) => err?.status === 401;
+    const TIMEOUT_MS = 30_000;
+    let saw401 = false;
 
     forkJoin({
       valuation: this.reportsService.getInventoryValuation({ asOfDate: this.endDate() }).pipe(
+        timeout(TIMEOUT_MS),
         map((r) => r.data ?? null),
         catchError((err) => {
-          if (is401(err)) { this.router.navigate(['/auth/login']); return of(undefined as any); }
+          if (err?.status === 401) saw401 = true;
           return of(null);
         }),
       ),
       movement: this.reportsService.getStockMovement({ fromDate: this.startDate(), toDate: this.endDate() }).pipe(
+        timeout(TIMEOUT_MS),
         map((r) => r.data ?? null),
         catchError((err) => {
-          if (is401(err)) return of(undefined as any);
+          if (err?.status === 401) saw401 = true;
           return of(null);
         }),
       ),
       warehouses: this.warehousesService.getAll().pipe(
+        timeout(TIMEOUT_MS),
         map((r) => r.data ?? []),
         catchError(() => of([] as WarehouseDto[])),
       ),
       stockItems: this.inventoryService.getStockOverview({ pageSize: 500 }).pipe(
+        timeout(TIMEOUT_MS),
         map((r) => r.data ?? []),
         catchError(() => of([] as any[])),
       ),
     }).subscribe({
       next: ({ valuation, movement, warehouses, stockItems }) => {
-        if (valuation === undefined || movement === undefined) return;
+        if (saw401) {
+          this.router.navigate(['/auth/login']);
+          this.isLoading.set(false);
+          return;
+        }
 
         if (valuation) {
           this.valuationItems.set((valuation.items ?? []).map((item: InventoryValuationItemDto) => this.toStockItem(item)));
@@ -522,8 +645,11 @@ export class ReportsPageComponent implements OnInit {
         this.reportGenerated.set(true);
         this.lastRunTime.set(new Date());
         this.isLoading.set(false);
+
         if (!valuation && !stockItems?.length) {
           this.loadError.set('Report data unavailable. Check your login and permissions.');
+        } else {
+          this.toast.success(`Report generated — ${this.filteredItems().length} items`);
         }
       },
       error: () => {

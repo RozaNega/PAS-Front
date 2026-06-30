@@ -150,7 +150,7 @@
                     <button type="button" class="icon-btn" title="View Details" (click)="viewItem(row)">
                       <i class="bi bi-eye"></i>
                     </button>
-                    <button type="button" class="icon-btn danger" title="Delete" (click)="deleteItem(row)">
+                    <button type="button" class="icon-btn" title="Delete" (click)="deleteItem(row)">
                       <i class="bi bi-trash"></i>
                     </button>
                   </div>
@@ -170,7 +170,7 @@
       <div class="modal-header">
         <h3>
           <i class="bi bi-file-text"></i>
-          Record Details
+          Full Record Details
         </h3>
         <button type="button" class="modal-close" (click)="closeDetail()">
           <i class="bi bi-x-lg"></i>
@@ -178,18 +178,22 @@
       </div>
       <div class="modal-body">
         <div class="detail-grid">
-          @for (col of tableColumns; track col.key) {
-            <div class="detail-item">
-              <span class="detail-label">{{ col.label }}</span>
-              <span class="detail-value">
-                @if (col.key === 'status') {
-                  <span class="status-badge" [ngClass]="getStatusClass('' + selectedItem[col.key])">
-                    {{ selectedItem[col.key] }}
-                  </span>
-                } @else {
+          @for (col of detailFields; track col.key) {
+            <div class="detail-item" [class.extra-field]="col.extra">
+              @if (col.extra) {
+                <span class="detail-label extra-label">+ {{ col.label }}</span>
+              } @else {
+                <span class="detail-label">{{ col.label }}</span>
+              }
+              @if (col.key.startsWith('_extra.')) {
+                <span class="detail-value">{{ selectedItem._extra?.[col.key.replace('_extra.', '')] ?? '—' }}</span>
+              } @else if (col.key === 'status') {
+                <span class="status-badge" [ngClass]="getStatusClass('' + selectedItem[col.key])">
                   {{ selectedItem[col.key] }}
-                }
-              </span>
+                </span>
+              } @else {
+                <span class="detail-value">{{ selectedItem[col.key] }}</span>
+              }
             </div>
           }
         </div>

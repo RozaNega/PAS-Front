@@ -2,6 +2,7 @@ import { Component, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PropertiesService, PropertyDto } from '../../../../../core/services/properties.service';
+import { ApiService } from '../../../../../core/services/api.service';
 
 interface ValuationAsset {
   id: string;
@@ -57,13 +58,14 @@ const TREND_MAX = 100000;
 export class ValuationsListComponent {
   readonly Math = Math;
   private readonly propertiesService = inject(PropertiesService);
+  private readonly apiService = inject(ApiService);
 
   dateRange = { start: '2024-01-01', end: '2024-12-31' };
   categoryFilter = signal('All');
   locationFilter = signal('All');
 
-  categories = ['All', 'Electronics', 'Furniture', 'Vehicles'];
-  locations = ['All', 'IT Dept', 'HR Dept', 'ServerRm', 'Parking', 'Finance', 'Admin', 'Warehouse'];
+  categories: string[] = ['All'];
+  locations: string[] = ['All'];
 
   allAssets = signal<ValuationAsset[]>([]);
 
@@ -182,6 +184,8 @@ export class ValuationsListComponent {
       next: (res) => {
         if (res.success && res.data?.length) {
           this.allAssets.set(res.data.map(d => this.mapPropertyToAsset(d)));
+          this.categories = ['All', ...new Set(res.data.map(d => d.propertyCategoryName).filter(Boolean))] as string[];
+          this.locations = ['All', ...new Set(res.data.map(d => d.locationName).filter(Boolean))] as string[];
         }
         this.isLoading.set(false);
       },
@@ -193,17 +197,19 @@ export class ValuationsListComponent {
   }
 
   private mapPropertyToAsset(dto: PropertyDto): ValuationAsset {
-    const dep = dto.purchasePrice - dto.currentValue;
-    const depRate = dto.purchasePrice > 0 ? Math.round((dep / dto.purchasePrice) * 100) : 0;
+    const cost = dto.totalValue ?? dto.purchasePrice * (dto.quantity ?? 1);
+    const book = dto.currentValue;
+    const dep = cost - book;
+    const depRate = cost > 0 ? Math.round((dep / cost) * 100) : 0;
     return {
       id: dto.id,
       name: dto.name,
-      category: dto.propertyCategoryId || '',
-      location: dto.locationId || '',
-      cost: dto.purchasePrice,
+      category: dto.propertyCategoryName ?? dto.propertyCategoryId ?? '',
+      location: dto.locationName ?? dto.locationId ?? '',
+      cost,
       depreciationRate: depRate,
-      accumulatedDepreciation: dep,
-      bookValue: dto.currentValue,
+      accumulatedDepreciation: Math.max(dep, 0),
+      bookValue: book,
     };
   }
 
@@ -281,12 +287,43 @@ export class ValuationsListComponent {
   }
 
   emailReport(): void {
+    const to = prompt('Recipient email:');
+    if (!to || !to.includes('@')) {
+      this.showNotification('Please enter a valid email address', 'error');
+      return;
+    }
+
     const totalCost = this.filteredAssets().reduce((s, a) => s + a.cost, 0);
     const totalBook = this.filteredAssets().reduce((s, a) => s + a.bookValue, 0);
-    const subject = encodeURIComponent('Valuation Report');
-    const body = encodeURIComponent(`Valuation Report Summary:\n\nTotal Assets: ${this.filteredAssets().length}\nTotal Cost: ETB ${totalCost.toLocaleString()}\nTotal Book Value: ETB ${totalBook.toLocaleString()}\nYTD Depreciation: ETB ${(totalCost - totalBook).toLocaleString()}`);
-    window.location.href = `mailto:?subject=${subject}&body=${body}`;
-    this.showNotification('Email client opened', 'info');
+    const body = [
+      'Valuation Report Summary',
+      '-----------------------',
+      `Total Assets: ${this.filteredAssets().length}`,
+      `Total Cost: ETB ${totalCost.toLocaleString()}`,
+      `Total Book Value: ETB ${totalBook.toLocaleString()}`,
+      `Acc. Depreciation: ETB ${(totalCost - totalBook).toLocaleString()}`,
+      '',
+      '--- Asset Details ---',
+      ...this.filteredAssets().map(a =>
+        `${a.name} | ${a.category} | ${a.location} | Cost: ETB ${a.cost.toLocaleString()} | Book: ETB ${a.bookValue.toLocaleString()}`
+      ),
+    ].join('\n');
+
+    this.isLoading.set(true);
+    this.apiService.post<{ messageId: string }>('Notifications/send-email', {
+      to,
+      subject: 'Valuation Report',
+      body,
+    }).subscribe({
+      next: () => {
+        this.isLoading.set(false);
+        this.showNotification('Valuation report sent successfully', 'success');
+      },
+      error: () => {
+        this.isLoading.set(false);
+        this.showNotification('Failed to send report. Check SMTP config in .env', 'error');
+      }
+    });
   }
 
   scheduleReport(): void {
@@ -298,7 +335,32 @@ export class ValuationsListComponent {
   }
 
   saveSchedule(): void {
-    this.showNotification('Report scheduled successfully!', 'success');
-    this.closeScheduleModal();
+    if (!this.scheduleEmail() || !this.scheduleDate()) {
+      this.showNotification('Please fill in email and start date', 'error');
+      return;
+    }
+
+    this.isLoading.set(true);
+    this.apiService.post<{ id: string }>('Notifications/schedules', {
+      frequency: this.scheduleFrequency(),
+      email: this.scheduleEmail(),
+      startDate: this.scheduleDate(),
+      filters: {
+        category: this.categoryFilter(),
+        location: this.locationFilter(),
+        dateRange: { ...this.dateRange },
+      },
+      reportType: 'valuation',
+    }).subscribe({
+      next: () => {
+        this.isLoading.set(false);
+        this.showNotification('Report scheduled successfully!', 'success');
+        this.closeScheduleModal();
+      },
+      error: () => {
+        this.isLoading.set(false);
+        this.showNotification('Failed to save schedule', 'error');
+      }
+    });
   }
 }

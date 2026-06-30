@@ -131,6 +131,7 @@
                 <td class="time-cell">{{ formatDate(user.created) }}</td>
                 <td>
                   <div class="action-buttons">
+                    <button type="button" class="icon-btn" title="Assign Role" (click)="openAssignRoleModal(user)"><i class="bi bi-shield-check"></i></button>
                     <button type="button" class="icon-btn" title="View" (click)="viewUserDetails(user)"><i class="bi bi-eye"></i></button>
                     <button type="button" class="icon-btn" title="Reset Password" (click)="confirmResetPassword(user)"><i class="bi bi-key"></i></button>
                     <button type="button" class="icon-btn" title="Toggle Status" (click)="toggleStatus(user)"><i class="bi bi-arrow-repeat"></i></button>
@@ -256,6 +257,38 @@
       <div class="modal-footer">
         <button type="button" class="action-btn secondary" (click)="closeResetConfirmModal()">Cancel</button>
         <button type="button" class="action-btn primary" (click)="executeResetPassword()"><i class="bi bi-send"></i> Send Instructions</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Assign Role Modal -->
+@if (showAssignRoleModal() && selectedUser(); as user) {
+  <div class="modal-overlay" (click)="closeAssignRoleModal()">
+    <div class="modal-card modal-sm" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3><i class="bi bi-shield-check"></i> Assign Role</h3>
+        <button type="button" class="modal-close" (click)="closeAssignRoleModal()"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="confirm-content">
+          <p>Assign a role to <strong>{{ user.name }}</strong> ({{ user.username }})</p>
+          <div class="form-group" style="margin-top: 1rem;">
+            <label>Role</label>
+            <select class="form-input" [value]="selectedRoleForAssignment()" (change)="onAssignRoleChange($event)">
+              <option value="">-- Select Role --</option>
+              @for (role of roles(); track role.id) {
+                <option [value]="role.name">{{ role.name }}</option>
+              }
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="action-btn secondary" (click)="closeAssignRoleModal()">Cancel</button>
+        <button type="button" class="action-btn primary" [disabled]="!selectedRoleForAssignment()" (click)="saveAssignRole()">
+          <i class="bi bi-check-lg"></i> Assign Role
+        </button>
       </div>
     </div>
   </div>
