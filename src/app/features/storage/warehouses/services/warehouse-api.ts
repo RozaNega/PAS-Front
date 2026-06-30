@@ -13,24 +13,7 @@ export interface WarehouseRecord {
   providedIn: 'root',
 })
 export class WarehouseApi {
-  private readonly warehousesSignal = signal<WarehouseRecord[]>([
-    {
-      id: 1,
-      code: 'WHS-MAIN',
-      name: 'Main Warehouse',
-      address: 'Zone A - Building 1',
-      capacity: 12000,
-      active: true,
-    },
-    {
-      id: 2,
-      code: 'WHS-COLD',
-      name: 'Cold Storage',
-      address: 'Zone B - Building 4',
-      capacity: 4800,
-      active: true,
-    },
-  ]);
+  private readonly warehousesSignal = signal<WarehouseRecord[]>([]);
 
   list(): WarehouseRecord[] {
     return this.warehousesSignal();

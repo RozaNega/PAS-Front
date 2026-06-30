@@ -1,4 +1,1 @@
-[
-  {"id":"wh-001","warehouseName":"Main Warehouse","locationCode":"WH-MAIN","address":"123 Industrial Road","city":"Addis Ababa","country":"Ethiopia","contactPerson":"Fikadu Belay","contactPhone":"+251911000017","contactEmail":"fikadu.belay@afrocom.com","isActive":true,"totalShelves":3,"occupiedShelves":2,"totalItems":3,"createdAt":"2020-01-01T00:00:00.000Z"},
-  {"id":"wh-002","warehouseName":"Branch Warehouse A","locationCode":"WH-BRA","address":"456 Bole Avenue","city":"Addis Ababa","country":"Ethiopia","contactPerson":"Hanna Tekle","contactPhone":"+251911000012","contactEmail":"hanna.tekle@afrocom.com","isActive":true,"totalShelves":1,"occupiedShelves":1,"totalItems":1,"createdAt":"2021-06-01T00:00:00.000Z"}
-]
+[]

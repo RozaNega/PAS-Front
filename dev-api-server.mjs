@@ -69,6 +69,18 @@ app.get('/api/inventory/stock', async (req, res) => {
   res.json({ success: true, message: '', data: d.inventory, statusCode: 200 });
 });
 
+app.get('/api/inventory/stock/by-shelf/:shelfId', async (req, res) => {
+  const d = await readInventoryData();
+  const filtered = (d.inventory || []).filter(e => String(e.shelfId) === String(req.params.shelfId));
+  res.json({ success: true, message: '', data: filtered, statusCode: 200 });
+});
+
+app.get('/api/inventory/stock/by-item/:itemId', async (req, res) => {
+  const d = await readInventoryData();
+  const filtered = (d.inventory || []).filter(e => String(e.itemId) === String(req.params.itemId));
+  res.json({ success: true, message: '', data: filtered, statusCode: 200 });
+});
+
 app.post('/api/InventoryStock', async (req, res) => {
   const d = await readInventoryData();
   const item = req.body || {};
@@ -241,6 +253,33 @@ app.get('/api/StockLedger', async (req, res) => {
   res.json({ success: true, message: '', data: d.ledger, statusCode: 200 });
 });
 
+app.get('/api/StockLedger/by-item/:itemId', async (req, res) => {
+  const d = await readInventoryData();
+  const filtered = (d.ledger || []).filter(e => String(e.itemId) === String(req.params.itemId));
+  res.json({ success: true, message: '', data: filtered, statusCode: 200 });
+});
+
+app.get('/api/StockLedger/by-date', async (req, res) => {
+  const d = await readInventoryData();
+  const { fromDate, toDate } = req.query;
+  let filtered = d.ledger || [];
+  if (fromDate) filtered = filtered.filter(e => new Date(e.movementDate) >= new Date(fromDate));
+  if (toDate) filtered = filtered.filter(e => new Date(e.movementDate) <= new Date(toDate));
+  res.json({ success: true, message: '', data: filtered, statusCode: 200 });
+});
+
+app.get('/api/InventoryStock/by-shelf/:shelfId', async (req, res) => {
+  const d = await readInventoryData();
+  const filtered = (d.inventory || []).filter(e => String(e.shelfId) === String(req.params.shelfId));
+  res.json({ success: true, message: '', data: filtered, statusCode: 200 });
+});
+
+app.get('/api/InventoryStock/by-item/:itemId', async (req, res) => {
+  const d = await readInventoryData();
+  const filtered = (d.inventory || []).filter(e => String(e.itemId) === String(req.params.itemId));
+  res.json({ success: true, message: '', data: filtered, statusCode: 200 });
+});
+
 // ---------- Email + Auth endpoints ----------
 
 const envPath = resolve(process.cwd(), '.env');
@@ -331,7 +370,69 @@ app.post('/api/Auth/reset-password', async (req, res) => {
 });
 
 app.post('/api/Auth/login', async (req, res) => {
-  res.json({ success: true, message: 'Mock login' });
+  const { username, userName, UserName, email, Email, password, Password } = req.body || {};
+  const loginName = username || userName || UserName || email || Email || 'dev';
+  const loginPwd = password || Password || 'dev';
+
+  if (!loginName || !loginPwd) {
+    return res.status(400).json({ success: false, message: 'Username and password are required' });
+  }
+
+  const tokenPayload = {
+    sub: loginName,
+    unique_name: loginName,
+    email: loginName.includes('@') ? loginName : `${loginName}@example.com`,
+    role: 'Admin',
+    fullName: loginName,
+    exp: Math.floor(Date.now() / 1000) + 86400,
+  };
+  const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
+  const payload = Buffer.from(JSON.stringify(tokenPayload)).toString('base64url');
+  const token = `${header}.${payload}.mock-dev-signature`;
+
+  res.json({
+    success: true,
+    data: {
+      token,
+      refreshToken: `mock-refresh-${Date.now()}`,
+      user: {
+        id: loginName,
+        username: loginName,
+        fullName: loginName,
+        email: loginName.includes('@') ? loginName : `${loginName}@example.com`,
+        roles: ['Admin'],
+        permissions: [],
+        isActive: true,
+      },
+    },
+  });
+});
+
+app.post('/api/Auth/refresh-token', async (req, res) => {
+  const { refreshToken } = req.body || {};
+  if (!refreshToken) {
+    return res.status(400).json({ success: false, message: 'Refresh token required' });
+  }
+
+  const tokenPayload = {
+    sub: 'dev-user',
+    unique_name: 'devuser',
+    email: 'dev@example.com',
+    role: 'Admin',
+    fullName: 'Dev User',
+    exp: Math.floor(Date.now() / 1000) + 86400,
+  };
+  const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
+  const payload = Buffer.from(JSON.stringify(tokenPayload)).toString('base64url');
+  const newToken = `${header}.${payload}.mock-dev-signature`;
+
+  res.json({
+    success: true,
+    data: {
+      token: newToken,
+      refreshToken: `mock-refresh-${Date.now()}`,
+    },
+  });
 });
 
 // ---------- Additional Auth Endpoints (dev mock) ----------
