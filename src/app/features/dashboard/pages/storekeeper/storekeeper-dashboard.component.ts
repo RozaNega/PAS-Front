@@ -228,6 +228,7 @@ export class StorekeeperDashboardComponent implements OnInit {
     this.loadRecentIssues();
     this.loadRecentReceivings();
     this.loadRecentGRNs();
+    this.loadDisposalData();
   }
 
   loadPendingVerifications(): void {
@@ -408,10 +409,21 @@ export class StorekeeperDashboardComponent implements OnInit {
         this.disposalSubmitting.set(false);
         if (res.success !== false) {
           this.disposalNotification.set({ message: 'Disposal created successfully. Admin has been notified.', type: 'success' });
+          this.workflowService.createNotification({
+            recipientId: '',
+            recipientRole: 'Manager',
+            type: 'info',
+            title: 'New Disposal Created',
+            message: `A disposal has been created for ${this.disposalSelectedItems().length} item(s). Reason: ${this.disposalReason().trim() || 'Not specified'}`,
+            actionRequired: true,
+            actionUrl: '/manager/inventory',
+          });
           this.disposalSelectedItems.set([]);
           this.disposalReason.set('');
           this.disposalSearchTerm.set('');
           this.loadDisposalData();
+          this.loadDashboardData();
+          this.loadDisposalStock();
           setTimeout(() => this.disposalNotification.set(null), 4000);
         } else {
           this.disposalNotification.set({ message: res.message || 'Failed to create disposal', type: 'error' });

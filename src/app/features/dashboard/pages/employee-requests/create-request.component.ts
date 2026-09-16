@@ -215,6 +215,10 @@ export class CreateRequestComponent implements OnInit, OnDestroy {
         }),
         catchError(() => of([] as ItemMasterListDto[])),
       ),
+      stock: this.inventoryService.getStockOverview({ pageSize: 200 }).pipe(
+        map((res) => res.data ?? []),
+        catchError(() => of([])),
+      ),
       shelves: this.inventoryService.getAllShelves().pipe(
         map((res) => {
           const shelves = res.data ?? [];
@@ -234,9 +238,29 @@ export class CreateRequestComponent implements OnInit, OnDestroy {
         }),
       ),
     }).subscribe({
-      next: ({ items, shelves }) => {
+      next: ({ items, stock, shelves }) => {
+        // Availability comes from live inventory, while catalog records provide metadata.
+        const stockByKey = new Map<string, { available: number; current: number; category: string }>();
+        for (const record of stock) {
+          const available = Number(record.availableQuantity ?? record.availableStock ?? 0);
+          const current = Number(record.currentQuantity ?? record.currentStock ?? available);
+          for (const key of [record.itemId, record.sku]) {
+            if (!key) continue;
+            stockByKey.set(String(key), {
+              available: (stockByKey.get(String(key))?.available ?? 0) + available,
+              current: (stockByKey.get(String(key))?.current ?? 0) + current,
+              category: String(record['categoryName'] ?? record['category'] ?? ''),
+            });
+          }
+        }
+        const mergedItems = items.map((item) => {
+          const live = stockByKey.get(String(item.id)) ?? stockByKey.get(item.sku);
+          return live
+            ? { ...item, availableStock: live.available, currentStock: live.current, categoryName: item.categoryName || live.category }
+            : item;
+        });
         // Filter out inactive items
-        this.availableItems = items.filter((item) => item.isActive !== false && item.id);
+        this.availableItems = mergedItems.filter((item) => item.isActive !== false && item.id);
         this.fallbackShelves = shelves;
         this.isLoadingItems = false;
 

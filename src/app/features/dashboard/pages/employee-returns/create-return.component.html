@@ -19,12 +19,12 @@
       "
     >
       <strong>Data Status:</strong>
-      Items: {{ items().length }} | Shelves: {{ shelves().length }}
-      @if (items().length > 0 && shelves().length > 0) {
+      Items: {{ items().length }} | Shelves: {{ shelves().length }} | Locations: {{ locations().length }} | Suppliers: {{ suppliers().length }}
+      @if (items().length > 0 && shelves().length > 0 && locations().length > 0 && suppliers().length > 0) {
         <span style="color: #10b981"> - Ready to create return requests!</span>
       }
-      @if (items().length === 0 || shelves().length === 0) {
-        <span style="color: #ef4444"> - Some data is missing. Using sample data.</span>
+      @if (items().length === 0 || shelves().length === 0 || locations().length === 0 || suppliers().length === 0) {
+        <span style="color: #ef4444"> - Some required data is unavailable. Please refresh or contact an administrator.</span>
       }
     </div>
 
@@ -107,6 +107,32 @@
             </select>
             @if (submitted() && returnForm.get('sourceShelfId')?.errors?.['required']) {
               <div class="error-message">Source shelf is required</div>
+            }
+          </div>
+
+          <div class="form-field">
+            <label for="sourceLocationId">Source Location *</label>
+            <select id="sourceLocationId" formControlName="sourceLocationId">
+              <option value="">Select location</option>
+              @for (location of locations(); track location.id) {
+                <option [value]="location.id">{{ location.name || location.id }}</option>
+              }
+            </select>
+            @if (submitted() && returnForm.get('sourceLocationId')?.errors?.['required']) {
+              <div class="error-message">Source location is required</div>
+            }
+          </div>
+
+          <div class="form-field">
+            <label for="supplierId">Supplier *</label>
+            <select id="supplierId" formControlName="supplierId">
+              <option value="">Select supplier</option>
+              @for (supplier of suppliers(); track supplier.id) {
+                <option [value]="supplier.id">{{ supplier.supplierName }}</option>
+              }
+            </select>
+            @if (submitted() && returnForm.get('supplierId')?.errors?.['required']) {
+              <div class="error-message">Supplier is required</div>
             }
           </div>
         </div>

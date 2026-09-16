@@ -665,7 +665,6 @@ export const routes: Routes = [
           import('./features/store-inventory/stock-overview/pages/stock-overview.component').then(
             (m) => m.StockOverviewComponent,
           ),
-        canActivate: [AuthGuard],
       },
       {
         path: 'inventory/low-stock',
@@ -673,7 +672,6 @@ export const routes: Routes = [
           import('./features/store-inventory/low-stock/pages/low-stock.component').then(
             (m) => m.LowStockComponent,
           ),
-        canActivate: [AuthGuard],
       },
       {
         path: 'inventory/movements',
@@ -681,7 +679,6 @@ export const routes: Routes = [
           import('./features/store-inventory/stock-movements/pages/stock-movements.component').then(
             (m) => m.StockMovementsComponent,
           ),
-        canActivate: [AuthGuard],
       },
       {
         path: 'inventory/ledger',
@@ -689,12 +686,10 @@ export const routes: Routes = [
           import('./features/store-inventory/stock-ledger/pages/stock-ledger.component').then(
             (m) => m.StockLedgerComponent,
           ),
-        canActivate: [AuthGuard],
       },
       {
         path: 'reports',
         loadComponent: () => import('./features/store-inventory/reports-page/reports-page.component').then(m => m.ReportsPageComponent),
-        canActivate: [AuthGuard],
       },
       {
         path: 'workflows/all',

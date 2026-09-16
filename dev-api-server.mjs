@@ -250,7 +250,20 @@ app.post('/api/inventory/stock/adjust', async (req, res) => {
 
 app.get('/api/StockLedger', async (req, res) => {
   const d = await readInventoryData();
-  res.json({ success: true, message: '', data: d.ledger, statusCode: 200 });
+  const items = d.ledger || [];
+  res.json({
+    success: true,
+    message: '',
+    data: {
+      items,
+      pageNumber: 1,
+      totalPages: 1,
+      totalCount: items.length,
+      hasPreviousPage: false,
+      hasNextPage: false,
+    },
+    statusCode: 200,
+  });
 });
 
 app.get('/api/StockLedger/by-item/:itemId', async (req, res) => {

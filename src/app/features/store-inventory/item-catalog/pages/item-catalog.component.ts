@@ -511,9 +511,17 @@ export class ItemCatalogComponent {
   createItem(): void {
     const draft = this.newItem();
     if (!draft || !draft.sku || !draft.name) return;
+    if (!draft.category?.trim()) {
+      this.showToast('Select a category before creating the item', 'error');
+      return;
+    }
+    if (draft.currentStock == null || Number(draft.currentStock) < 0) {
+      this.showToast('Enter a valid current stock quantity', 'error');
+      return;
+    }
     this.isLoading.set(true);
     const categoryId = draft.categoryId || this.resolveCategoryId(draft.category || '');
-    const payload: any = { sku: draft.sku, itemName: draft.name, categoryId: categoryId || undefined, unitOfMeasure: draft.uom, minStockLevel: draft.minStock ?? 0, requiresInspection: false, unitPrice: Number(draft.price) || 0, status: draft.status || 'Active' };
+    const payload: any = { sku: draft.sku, itemName: draft.name, categoryId: categoryId || undefined, categoryName: draft.category || undefined, unitOfMeasure: draft.uom, stockQuantity: draft.currentStock ?? 0, minStockLevel: draft.minStock ?? 0, requiresInspection: false, unitPrice: Number(draft.price) || 0, status: draft.status || 'Active' };
     this.itemService.createItemMaster(payload).subscribe({
       next: (res) => {
         this.isLoading.set(false);
@@ -553,7 +561,7 @@ export class ItemCatalogComponent {
     if (!id || !draft) return;
     this.isLoading.set(true);
     const categoryId = draft.categoryId || this.resolveCategoryId(draft.category || '');
-    const payload: any = { id, sku: draft.sku, itemName: draft.name, categoryId: categoryId || undefined, unitOfMeasure: draft.uom, minStockLevel: draft.minStock ?? 0, requiresInspection: false, unitPrice: Number(draft.price) || 0, status: draft.status || 'Active' };
+    const payload: any = { id, sku: draft.sku, itemName: draft.name, categoryId: categoryId || undefined, categoryName: draft.category || undefined, unitOfMeasure: draft.uom, stockQuantity: draft.currentStock ?? 0, minStockLevel: draft.minStock ?? 0, requiresInspection: false, unitPrice: Number(draft.price) || 0, status: draft.status || 'Active' };
     this.itemService.updateItemMaster(id, payload).subscribe({
       next: (res) => {
         this.isLoading.set(false);

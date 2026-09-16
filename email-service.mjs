@@ -72,11 +72,10 @@ async function sendEmail({ to, subject, body }) {
       if (info.pending && info.pending.length) console.log('PENDING:', info.pending);
       return info;
     } catch (sendErr) {
-      console.error('sendMail error:', sendErr);
-      throw sendErr;
+      console.error('sendMail error:', sendErr.message);
     }
   }
-  console.log('--- EMAIL (no SMTP) ---');
+  console.log('--- EMAIL (console fallback) ---');
   console.log('From:', from);
   console.log('To:', to);
   console.log('Subject:', subject);
@@ -382,7 +381,6 @@ function saveUsersStore(map) {
 
 const usersStore = loadUsersStore();
 
-<
 // Seed usersStore from data/users.json on startup so existing users appear in the list
 (function seedUsersFromJson() {
   try {
@@ -468,8 +466,8 @@ app.post('/api/Auth/forgot-password', async (req, res) => {
 
     const resetLink = `${baseUrl}/auth/reset-password?token=${token}&email=${encodeURIComponent(email)}`;
 
-    // Send the email asynchronously (fire-and-forget) so SMTP failures don't block the response
-    sendEmail({
+    // Send the email and wait for the result
+    const emailResult = await sendEmail({
       to: email,
       subject: 'Password Reset Request',
       body: [
@@ -480,7 +478,9 @@ app.post('/api/Auth/forgot-password', async (req, res) => {
         '',
         'If you did not request this, please ignore this email.',
       ].join('\n'),
-    }).catch((err) => console.error('Failed to send reset email:', err));
+    });
+
+    const emailIsConsole = (emailResult.messageId || '').startsWith('console-');
 
     // Also notify the backend about the forgot-password request (fire-and-forget)
     try {
@@ -498,7 +498,10 @@ app.post('/api/Auth/forgot-password', async (req, res) => {
     } catch {}
 
     console.log('Password reset token generated for', email);
-    res.json({ success: true, message: 'Reset link sent. Check your email (expires in 1 hour).', data: { token } });
+    const message = emailIsConsole
+      ? `Reset link generated. Email is logged to console (SMTP unavailable).`
+      : 'Reset link sent. Check your email (expires in 1 hour).';
+    res.json({ success: true, message, data: { token } });
   } catch (err) {
     console.error('forgot-password error:', err);
     res.status(500).json({ success: false, message: err.message });
@@ -1989,6 +1992,13 @@ app.post('/api/DisposalRecords', express.json(), (req, res) => {
     };
     disposalRecords.unshift(record);
     saveDisposalRecords(disposalRecords);
+    // Create an in-app notification for managers
+    addNotification({
+      userId: '',
+      title: 'New Disposal Created',
+      message: `A disposal has been created by ${req.body.userName || req.body.disposedByName || 'Storekeeper'} for ${items.length} item(s). Reason: ${reason || 'Not specified'}.`,
+      type: 'info',
+    });
     return res.status(201).json({ success: true, message: 'Disposal completed successfully', data: record.id, statusCode: 201 });
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message, statusCode: 500 });
@@ -2086,11 +2096,103 @@ app.use('/api', (req, res, next) => {
     req.path.startsWith('/Auth/reset-password') ||
     req.path.startsWith('/Auth/register-pending') ||
     req.path.startsWith('/Auth/pending-registrations');
-  if (!isEmailPath) {
+  const isLocalReturnPath = req.path.startsWith('/ReturnMaterialRequests');
+  if (!isEmailPath && !isLocalReturnPath) {
     console.log('Proxying to backend:', req.method, req.originalUrl);
     return proxyToBackend(req, res);
   }
   next();
+});
+
+// Keep return requests on the same local data source as ItemMasters during development.
+// Otherwise mock catalog IDs are sent to the real backend and rejected as unknown items.
+const RETURN_REQUESTS_FILE = resolve(__dirname, 'data', 'return-material-requests.json');
+
+function loadReturnRequests() {
+  try {
+    if (!existsSync(RETURN_REQUESTS_FILE)) return [];
+    const rows = JSON.parse(readFileSync(RETURN_REQUESTS_FILE, 'utf8'));
+    return Array.isArray(rows) ? rows : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveReturnRequests(rows) {
+  writeFileSync(RETURN_REQUESTS_FILE, JSON.stringify(rows, null, 2), 'utf8');
+}
+
+let returnRequests = loadReturnRequests();
+
+app.get('/api/ReturnMaterialRequests', (req, res) => {
+  const pageNumber = Math.max(1, Number(req.query.pageNumber) || 1);
+  const pageSize = Math.max(1, Number(req.query.pageSize) || 50);
+  const start = (pageNumber - 1) * pageSize;
+  const items = returnRequests.slice(start, start + pageSize).map((row) => ({
+    id: row.id,
+    returnNumber: row.returnNumber,
+    itemName: row.itemName,
+    quantity: row.quantity,
+    reason: row.reason,
+    requestDate: row.requestDate,
+    status: row.status,
+    requestedBy: row.requestedBy,
+  }));
+  res.json({
+    success: true,
+    message: '',
+    data: {
+      items,
+      pageNumber,
+      totalPages: Math.max(1, Math.ceil(returnRequests.length / pageSize)),
+      totalCount: returnRequests.length,
+      hasPreviousPage: pageNumber > 1,
+      hasNextPage: start + pageSize < returnRequests.length,
+    },
+    statusCode: 200,
+  });
+});
+
+app.post('/api/ReturnMaterialRequests', express.json(), (req, res) => {
+  try {
+    const command = req.body?.command || req.body || {};
+    const inventory = JSON.parse(readFileSync(resolve(__dirname, 'data', 'inventory.json'), 'utf8'));
+    const item = (inventory.itemMasters || []).find((row) => String(row.id) === String(command.itemId));
+    if (!item) {
+      return res.status(400).json({ success: false, message: `Item with ID ${command.itemId} not found.`, statusCode: 400 });
+    }
+    if (!command.quantity || Number(command.quantity) < 1 || !command.reason || !command.returnType) {
+      return res.status(400).json({ success: false, message: 'Item, quantity, reason, and return type are required.', statusCode: 400 });
+    }
+    const now = new Date().toISOString();
+    const record = {
+      id: `ret-${Date.now()}`,
+      returnNumber: `RET-${String(Date.now()).slice(-8)}`,
+      itemId: command.itemId,
+      itemName: item.itemName || item.name || '',
+      itemSKU: item.sku || '',
+      quantity: Number(command.quantity),
+      reason: String(command.reason).trim(),
+      returnType: command.returnType,
+      sourceLocationId: command.sourceLocationId || '',
+      sourceShelfId: command.sourceShelfId || '',
+      supplierId: command.supplierId || '',
+      batchNumber: command.batchNumber || '',
+      expiryDate: command.expiryDate || '',
+      reference: command.reference || '',
+      remarks: command.remarks || '',
+      requestDate: now,
+      requestedBy: req.headers['x-user-name'] || 'Current User',
+      status: 'Pending',
+      createdAt: now,
+      updatedAt: now,
+    };
+    returnRequests.unshift(record);
+    saveReturnRequests(returnRequests);
+    return res.status(201).json({ success: true, message: 'Return request created successfully', data: record.id, statusCode: 201 });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message, statusCode: 500 });
+  }
 });
 
 const port = 5030;
