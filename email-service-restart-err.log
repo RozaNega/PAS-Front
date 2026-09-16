@@ -1,0 +1,5 @@
+SMTP VERIFICATION FAILED: Invalid login: 534-5.7.9 Please log in with your web browser and then try again. For more
+534-5.7.9 information, go to
+534 5.7.9  https://support.google.com/mail/?p=WebLoginRequired 5b1f17b1804b1-493e0078d49sm65530395e9.0 - gsmtp
+Check that SMTP_USER and SMTP_PASS in .env are correct.
+For Gmail, use an App Password (not your regular password).

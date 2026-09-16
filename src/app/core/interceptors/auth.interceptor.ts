@@ -49,8 +49,11 @@ export class AuthInterceptor implements HttpInterceptor {
       const refreshToken = this.tokenService.getRefreshToken();
       if (!refreshToken) {
         this.isRefreshing = false;
-        this.logout();
-        return throwError(() => new Error('No refresh token available'));
+        this.refreshTokenSubject.next(null);
+        return throwError(() => {
+          const err = new HttpErrorResponse({ status: 401, statusText: 'Unauthorized', url: req.url ?? undefined });
+          return err;
+        });
       }
 
       return this.http.post<any>('/api/Auth/refresh-token', { refreshToken }).pipe(
@@ -86,6 +89,7 @@ export class AuthInterceptor implements HttpInterceptor {
       filter((token) => token !== null),
       take(1),
       switchMap((token) => next.handle(this.addToken(req, token!))),
+      catchError(() => throwError(() => new HttpErrorResponse({ status: 401, statusText: 'Unauthorized', url: req.url ?? undefined }))),
     );
   }
 

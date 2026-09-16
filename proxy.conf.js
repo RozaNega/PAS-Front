@@ -59,15 +59,8 @@ process.on('SIGTERM', () => {
 
 const PROXY_CONFIG = [
   {
-    context: ['/api/Auth/**', '/api/Notifications/**'],
-    target: 'http://127.0.0.1:5030',
-    secure: false,
-    changeOrigin: true,
-    logLevel: 'debug',
-  },
-  {
     context: ['/api/**', '/hubs/**'],
-    target: 'http://127.0.0.1:5028',
+    target: 'http://127.0.0.1:5030',
     secure: false,
     changeOrigin: true,
     logLevel: 'debug',

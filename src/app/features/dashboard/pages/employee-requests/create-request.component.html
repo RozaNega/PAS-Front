@@ -164,7 +164,7 @@
                     <tr [class.row-selected]="isItemSelected(item)">
                       <td class="item-name-cell">{{ item.itemName }}</td>
                       <td class="sku-cell">{{ item.sku }}</td>
-                      <td>{{ item.categoryName || '—' }}</td>
+                      <td>{{ item.categoryName || 'Uncategorized' }}</td>
                       <td>
                         @if (item.availableStock  > 0) {
                           <span class="stock-ok">{{

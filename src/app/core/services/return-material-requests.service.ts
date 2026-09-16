@@ -66,11 +66,13 @@ export interface CreateReturnRequestCommand {
   quantity: number;
   reason: string;
   returnType: string;
-  sourceShelfId?: string;
-  batchNumber: string;
-  expiryDate: string;
-  reference: string;
-  remarks: string;
+  sourceLocationId: string;
+  sourceShelfId: string;
+  supplierId: string;
+  batchNumber?: string;
+  expiryDate?: string;
+  reference?: string;
+  remarks?: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -98,6 +100,7 @@ export class ReturnMaterialRequestsService {
   }
 
   create(data: CreateReturnRequestCommand): Observable<ApiResponseModel<string>> {
-    return this.apiService.post<string>('ReturnMaterialRequests', data);
+    // The API binds CreateReturnRequestCommand from the `command` body property.
+    return this.apiService.post<string>('ReturnMaterialRequests', { command: data });
   }
 }

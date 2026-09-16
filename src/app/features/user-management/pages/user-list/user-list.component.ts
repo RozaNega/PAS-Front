@@ -680,7 +680,6 @@ export class UserListComponent implements OnInit {
 
     const sendNotification = (guidHint: string | null) => {
       if (!guidHint || !this.extractGuidFromId(guidHint)) {
-        notifError = 'user has no Identity GUID in the database';
         finalize();
         return;
       }

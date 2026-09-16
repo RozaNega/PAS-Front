@@ -1,14 +1,7 @@
 [
   {
-    "context": ["/api/Auth/**", "/api/Notifications/**"],
-    "target": "http://localhost:5030",
-    "secure": false,
-    "changeOrigin": true,
-    "logLevel": "debug"
-  },
-  {
     "context": ["/api/**", "/hubs/**"],
-    "target": "http://localhost:5028",
+    "target": "http://localhost:5030",
     "secure": false,
     "changeOrigin": true,
     "logLevel": "debug",

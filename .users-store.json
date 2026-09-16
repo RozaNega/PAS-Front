@@ -1,6 +1,5 @@
 [
   [
-
     "rozneg2121@gmail.com",
     {
       "username": "Ro_1",
@@ -53,9 +52,8 @@
       "fullName": "ananya",
       "role": "Compliance Officer"
     }
-  ]
-]
-=======
+  ],
+  [
     "rozaneg1621@gmail.com",
     {
       "username": "H_1",
@@ -264,10 +262,47 @@
       "position": "",
       "joinDate": "2026-06-30"
     }
+  ],
+  [
+    "m@gmail.com",
+    {
+      "username": "m_1",
+      "password": "Mm@12345",
+      "fullName": "rer",
+      "role": "Compliance Officer",
+      "department": "IT",
+      "employeeCode": "EMP90",
+      "phoneNumber": "0934058034",
+      "position": "",
+      "joinDate": "2026-07-07"
+    }
+  ],
+  [
+    "roza@gmail.com",
+    {
+      "username": "M_0",
+      "password": "Mm@12345",
+      "fullName": "MM",
+      "role": "Manager",
+      "department": "IT",
+      "employeeCode": "EMP89",
+      "phoneNumber": "0934560859",
+      "position": "",
+      "joinDate": "2026-07-09"
+    }
+  ],
+  [
+    "simri21@gmail.com",
+    {
+      "username": "S_12",
+      "password": "Si@12345",
+      "fullName": "simret",
+      "role": "Compliance Officer",
+      "department": "IT",
+      "employeeCode": "EMP002",
+      "phoneNumber": "0989785678",
+      "position": "",
+      "joinDate": "2026-09-16"
+    }
   ]
-
 ]
-
-]
-
-

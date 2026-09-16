@@ -1,0 +1,56 @@
+[
+  {
+    "id": "disp-1783579099323",
+    "disposalNumber": "DSP-79099323",
+    "items": [
+      {
+        "itemId": "B927FAB6-B2F5-46FF-8453-104F54590D84",
+        "itemName": "pc",
+        "quantity": 3,
+        "reason": "Lost or Missing",
+        "unitCost": 0,
+        "totalValue": 0
+      }
+    ],
+    "reason": "Lost or Missing",
+    "status": "Completed",
+    "disposedBy": "storekeeper",
+    "disposedByName": "Storekeeper",
+    "createdAt": "2026-07-09T06:38:19.323Z",
+    "updatedAt": "2026-07-09T06:38:19.323Z",
+    "auditHistory": [
+      {
+        "date": "2026-07-09T06:38:19.324Z",
+        "action": "Created & Completed",
+        "performedBy": "Storekeeper"
+      }
+    ]
+  },
+  {
+    "id": "disp-1783579052320",
+    "disposalNumber": "DSP-79052320",
+    "items": [
+      {
+        "itemId": "B927FAB6-B2F5-46FF-8453-104F54590D84",
+        "itemName": "pc",
+        "quantity": 1,
+        "reason": "Damaged Goods",
+        "unitCost": 0,
+        "totalValue": 0
+      }
+    ],
+    "reason": "Damaged Goods",
+    "status": "Completed",
+    "disposedBy": "storekeeper",
+    "disposedByName": "Storekeeper",
+    "createdAt": "2026-07-09T06:37:32.320Z",
+    "updatedAt": "2026-07-09T06:37:32.321Z",
+    "auditHistory": [
+      {
+        "date": "2026-07-09T06:37:32.321Z",
+        "action": "Created & Completed",
+        "performedBy": "Storekeeper"
+      }
+    ]
+  }
+]

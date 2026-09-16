@@ -64,5 +64,37 @@
     ],
     "createdAt": "2026-06-16T20:45:46.606Z",
     "updatedAt": null
+  },
+  {
+    "id": "sr-1788431114742",
+    "srNumber": "SR-006",
+    "requesterId": "",
+    "requesterName": "Employee",
+    "department": "",
+    "purpose": "rty",
+    "urgency": "Normal",
+    "notes": "rty",
+    "requestDate": "2026-09-03T10:25:14.742Z",
+    "status": "Pending",
+    "stockVerificationStatus": "NotVerified",
+    "totalItems": 1,
+    "totalQuantity": 1,
+    "issuedQuantity": 0,
+    "items": [
+      {
+        "id": "AD1E0859-D4BE-44D6-84AA-0EDA5113C34A",
+        "itemId": "AD1E0859-D4BE-44D6-84AA-0EDA5113C34A",
+        "itemName": "",
+        "sku": "",
+        "unitOfMeasure": "PCS",
+        "requestedQty": 1,
+        "issuedQty": 0,
+        "pendingQty": 1,
+        "shelfId": "shelf-A1",
+        "shelfLocation": null
+      }
+    ],
+    "createdAt": "2026-09-03T10:25:14.742Z",
+    "updatedAt": null
   }
 ]

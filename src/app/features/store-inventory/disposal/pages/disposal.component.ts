@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DisposalRecordsService, DisposalRecordDto } from '../../../../core/services/disposal-records.service';
 import { ItemMasterService, ItemMaster, ItemMasterPaginatedResponse } from '../../../../core/services/item-master.service';
+import { WorkflowService } from '../../../../core/services/workflow.service';
 
 interface SelectedItem {
   itemId: string;
@@ -34,6 +35,7 @@ interface DisplayItem {
 export class DisposalComponent implements OnInit {
   private disposalService = inject(DisposalRecordsService);
   private itemMasterService = inject(ItemMasterService);
+  private workflowService = inject(WorkflowService);
 
   showDisposalForm = signal(false);
   searchTerm = signal('');
@@ -61,6 +63,7 @@ export class DisposalComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadHistory();
+    this.loadItemMasterItems();
   }
 
   openCreateForm(): void {
@@ -206,9 +209,19 @@ export class DisposalComponent implements OnInit {
         this.submitting.set(false);
         if (res.success !== false) {
           this.showNotification('Disposal created successfully. Admin has been notified.', 'success');
+          this.workflowService.createNotification({
+            recipientId: '',
+            recipientRole: 'Manager',
+            type: 'info',
+            title: 'New Disposal Created',
+            message: `A disposal has been created for ${this.selectedItems().length} item(s). Reason: ${this.reason().trim() || 'Not specified'}`,
+            actionRequired: true,
+            actionUrl: '/manager/inventory',
+          });
           this.selectedItems.set([]);
           this.reason.set('');
           this.loadHistory();
+          this.loadItemMasterItems();
         } else {
           this.showNotification(res.message || 'Failed to create disposal', 'error');
         }

@@ -9,8 +9,9 @@ import {
 import { ItemService } from '../../../catalog/item-master/services/item.service';
 import { InventoryService } from '../../../../core/services/inventory.service';
 import { ShelfLocationDto } from '../../../../core/services/shelves.service';
+import { LocationsService, LocationDto } from '../../../../core/services/locations.service';
+import { SuppliersService, SupplierDto } from '../../../../core/services/suppliers.service';
 import { TokenService } from '../../../../core/services/token.service';
-import { ApiService } from '../../../../core/services/api.service';
 import { finalize } from 'rxjs';
 
 @Component({
@@ -26,13 +27,16 @@ export class CreateReturnComponent implements OnInit {
   private readonly returnService = inject(ReturnMaterialRequestsService);
   private readonly itemService = inject(ItemService);
   private readonly inventoryService = inject(InventoryService);
+  private readonly locationsService = inject(LocationsService);
+  private readonly suppliersService = inject(SuppliersService);
   private readonly tokenService = inject(TokenService);
-  private readonly apiService = inject(ApiService);
 
   protected readonly loading = signal(false);
   protected readonly submitted = signal(false);
   protected readonly items = signal<any[]>([]);
   protected readonly shelves = signal<ShelfLocationDto[]>([]);
+  protected readonly locations = signal<LocationDto[]>([]);
+  protected readonly suppliers = signal<SupplierDto[]>([]);
   protected readonly usingSampleShelves = signal(false);
 
   protected readonly returnForm = this.fb.group({
@@ -41,6 +45,8 @@ export class CreateReturnComponent implements OnInit {
     reason: ['', [Validators.required, Validators.minLength(5), Validators.maxLength(500)]],
     returnType: ['CustomerReturn', [Validators.required]],
     sourceShelfId: ['', [Validators.required]],
+    sourceLocationId: ['', [Validators.required]],
+    supplierId: ['', [Validators.required]],
     batchNumber: ['', [Validators.maxLength(100)]],
     expiryDate: [''],
     reference: ['', [Validators.maxLength(100)]],
@@ -48,8 +54,12 @@ export class CreateReturnComponent implements OnInit {
   });
 
   ngOnInit(): void {
-    this.initializeSampleData();
     this.fetchDataFromAPI();
+  }
+
+  private isGuid(value: unknown): value is string {
+    return typeof value === 'string' &&
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
   }
 
   private generateGuid(): string {
@@ -158,7 +168,10 @@ export class CreateReturnComponent implements OnInit {
     this.itemService.getItems({ pageSize: 100 }).subscribe({
       next: (res) => {
         if (res.success && res.data && res.data.items && res.data.items.length > 0) {
-          this.items.set(res.data.items);
+          const validItems = res.data.items
+            .filter((item: any) => this.isGuid(item.id))
+            .map((item: any) => ({ ...item, name: item.name ?? item.itemName }));
+          this.items.set(validItems);
           console.log('✅ Loaded items from API:', res.data.items.length);
           // Pre-populate form with first item if available
           setTimeout(() => {
@@ -187,7 +200,6 @@ export class CreateReturnComponent implements OnInit {
       next: (res) => {
         if (res.success && res.data && res.data.length > 0) {
           this.shelves.set(res.data);
-          this.usingSampleShelves.set(false);
           console.log('✅ Loaded shelves from API:', res.data.length);
           // Pre-populate form with first shelf if available
           setTimeout(() => {
@@ -215,8 +227,44 @@ export class CreateReturnComponent implements OnInit {
         }, 100);
       },
     });
+
+    this.locationsService.getAll().subscribe({
+      next: (res) => {
+        if (res.success && res.data?.length) {
+          this.locations.set(res.data);
+          this.returnForm.patchValue({ sourceLocationId: res.data[0].id });
+        }
+      },
+      error: (err) => console.error('Unable to load return locations:', err),
+    });
+
+    this.suppliersService.getAll().subscribe({
+      next: (res) => {
+        const rawData = res.data as unknown as SupplierDto[] | { items?: SupplierDto[] } | undefined;
+        const supplierRows = Array.isArray(rawData) ? rawData : rawData?.items ?? [];
+        if (res.success && supplierRows.length) {
+          const activeSuppliers = supplierRows
+            .map((supplier) => ({
+              ...supplier,
+              supplierName: supplier.supplierName || (supplier as SupplierDto & { name?: string }).name || supplier.id,
+            }))
+            .filter((supplier) => supplier.isActive !== false);
+          this.suppliers.set(activeSuppliers);
+          this.returnForm.patchValue({ supplierId: activeSuppliers[0]?.id });
+        }
+      },
+      error: (err) => console.error('Unable to load return suppliers:', err),
+    });
   }
 
+  private useSampleShelves(): void {
+    this.usingSampleShelves.set(true);
+    this.returnForm.get('sourceShelfId')?.clearValidators();
+    this.returnForm.get('sourceShelfId')?.updateValueAndValidity();
+    if (this.shelves().length > 0) {
+      this.returnForm.patchValue({ sourceShelfId: this.shelves()[0].id });
+    }
+  }
   protected submit(): void {
     this.submitted.set(true);
 
@@ -237,26 +285,22 @@ export class CreateReturnComponent implements OnInit {
     this.loading.set(true);
     const formValue = this.returnForm.getRawValue();
 
-    // Map frontend return types to backend expected values
-    const returnTypeMapping: { [key: string]: string } = {
-      CustomerReturn: 'TO_SUPPLIER',
-      StoreReturn: 'TO_WAREHOUSE',
-      DamagedReturn: 'DAMAGED',
-      DefectiveReturn: 'QUALITY_ISSUE',
-      WarrantyReturn: 'EXCESS',
+    const optionalFields = {
+      ...(formValue.batchNumber?.trim() ? { batchNumber: formValue.batchNumber.trim() } : {}),
+      ...(formValue.expiryDate ? { expiryDate: formValue.expiryDate } : {}),
+      ...(formValue.reference?.trim() ? { reference: formValue.reference.trim() } : {}),
+      ...(formValue.remarks?.trim() ? { remarks: formValue.remarks.trim() } : {}),
     };
 
-    // Prepare payload according to API structure
     const payload: CreateReturnRequestCommand = {
       itemId: formValue.itemId!,
       quantity: formValue.quantity!,
-      reason: formValue.reason!,
-      returnType: returnTypeMapping[formValue.returnType!] || formValue.returnType!,
-      ...(this.usingSampleShelves() ? {} : { sourceShelfId: formValue.sourceShelfId! }),
-      batchNumber: formValue.batchNumber || '',
-      expiryDate: formValue.expiryDate || '',
-      reference: formValue.reference || '',
-      remarks: formValue.remarks || '',
+      reason: formValue.reason!.trim(),
+      returnType: formValue.returnType!,
+      sourceLocationId: formValue.sourceLocationId!,
+      sourceShelfId: formValue.sourceShelfId!,
+      supplierId: formValue.supplierId!,
+      ...optionalFields,
     };
 
     console.log('🚀 Submitting return material request:', JSON.stringify(payload, null, 2));
@@ -298,6 +342,11 @@ export class CreateReturnComponent implements OnInit {
 
             if (error.error?.message) {
               errorMessage += '\n\nServer message: ' + error.error.message;
+            } else if (error.error?.errors) {
+              const details = typeof error.error.errors === 'string'
+                ? error.error.errors
+                : Object.values(error.error.errors).flat().join('; ');
+              if (details) errorMessage += '\n\nServer validation: ' + details;
             }
           } else if (error.status === 401) {
             errorMessage = 'You are not authorized to create return requests. Please login again.';

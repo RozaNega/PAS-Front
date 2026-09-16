@@ -268,6 +268,15 @@ export class InventoryService {
   }): Observable<ApiResponse<StockMovementDto[]>> {
     return this.apiService.get<unknown>('StockLedger', params).pipe(
       map((raw) => normalizePasListResponse<StockMovementDto>(raw)),
+      catchError(() => {
+        console.warn('StockLedger API unavailable');
+        return of({
+          success: false,
+          message: 'StockLedger API unavailable',
+          data: [],
+          statusCode: 0,
+        } as ApiResponse<StockMovementDto[]>);
+      }),
     );
   }
 
