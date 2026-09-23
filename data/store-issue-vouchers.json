@@ -1,5 +1,192 @@
 [
   {
+    "id": "siv-1790086836965",
+    "sivNumber": "SIV-86836965",
+    "serviceRequestId": "sr-1790085701846",
+    "srNumber": "SR-5",
+    "issueDate": "2026-09-22",
+    "requesterName": "kid",
+    "department": "IT Department",
+    "status": "Issued",
+    "totalItems": 1,
+    "items": [
+      {
+        "srDetailId": "itm-1788430485320",
+        "issuedQty": 1,
+        "id": "siv-item-1790086836965-shp9"
+      }
+    ],
+    "createdAt": "2026-09-22T14:20:36.965Z",
+    "updatedAt": "2026-09-22T14:20:36.965Z"
+  },
+  {
+    "id": "siv-1790086260864",
+    "sivNumber": "SIV-86260864",
+    "serviceRequestId": "sr-1790086159043",
+    "srNumber": "SR-55",
+    "issueDate": "2026-09-22",
+    "requesterName": "kid",
+    "department": "IT Department",
+    "status": "Issued",
+    "totalItems": 1,
+    "items": [
+      {
+        "srDetailId": "AD1E0859-D4BE-44D6-84AA-0EDA5113C34A",
+        "issuedQty": 1,
+        "id": "siv-item-1790086260864-kh65"
+      }
+    ],
+    "createdAt": "2026-09-22T14:11:00.864Z",
+    "updatedAt": "2026-09-22T14:11:00.864Z"
+  },
+  {
+    "id": "siv-1790082428012",
+    "sivNumber": "SIV-82428012",
+    "srNumber": "",
+    "issueDate": "2026-09-22",
+    "requesterName": "simret",
+    "department": "IT Department",
+    "status": "Issued",
+    "totalItems": 1,
+    "items": [
+      {
+        "itemId": "itm-1788430485320",
+        "issuedQty": 1,
+        "srDetailId": "itm-1788430485320",
+        "id": "siv-item-1790082428012-sy7w"
+      }
+    ],
+    "notes": "",
+    "createdAt": "2026-09-22T13:07:08.012Z",
+    "updatedAt": "2026-09-22T13:07:08.012Z"
+  },
+  {
+    "id": "siv-1790082367019",
+    "sivNumber": "SIV-82367019",
+    "serviceRequestId": "sr-1790082204951",
+    "srNumber": "SR-3",
+    "issueDate": "2026-09-22",
+    "requesterName": "simret",
+    "department": "IT Department",
+    "status": "Issued",
+    "totalItems": 1,
+    "items": [
+      {
+        "srDetailId": "itm-1788430485320",
+        "issuedQty": 1,
+        "id": "siv-item-1790082367020-s3uu"
+      }
+    ],
+    "createdAt": "2026-09-22T13:06:07.020Z",
+    "updatedAt": "2026-09-22T13:06:07.020Z"
+  },
+  {
+    "id": "siv-1789763108709",
+    "sivNumber": "SIV-63108710",
+    "serviceRequestId": "sr-1789763000211",
+    "srNumber": "SR-2",
+    "issueDate": "2026-09-18",
+    "requesterName": "hirut",
+    "department": "IT Department",
+    "status": "Issued",
+    "totalItems": 1,
+    "items": [
+      {
+        "srDetailId": "itm-1788430485320",
+        "issuedQty": 3,
+        "id": "siv-item-1789763108710-9p04"
+      }
+    ],
+    "createdAt": "2026-09-18T20:25:08.710Z",
+    "updatedAt": "2026-09-18T20:25:08.710Z"
+  },
+  {
+    "id": "siv-1789762367476",
+    "sivNumber": "SIV-62367476",
+    "serviceRequestId": "sr-1789762250784",
+    "srNumber": "SR-1",
+    "issueDate": "2026-09-18",
+    "requesterName": "Employee",
+    "department": "",
+    "status": "Issued",
+    "totalItems": 1,
+    "items": [
+      {
+        "srDetailId": "itm-1788430485320",
+        "issuedQty": 10,
+        "id": "siv-item-1789762367476-96x0"
+      }
+    ],
+    "createdAt": "2026-09-18T20:12:47.476Z",
+    "updatedAt": "2026-09-18T20:12:47.476Z"
+  },
+  {
+    "id": "siv-1789761778533",
+    "sivNumber": "SIV-61778534",
+    "serviceRequestId": "sr-1789733612883",
+    "srNumber": "SR-994",
+    "issueDate": "2026-09-18",
+    "requesterName": "Employee",
+    "department": "",
+    "status": "Issued",
+    "totalItems": 2,
+    "items": [
+      {
+        "srDetailId": "AD1E0859-D4BE-44D6-84AA-0EDA5113C34A",
+        "issuedQty": 1,
+        "id": "siv-item-1789761778538-7lv4"
+      },
+      {
+        "srDetailId": "itm-1788430485320",
+        "issuedQty": 1,
+        "id": "siv-item-1789761778538-25jz"
+      }
+    ],
+    "createdAt": "2026-09-18T20:02:58.538Z",
+    "updatedAt": "2026-09-18T20:02:58.538Z"
+  },
+  {
+    "id": "siv-1789654569869",
+    "sivNumber": "SIV-54569869",
+    "srNumber": "",
+    "issueDate": "2026-09-17",
+    "requesterName": "Test User",
+    "department": "IT",
+    "status": "Issued",
+    "totalItems": 1,
+    "items": [
+      {
+        "itemId": "AD1E0859-D4BE-44D6-84AA-0EDA5113C34A",
+        "issuedQty": 2,
+        "srDetailId": "AD1E0859-D4BE-44D6-84AA-0EDA5113C34A",
+        "id": "siv-item-1789654569869-iurm"
+      }
+    ],
+    "notes": "",
+    "createdAt": "2026-09-17T14:16:09.869Z",
+    "updatedAt": "2026-09-17T14:16:09.869Z"
+  },
+  {
+    "id": "siv-1789654545977",
+    "sivNumber": "SIV-54545977",
+    "serviceRequestId": "sr-1781642746606",
+    "srNumber": "SR-002",
+    "issueDate": "2026-09-17",
+    "requesterName": "Test User",
+    "department": "IT",
+    "status": "Issued",
+    "totalItems": 1,
+    "items": [
+      {
+        "srDetailId": "AD1E0859-D4BE-44D6-84AA-0EDA5113C34A",
+        "issuedQty": 2,
+        "id": "siv-item-1789654545978-6kvd"
+      }
+    ],
+    "createdAt": "2026-09-17T14:15:45.978Z",
+    "updatedAt": "2026-09-17T14:15:45.978Z"
+  },
+  {
     "id": "siv-1781959437331",
     "sivNumber": "SIV-59437331",
     "serviceRequestId": "sr-1781642746565",

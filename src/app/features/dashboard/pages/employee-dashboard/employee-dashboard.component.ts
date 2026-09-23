@@ -29,10 +29,7 @@ import { catchError } from 'rxjs/operators';
 import { EmployeesService } from '../../../../core/services/employees.service';
 import { UsersService } from '../../../../core/services/users.service';
 import { ServiceRequestService } from '../../../requisition/service-requests/services/service-request.service';
-import {
-  RequisitionsService,
-  StoreIssueVoucherDto,
-} from '../../../../core/services/requisitions.service';
+import { CrossRoleService } from '../../../../core/services/cross-role.service';
 import {
   RequestSummaryCard,
   PendingRequest,
@@ -134,7 +131,7 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
   private currentUserService = inject(CurrentUserService);
   private workflowService = inject(WorkflowService);
   private readonly serviceRequestService = inject(ServiceRequestService);
-  private readonly requisitionsService = inject(RequisitionsService);
+  private readonly crossRoleService = inject(CrossRoleService);
   private faceDetectionService = inject(FaceDetectionService);
   private profileService = inject(ProfileService);
   private photoPersistenceService = inject(PhotoPersistenceService);
@@ -789,7 +786,9 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
           const rows = this.workflowService.extractApiServiceRequestRows(res);
           this.workflowService.mergeApiServiceRequests(rows, {
             managerQueueId: this.workflowService.getAssignedManagerQueueId(),
-            employeeIdFilter: this.currentUserId,
+            // Load the complete API set first; employee filtering is applied by
+            // getRequestsForEmployee after requester identity normalization.
+            employeeIdFilter: null,
             employeeIdentity: identity,
           });
           this.loadWorkflowData();
@@ -825,53 +824,24 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
   }
 
   private loadEmployeeSivs(): void {
-    this.requisitionsService
-      .getAllSIVs()
+    const user = this.currentUserService.getCurrentUserValue();
+    this.crossRoleService
+      .getSIVsForEmployee(this.currentUserId, {
+        email: user?.email,
+        fullName: user?.fullName,
+        username: user?.username,
+      })
       .pipe(take(1))
       .subscribe({
-        next: (response) => {
-          const vouchersRaw = response.data ?? [];
-          const vouchers: StoreIssueVoucherDto[] = Array.isArray(vouchersRaw) ? vouchersRaw : (vouchersRaw as any)?.items ?? [];
-          const requestIndex = new Map(
-            this.workflowRequests().map((request) => [request.id, request] as const),
-          );
-          const requestNumberIndex = new Map(
-            this.workflowRequests().map((request) => [request.srNumber, request] as const),
-          );
-
-          const mapped = vouchers
-            .map((voucher: StoreIssueVoucherDto) => {
-              const relatedRequest =
-                requestIndex.get(voucher.serviceRequestId) ||
-                requestNumberIndex.get(voucher.serviceRequestId);
-
-              if (!relatedRequest) {
-                return null;
-              }
-
-              const itemNames = Array.isArray(voucher.items)
-                ? voucher.items
-                    .map((item: any) => item.name || item.itemName || item.description || 'Item')
-                    .filter((itemName: string) => !!itemName)
-                : [];
-
-              return {
-                id: voucher.id,
-                sivNumber: voucher.voucherNumber,
-                date: new Date(voucher.issueDate).toLocaleDateString('en-US', {
-                  month: 'short',
-                  day: 'numeric',
-                }),
-                items:
-                  itemNames.length > 0
-                    ? itemNames.join(', ')
-                    : relatedRequest.items.map((item) => item.name).join(', '),
-                status: voucher.status || 'Issued',
-                requestId: relatedRequest.srNumber,
-              } as EmployeeSivRow;
-            })
-            .filter((voucher): voucher is EmployeeSivRow => !!voucher)
-            .sort((a, b) => b.date.localeCompare(a.date));
+        next: (flowSivs) => {
+          const mapped = flowSivs.map((siv) => ({
+            id: siv.id,
+            sivNumber: siv.sivNumber,
+            date: siv.issueDate,
+            items: siv.items.map((item) => item.itemName).join(', ') || 'Issued items',
+            status: siv.status,
+            requestId: siv.srNumber,
+          } as EmployeeSivRow));
 
           this.employeeSivs.set(mapped);
         },

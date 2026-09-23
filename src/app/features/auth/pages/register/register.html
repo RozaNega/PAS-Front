@@ -25,17 +25,24 @@
               <p class="field-error">Full name is required.</p>
             }
           </div>
-          <div class="form-group">
+          <div class="form-group phone-form-group">
             <label class="auth-label" for="register-phone">Phone number</label>
-            <div class="input-shell" [class.input-shell--error]="showControlError('phoneNumber')">
-              <i class="bi bi-telephone input-icon"></i>
-              <input id="register-phone" type="tel" formControlName="phoneNumber" placeholder="Phone Number" autocomplete="tel" />
+            <div class="phone-input-row" [class.phone-input-row--error]="showControlError('phoneNumber') || showControlError('countryCode')">
+              <select class="country-code-select" formControlName="countryCode" aria-label="Country calling code">
+                @for (country of countryCallingCodes; track country.name + country.code) {
+                  <option [value]="country.code">{{ countryAbbreviation(country.name) }} ({{ country.code }})</option>
+                }
+              </select>
+              <div class="input-shell phone-number-input">
+                <i class="bi bi-telephone input-icon"></i>
+                <input id="register-phone" type="tel" formControlName="phoneNumber" placeholder="911234567" autocomplete="tel-national" inputmode="numeric" />
+              </div>
             </div>
             @if (showControlError('phoneNumber') && registerForm.controls.phoneNumber.hasError('required')) {
               <p class="field-error">Phone number is required.</p>
             }
             @if (showControlError('phoneNumber') && registerForm.controls.phoneNumber.hasError('pattern')) {
-              <p class="field-error">Enter a valid phone number.</p>
+              <p class="field-error">Enter 4 to 15 digits after the country code.</p>
             }
           </div>
         </div>

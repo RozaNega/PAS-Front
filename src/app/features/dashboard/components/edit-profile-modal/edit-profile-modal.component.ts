@@ -223,6 +223,7 @@ export class EditProfileModalComponent {
     }
 
     const userObj = this.currentUserService.getCurrentUserValue();
+    const passwordWasChanged = Boolean(this.profile.password);
 
     if (this.selectedFile()) {
       this.isUploadingPhoto.set(true);
@@ -273,13 +274,19 @@ export class EditProfileModalComponent {
           this.selectedFile.set(null);
           this.profile.password = '';
           this.currentPassword = '';
-          alert('Profile updated successfully in the database!');
+          if (!passwordWasChanged) {
+            alert('Profile updated successfully in the database!');
+          }
 
           const resultObj = {
             ...this.profile,
             profile: this.profile,
           };
           this.modal.close(resultObj);
+          if (passwordWasChanged) {
+            alert('Password updated successfully. Please sign in again with your new password.');
+            this.authService.logout();
+          }
         } catch (passwordErr) {
           this.loading.set(false);
           console.error('Password change error:', passwordErr);

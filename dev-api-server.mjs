@@ -382,6 +382,8 @@ app.post('/api/Auth/reset-password', async (req, res) => {
   res.json({ success: true, message: 'Password reset successful' });
 });
 
+const devPasswordOverrides = new Map();
+
 app.post('/api/Auth/login', async (req, res) => {
   const { username, userName, UserName, email, Email, password, Password } = req.body || {};
   const loginName = username || userName || UserName || email || Email || 'dev';
@@ -389,6 +391,11 @@ app.post('/api/Auth/login', async (req, res) => {
 
   if (!loginName || !loginPwd) {
     return res.status(400).json({ success: false, message: 'Username and password are required' });
+  }
+
+  const storedDevPassword = devPasswordOverrides.get(String(loginName).toLowerCase());
+  if (storedDevPassword && storedDevPassword !== loginPwd) {
+    return res.status(401).json({ success: false, message: 'Invalid username or password' });
   }
 
   const tokenPayload = {
@@ -515,9 +522,15 @@ app.post('/api/Auth/refresh-token', (req, res) => {
 });
 
 app.post('/api/Auth/change-password', (req, res) => {
-  const { currentPassword, newPassword } = req.body || {};
+  const { currentPassword, newPassword, username, email } = req.body || {};
   if (!currentPassword || !newPassword) return res.status(400).json({ success: false, message: 'Current and new password are required.', statusCode: 400 });
   if (newPassword.length < 6) return res.status(400).json({ success: false, message: 'Password must be at least 6 characters.', statusCode: 400 });
+  const loginName = String(username || email || '').trim().toLowerCase();
+  const existing = devPasswordOverrides.get(loginName);
+  if (existing && existing !== currentPassword) {
+    return res.status(401).json({ success: false, message: 'Current password is incorrect.', statusCode: 401 });
+  }
+  devPasswordOverrides.set(loginName, newPassword);
   res.json({ success: true, message: 'Password changed successfully.', statusCode: 200 });
 });
 

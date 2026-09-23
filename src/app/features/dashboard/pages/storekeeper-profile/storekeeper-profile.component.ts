@@ -198,7 +198,7 @@ import { DEFAULT_AVATAR_PATH } from '../../../../core/models/stored-user.model';
                   <div class="form-group">
                     <label>Current Password</label>
                     <div class="password-input-wrap">
-                      <input [type]="showCurrent ? 'text' : 'password'" [(ngModel)]="currentPassword" name="currentPassword" class="form-control" required />
+                      <input [type]="showCurrent ? 'text' : 'password'" [(ngModel)]="currentPassword" name="currentPassword" autocomplete="current-password" class="form-control" required />
                       <button type="button" class="toggle-password" (click)="showCurrent = !showCurrent">
                         <i class="bi" [class.bi-eye]="!showCurrent" [class.bi-eye-slash]="showCurrent"></i>
                       </button>
@@ -208,7 +208,7 @@ import { DEFAULT_AVATAR_PATH } from '../../../../core/models/stored-user.model';
                     <div class="form-group">
                       <label>New Password</label>
                       <div class="password-input-wrap">
-                        <input [type]="showNew ? 'text' : 'password'" [(ngModel)]="newPassword" name="newPassword" class="form-control" required minlength="6" />
+                        <input [type]="showNew ? 'text' : 'password'" [(ngModel)]="newPassword" name="newPassword" autocomplete="new-password" class="form-control" required minlength="6" />
                         <button type="button" class="toggle-password" (click)="showNew = !showNew">
                           <i class="bi" [class.bi-eye]="!showNew" [class.bi-eye-slash]="showNew"></i>
                         </button>
@@ -217,7 +217,7 @@ import { DEFAULT_AVATAR_PATH } from '../../../../core/models/stored-user.model';
                     <div class="form-group">
                       <label>Confirm New Password</label>
                       <div class="password-input-wrap">
-                        <input [type]="showConfirm ? 'text' : 'password'" [(ngModel)]="confirmPassword" name="confirmPassword" class="form-control" required minlength="6" />
+                        <input [type]="showConfirm ? 'text' : 'password'" [(ngModel)]="confirmPassword" name="confirmPassword" autocomplete="new-password" class="form-control" required minlength="6" />
                         <button type="button" class="toggle-password" (click)="showConfirm = !showConfirm">
                           <i class="bi" [class.bi-eye]="!showConfirm" [class.bi-eye-slash]="showConfirm"></i>
                         </button>
@@ -1001,6 +1001,8 @@ export class StorekeeperProfileComponent implements OnInit {
           this.currentPassword = '';
           this.newPassword = '';
           this.confirmPassword = '';
+          alert('Password updated successfully. Please sign in again with your new password.');
+          this.authService.logout();
         } else {
           this.passwordError.set(res.message || 'Failed to update password');
           console.warn('changePassword returned success=false:', res);

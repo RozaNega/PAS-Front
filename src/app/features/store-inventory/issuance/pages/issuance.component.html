@@ -698,6 +698,15 @@
                     <span>Issued: {{ item.issuedQty }}</span>
                     <span>Pending: {{ item.pendingQty }}</span>
                     <input type="number" class="qty-input" [value]="item.pendingQty" (input)="updateModalIssueItem(i, $event)" min="0" [max]="item.pendingQty" />
+                    <label class="source-shelf-field">
+                      <span>Source shelf (storekeeper)</span>
+                      <input
+                        type="text"
+                        [value]="item.shelfId || ''"
+                        (input)="updateModalIssueShelf(i, $event)"
+                        placeholder="Scan or enter shelf ID"
+                      />
+                    </label>
                   </div>
                 </div>
               }

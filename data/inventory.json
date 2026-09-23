@@ -131,11 +131,14 @@
       "currentStock": 67,
       "reservedStock": 0,
       "availableStock": 67,
-      "minStockLevel": 78,
+      "minStockLevel": 15,
       "requiresInspection": false,
       "isLowStock": false,
       "stockQuantity": 67,
-      "isActive": true
+      "isActive": true,
+      "categoryId": "0fac5ebe-6e2b-4ce7-aa03-ce6787eaff82",
+      "unitPrice": 0,
+      "status": "Low Stock"
     }
   ]
 }

@@ -1,0 +1,24 @@
+[
+  {
+    "id": "ret-1789581106945",
+    "returnNumber": "RET-81106945",
+    "itemId": "AD1E0859-D4BE-44D6-84AA-0EDA5113C34A",
+    "itemName": "Desktop",
+    "itemSKU": "DES-001",
+    "quantity": 2,
+    "reason": "Defective item - needs to be returned to supplier",
+    "returnType": "CustomerReturn",
+    "sourceLocationId": "7c6ec622-218d-490d-a918-690e592008e2",
+    "sourceShelfId": "sl-005",
+    "supplierId": "1799c296-9976-4277-ae33-512553ee7969",
+    "batchNumber": "BATCH-2026-238",
+    "expiryDate": "2027-09-16",
+    "reference": "REF-2026-925",
+    "remarks": "Item shows signs of wear and needs to be returned for replacement or refund",
+    "requestDate": "2026-09-16T17:51:46.945Z",
+    "requestedBy": "Current User",
+    "status": "Pending",
+    "createdAt": "2026-09-16T17:51:46.945Z",
+    "updatedAt": "2026-09-16T17:51:46.945Z"
+  }
+]

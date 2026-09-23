@@ -505,12 +505,13 @@ export class MainLayoutComponent implements OnInit {
     this.workflowNotificationTick();
     const user = this.currentUserService.getCurrentUserValue();
     const role = this.getWorkflowRoleForRoute();
-    if (!user?.id || !role) {
+    if (!role) {
       return [];
     }
+    const userId = user?.id || this.workflowUserIdForRole(role);
 
     return this.workflowService
-      .getNotificationsForUser(user.id, role)
+      .getNotificationsForUser(userId, role)
       .filter((n) => !n.isRead)
       .slice(-8)
       .reverse()
@@ -521,6 +522,22 @@ export class MainLayoutComponent implements OnInit {
         message: n.message,
         time: this.formatNotificationTime(n.createdDate),
       }));
+  }
+
+  private workflowUserIdForRole(role: UserRole): string {
+    switch (role) {
+      case 'Admin':
+        return 'admin_001';
+      case 'Manager':
+        return this.workflowService.getDefaultManagerQueueId();
+      case 'Storekeeper':
+        return 'storekeeper_001';
+      case 'Compliance':
+        return 'compliance_001';
+      case 'Employee':
+        return 'employee_001';
+    }
+    return 'admin_001';
   }
 
   private getWorkflowRoleForRoute(): UserRole | null {

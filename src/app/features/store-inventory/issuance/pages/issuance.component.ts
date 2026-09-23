@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { interval, Subscription } from 'rxjs';
-import { CrossRoleService } from '../../../../core/services/cross-role.service';
+import { CrossRoleService, FlowRequest } from '../../../../core/services/cross-role.service';
 import { ServiceRequestDetail, ServiceRequestItem } from '../../../requisition/service-requests/models/service-request.model';
 import { CurrentUserService } from '../../../../core/services/current-user.service';
 import { StoreIssueVoucherService, CreateStoreIssueVoucherRequest } from '../../../requisition/sivs/services/siv.service';
@@ -59,6 +59,7 @@ interface TopItem {
 interface Requisition {
   id: string;
   srNumber: string;
+  requesterId: string;
   requester: string;
   department: string;
   priority: string;
@@ -272,6 +273,7 @@ export class IssuanceComponent implements OnInit, OnDestroy {
     return {
       id: String(r.id),
       srNumber: r.requestNumber || r.title || `SR-${r.id}`,
+      requesterId: r.requesterId || '',
       requester: r.requester || r.requesterId || 'Employee',
       department: r.department || 'Unassigned',
       priority: r.priority || 'Medium',
@@ -318,6 +320,7 @@ export class IssuanceComponent implements OnInit, OnDestroy {
     return {
       id: r.id,
       srNumber: r.srNumber,
+      requesterId: r.employeeId || '',
       requester: r.employeeName,
       department: r.department,
       priority: r.priority === 'High' ? 'Urgent' : r.priority === 'Low' ? 'Normal' : r.priority,
@@ -325,18 +328,43 @@ export class IssuanceComponent implements OnInit, OnDestroy {
     };
   }
 
+  private mapFlowToPendingIssue(r: FlowRequest): PendingIssue {
+    return {
+      id: r.id,
+      srNumber: r.srNumber,
+      requester: r.requesterName,
+      department: r.department,
+      requestedDate: r.requestDate,
+      waitingTime: `${r.waitingDays}d`,
+      waitingDays: r.waitingDays,
+      priority: r.urgency === 'Urgent' || r.urgency === 'High' ? 'Urgent' : r.urgency === 'Low' ? 'Normal' : 'Medium',
+      requiredBy: 'See requisition details',
+      items: [],
+    };
+  }
+
+  private mapFlowToRequisition(r: FlowRequest): Requisition {
+    return {
+      id: r.id,
+      srNumber: r.srNumber,
+      requesterId: r.requesterId,
+      requester: r.requesterName,
+      department: r.department,
+      priority: r.urgency,
+      requiredBy: 'See requisition details',
+    };
+  }
+
   private loadPendingIssues(): void {
     this.isLoading.set(true);
-    this.coreServiceRequestService.getApprovedRequests().subscribe({
+    this.crossRoleService.getApprovedRequests().subscribe({
       next: (res) => {
-        const list = Array.isArray(res.data) ? res.data : res.data ? [res.data] : [];
-        console.log('[Pending] Core API approved requests:', list.length);
-        const valid = list.filter(r => this.isValidGuid(String(r.id)));
-        this.allIssues.set(valid.map(r => this.mapCoreToPendingIssue(r)));
+        console.log('[Pending] Approved requests:', res.length);
+        this.allIssues.set(res.filter(r => this.isValidGuid(r.id)).map(r => this.mapFlowToPendingIssue(r)));
         this.isLoading.set(false);
       },
       error: (err) => {
-        console.error('[Pending] Failed to load, falling back to workflow seed data:', err);
+        console.error('[Pending] Failed to load approved requests:', err);
         const workflowReqs = this.workflowService.getAllRequests().filter(r =>
           WORKFLOW_APPROVED_ACTIVE_STATUSES.includes(r.status)
         );
@@ -500,13 +528,10 @@ export class IssuanceComponent implements OnInit, OnDestroy {
   requireManagerSignature = signal(false);
 
   private loadSIVs(): void {
-    this.coreServiceRequestService.getApprovedRequests().subscribe({
+    this.crossRoleService.getApprovedRequests().subscribe({
       next: (res) => {
-        const list = Array.isArray(res.data) ? res.data : res.data ? [res.data] : [];
-        console.log('[SIV] Core API approved requests:', list.length);
-        const valid = list.filter(r => this.isValidGuid(String(r.id)));
-        console.log('[SIV] After filter:', valid.length, 'valid');
-        this.requisitions.set(valid.map(r => this.mapCoreToRequisition(r)));
+        console.log('[SIV] Approved requests:', res.length);
+        this.requisitions.set(res.filter(r => this.isValidGuid(r.id)).map(r => this.mapFlowToRequisition(r)));
       },
       error: (err) => {
         console.error('[SIV] Failed to load approved requests, falling back to workflow seed data:', err);
@@ -648,7 +673,7 @@ export class IssuanceComponent implements OnInit, OnDestroy {
 
     const command: CreateStoreIssueVoucherRequest = {
       serviceRequestId: req.id,
-      issuedToId: req.requester || user?.id || user?.username || '',
+      issuedToId: req.requesterId || user?.id || user?.username || req.requester || '',
       department: req.department || 'General',
       notes: '',
       items: items.map(i => ({
@@ -699,6 +724,13 @@ export class IssuanceComponent implements OnInit, OnDestroy {
   updateModalIssueItem(index: number, event: Event): void {
     const val = Number((event.target as HTMLInputElement).value);
     this.modalIssueItems.update(items => items.map((item, i) => i === index ? { ...item, pendingQty: val } : item));
+  }
+
+  updateModalIssueShelf(index: number, event: Event): void {
+    const value = (event.target as HTMLInputElement).value.trim();
+    this.modalIssueItems.update(items =>
+      items.map((item, i) => (i === index ? { ...item, shelfId: value } : item)),
+    );
   }
 
   private showNotification(type: 'success' | 'error', message: string): void {

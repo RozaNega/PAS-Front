@@ -11,7 +11,7 @@
     <h1 id="login-title">Welcome Back</h1>
     <p class="auth-subtitle">Sign in to your account to continue</p>
 
-    <form class="auth-form" [formGroup]="loginForm" (ngSubmit)="submit()" novalidate>
+    <form class="auth-form" [formGroup]="loginForm" (ngSubmit)="submit($event)" novalidate>
       <label class="auth-label" for="login-username">Username</label>
       <div
         class="input-shell"
@@ -20,6 +20,7 @@
         <i class="bi bi-person input-icon"></i>
         <input
           id="login-username"
+          name="username"
           type="text"
           formControlName="username"
           placeholder="Enter your username"
@@ -38,6 +39,7 @@
         <i class="bi bi-lock input-icon"></i>
         <input
           id="login-password"
+          name="password"
           [type]="showPassword() ? 'text' : 'password'"
           formControlName="password"
           placeholder="Enter your password"

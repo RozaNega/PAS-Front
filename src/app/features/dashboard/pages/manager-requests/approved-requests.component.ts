@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { Subscription, take } from 'rxjs';
-import { WorkflowService, ApiServiceRequestRow } from '../../../../core/services/workflow.service';
+import { WorkflowService } from '../../../../core/services/workflow.service';
 import { CurrentUserService } from '../../../../core/services/current-user.service';
 import { ServiceRequestService } from '../../../requisition/service-requests/services/service-request.service';
 
@@ -47,7 +47,7 @@ export class ApprovedRequestsComponent implements OnInit, OnDestroy {
       .pipe(take(1))
       .subscribe({
         next: (res) => {
-          const items = (res as { data?: { items?: ApiServiceRequestRow[] } })?.data?.items ?? [];
+          const items = this.workflowService.extractApiServiceRequestRows(res);
           this.workflowService.mergeApiServiceRequests(items, {
             managerQueueId: this.workflowService.getManagerQueueIdForCurrentUser(),
           });

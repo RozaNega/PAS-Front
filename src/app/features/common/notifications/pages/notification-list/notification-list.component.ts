@@ -84,8 +84,13 @@ export class NotificationListComponent {
     if (this.currentFilter() === 'unread') {
       list = list.filter((n) => !n.isRead);
     }
-    return list;
+    return [...list].sort((a, b) => this.notificationDate(b.sentDate) - this.notificationDate(a.sentDate));
   });
+
+  private notificationDate(value: string | Date): number {
+    const time = new Date(value).getTime();
+    return Number.isFinite(time) ? time : 0;
+  }
 
   readonly groupedNotifications = computed(() => {
     const list = this.filteredNotifications();
@@ -178,7 +183,9 @@ export class NotificationListComponent {
           const uniqueWorkflow = workflowNotifications.filter((n) => !seenIds.has(n.id));
 
           // Combine: backend first, then workflow notifications
-          const combined = [...apiNotifications, ...uniqueWorkflow];
+          const combined = [...apiNotifications, ...uniqueWorkflow].sort(
+            (a, b) => this.notificationDate(b.sentDate) - this.notificationDate(a.sentDate),
+          );
           this.notifications.set(combined);
 
 
@@ -202,7 +209,11 @@ export class NotificationListComponent {
             : [];
 
           if (workflowNotifications.length > 0) {
-            this.notifications.set(workflowNotifications);
+            this.notifications.set(
+              workflowNotifications.sort(
+                (a, b) => this.notificationDate(b.sentDate) - this.notificationDate(a.sentDate),
+              ),
+            );
             this.loadError.set(null);
           } else {
             this.notifications.set([]);

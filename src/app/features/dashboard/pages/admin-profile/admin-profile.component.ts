@@ -204,6 +204,7 @@ import { finalize } from 'rxjs';
                         [(ngModel)]="currentPassword"
                         name="currentPassword"
                         class="form-control"
+                        autocomplete="current-password"
                         required
                       />
                       <button type="button" class="toggle-password" (click)="showCurrent = !showCurrent">
@@ -218,8 +219,9 @@ import { finalize } from 'rxjs';
                         <input
                           [type]="showNew ? 'text' : 'password'"
                           [(ngModel)]="newPassword"
-                          name="newPassword"
-                          class="form-control"
+                        name="newPassword"
+                        class="form-control"
+                        autocomplete="new-password"
                           required
                           minlength="6"
                         />
@@ -234,8 +236,9 @@ import { finalize } from 'rxjs';
                         <input
                           [type]="showConfirm ? 'text' : 'password'"
                           [(ngModel)]="confirmPassword"
-                          name="confirmPassword"
-                          class="form-control"
+                        name="confirmPassword"
+                        class="form-control"
+                        autocomplete="new-password"
                           required
                           minlength="6"
                         />
@@ -1215,6 +1218,8 @@ export class AdminProfileComponent implements OnInit {
           this.currentPassword = '';
           this.newPassword = '';
           this.confirmPassword = '';
+          alert('Password updated successfully. Please sign in again with your new password.');
+          this.authService.logout();
         } else {
           this.passwordError.set(res.message || 'Failed to update password');
         }

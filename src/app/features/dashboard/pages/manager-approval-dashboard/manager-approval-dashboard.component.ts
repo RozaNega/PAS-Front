@@ -18,7 +18,6 @@ import { initDashboardProfilePhoto } from '../../../../core/utils/dashboard-prof
 import {
   WorkflowService,
   ServiceRequest,
-  ApiServiceRequestRow,
   NotificationMessage,
 } from '../../../../core/services/workflow.service';
 import { ServiceRequestService } from '../../../requisition/service-requests/services/service-request.service';
@@ -265,7 +264,7 @@ export class ManagerApprovalDashboardComponent implements OnInit, OnDestroy {
       .pipe(take(1))
       .subscribe({
         next: (res) => {
-          const items = (res as { data?: { items?: ApiServiceRequestRow[] } })?.data?.items ?? [];
+          const items = this.workflowService.extractApiServiceRequestRows(res);
           this.workflowService.mergeApiServiceRequests(items, {
             managerQueueId: this.workflowService.getManagerQueueIdForCurrentUser(),
           });
@@ -297,18 +296,23 @@ export class ManagerApprovalDashboardComponent implements OnInit, OnDestroy {
     const managerId = this.workflowService.getDefaultManagerQueueId();
     const managerName = this.managerName();
 
-    this.workflowService.managerReviewRequest(
-      requestId,
-      'approve',
-      'Approved via dashboard quick action',
-      managerId,
-      managerName,
-    );
-
     this.serviceRequestService
       .approveServiceRequest({ id: requestId, remarks: 'Approved via manager dashboard' })
       .pipe(take(1))
-      .subscribe({ error: () => {} });
+      .subscribe({
+        next: () => {
+          this.workflowService.managerReviewRequest(
+            requestId,
+            'approve',
+            'Approved via dashboard quick action',
+            managerId,
+            managerName,
+          );
+          this.pullPendingFromApi();
+          this.cdr.markForCheck();
+        },
+        error: (error) => console.error('Unable to approve service request', requestId, error),
+      });
   }
 
   rejectRequest(requestId: string): void {
@@ -317,18 +321,23 @@ export class ManagerApprovalDashboardComponent implements OnInit, OnDestroy {
     const reason = prompt('Please enter a reason for rejection:');
     if (reason === null) return;
 
-    this.workflowService.managerReviewRequest(
-      requestId,
-      'reject',
-      reason || 'Rejected via dashboard',
-      managerId,
-      managerName,
-    );
-
     this.serviceRequestService
       .reject({ id: requestId, reason: reason || 'Rejected via manager dashboard' })
       .pipe(take(1))
-      .subscribe({ error: () => {} });
+      .subscribe({
+        next: () => {
+          this.workflowService.managerReviewRequest(
+            requestId,
+            'reject',
+            reason || 'Rejected via dashboard',
+            managerId,
+            managerName,
+          );
+          this.pullPendingFromApi();
+          this.cdr.markForCheck();
+        },
+        error: (error) => console.error('Unable to reject service request', requestId, error),
+      });
   }
   checkStock(requestId: string): void {
     const managerName = this.managerName();
