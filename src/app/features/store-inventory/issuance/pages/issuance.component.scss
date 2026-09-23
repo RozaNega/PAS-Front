@@ -710,6 +710,8 @@ $bounce: 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
     display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
     span { font-size: 12px; color: $text-secondary; }
     .qty-input { width: 60px; padding: 5px 8px; border-radius: $radius-xs; border: 1.5px solid $primary; font-size: 13px; font-weight: 700; text-align: center; }
+    .source-shelf-field { display: flex; align-items: center; gap: 6px; font-size: 12px; color: $text-secondary; }
+    .source-shelf-field input { width: 180px; padding: 5px 8px; border: 1px solid $border-light; border-radius: $radius-xs; font-size: 12px; }
   }
 }
 

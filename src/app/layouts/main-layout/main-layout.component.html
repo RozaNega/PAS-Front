@@ -138,9 +138,6 @@
               <button type="button" class="sakai-nav-link sakai-nav-link--toggle" (click)="toggleMenuGroup(item.label)">
                 <i [class]="item.icon"></i>
                 <span>{{ item.label }}</span>
-                @if (item.badge) {
-                  <span class="sakai-badge">{{ item.badge }}</span>
-                }
                 <i class="bi bi-chevron-down sakai-nav-toggle-icon"></i>
               </button>
               @if (isMenuGroupOpen(item.label)) {
@@ -156,9 +153,6 @@
                       >
                         <i [class]="child.icon"></i>
                         <span>{{ child.label }}</span>
-                        @if (child.badge) {
-                          <span class="sakai-badge">{{ child.badge }}</span>
-                        }
                       </a>
                     }
                   }
@@ -175,9 +169,6 @@
             >
               <i [class]="item.icon"></i>
               <span>{{ item.label }}</span>
-              @if (item.badge) {
-                <span class="sakai-badge">{{ item.badge }}</span>
-              }
             </a>
           }
         }

@@ -63,36 +63,44 @@ export class PendingApprovalsComponent implements OnInit, OnDestroy {
 
   protected approve(id: string): void {
     const user = this.currentUserService.getCurrentUserValue();
-    this.workflowService.managerReviewRequest(
-      id,
-      'approve',
-      'Approved from pending approvals',
-      this.workflowService.getManagerQueueIdForCurrentUser(),
-      user?.fullName || user?.username || 'Manager',
-    );
     this.serviceRequestService
       .approveServiceRequest({ id, remarks: 'Approved from pending approvals' })
       .pipe(take(1))
-      .subscribe({ error: () => {} });
-    this.loadRequests();
+      .subscribe({
+        next: () => {
+          this.workflowService.managerReviewRequest(
+            id,
+            'approve',
+            'Approved from pending approvals',
+            this.workflowService.getManagerQueueIdForCurrentUser(),
+            user?.fullName || user?.username || 'Manager',
+          );
+          this.loadRequests();
+        },
+        error: (error) => console.error('Unable to approve service request', id, error),
+      });
   }
 
   protected reject(id: string): void {
     const reason = prompt('Please enter a reason for rejection:');
     if (reason === null) return;
     const user = this.currentUserService.getCurrentUserValue();
-    this.workflowService.managerReviewRequest(
-      id,
-      'reject',
-      reason || 'Rejected from pending approvals',
-      this.workflowService.getManagerQueueIdForCurrentUser(),
-      user?.fullName || user?.username || 'Manager',
-    );
     this.serviceRequestService
       .reject({ id, reason: reason || 'Rejected from pending approvals' })
       .pipe(take(1))
-      .subscribe({ error: () => {} });
-    this.loadRequests();
+      .subscribe({
+        next: () => {
+          this.workflowService.managerReviewRequest(
+            id,
+            'reject',
+            reason || 'Rejected from pending approvals',
+            this.workflowService.getManagerQueueIdForCurrentUser(),
+            user?.fullName || user?.username || 'Manager',
+          );
+          this.loadRequests();
+        },
+        error: (error) => console.error('Unable to reject service request', id, error),
+      });
   }
 
   protected viewDetails(id: string): void {

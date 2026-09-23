@@ -94,7 +94,7 @@ export class AdminDashboardComponent implements OnInit {
   readonly hasLoadedOnce = signal(false);
   readonly loadError = signal<string | null>(null);
   readonly lastRefreshed = signal<string | null>(null);
-  readonly isAutoRefreshEnabled = signal(false);
+  readonly isAutoRefreshEnabled = signal(true);
   private autoRefreshInterval: ReturnType<typeof setInterval> | null = null;
 
   readonly requisitionsLoading = signal(false);
@@ -167,6 +167,7 @@ export class AdminDashboardComponent implements OnInit {
 
   ngOnInit(): void {
     this.refreshData();
+    this.autoRefreshInterval = setInterval(() => this.refreshData(), 30000);
   }
 
   private num(v: unknown): number {
@@ -283,8 +284,11 @@ export class AdminDashboardComponent implements OnInit {
           return;
         }
         this.requisitionsFromApi.set(true);
-        const list = res.data ?? [];
+        const list = [...(res.data ?? [])].sort(
+          (a, b) => this.requestDateValue(b.requestDate) - this.requestDateValue(a.requestDate),
+        );
         if (!list.length) {
+          this.recentRequisitions.set([]);
           return;
         }
         const rows: RequisitionRow[] = list.map((sr) => ({
@@ -299,6 +303,11 @@ export class AdminDashboardComponent implements OnInit {
         }));
         this.recentRequisitions.set(rows);
       });
+  }
+
+  private requestDateValue(value: string | undefined): number {
+    const time = value ? new Date(value).getTime() : 0;
+    return Number.isFinite(time) ? time : 0;
   }
 
   private applyStatistics(d: DashboardStatistics): void {

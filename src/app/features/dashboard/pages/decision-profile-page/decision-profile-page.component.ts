@@ -222,7 +222,8 @@ export class DecisionProfilePageComponent implements OnDestroy {
           this.authService.changePassword(result).subscribe({
             next: (res) => {
               if (res.succeeded) {
-                alert('Password changed successfully!');
+                alert('Password changed successfully! Please sign in again with your new password.');
+                this.authService.logout();
               } else {
                 alert('Failed to change password: ' + res.message);
               }

@@ -35,6 +35,8 @@ export interface FlowSIV {
   id: string;
   sivNumber: string;
   serviceRequestId: string;
+  issuedToId?: string;
+  issuedToName?: string;
   srNumber: string;
   requesterName: string;
   department: string;
@@ -140,7 +142,11 @@ export class CrossRoleService {
   getAllSIVs(): Observable<FlowSIV[]> {
     return forkJoin({
       sivs: this.requisitionsService.getAllSIVs().pipe(
-        map((res) => (res.data ?? []).filter((s: any) => s && s.id && s.id !== '00000000-0000-0000-0000-000000000000')),
+        map((res) => {
+          const data = res.data as any;
+          const rows = (Array.isArray(data) ? data : data?.items ?? []) as StoreIssueVoucherDto[];
+          return rows.filter((s: any) => s && s.id && s.id !== '00000000-0000-0000-0000-000000000000');
+        }),
         catchError(() => of([] as StoreIssueVoucherDto[])),
       ),
       requests: this.getAllRequests(),
@@ -162,7 +168,10 @@ export class CrossRoleService {
   ): Observable<FlowSIV[]> {
     return forkJoin({
       sivs: this.requisitionsService.getAllSIVs().pipe(
-        map((res) => res.data ?? []),
+        map((res) => {
+          const data = res.data as any;
+          return (Array.isArray(data) ? data : data?.items ?? []) as StoreIssueVoucherDto[];
+        }),
         catchError(() => of([] as StoreIssueVoucherDto[])),
       ),
       requests: this.getRequestsForEmployee(employeeId, identity),
@@ -170,17 +179,39 @@ export class CrossRoleService {
       map(({ sivs, requests }) => {
         const myIds = new Set(requests.map((r) => r.id));
         const requestById = new Map(requests.map((r) => [r.id, r]));
+        const requestByNumber = new Map(requests.map((r) => [r.srNumber.toLowerCase(), r]));
+        const userKeys = [employeeId, identity?.email, identity?.username]
+          .map((v) => v?.trim().toLowerCase())
+          .filter((v): v is string => !!v);
         const nameKeys = [identity?.fullName, identity?.username, identity?.email?.split('@')[0]]
           .map((v) => v?.trim().toLowerCase())
           .filter((v): v is string => !!v);
         return sivs
           .filter((siv) => {
-            if (myIds.has(String(siv.serviceRequestId))) return true;
-            if ((siv.issuedBy || '').toLowerCase() === employeeId.toLowerCase()) return true;
-            if (nameKeys.some(k => (siv.issuedBy || '').toLowerCase().includes(k))) return true;
+            const serviceRequestId = String(siv.serviceRequestId || '');
+            const issuedToId = String((siv as any).issuedToId || '');
+            const issuedToName = String((siv as any).issuedToName || '');
+            const requesterName = String((siv as any).requesterName || '');
+            if (myIds.has(serviceRequestId)) return true;
+            if (requestByNumber.has(serviceRequestId.toLowerCase())) return true;
+            if (userKeys.includes(issuedToId.toLowerCase())) return true;
+            if (nameKeys.some(k => issuedToName.toLowerCase().includes(k))) return true;
+            if (nameKeys.some(k => requesterName.toLowerCase().includes(k))) return true;
             return false;
           })
-          .map((siv) => this.toFlowSIV(siv, requestById.get(String(siv.serviceRequestId))));
+          .map((siv) => {
+            const serviceRequestId = String(siv.serviceRequestId || '');
+            const sivRequesterName = String((siv as any).requesterName || '').trim().toLowerCase();
+            const requestByRequesterName = requests.find(
+              (request) => request.requesterName.trim().toLowerCase() === sivRequesterName,
+            );
+            return this.toFlowSIV(
+              siv,
+              requestById.get(serviceRequestId) ||
+                requestByNumber.get(serviceRequestId.toLowerCase()) ||
+                requestByRequesterName,
+            );
+          });
       }),
       catchError(() => of([] as FlowSIV[])),
     );
@@ -292,8 +323,10 @@ export class CrossRoleService {
   private toFlowSIV(siv: StoreIssueVoucherDto, request?: FlowRequest): FlowSIV {
     return {
       id: String(siv.id),
-      sivNumber: siv.voucherNumber || `SIV-${String(siv.id).slice(0, 8)}`,
+      sivNumber: siv.voucherNumber || (siv as any).sivNumber || `SIV-${String(siv.id).slice(0, 8)}`,
       serviceRequestId: String(siv.serviceRequestId),
+      issuedToId: String((siv as any).issuedToId || ''),
+      issuedToName: String((siv as any).issuedToName || ''),
       srNumber: request?.srNumber || String(siv.serviceRequestId),
       requesterName: request?.requesterName || 'Employee',
       department: request?.department || 'Unassigned',

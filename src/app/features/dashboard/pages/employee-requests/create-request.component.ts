@@ -291,10 +291,13 @@ export class CreateRequestComponent implements OnInit, OnDestroy {
         const locations: any[] = detail?.stockLocations ?? [];
 
         if (locations.length > 0) {
+          // A shelf is valid only when the stock record actually points to it.
+          // Do not turn the global shelf list into an item's location: that can
+          // make a request appear assigned to a shelf where the item is not stored.
           selected.shelfOptions = locations
-            .filter((loc: any) => loc.availableQuantity > 0)
+            .filter((loc: any) => String(loc.shelfId ?? '').trim() && Number(loc.availableQuantity ?? 0) > 0)
             .map((loc: any) => ({
-              shelfId: loc.shelfId,
+              shelfId: String(loc.shelfId).trim(),
               label: this.buildShelfLabel(
                 loc.warehouseName,
                 loc.shelfLocation,
@@ -303,61 +306,43 @@ export class CreateRequestComponent implements OnInit, OnDestroy {
               available: loc.availableQuantity,
             }));
 
-          // If all locations are out of stock, still show them
+          // If all assigned locations are out of stock, keep them visible so
+          // the employee can still express a preference.
           if (selected.shelfOptions.length === 0) {
-            selected.shelfOptions = locations.map((loc: any) => ({
-              shelfId: loc.shelfId,
-              label: this.buildShelfLabel(
-                loc.warehouseName,
-                loc.shelfLocation,
-                loc.availableQuantity,
-              ),
-              available: loc.availableQuantity,
-            }));
+            selected.shelfOptions = locations
+              .filter((loc: any) => String(loc.shelfId ?? '').trim())
+              .map((loc: any) => ({
+                shelfId: String(loc.shelfId).trim(),
+                label: this.buildShelfLabel(
+                  loc.warehouseName,
+                  loc.shelfLocation,
+                  Number(loc.availableQuantity ?? 0),
+                ),
+                available: Number(loc.availableQuantity ?? 0),
+              }));
           }
         } else {
-          // No stock locations — fall back to global shelf list
+          // Some catalog items have stock but no item-specific shelf record.
+          // Use an active warehouse shelf as the employee's preferred location
+          // so the request form is always complete. The storekeeper can still
+          // verify or change the source shelf before issuing the item.
           selected.shelfOptions = this.buildFallbackOptions();
-          if (selected.shelfOptions.length === 0) {
-            this.inventoryService.getAllShelves().pipe(
-              map((res) => res.data ?? []),
-              catchError(() => of([] as ShelfLocationDto[])),
-            ).subscribe((shelves) => {
-              this.fallbackShelves = shelves;
-              selected.shelfOptions = this.buildFallbackOptions();
-              if (selected.shelfOptions.length > 0) {
-                const first = selected.shelfOptions[0];
-                selected.preferredShelfId = first.shelfId;
-                selected.preferredShelfLabel = first.label;
-                selected.available = first.available;
-              }
-              this.cdr.markForCheck();
-            });
-          }
         }
 
-        // Auto-select the shelf with most available stock
-        const best = [...selected.shelfOptions].sort((a, b) => b.available - a.available)[0];
-        if (best) {
-          selected.preferredShelfId = best.shelfId;
-          selected.preferredShelfLabel = best.label;
-          selected.available = best.available;
-        } else {
-          selected.preferredShelfId = null;
-          selected.preferredShelfLabel = 'No location selected';
-        }
+        // A requester may suggest a location, but the storekeeper must choose
+        // the actual source shelf when issuing stock.
+        selected.preferredShelfId = null;
+        selected.preferredShelfLabel = 'No preference — storekeeper assigns source shelf';
 
         selected.loadingShelves = false;
         this.cdr.markForCheck();
       },
       error: () => {
-        // Fall back to global shelves on error
+        // Keep the request usable if item details are unavailable. Use the
+        // already-loaded active shelf list as the preferred location.
         selected.shelfOptions = this.buildFallbackOptions();
-        const first = selected.shelfOptions[0];
-        if (first) {
-          selected.preferredShelfId = first.shelfId;
-          selected.preferredShelfLabel = first.label;
-        }
+        selected.preferredShelfId = null;
+        selected.preferredShelfLabel = 'No preference — storekeeper assigns source shelf';
         selected.loadingShelves = false;
         this.cdr.markForCheck();
       },
@@ -377,15 +362,18 @@ export class CreateRequestComponent implements OnInit, OnDestroy {
   }
 
   private buildFallbackOptions(): ShelfOption[] {
-    return this.fallbackShelves.map((shelf) => ({
+    return this.fallbackShelves
+      .filter((shelf) => shelf.isActive !== false)
+      .map((shelf) => ({
       shelfId: shelf.id,
       label: this.buildFallbackShelfLabel(shelf),
       available: 0,
-    }));
+      }));
   }
 
   private buildFallbackShelfLabel(shelf: ShelfLocationDto): string {
     const parts: string[] = [];
+    if (shelf.warehouseName) parts.push(shelf.warehouseName);
     if (shelf.aisle) parts.push(`Aisle ${shelf.aisle}`);
     if (shelf.rack) parts.push(`Rack ${shelf.rack}`);
     if (shelf.shelfNumber) parts.push(`Shelf ${shelf.shelfNumber}`);
@@ -572,7 +560,7 @@ export class CreateRequestComponent implements OnInit, OnDestroy {
       item.available = chosen.available;
     } else {
       item.preferredShelfId = null;
-      item.preferredShelfLabel = 'No location selected';
+      item.preferredShelfLabel = 'No preference — storekeeper assigns source shelf';
       item.available = 0;
     }
     this.autoSaveDraft();
@@ -614,15 +602,6 @@ export class CreateRequestComponent implements OnInit, OnDestroy {
       const itemsStillLoadingLocations = this.selectedItems.filter((item) => item.loadingShelves);
       if (itemsStillLoadingLocations.length > 0) {
         alert('Please wait — shelf locations are still loading for some items.');
-        return;
-      }
-      const itemsMissingShelf = this.selectedItems.filter(
-        (item) => item.shelfOptions.length > 0 && !item.preferredShelfId,
-      );
-      if (itemsMissingShelf.length > 0) {
-        alert(
-          `Please select a shelf location for: ${itemsMissingShelf.map((i) => i.name).join(', ')}`,
-        );
         return;
       }
     }
@@ -733,8 +712,22 @@ export class CreateRequestComponent implements OnInit, OnDestroy {
     this.isSubmitting = true;
     this.cdr.markForCheck();
 
+    const user = this.currentUserService.getCurrentUserValue();
+    const requesterId = user?.id || user?.username || user?.email || '';
+    const requesterName =
+      this.form.requester || user?.fullName || user?.username || 'Employee';
+    const purpose = this.form.remarks || this.form.justification || 'Service request';
+
     const apiPayload = {
       srNumber: this.form.srNumber?.trim() || undefined,
+      requesterId,
+      employeeId: user?.id || undefined,
+      requesterName,
+      employeeName: requesterName,
+      department: this.form.department || user?.department || '',
+      purpose,
+      urgency: this.form.priority || 'Medium',
+      notes: purpose,
       items: this.selectedItems.map((item) => ({
         itemId: item.itemId,
         srDetailId: '',
@@ -748,7 +741,6 @@ export class CreateRequestComponent implements OnInit, OnDestroy {
     this.pasApi.createServiceRequest(apiPayload).subscribe({
       next: (response) => {
         const created = this.extractCreatedRequestMeta(response);
-        const user = this.currentUserService.getCurrentUserValue();
 
         // Store custom SR number mapping so it persists when loaded from API
         const customSr = this.form.srNumber?.trim();

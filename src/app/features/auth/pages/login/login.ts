@@ -53,7 +53,18 @@ export class Login {
     }
   }
 
-  protected submit(): void {
+  protected submit(event?: Event): void {
+    // Browser password managers can fill the native input without emitting an
+    // Angular input event. Copy that value into the reactive form before the
+    // required/min-length validators run.
+    const form = event?.currentTarget as HTMLFormElement | null;
+    const nativePassword = form?.querySelector<HTMLInputElement>('#login-password')?.value;
+    if (nativePassword && this.loginForm.controls.password.value !== nativePassword) {
+      this.loginForm.controls.password.setValue(nativePassword);
+    }
+
+    this.statusMessage.set('');
+    this.statusTone.set('neutral');
     this.submitted.set(true);
 
     if (this.loginForm.invalid) {
@@ -76,6 +87,8 @@ export class Login {
           if (!result.succeeded) {
             this.statusTone.set('error');
             this.statusMessage.set(result.errors?.join(' ') || 'Invalid username or password.');
+            // Do not leave a stale browser-autofilled password in the form.
+            this.loginForm.controls.password.reset('');
             return;
           }
 
@@ -104,6 +117,9 @@ export class Login {
           });
         },
         error: (err) => {
+          // Clear the submitted value so a browser password manager cannot
+          // silently resubmit an outdated credential after an error.
+          this.loginForm.controls.password.reset('');
           let errorMessage = 'Unable to sign in. Verify your credentials and try again.';
 
           if (err instanceof HttpErrorResponse) {

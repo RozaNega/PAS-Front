@@ -220,6 +220,10 @@
                 <td>
                   <div class="action-buttons">
                     <button type="button" class="icon-btn" title="View" (click)="openDetailModal(item)"><i class="bi bi-eye"></i></button>
+                    @if (isPendingRequest(item)) {
+                      <button type="button" class="icon-btn" title="Approve request" (click)="approveRequest(item)"><i class="bi bi-check-lg"></i></button>
+                      <button type="button" class="icon-btn" title="Reject request" (click)="rejectRequest(item)"><i class="bi bi-x-lg"></i></button>
+                    }
                     @if (isIssueable(item.status)) {
                       <button type="button" class="icon-btn" title="Issue Items" (click)="navigateToIssueSiv(item)"><i class="bi bi-box-seam"></i></button>
                     }

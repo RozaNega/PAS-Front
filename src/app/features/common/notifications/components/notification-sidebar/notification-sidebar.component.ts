@@ -43,7 +43,7 @@ export class NotificationSidebarComponent {
       id: n.id,
       message: n.message,
       isRead: n.isRead,
-      date: new Date(n.sentDate).getTime(),
+      date: this.notificationDate(n.sentDate),
       sender: this.getSender(n.message),
       timeAgo: n.timeAgo || this.formatTime(n.sentDate),
       icon: this.getIconClass(n.message),
@@ -52,7 +52,7 @@ export class NotificationSidebarComponent {
       id: n.id,
       message: n.message,
       isRead: n.isRead,
-      date: new Date(n.createdDate).getTime(),
+      date: this.notificationDate(n.createdDate),
       sender: this.getSender(n.message, n.type),
       timeAgo: this.formatWfTime(n.createdDate),
       icon: this.getIconClass(n.message),
@@ -61,6 +61,11 @@ export class NotificationSidebarComponent {
       .sort((a, b) => b.date - a.date)
       .slice(0, this.maxRecent * 2);
   });
+
+  private notificationDate(value: string | Date): number {
+    const time = new Date(value).getTime();
+    return Number.isFinite(time) ? time : 0;
+  }
 
   constructor() {
     this.loadNotifications();
@@ -90,12 +95,28 @@ export class NotificationSidebarComponent {
 
   loadWorkflowNotifs(): void {
     const user = this.currentUserService.getCurrentUserValue();
-    if (!user?.id) return;
     const role = this.getRoleFromUrl();
     if (!role) return;
-    const notifs = this.workflowService.getNotificationsForUser(user.id, role);
+    const userId = user?.id || this.workflowUserIdForRole(role);
+    const notifs = this.workflowService.getNotificationsForUser(userId, role);
     this.workflowNotifs.set(notifs);
     this.emitBadge();
+  }
+
+  private workflowUserIdForRole(role: UserRole): string {
+    switch (role) {
+      case 'Admin':
+        return 'admin_001';
+      case 'Manager':
+        return this.workflowService.getDefaultManagerQueueId();
+      case 'Storekeeper':
+        return 'storekeeper_001';
+      case 'Compliance':
+        return 'compliance_001';
+      case 'Employee':
+        return 'employee_001';
+    }
+    return 'admin_001';
   }
 
   private getRoleFromUrl(): UserRole | null {

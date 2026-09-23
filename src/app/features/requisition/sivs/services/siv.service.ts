@@ -88,8 +88,9 @@ function buildCreateStoreIssueVoucherCommand(data: CreateStoreIssueVoucherReques
     }),
   };
 
-  if (data.serviceRequestId && isGuidString(data.serviceRequestId)) {
-    cmd['serviceRequestId'] = data.serviceRequestId;
+  if (data.serviceRequestId?.trim()) {
+    // Request IDs may be GUIDs or prefixed IDs such as sr-123.
+    cmd['serviceRequestId'] = data.serviceRequestId.trim();
   }
   if (data.issuedToId) {
     cmd['issuedToId'] = data.issuedToId;

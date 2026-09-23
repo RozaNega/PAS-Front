@@ -300,8 +300,18 @@ export class AuthService {
   changePassword(request: {
     currentPassword: string;
     newPassword: string;
+    username?: string;
+    email?: string;
+    userId?: string;
   }): Observable<{ succeeded: boolean; message: string }> {
-    return this.apiService.post<any>('Auth/change-password', request).pipe(
+    const user = this.currentUserService.getCurrentUserValue();
+    const payload = {
+      ...request,
+      username: request.username || user?.username || '',
+      email: request.email || user?.email || '',
+      userId: request.userId || user?.id || '',
+    };
+    return this.apiService.post<any>('Auth/change-password', payload).pipe(
       map((response) => ({
         succeeded: response.success,
         message: response.message || (response.success ? 'Success' : 'Failed'),

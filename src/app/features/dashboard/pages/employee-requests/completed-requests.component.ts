@@ -42,9 +42,14 @@ export class CompletedRequestsComponent implements OnInit {
     this.isLoading.set(true);
     this.error.set(null);
 
-    this.crossRoleService.getRequestsForEmployee(employeeId, identity, 'Issued').subscribe({
+    this.crossRoleService.getRequestsForEmployee(employeeId, identity).subscribe({
       next: (flowRequests: FlowRequest[]) => {
-        const mapped: Request[] = flowRequests.map((r) => ({
+        // The API represents a fulfilled request as either Issued or Completed
+        // depending on which issuance endpoint was used.
+        const completedRequests = flowRequests.filter(
+          (r) => r.status === 'Issued' || r.rawStatus.toLowerCase() === 'completed',
+        );
+        const mapped: Request[] = completedRequests.map((r) => ({
           id: r.srNumber,
           title: r.purpose,
           description: `Issued: ${r.issuedQuantity} of ${r.totalQuantity} | Approved by: ${r.approvedByName ?? 'N/A'}`,
@@ -54,7 +59,7 @@ export class CompletedRequestsComponent implements OnInit {
           sivNumber: 'View SIVs',
         }));
         this.requests.set(mapped);
-        this.crossRoleService.syncToWorkflow(flowRequests);
+        this.crossRoleService.syncToWorkflow(completedRequests);
         this.isLoading.set(false);
       },
       error: (err: unknown) => {

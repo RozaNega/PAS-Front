@@ -61,7 +61,9 @@ export class RejectedRequestsComponent implements OnInit, OnDestroy {
           const user = this.currentUserService.getCurrentUserValue();
           this.workflowService.mergeApiServiceRequests(items, {
             managerQueueId: this.workflowService.getAssignedManagerQueueId(),
-            employeeIdFilter: this.currentUserId || user?.id || null,
+            // Normalize and cache the complete API set before applying the
+            // employee-specific filter in getRejectedRequestsForEmployee().
+            employeeIdFilter: null,
             employeeIdentity: {
               email: user?.email,
               fullName: user?.fullName,

@@ -686,13 +686,47 @@ app.post('/api/Auth/refresh-token', (req, res) => {
 });
 
 app.post('/api/Auth/change-password', (req, res) => {
-  const { currentPassword, newPassword } = req.body || {};
+  const { currentPassword, newPassword, username, email, userId } = req.body || {};
   if (!currentPassword || !newPassword) {
     return res.status(400).json({ success: false, message: 'Current and new password are required.', statusCode: 400 });
   }
   if (newPassword.length < 6) {
     return res.status(400).json({ success: false, message: 'Password must be at least 6 characters.', statusCode: 400 });
   }
+
+  const normalizedEmail = String(email || '').trim().toLowerCase();
+  const normalizedUsername = String(username || '').trim().toLowerCase();
+  const normalizedUserId = String(userId || '').trim();
+  let matchedEmail = null;
+  let matchedUser = null;
+  for (const [storedEmail, storedUser] of usersStore.entries()) {
+    const sameEmail = normalizedEmail && storedEmail.toLowerCase() === normalizedEmail;
+    const sameUsername = normalizedUsername && String(storedUser.username || '').toLowerCase() === normalizedUsername;
+    const sameId = normalizedUserId && String(storedUser.id || storedUser.userId || '') === normalizedUserId;
+    if (sameEmail || sameUsername || sameId) {
+      matchedEmail = storedEmail;
+      matchedUser = storedUser;
+      break;
+    }
+  }
+
+  // Accounts seeded from the real backend have no local password. Let the
+  // real API validate and persist the change, then mirror a successful result
+  // locally so the next login uses the same credential source.
+  if (!matchedUser || !matchedUser.password) {
+    return proxyToBackend(req, res, (statusCode) => {
+      if (statusCode >= 200 && statusCode < 300 && matchedEmail && matchedUser) {
+        usersStore.set(matchedEmail, { ...matchedUser, password: newPassword });
+        saveUsersStore(usersStore);
+      }
+    });
+  }
+  if (matchedUser.password !== currentPassword) {
+    return res.status(401).json({ success: false, message: 'Current password is incorrect.', statusCode: 401 });
+  }
+
+  usersStore.set(matchedEmail, { ...matchedUser, password: newPassword });
+  saveUsersStore(usersStore);
   res.json({ success: true, message: 'Password changed successfully.', statusCode: 200 });
 });
 
@@ -1111,7 +1145,7 @@ function fetchJson(url) {
   });
 }
 
-function proxyToBackend(req, res) {
+function proxyToBackend(req, res, onComplete) {
   // If express.json() parsed the body, re-serialize it since the original
   // incoming stream was consumed and req.pipe() would send nothing.
   const body = req.body !== undefined ? JSON.stringify(req.body) : undefined;
@@ -1137,6 +1171,7 @@ function proxyToBackend(req, res) {
   };
 
   const proxyReq = http.request(options, (proxyRes) => {
+    if (onComplete) onComplete(proxyRes.statusCode || 500);
     const resHeaders = { ...proxyRes.headers };
     delete resHeaders['transfer-encoding'];
     res.writeHead(proxyRes.statusCode, resHeaders);
@@ -1728,7 +1763,7 @@ const storeIssueVouchers = loadSIVs();
 app.post('/api/ServiceRequests/:id/issue', express.json(), (req, res) => {
   const sr = serviceRequests.find(x => String(x.id) === String(req.params.id));
   if (!sr) return res.status(404).json({ success: false, message: 'Service request not found', statusCode: 404 });
-  sr.status = 'Issued';
+  sr.status = 'Completed';
   sr.updatedAt = new Date().toISOString();
   saveServiceRequests();
   const siv = {
@@ -1737,6 +1772,8 @@ app.post('/api/ServiceRequests/:id/issue', express.json(), (req, res) => {
     serviceRequestId: req.params.id,
     srNumber: sr.srNumber,
     issueDate: new Date().toISOString().split('T')[0],
+    issuedToId: sr.requesterId || '',
+    issuedToName: sr.requesterName || '',
     requesterName: sr.requesterName || '',
     department: sr.department || '',
     status: 'Issued',
@@ -1759,14 +1796,16 @@ app.post('/api/StoreIssueVouchers', express.json(), (req, res) => {
     const { command } = req.body;
     if (!command) return res.status(400).json({ success: false, message: 'No command provided', statusCode: 400 });
     const sr = serviceRequests.find(x => String(x.id) === String(command.serviceRequestId));
-    if (sr) { sr.status = 'Issued'; sr.updatedAt = new Date().toISOString(); saveServiceRequests(); }
+    if (sr) { sr.status = 'Completed'; sr.updatedAt = new Date().toISOString(); saveServiceRequests(); }
     const siv = {
       id: 'siv-' + Date.now(),
       sivNumber: 'SIV-' + String(Date.now()).slice(-8),
       serviceRequestId: command.serviceRequestId,
       srNumber: sr?.srNumber || '',
       issueDate: new Date().toISOString().split('T')[0],
-      requesterName: command.issuedToId || sr?.requesterName || '',
+      issuedToId: command.issuedToId || sr?.requesterId || '',
+      issuedToName: sr?.requesterName || '',
+      requesterName: sr?.requesterName || '',
       department: command.department || sr?.department || '',
       status: 'Issued',
       totalItems: command.items?.length || 0,

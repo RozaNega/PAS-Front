@@ -153,6 +153,8 @@
                 <input
                   [type]="showPassword() ? 'text' : 'password'"
                   [(ngModel)]="profile.password"
+                  name="newPassword"
+                  autocomplete="new-password"
                   placeholder="••••••••"
                 />
                 <button
@@ -176,6 +178,7 @@
                 <input
                   type="password"
                   [(ngModel)]="currentPassword"
+                  name="currentPassword"
                   placeholder="Enter current password"
                   autocomplete="current-password"
                 />

@@ -2,6 +2,7 @@ import { Component, signal, computed, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { take } from 'rxjs/operators';
 import { ServiceRequestService, ServiceRequestDto } from '../../../requisition/service-requests/services/service-request.service';
 import { RequisitionsService, StoreIssueVoucherDto } from '../../../../core/services/requisitions.service';
 
@@ -314,6 +315,79 @@ export class RequisitionDashboardComponent implements OnInit {
 
   isIssueable(status: string): boolean {
     return ['Manager Approved', 'Approved', 'Admin Approved', 'Compliance Review'].includes(status);
+  }
+
+  isPendingRequest(item: UnifiedItem): boolean {
+    return item.type === 'Requisition' && item.status.toLowerCase() === 'pending';
+  }
+
+  approveRequest(item: UnifiedItem): void {
+    if (!this.isPendingRequest(item)) return;
+    const request = item.source as ServiceRequestDto;
+    if (!confirm(`Approve request ${request.srNumber}?`)) return;
+
+    this.serviceRequestService
+      .approve({ id: request.id, remarks: 'Approved by administrator' })
+      .pipe(take(1))
+      .subscribe({
+        next: (response) => {
+          if (response.success === false) {
+            this.notification.set({ type: 'error', message: response.message || 'Approval failed.' });
+            return;
+          }
+          this.updateRequestStatus(request.id, 'Approved');
+          this.notification.set({ type: 'success', message: `${request.srNumber} was approved.` });
+          this.autoDismissNotification();
+        },
+        error: (err: { error?: { message?: string }; message?: string }) => {
+          this.notification.set({
+            type: 'error',
+            message: err.error?.message || err.message || 'Approval failed. Please try again.',
+          });
+          this.autoDismissNotification();
+        },
+      });
+  }
+
+  rejectRequest(item: UnifiedItem): void {
+    if (!this.isPendingRequest(item)) return;
+    const request = item.source as ServiceRequestDto;
+    const reason = prompt(`Enter a rejection reason for ${request.srNumber}:`);
+    if (reason === null) return;
+    const trimmedReason = reason.trim();
+    if (!trimmedReason) {
+      this.notification.set({ type: 'error', message: 'A rejection reason is required.' });
+      this.autoDismissNotification();
+      return;
+    }
+
+    this.serviceRequestService
+      .reject({ id: request.id, reason: trimmedReason })
+      .pipe(take(1))
+      .subscribe({
+        next: (response) => {
+          if (response.success === false) {
+            this.notification.set({ type: 'error', message: response.message || 'Rejection failed.' });
+            return;
+          }
+          this.updateRequestStatus(request.id, 'Rejected');
+          this.notification.set({ type: 'success', message: `${request.srNumber} was rejected.` });
+          this.autoDismissNotification();
+        },
+        error: (err: { error?: { message?: string }; message?: string }) => {
+          this.notification.set({
+            type: 'error',
+            message: err.error?.message || err.message || 'Rejection failed. Please try again.',
+          });
+          this.autoDismissNotification();
+        },
+      });
+  }
+
+  private updateRequestStatus(id: string, status: string): void {
+    this.requisitions.update((requests) =>
+      requests.map((request) => (request.id === id ? { ...request, status } : request)),
+    );
   }
 
 

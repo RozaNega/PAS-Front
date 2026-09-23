@@ -210,15 +210,15 @@
   [
     "n@gmail.com",
     {
-      "username": "n_12",
-      "password": "Nn@12345",
-      "fullName": "new",
-      "role": "Admin",
-      "department": "IT",
-      "employeeCode": "EMP90",
-      "phoneNumber": "0910923495",
-      "position": "",
-      "joinDate": "2026-06-30"
+      "username": "N_3",
+      "password": "Nn@121212",
+      "fullName": "Nega",
+      "role": "Employee",
+      "department": "IT Department",
+      "employeeCode": "EMP3",
+      "phoneNumber": "0945485784",
+      "position": "Staff",
+      "joinDate": "2026-09-21"
     }
   ],
   [
@@ -281,13 +281,13 @@
     "roza@gmail.com",
     {
       "username": "M_0",
-      "password": "Mm@12345",
+      "password": "Mm@121212",
       "fullName": "MM",
       "role": "Manager",
       "department": "IT",
       "employeeCode": "EMP89",
       "phoneNumber": "0934560859",
-      "position": "",
+      "position": "Staff",
       "joinDate": "2026-07-09"
     }
   ],
@@ -295,14 +295,28 @@
     "simri21@gmail.com",
     {
       "username": "S_12",
-      "password": "Si@12345",
+      "password": "Ss@121212",
       "fullName": "simret",
       "role": "Compliance Officer",
       "department": "IT",
       "employeeCode": "EMP002",
       "phoneNumber": "0989785678",
-      "position": "",
+      "position": "Staff",
       "joinDate": "2026-09-16"
+    }
+  ],
+  [
+    "se@gmail.com",
+    {
+      "username": "Se_1",
+      "password": "Se@22221",
+      "fullName": "serke",
+      "role": "Employee",
+      "department": "COMP",
+      "employeeCode": "EMP8",
+      "phoneNumber": "+251909800945",
+      "position": "Staff",
+      "joinDate": "2026-09-22"
     }
   ]
 ]

@@ -654,7 +654,12 @@ export class WorkflowService {
   getNotificationsForUser(userId: string, role: UserRole): NotificationMessage[] {
     return this.notifications().filter(
       (notif) => notif.recipientId === userId || notif.recipientRole === role,
-    );
+    ).sort((a, b) => this.notificationDate(b) - this.notificationDate(a));
+  }
+
+  private notificationDate(notification: NotificationMessage): number {
+    const time = new Date(notification.createdDate).getTime();
+    return Number.isFinite(time) ? time : 0;
   }
 
   submitRequest(
@@ -1145,7 +1150,9 @@ export class WorkflowService {
   }
 
   getAllNotifications(): NotificationMessage[] {
-    return this.notifications();
+    return [...this.notifications()].sort(
+      (a, b) => this.notificationDate(b) - this.notificationDate(a),
+    );
   }
 
   extractApiServiceRequestRows(response: unknown): ApiServiceRequestRow[] {

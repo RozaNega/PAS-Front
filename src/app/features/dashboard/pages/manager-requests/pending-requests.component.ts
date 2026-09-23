@@ -83,12 +83,17 @@ export class PendingRequestsComponent implements OnInit, OnDestroy {
   approveRequest(id: string): void {
     const mgr = this.workflowService.getManagerQueueIdForCurrentUser();
     const name = this.managerName();
-    this.workflowService.managerReviewRequest(id, 'approve', 'Approved from pending list', mgr, name);
     this.serviceRequestService
       .approveServiceRequest({ id, remarks: 'Approved from pending list' })
       .pipe(take(1))
-      .subscribe({ next: () => this.syncFromApi(), error: () => {} });
-    this.loadRequests();
+      .subscribe({
+        next: () => {
+          this.workflowService.managerReviewRequest(id, 'approve', 'Approved from pending list', mgr, name);
+          this.syncFromApi();
+          this.loadRequests();
+        },
+        error: (error) => console.error('Unable to approve service request', id, error),
+      });
   }
 
   rejectRequest(id: string): void {
@@ -96,11 +101,16 @@ export class PendingRequestsComponent implements OnInit, OnDestroy {
     if (reason === null) return;
     const mgr = this.workflowService.getManagerQueueIdForCurrentUser();
     const name = this.managerName();
-    this.workflowService.managerReviewRequest(id, 'reject', reason || 'Rejected from pending list', mgr, name);
     this.serviceRequestService
       .reject({ id, reason: reason || 'Rejected from pending list' })
       .pipe(take(1))
-      .subscribe({ next: () => this.syncFromApi(), error: () => {} });
-    this.loadRequests();
+      .subscribe({
+        next: () => {
+          this.workflowService.managerReviewRequest(id, 'reject', reason || 'Rejected from pending list', mgr, name);
+          this.syncFromApi();
+          this.loadRequests();
+        },
+        error: (error) => console.error('Unable to reject service request', id, error),
+      });
   }
 }
